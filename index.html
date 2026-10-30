@@ -296,7 +296,7 @@ html[data-tab="calendar"] .wrap { padding-top: max(var(--space-1), env(safe-area
   html:is([data-tab="todo"], [data-tab="goal"], [data-tab="diet"]) #status { bottom: calc(max(var(--space-2), env(safe-area-inset-bottom, 0px)) + var(--pagebar) + 12px); }
   .navbar { padding-inline: var(--space-3); }
   .back { display: none; }
-  html:is([data-tab="reclist"], [data-tab="trash"], [data-tab="copies"]) .back { display: grid; }
+  html:is([data-tab="reclist"], [data-tab="trash"], [data-tab="copies"], [data-tab="sync"]) .back { display: grid; }
 }
 
 /* ---------- pages ---------- */
@@ -367,7 +367,7 @@ form.add > .full, form.add > .actions { grid-column: 1 / -1; }
 .calc { flex: 0 1 7em; min-width: 0; min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; padding: 0 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 #wtBmrSet { flex: 0 1 auto; min-height: 44px; white-space: normal; text-align: left; }
 .ffield { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
-.ffield input[type="text"], .ffield > textarea, .ffield > .seg { flex: 1 1 auto; }
+.ffield input[type="text"], .ffield input[type="email"], .ffield input[type="password"], .ffield > textarea, .ffield > .seg { flex: 1 1 auto; }
 .ffield > .seg { max-width: 22em; }
 .ffield input[type="number"] { flex: 0 1 7em; text-align: right; font-variant-numeric: tabular-nums; }
 .ffield input[type="date"], .ffield input[type="time"] { flex: 0 1 10em; }
@@ -1058,6 +1058,9 @@ ul.list > li.btn-row { padding: 0; }
 .row-btn .chev { display: grid; color: var(--muted); }
 .row-btn .row-count { margin-inline-start: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
 .row-btn .row-count.warn { color: var(--warn); }
+.sync-lead { margin: 0 0 var(--space-2); line-height: 1.6; }
+.sync-error { margin: var(--space-1) 0 0; color: var(--warn); font-weight: 600; }
+#syncIn p { margin: 0 0 var(--space-1); line-height: 1.6; }
 .check-line { display: flex; align-items: center; gap: var(--space-1); margin-top: 6px; line-height: 1.4; }
 .check-line input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
 /* 記録: これまでの積み重ね — everything recorded so far in one view (the user's call: no weeks, months or years, and no
@@ -1281,6 +1284,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   <symbol id="i-import" viewBox="0 0 24 24"><path d="M12 2.25a.75.75 0 0 1 .75.75v9.44l1.97-1.97a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0l-3.25-3.25a.75.75 0 1 1 1.06-1.06l1.97 1.97V3a.75.75 0 0 1 .75-.75ZM6.5 9.5h2a.75.75 0 0 1 0 1.5h-2a.5.5 0 0 0-.5.5v8c0 .28.22.5.5.5h11a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-2a.75.75 0 0 1 0-1.5h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M9.25 3.75h5.5M4.75 6.5h14.5m-12.75 0 .85 12.65a1.5 1.5 0 0 0 1.5 1.35h6.3a1.5 1.5 0 0 0 1.5-1.35l.85-12.65M10 10.25v6.25m4-6.25v6.25" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-copies" viewBox="0 0 24 24"><path d="M9 8.75h9.25a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9.75a1 1 0 0 1 1-1Zm7-3v-.75a1 1 0 0 0-1-1H5.75a1 1 0 0 0-1 1v9.25a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24"><path d="M19.25 9.5A7.25 7.25 0 0 0 5.6 7.6M4.75 14.5a7.25 7.25 0 0 0 13.65 1.9M5.25 4.25v3.5h3.5m10 12v-3.5h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
 <div class="app">
@@ -1311,7 +1315,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       <!-- iPhone の Safari などで開いたとき：ホーム画面に追加したアプリとは記録の置き場所が別という案内 -->
       <div class="notice" id="browserNote" role="status" hidden>
         <strong><svg class="icon" width="24" height="24" viewBox="0 0 24 24" role="img" aria-label="注意"><path d="M1 21 12 2l11 19H1Z"/><path class="cut" d="M13 15h-2v-5h2v5Z"/><circle class="cut" cx="12" cy="17" r="1"/></svg>ホーム画面のアプリとは記録が別です</strong>
-        <span>iPhone では、Safari などで開いたこのページと、ホーム画面に追加したアプリとで、記録の置き場所が分かれています。ここで書いた記録はアプリには出てきません。いつもの記録は、ホーム画面のアイコンから開いてください。</span>
+        <span id="browserNoteText">iPhone では、Safari などで開いたこのページと、ホーム画面に追加したアプリとで、記録の置き場所が分かれています。ここで書いた記録はアプリには出てきません。いつもの記録は、ホーム画面のアイコンから開いてください。</span>
         <div class="notice-actions">
           <button type="button" class="link-btn" id="browserNoteOk">このまま使う</button>
         </div>
@@ -1435,6 +1439,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <ul class="list card">
           <li class="btn-row"><button type="button" class="row-btn" id="exportBtn"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-export"/></svg>記録を書き出す</button></li>
           <li class="btn-row"><button type="button" class="row-btn" id="importBtn"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-import"/></svg>記録を読み込む</button></li>
+          <li class="btn-row" id="syncRow" hidden><button type="button" class="row-btn nav" id="syncBtn"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sync"/></svg><span>同期</span><span class="row-count" id="syncState"></span><span class="chev"><svg class="icon" width="16" height="16" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></span></button></li>
           <li class="btn-row" id="copiesRow" hidden><button type="button" class="row-btn nav" id="copiesBtn"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-copies"/></svg><span>端末の中のコピー</span><span class="row-count" id="copiesLatest"></span><span class="chev"><svg class="icon" width="16" height="16" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></span></button></li>
         </ul>
         <!-- the last export, on a line of its own under the buttons, as iOS gives the last backup (the user's call: it was
@@ -1477,6 +1482,36 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <ul class="list card" id="trashList"></ul>
         <div class="list-foot" id="trashFoot" hidden><button type="button" class="link-btn danger" id="trashPurgeAll">すべて完全に削除</button></div>
         <p class="group-foot">削除してから 30 日のあいだは、ここから戻せます。そのあとは自動で消えます。「完全に削除」すると、この端末の中のコピーからも消えます（前に書き出したファイルには残ります）。つみかさねのブロックは、名前を消して残ります。</p>
+      </section>
+
+      <!-- 記録 › 同期: the records kept the same on every device signed in with the same address and password (the user's
+           call: Safari and the home-screen app first), through Firebase; a password is never kept here -->
+      <section id="sec-sync" hidden>
+        <div class="sec-head"><h2>同期</h2><p class="sum-since" id="syncNote"></p></div>
+        <div class="card pad" id="syncOut">
+          <p class="sync-lead">同じメールアドレスとパスワードでログインしたところどうしで、記録が自動でそろいます。パソコンのブラウザ、iPhone の Safari、ホーム画面のアプリは記録の置き場所が別々なので、それぞれで一度ログインしてください。はじめは「新しく登録する」を、2 か所目からは「ログイン」を押します。</p>
+          <form class="add" id="syncForm" autocomplete="on">
+            <label class="flabel" for="syncEmail">メールアドレス</label>
+            <div class="ffield"><input type="email" id="syncEmail" autocomplete="username" autocapitalize="off" spellcheck="false" required></div>
+            <label class="flabel" for="syncPassword">パスワード</label>
+            <div class="ffield"><input type="password" id="syncPassword" autocomplete="current-password" minlength="6" required></div>
+          </form>
+          <p class="sync-error" id="syncError" role="alert" hidden></p>
+          <div class="notice-actions">
+            <button type="button" class="btn sm" id="syncSignIn">ログイン</button>
+            <button type="button" class="link-btn" id="syncSignUp">新しく登録する</button>
+            <button type="button" class="link-btn" id="syncForgot">パスワードを忘れたとき</button>
+          </div>
+        </div>
+        <div class="card pad" id="syncIn" hidden>
+          <p id="syncWho"></p>
+          <p class="muted small" id="syncLast"></p>
+          <div class="notice-actions">
+            <button type="button" class="btn sm" id="syncNow">いま同期する</button>
+            <button type="button" class="link-btn danger" id="syncSignOut">ログアウト</button>
+          </div>
+        </div>
+        <p class="group-foot">記録は Firebase（Google のクラウド）にも保存され、ログインした本人しか読めません。パスワードはこのアプリには残りません。ログアウトしても、この端末の記録は消えません。同じ記録を 2 か所でほぼ同時に直したときは、あとから直したほうが残り、もう片方は「最近削除した項目」に入ります。</p>
       </section>
 
       <!-- 記録 › 端末の中のコピー: the copies made each day, newest first; one picked shows what it would bring back first -->
@@ -2192,7 +2227,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const PAGES = [...TABS, ...RECORDS];
   const isRecord = (key) => RECORDS.some((r) => r.key === key);
   // a page a level down, under a tab, outside the menu: a record's entries under 記録
-  const SUBPAGES = [{ key: "reclist", parent: "records" }, { key: "trash", parent: "records" }, { key: "copies", parent: "records" }];
+  const SUBPAGES = [{ key: "reclist", parent: "records" }, { key: "trash", parent: "records" }, { key: "copies", parent: "records" }, { key: "sync", parent: "records" }];
   // the page a page sits under: きょう for the record pages, 記録 for a record's entries
   const parentOf = (key) => (isRecord(key) ? "home" : key === "trash" && (trashBack || trashOf === "todos") ? trashBack || "todo" : SUBPAGES.find((p) => p.key === key)?.parent || null);
   const SLOTS = ["朝食", "昼食", "夕食", "間食"];
@@ -2266,12 +2301,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (storageFull || ALL_STORES.some((x) => x.unsaved)) { storageFull = false; retryUnsaved(); }
       return true;
     }
-    async add(data) { const id = uid(); this.items.push({ id, ...data }); this.saveLocal(); renderAll(); return id; }
-    async addMany(list) { const added = list.map((data) => ({ id: uid(), ...data })); this.items.push(...added); this.saveLocal(); renderAll(); return added.map((x) => x.id); }
+    async add(data) { const id = uid(); this.items.push({ id, ...data }); syncNote(this, [id]); this.saveLocal(); renderAll(); return id; }
+    async addMany(list) { const added = list.map((data) => ({ id: uid(), ...data })); this.items.push(...added); syncNote(this, added.map((x) => x.id)); this.saveLocal(); renderAll(); return added.map((x) => x.id); }
     async set(id, data) {
       const i = this.items.findIndex((x) => x.id === id);
       if (i >= 0) this.items[i] = { id, ...data }; else this.items.push({ id, ...data });
       undelete(this, id);
+      syncNote(this, [id]);
       this.saveLocal(); renderAll();
     }
     // a day's own record written (日記, 体重): one deleted from the same day before isn't brought back by it, and stays in
@@ -2279,16 +2315,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     async write(id, data) {
       const i = this.items.findIndex((x) => x.id === id);
       if (i >= 0) this.items[i] = { id, ...data }; else { this.items.push({ id, ...data }); setAside(this, id); }
+      syncNote(this, [id]);
       this.saveLocal(); renderAll();
     }
     async update(id, patch) {
       const it = this.items.find((x) => x.id === id);
       if (it) Object.assign(it, patch);
+      syncNote(this, [id]);
       this.saveLocal(); renderAll();
     }
     // several changed at once ([id, patch] pairs), with one save and one redraw (the goals numbered anew as one is moved)
     async updateMany(patches) {
       for (const [id, patch] of patches) { const it = this.items.find((x) => x.id === id); if (it) Object.assign(it, patch); }
+      syncNote(this, patches.map(([id]) => id));
       this.saveLocal(); renderAll();
     }
     remove(id) { return this.removeMany([id]); }
@@ -2299,6 +2338,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (this.name === "routines" || this.name === "subjects") tsumiKeepNames(this.name, gone); // and the names their blocks say
       this.items = this.items.filter((x) => !drop.has(x.id));
       noteDeleted(this, gone);
+      syncNote(this, gone.map((x) => x.id));
       this.saveLocal(); renderAll();
     }
     // the whole store as it was a moment ago (元に戻す after an edit that changed more than one record); a record it
@@ -2307,6 +2347,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const before = new Set(this.items.map((x) => x.id));
       this.items = list;
       undelete(this, ...list.map((x) => x.id).filter((id) => !before.has(id)));
+      syncNote(this, [...new Set([...before, ...list.map((x) => x.id)])]);
       this.saveLocal(); renderAll();
     }
     // records deleted a moment ago, back as they were with their ids (元に戻す)
@@ -2314,6 +2355,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const here = new Set(this.items.map((x) => x.id)), back = list.filter((x) => !here.has(x.id));
       this.items.push(...back);
       undelete(this, ...back.map((x) => x.id));
+      syncNote(this, back.map((x) => x.id));
       this.saveLocal(); renderAll();
     }
     get(id) { return this.items.find((x) => x.id === id); }
@@ -2447,6 +2489,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function takeBack(st, ids) {
     const gone = new Set(ids);
     st.items = st.items.filter((x) => !gone.has(x.id));
+    syncNote(st, ids);
     if (remembers(st)) {
       const at = Date.now();
       for (const id of ids) if (!deleted.get(delKey(st, id))) deleted.items.push({ id: delKey(st, id), store: st.name, rid: id, at });
@@ -2507,6 +2550,37 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   let keepTimer = null;
   function keepUnsaved() { clearTimeout(keepTimer); keepTimer = setTimeout(() => saveCopy(), 400); }
 
+  // ---------- 同期の待ち行列 ----------
+  // each change to a record is noted here while signed in, to go up (同期, further down, sends it); the queue is kept in
+  // localStorage, so nothing waiting is lost when the app is closed or offline
+  const SYNC_KEY = LS_PREFIX + "sync";
+  const syncState = (() => { try { return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch { return {}; } })();
+  syncState.pending = syncState.pending || {};
+  syncState.device = syncState.device || uid();
+  const saveSyncState = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(syncState)); } catch {} };
+  // the queue as it is kept, read again before it changes: another tab of the app keeps it too, and writes it whole
+  function syncFresh() {
+    let o = null;
+    try { o = JSON.parse(localStorage.getItem(SYNC_KEY)); } catch {}
+    if (o && typeof o === "object") Object.assign(syncState, o, { pending: o.pending && typeof o.pending === "object" ? o.pending : {} });
+  }
+  // what goes up: the records, and the settings but this device's own (the backup reminder's)
+  const syncs = (st, id) => remembers(st) || (st === settings && id !== "backup");
+  const storeNamed = (name) => ALL_STORES.find((x) => x.name === name);
+  let syncApplying = false, syncTimer = null;
+  // a change here, to go up a moment later (not one that came down, and only while signed in)
+  function syncNote(st, ids) {
+    if (syncApplying || !syncState.uid) return;
+    syncFresh();
+    const t = Date.now();
+    let any = false;
+    for (const id of ids) if (syncs(st, id)) { syncState.pending[`${st.name}~${id}`] = t; any = true; }
+    if (!any) return;
+    saveSyncState();
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => syncNow(), 1500);
+  }
+
   const statusEl = $("status");
   let statusTimer = null;
   // where records live is said once, under バックアップ on the 記録 page (renderBackup), instead of at the foot of every page
@@ -2525,6 +2599,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     let ok = false;
     try { ok = !!localStorage.getItem(LS_PREFIX + "browserNoteOk"); } catch {}
     $("browserNote").hidden = !(appleTouch && !asApp && canStoreLocal && !ok);
+    // with sync set up, the way to have both the same
+    if (syncReady() && !$("browserNoteText").dataset.sync) {
+      $("browserNoteText").dataset.sync = "1";
+      $("browserNoteText").append("記録ページの「同期」で、両方とも同じアカウントにログインすると、記録がそろいます。");
+    }
   }
   $("browserNoteOk").addEventListener("click", () => {
     try { localStorage.setItem(LS_PREFIX + "browserNoteOk", "1"); } catch {}
@@ -2645,7 +2724,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // the record pages open from きょう (entries are made there; 記録 only sums up). On iPhone the きょう tab reopens the record
     // page left open there; pressed again from inside, it goes back to きょう
     if (key === "home" && !wideScreen.matches && lastRecord && tab !== "home" && !isRecord(tab)) key = lastRecord;
-    if (key === "records" && !wideScreen.matches && recListKind && tab !== "records" && tab !== "reclist" && tab !== "trash" && tab !== "copies") key = "reclist";
+    if (key === "records" && !wideScreen.matches && recListKind && tab !== "records" && tab !== "reclist" && tab !== "trash" && tab !== "copies" && tab !== "sync") key = "reclist";
     // the calendar has no きょうへ button (the user's call): its tab pressed again comes back to today, as iOS tabs reset
     if (key === "calendar" && tab === "calendar") setCalDay(todayKey);
     showTab(key);
@@ -2707,6 +2786,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (key === "reclist") draw(renderRecList);
     if (key === "trash") draw(renderTrash);
     if (key === "copies") draw(renderCopies);
+    if (key === "sync") draw(renderSync);
   }
   $("backBtn").addEventListener("click", () => { const up = parentOf(tab); if (up) showTab(up); });
 
@@ -8454,10 +8534,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (withDeleted) undelete(s, ...add.map((x) => x.id));
       s.saveLocal();
       added.push([s, add.map((x) => x.id)]);
+      syncNote(s, add.map((x) => x.id));
     }
     // つみかさね's keeping, unlike other settings, takes in the set's too (joinTsumi); 元に戻す puts this device's back
     const joined = mine && theirs && joinTsumi(mine, theirs);
-    if (joined) { settings.items = settings.items.map((x) => (x === mine ? joined : x)); settings.saveLocal(); added.push([settings, [], mine]); }
+    if (joined) { settings.items = settings.items.map((x) => (x === mine ? joined : x)); syncNote(settings, ["tsumi"]); settings.saveLocal(); added.push([settings, [], mine]); }
     loadJournalForm();
     renderAll();
     return added;
@@ -8475,6 +8556,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       keepInTrash(s, was);
       const by = new Map(swap.map((x) => [x.id, x]));
       s.items = s.items.map((x) => by.get(x.id) || x);
+      syncNote(s, swap.map((x) => x.id));
       s.saveLocal();
       out.push([s, was, deleted.items.filter((t) => !keysBefore.has(t.id)).map((t) => t.id)]);
     }
@@ -8485,6 +8567,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const [s, was, keys] of out) {
       const by = new Map(was.map((x) => [x.id, x])), drop = new Set(keys);
       s.items = s.items.map((x) => by.get(x.id) || x);
+      syncNote(s, was.map((x) => x.id));
       deleted.items = deleted.items.filter((t) => !drop.has(t.id));
       s.saveLocal();
     }
@@ -8498,6 +8581,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const gone = new Set(ids);
       s.items = s.items.filter((x) => !gone.has(x.id));
       if (was) s.items = s.items.map((x) => (x.id === was.id ? was : x)); // a setting joined with the set's, as it was
+      syncNote(s, was ? [...ids, was.id] : ids);
       s.saveLocal();
     }
     loadJournalForm();
@@ -8752,7 +8836,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       : "まだ一度も書き出していません");
     $("backupLast").classList.toggle("due", due && enough);
     // short (the user's call): where the records are, that they can go, and what a written-out file is for
-    $("storeNote").textContent = canStoreLocal
+    $("storeNote").textContent = canStoreLocal && syncUser && syncState.uid
+      ? "記録はこの端末と、同期先の Firebase の両方にあります。書き出したファイルも iCloud Drive などに置いておくと、さらに安心です。"
+        + (storageKept ? "ブラウザには、記録を消さないよう頼んであります。" : "")
+      : canStoreLocal
       ? "記録はこの端末のブラウザにだけあります。書き出したファイルを iCloud Drive などに置いておけば、消えても読み込んで戻せて、別の端末へも移せます。"
         + (storageKept ? "ブラウザには、記録を消さないよう頼んであります。" : "")
       : "この画面では記録が保存されません。";
@@ -8978,6 +9065,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       deleted.items = deleted.items.filter((x) => x !== t);
       if (now) { keepInTrash(st, [now]); swapped++; } else setAside(st, back.id);
       st.items = now ? st.items.map((x) => (x.id === back.id ? back : x)) : [...st.items, back];
+      syncNote(st, [back.id]);
       touched.add(st); n++; kind = STORE_NAMES[st.name];
     }
     if (!n) { flash(keys.length > 1 ? "戻せる記録はありませんでした。" : "この記録は戻せませんでした。"); return; }
@@ -9053,6 +9141,247 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // drawn before the page slides in, so it arrives whole
   $("trashBtn").addEventListener("click", () => { trashOf = null; trashBack = null; renderTrash(); showTab("trash"); });
+
+  // ---------- 同期 ----------
+  // each record is a document in Firebase (users/{uid}/records/{store~id}): its JSON (null once deleted), when it was
+  // changed (t: of two changes, the later one wins) and when the server took it (st: what was pulled already). A change
+  // here waits in a queue kept in localStorage until it has gone up, so nothing is lost offline; what comes down is put in
+  // place without going back up. This device's own settings (the backup reminder's) and what deleted records held stay
+  // here. A device signed in for the first time sends everything it has, and gets everything the others have
+  const FIREBASE_CONFIG = null; // the project's web config (apiKey, authDomain, projectId, appId …), once it is set up
+  const syncReady = () => !!(FIREBASE_CONFIG || window.__syncRemote);
+  let remote = null, syncUser = null, syncBusy = null;
+  // what came down: a record changed there later than here (or not waiting here at all) takes its place, or goes when it
+  // was deleted there (into 最近削除した項目 here too); how many were put in place. Two changes made at once, here and
+  // there (the same day's 日記 written in Safari and in the home-screen app before either had gone up): the later one is
+  // kept, and the other goes to 最近削除した項目, so neither is lost; つみかさね's keeping takes in both (joinTsumi)
+  function applyRemote(docs) {
+    const touched = new Set();
+    let n = 0;
+    syncFresh();
+    syncApplying = true;
+    try {
+      for (const d of docs) {
+        const st = storeNamed(d.s), key = `${d.s}~${d.i}`;
+        if (!st || !syncs(st, d.i) || d.from === syncState.device || syncState.recent?.[key] === num(d.st)) continue; // (taken the last time)
+        let x = null;
+        if (d.j != null) {
+          try { x = JSON.parse(d.j); } catch {}
+          if (!x || x.id !== d.i || !fits(st, x)) continue;
+        }
+        const mine = syncState.pending[key], here = st.get(d.i);
+        if (x && here && JSON.stringify(here) === d.j) { delete syncState.pending[key]; continue; } // the same here already
+        if (mine && x && here && st === settings && d.i === "tsumi") {
+          const joined = joinTsumi(here, x);
+          if (joined) { st.items = st.items.map((y) => (y.id === d.i ? joined : y)); syncState.pending[key] = Date.now(); touched.add(st); n++; }
+          continue; // (goes up as it is now)
+        }
+        if (mine > d.t) { if (x) keepInTrash(st, [x]); continue; } // changed here later: this one goes up instead
+        delete syncState.pending[key];
+        if (!x) {
+          if (!here) continue;
+          st.items = st.items.filter((y) => y.id !== d.i);
+          noteDeleted(st, [here]);
+        } else {
+          if (mine && here) keepInTrash(st, [here]); // changed here too, earlier
+          st.items = here ? st.items.map((y) => (y.id === d.i ? x : y)) : [...st.items, x];
+          // one deleted here, back: what it held stays in 最近削除した項目 when it isn't what came (a day written anew there)
+          const t = remembers(st) && deleted.get(delKey(st, d.i));
+          if (t?.data && JSON.stringify(t.data) !== d.j) setAside(st, d.i); else undelete(st, d.i);
+        }
+        touched.add(st); n++;
+      }
+      for (const st of touched) st.saveLocal();
+    } finally { syncApplying = false; }
+    saveSyncState();
+    if (n) { tsumiCounted = null; if (!journalDirty) loadJournalForm(); renderAll(); } // (a step they make was said where they were made)
+    return n;
+  }
+  async function pullRemote() {
+    const docs = await remote.pull(Math.max(0, num(syncState.pulled) - 5000)); // a few seconds back, should two have crossed
+    const n = applyRemote(docs);
+    for (const d of docs) if (num(d.st) > num(syncState.pulled)) syncState.pulled = num(d.st);
+    // what came in those few seconds comes again next time, and isn't taken twice
+    syncState.recent = Object.fromEntries(docs.filter((d) => num(d.st) > num(syncState.pulled) - 5000).map((d) => [`${d.s}~${d.i}`, num(d.st)]));
+    saveSyncState();
+    return n;
+  }
+  // a kind not read in yet (the bigger storage) waits: its records would look deleted
+  async function pushPending() {
+    syncFresh();
+    const keys = Object.keys(syncState.pending).filter((key) => {
+      const st = storeNamed(key.slice(0, key.indexOf("~")));
+      if (!st) delete syncState.pending[key]; // a kind this app no longer has
+      return st?.loaded;
+    });
+    if (!keys.length) return 0;
+    const docs = keys.map((key) => {
+      const k = key.indexOf("~"), s = key.slice(0, k), i = key.slice(k + 1), x = storeNamed(s)?.get(i);
+      return { s, i, j: x ? JSON.stringify(x) : null, t: syncState.pending[key], from: syncState.device };
+    });
+    // 400 at a time, each let go of once it is there (a first sync of many, cut short, keeps what went)
+    for (let k = 0; k < docs.length; k += 400) {
+      const part = docs.slice(k, k + 400);
+      await remote.push(part);
+      syncFresh();
+      for (const d of part) if (syncState.pending[`${d.s}~${d.i}`] === d.t) delete syncState.pending[`${d.s}~${d.i}`];
+      saveSyncState();
+    }
+    return docs.length;
+  }
+  // down, then up; one run at a time. Offline or failing, the queue stays for the next time (opening the app, coming back
+  // to it, a minute later, back online)
+  function syncNow(byHand) {
+    if (!remote || !syncUser || !syncState.uid || ALL_STORES.some((s) => !s.loaded)) return Promise.resolve();
+    if (syncBusy) {
+      if (!byHand) return syncBusy;
+      flash("同期しています。少しお待ちください。"); // one running by itself: this one after it
+      return syncBusy.then(() => syncNow(true));
+    }
+    syncBusy = (async () => {
+      try {
+        if (navigator.onLine === false) throw new Error("offline");
+        const got = await pullRemote(), sent = await pushPending();
+        syncFresh();
+        Object.assign(syncState, { at: Date.now(), error: "" });
+        saveSyncState();
+        if (byHand) flash(got || sent ? `同期しました。受け取り ${got} 件・送り ${sent} 件です。` : "同期しました。変わったところはありません。");
+      } catch {
+        syncFresh();
+        syncState.error = navigator.onLine === false ? "offline" : "failed";
+        saveSyncState();
+        if (byHand) flash(navigator.onLine === false ? "インターネットにつながっていません。つながったら同期します。" : "同期できませんでした。少しあとで、もう一度ためしてください。");
+      } finally {
+        syncBusy = null;
+        draw(renderSyncRow);
+        if (tab === "sync") draw(renderSync);
+      }
+    })();
+    return syncBusy;
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") { if (!remote) startSync(); else syncNow(); }
+    else if (remote && syncUser && Object.keys(syncState.pending).length) pushPending().catch(() => {}); // going away: up now
+  });
+  window.addEventListener("online", () => (remote ? syncNow() : startSync()));
+  setInterval(() => { if (document.visibilityState === "visible") syncNow(); }, 60000);
+  // Firebase's parts load only once sync is set up, and the app works without them (offline too). Signed in, the session
+  // stays in this browser (each of Safari and the home-screen app signs in once)
+  async function firebaseRemote() {
+    const base = "https://www.gstatic.com/firebasejs/10.12.2/";
+    const [{ initializeApp }, A, F] = await Promise.all([import(base + "firebase-app.js"), import(base + "firebase-auth.js"), import(base + "firebase-firestore.js")]);
+    const app = initializeApp(FIREBASE_CONFIG), auth = A.getAuth(app), db = F.getFirestore(app);
+    auth.languageCode = "ja"; // the mail for a forgotten password, in Japanese
+    const records = () => F.collection(db, "users", auth.currentUser.uid, "records");
+    return {
+      onAuth: (cb) => A.onAuthStateChanged(auth, (u) => cb(u ? { uid: u.uid, email: u.email } : null)),
+      signIn: (email, pw) => A.signInWithEmailAndPassword(auth, email, pw),
+      signUp: (email, pw) => A.createUserWithEmailAndPassword(auth, email, pw),
+      signOut: () => A.signOut(auth),
+      reset: (email) => A.sendPasswordResetEmail(auth, email),
+      async push(docs) {
+        for (let k = 0; k < docs.length; k += 400) {
+          const batch = F.writeBatch(db);
+          for (const d of docs.slice(k, k + 400)) batch.set(F.doc(records(), `${d.s}~${d.i}`), { ...d, st: F.serverTimestamp() });
+          await batch.commit();
+        }
+      },
+      async pull(since) {
+        const snap = await F.getDocs(F.query(records(), F.where("st", ">", F.Timestamp.fromMillis(since)), F.orderBy("st")));
+        return snap.docs.map((x) => { const d = x.data(); return { ...d, st: d.st?.toMillis?.() || 0 }; });
+      },
+    };
+  }
+  let syncStarting = false, syncBooted = false;
+  async function startSync() {
+    if (!syncReady() || !canStoreLocal || remote || syncStarting || !syncBooted) return;
+    syncStarting = true;
+    try { remote = window.__syncRemote ? await window.__syncRemote() : await firebaseRemote(); } catch { remote = null; }
+    syncStarting = false;
+    if (!remote) { syncState.error = "offline"; draw(renderSyncRow); return; }
+    remote.onAuth((u) => {
+      syncUser = u;
+      syncFresh();
+      if (u && syncState.uid !== u.uid) {
+        // signed in here for the first time: everything here goes up (changed when it says it was), and all of it comes down.
+        // So does what was deleted here (when), so another device's copy of it goes too, unless changed there since; but not
+        // a day's own record (日記, からだ, ルーティーン: the day is its id), as another device's of that day was written there
+        Object.assign(syncState, { uid: u.uid, pulled: 0, pending: {}, recent: {}, at: 0, error: "" });
+        for (const st of ALL_STORES) for (const x of st.items) if (syncs(st, x.id)) syncState.pending[`${st.name}~${x.id}`] = num(x.updatedAt) || num(x.createdAt) || 1;
+        for (const t of deleted.items) {
+          const st = !t.id.includes("#") && storeNamed(t.store);
+          if (st && syncs(st, t.rid) && !isDay(t.rid) && !st.get(t.rid)) syncState.pending[`${t.store}~${t.rid}`] = num(t.at) || 1;
+        }
+        saveSyncState();
+      }
+      if (!u && syncState.uid) { Object.assign(syncState, { uid: null, pulled: 0, pending: {}, recent: {}, at: 0, error: "" }); saveSyncState(); }
+      renderAll(); // the row, this page, and where 記録 says the records are
+      if (u) syncNow();
+    });
+  }
+  function renderSyncRow() {
+    $("syncRow").hidden = !syncReady() || !canStoreLocal;
+    const on = !!(syncUser && syncState.uid), bad = on && syncState.error === "failed";
+    $("syncState").textContent = !remote && syncReady() && syncState.error === "offline" ? "オフライン" : !on ? "オフ" : syncState.error === "offline" ? "オフライン" : bad ? "うまくいっていません" : "オン";
+    $("syncState").classList.toggle("warn", bad);
+    $("syncBtn").setAttribute("aria-label", `同期、${$("syncState").textContent}`);
+  }
+  function renderSync() {
+    const on = !!(syncUser && syncState.uid);
+    $("syncOut").hidden = on;
+    $("syncIn").hidden = !on;
+    $("syncNote").textContent = on ? "オン" : "オフ";
+    if (!on) return;
+    $("syncWho").textContent = `${syncUser.email || ""} でログインしています。同じアカウントでログインしたほかの端末と、記録が自動でそろいます。`;
+    const at = syncState.at ? new Date(syncState.at) : null, waiting = Object.keys(syncState.pending).length;
+    $("syncLast").textContent = (at ? `最後に同期：${fmtMDW(ymd(at))} ${at.getHours()}:${pad(at.getMinutes())}` : "まだ同期していません")
+      + (waiting ? `・送るのを待っている記録 ${waiting.toLocaleString("ja-JP")} 件` : "");
+  }
+  const SYNC_ERRORS = {
+    "auth/invalid-email": "メールアドレスの形がちがいます。",
+    "auth/user-not-found": "メールアドレスかパスワードがちがいます。",
+    "auth/wrong-password": "メールアドレスかパスワードがちがいます。",
+    "auth/invalid-credential": "メールアドレスかパスワードがちがいます。",
+    "auth/email-already-in-use": "このメールアドレスはもう登録されています。「ログイン」を押してください。",
+    "auth/weak-password": "パスワードは 6 文字以上にしてください。",
+    "auth/network-request-failed": "インターネットにつながっていません。",
+    "auth/too-many-requests": "何度もまちがえたので、しばらく待ってからためしてください。",
+    "auth/missing-email": "メールアドレスを入れてください。",
+  };
+  function showSyncError(msg) { $("syncError").textContent = msg; $("syncError").hidden = !msg; }
+  async function syncAuth(kind) {
+    const email = $("syncEmail").value.trim(), pw = $("syncPassword").value;
+    showSyncError("");
+    if (!remote) { showSyncError("同期の準備ができていません。インターネットにつないで、アプリを開き直してください。"); return; }
+    if (!email || !pw) { showSyncError("メールアドレスとパスワードを入れてください。"); return; }
+    $("syncSignIn").disabled = $("syncSignUp").disabled = true;
+    try {
+      await (kind === "up" ? remote.signUp(email, pw) : remote.signIn(email, pw));
+      $("syncPassword").value = "";
+      flash(kind === "up" ? "登録しました。同期をはじめます。" : "ログインしました。同期をはじめます。");
+    } catch (e) {
+      showSyncError(SYNC_ERRORS[e?.code] || `うまくいきませんでした（${e?.code || e?.message || "不明"}）。`);
+    } finally { $("syncSignIn").disabled = $("syncSignUp").disabled = false; }
+  }
+  $("syncSignIn").addEventListener("click", () => syncAuth("in"));
+  $("syncSignUp").addEventListener("click", () => syncAuth("up"));
+  // パスワードを忘れたとき: a mail from Firebase to the address typed in, with a link to choose a new password
+  $("syncForgot").addEventListener("click", async () => {
+    const email = $("syncEmail").value.trim();
+    showSyncError("");
+    if (!remote) { showSyncError("同期の準備ができていません。インターネットにつないで、アプリを開き直してください。"); return; }
+    if (!email) { showSyncError("メールアドレスを入れてから押してください。"); return; }
+    try { await remote.reset(email); flash("パスワードを決め直すメールを送りました。メールのリンクから、新しいパスワードを決めてください。"); }
+    catch (e) { showSyncError(SYNC_ERRORS[e?.code] || `うまくいきませんでした（${e?.code || e?.message || "不明"}）。`); }
+  });
+  $("syncForm").addEventListener("submit", (ev) => { ev.preventDefault(); syncAuth("in"); });
+  $("syncNow").addEventListener("click", () => syncNow(true));
+  armLink($("syncSignOut"), "ログアウト", "もう一度押すとログアウトします", async () => {
+    try { await remote?.signOut(); } catch {}
+    flash("ログアウトしました。この端末の記録はそのままです。");
+  });
+  // drawn before the page slides in, so it arrives whole
+  $("syncBtn").addEventListener("click", () => { showSyncError(""); renderSync(); showTab("sync"); });
 
   // ---------- 書きかけ ----------
   // what was being typed into an add form and not yet added is kept as the app goes away, and put back when it opens
@@ -9163,10 +9492,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- boot ----------
   function renderAll() {
     tsumiTallied = null; tsumiStale = true; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)
-    for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderTrashRow, renderCopyRow, renderEmptyHint, renderSummary, renderTsumi, noteTsumiStep, paintChart]) draw(fn);
+    for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderTrashRow, renderCopyRow, renderSyncRow, renderEmptyHint, renderSummary, renderTsumi, noteTsumiStep, paintChart]) draw(fn);
     if (tab === "reclist") draw(renderRecList);
     if (tab === "trash") draw(renderTrash);
     if (tab === "copies") draw(renderCopies);
+    if (tab === "sync") draw(renderSync);
     if (tab === "records") draw(renderUsage);
   }
   // the safeguards first, so a page that can't be drawn doesn't keep them from running; a kind of record moved to the
@@ -9182,10 +9512,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     let initial = (location.hash || "").slice(1);
     if (isDietPart(initial)) { setDietPart(initial); initial = "diet"; } // 食事's, 運動's and からだ's own pages, from before ダイエット
     // straight there: no slide in from きょう as the app opens (a record's entries open at 記録, which record being unknown)
-    draw(() => setTab(["reclist", "trash", "copies"].includes(initial) ? "records" : PAGES.some((p) => p.key === initial) ? initial : "home"));
+    draw(() => setTab(["reclist", "trash", "copies", "sync"].includes(initial) ? "records" : PAGES.some((p) => p.key === initial) ? initial : "home"));
     draw(loadJournalForm);
     renderAll();
     draw(() => restoreDraft(!initial || initial === "home"));
+    syncBooted = true;
+    startSync();
   }
   if (ALL_STORES.some((s) => s.big)) loadBig().finally(boot); else boot();
   // what is still to be written there goes as the app goes away

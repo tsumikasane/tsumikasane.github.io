@@ -21,6 +21,10 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
+  // this app's own files, and Firebase's parts for sync (their address carries the version, so a kept copy stays right);
+  // the sync's own traffic and anything else goes to the network untouched, never answered from the cache
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin && url.hostname !== "www.gstatic.com") return;
 
   // the page: network first, checked with the server past any copy the browser keeps; the last copy when offline.
   // (A navigation request can't be copied with new options, so it is asked for again by its address; should that end in
