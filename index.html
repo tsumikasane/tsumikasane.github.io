@@ -566,6 +566,8 @@ li.done .text { color: var(--muted); }  /* done: grey, not struck through (the u
 
 /* weight chart */
 .chart-head { padding: 12px 12px 0; }
+/* the names over the plots, once 体脂肪率 has one under 体重's; level with where the plots start */
+.chart-name { margin: 0; padding: 10px 20px 0; font-size: var(--t-foot); line-height: 1.35; font-weight: 600; color: var(--muted); }
 .chart-wrap { position: relative; padding: 8px 8px 4px; }
 .chart { display: block; width: 100%; height: auto; outline-offset: -2px; }
 .chart .gridline { stroke: var(--separator); stroke-width: 1; }
@@ -1489,6 +1491,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <form class="add" id="wtForm" autocomplete="off">
           <label class="flabel" for="wtInput" id="wtFormLabel">きょうの体重</label>
           <div class="ffield"><input type="number" id="wtInput" step="0.1" min="20" max="300" placeholder="65.0" inputmode="decimal" required><span class="unit">kg</span></div>
+          <!-- the day's 体脂肪率 with its weight, when there is one (the user's call) -->
+          <label class="flabel" for="wtFat">体脂肪率 <span class="opt">任意</span></label>
+          <div class="ffield"><input type="number" id="wtFat" step="0.1" min="1" max="70" inputmode="decimal"><span class="unit">%</span></div>
           <div class="actions">
             <button type="button" class="link-btn danger" id="wtDelete" hidden>この日の記録を削除</button>
             <span class="muted small" id="wtState"></span>
@@ -1504,9 +1509,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
               <button type="button" data-range="365" aria-pressed="false">1年</button>
             </div>
           </div>
+          <p class="chart-name" id="wtChartName" hidden>体重（kg）</p>
           <div class="chart-wrap" id="wtChartWrap">
             <svg class="chart" id="wtChart" role="img" tabindex="0" aria-label="体重の推移グラフ。矢印キーで点を移動できます。数値は下の一覧にもあります。"></svg>
             <div class="tip" id="wtTip" hidden></div>
+          </div>
+          <!-- 体脂肪率's plot, under the same period, once one has been recorded -->
+          <div id="fatPlot" hidden>
+            <p class="chart-name">体脂肪率（%）</p>
+            <div class="chart-wrap" id="fatChartWrap">
+              <svg class="chart" id="fatChart" role="img" tabindex="0" aria-label="体脂肪率の推移グラフ。"></svg>
+              <div class="tip" id="fatTip" hidden></div>
+            </div>
           </div>
         </div>
         <div class="stats" id="wtStats"></div>
@@ -1899,6 +1913,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a number keeps its unit on its line (63,800 円, −2.4 kg, 1 時間 45 分, 30 分): the space between them doesn't break
   const keepUnits = (s) => s.replace(/(\d) (?=円|kcal|kg|km|分|時間|日|件|回|項目|セット)/g, "$1\u00a0");
   const fmtKg = (n) => num(n).toFixed(1);
+  const fmtFat = (n) => num(n).toFixed(1); // 体脂肪率, % to a tenth
   const signed = (n, dec = 1) => (n > 0 ? "+" : n < 0 ? "−" : "±") + Math.abs(n).toFixed(dec);
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const num = (v) => (typeof v === "number" && isFinite(v) ? v : Number(v) || 0);
@@ -3512,23 +3527,25 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ---------- 体重 ----------
-  let wtRange = 30, wtHover = -1, wtPts = [], wtOverlay = null;
-  const wtInput = $("wtInput"), wtState = $("wtState"), wtTargetInput = $("wtTarget");
+  let wtRange = 30;
+  const wtInput = $("wtInput"), wtFat = $("wtFat"), wtState = $("wtState"), wtTargetInput = $("wtTarget");
   const wtTarget = () => num((settings.get("weight") || {}).target);
   const sortedWeights = () => weights.items.filter((r) => num(r.kg) > 0 && /^\d{4}-\d{2}-\d{2}$/.test(r.id)).sort((a, b) => a.id.localeCompare(b.id));
   $("wtForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
-    const v = Number(wtInput.value);
+    const v = Number(wtInput.value), rawFat = wtFat.value, f = Number(rawFat);
     if (!(v >= 20 && v <= 300)) { wtState.textContent = "20〜300 の範囲で入力してください"; return; }
+    // 体脂肪率 may stay empty: then the day has none (emptied, the one it had goes)
+    if (rawFat !== "" && !(f >= 1 && f <= 70)) { wtState.textContent = "体脂肪率は 1〜70 の範囲で入力してください"; return; }
     const date = viewDate;
     wtState.textContent = "保存中…";
     act(async () => {
-      await weights.write(date, { date, kg: Math.round(v * 10) / 10, updatedAt: Date.now() });
+      await weights.write(date, { date, kg: Math.round(v * 10) / 10, ...(rawFat !== "" ? { fat: Math.round(f * 10) / 10 } : {}), updatedAt: Date.now() });
       if (date === viewDate) wtState.textContent = weights.unsaved ? "保存できませんでした" : "記録しました";
     });
   });
   armLink($("wtDelete"), "この日の記録を削除", "もう一度押すと削除します", () => {
-    wtInput.value = ""; wtState.textContent = "";
+    wtInput.value = ""; wtFat.value = ""; wtState.textContent = "";
     removeWithUndo(weights, viewDate);
   });
   $("wtTargetForm").addEventListener("submit", (ev) => {
@@ -3553,6 +3570,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const entry = weights.get(viewDate);
     $("wtFormLabel").textContent = (relLabel(viewDate) || fmtShort(viewDate)) + "の体重";
     if (document.activeElement !== wtInput) wtInput.value = entry ? fmtKg(entry.kg) : "";
+    if (document.activeElement !== wtFat) wtFat.value = num(entry?.fat) > 0 ? fmtFat(entry.fat) : "";
     $("wtSubmit").textContent = entry ? "更新する" : "記録する";
     $("wtDelete").hidden = !entry;
     if (!entry && wtState.textContent === "記録しました") wtState.textContent = "";
@@ -3572,7 +3590,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         stat("最新", `${fmtKg(last.kg)} kg`, relLabel(last.id) ? relLabel(last.id) + "の記録" : fmtShort(last.id)),
         stat("前回比", prev ? `${signed(num(last.kg) - num(prev.kg))} kg` : "—", prev ? `${fmtMD(prev.id)} の ${fmtKg(prev.kg)} kg と比べて` : "記録が1件のみ"),
         stat(`${rangeLabel()}の変化`, inRange.length > 1 ? `${signed(num(last.kg) - num(first.kg))} kg` : "—", inRange.length > 1 ? `${fmtMD(first.id)} から ${inRange.length} 回記録` : "この期間の記録が足りません"),
-        target > 0 ? stat("目標まで", targetText(num(last.kg), target), `目標 ${fmtKg(target)} kg`) : null
+        target > 0 ? stat("目標まで", targetText(num(last.kg), target), `目標 ${fmtKg(target)} kg`) : null,
+        fatStat(all, start)
       );
     }
     renderWeightChart();
@@ -3588,12 +3607,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const idx = all.indexOf(r); const p = idx > 0 ? all[idx - 1] : null;
       list.append(el("li", { class: "clickable" + (r.id === viewDate ? " current" : ""), onclick: () => setViewDate(r.id) },
         el("span", { class: "datecell" }, r.id === todayKey ? "きょう" : fmtShort(r.id)),
-        el("span", { class: "body" }, el("span", { class: "text" }, `${fmtKg(r.kg)} kg`)),
+        el("span", { class: "body" }, el("span", { class: "text" }, `${fmtKg(r.kg)} kg`), num(r.fat) > 0 ? el("span", { class: "sub" }, el("span", { class: "phrase" }, "体脂肪"), " ", el("span", { class: "phrase" }, `${fmtFat(r.fat)}%`)) : null),
         p ? el("span", { class: "num" }, `${signed(num(r.kg) - num(p.kg))} kg`) : null,
         delButton(() => removeWithUndo(weights, r.id))
       ));
     }
     if (rows.length > shown.length) list.append(el("li", { class: "note" }, `ほか ${rows.length - shown.length} 件`));
+  }
+  // 体脂肪率, once one has been recorded: the latest, and how it has gone over the period showing
+  function fatStat(all, start) {
+    const fats = all.filter((r) => num(r.fat) > 0);
+    if (!fats.length) return null;
+    const last = fats[fats.length - 1], inRange = fats.filter((r) => r.id >= start && r.id <= todayKey), first = inRange[0];
+    return stat("体脂肪率", `${fmtFat(last.fat)}%`, inRange.length > 1 && inRange.includes(last)
+      ? `${rangeLabel()}で ${signed(num(last.fat) - num(first.fat))}%` : `${relLabel(last.id) || fmtShort(last.id)}の記録`);
   }
   function stat(k, v, d) {
     return el("div", { class: "card stat" }, el("span", { class: "k" }, k), el("span", { class: "v" }, v), d ? el("span", { class: "d" }, d) : null);
@@ -3607,128 +3634,141 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const s of [0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 50]) if (s >= raw) return s;
     return 100;
   }
-  function renderWeightChart() {
-    const wrap = $("wtChartWrap"), svg = $("wtChart"), tip = $("wtTip");
-    const W = Math.max(300, Math.round(wrap.clientWidth - 16) || 600), H = 240;
-    // HIG charts: the value labels sit on the trailing side, as in Health, so the plot starts where the card's text starts
-    const padL = 12, padR = 44, padT = 22, padB = 28;
-    const pw = W - padL - padR, ph = H - padT - padB;
-    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    svg.setAttribute("width", W); svg.setAttribute("height", H);
-    svg.replaceChildren();
-    tip.hidden = true; wtHover = -1; wtOverlay = null;
-    const start = addDays(todayKey, -(wtRange - 1));
-    const recs = sortedWeights().filter((r) => r.id >= start && r.id <= todayKey);
-    const target = wtTarget();
-    wtPts = [];
-    const howTo = "矢印キーで点を移動できます。数値は下の一覧にもあります。";
-    if (!recs.length) {
-      svg.setAttribute("aria-label", `体重の推移グラフ。${rangeLabel()}の記録はまだありません。`);
-      svg.append(svgEl("text", { x: W / 2, y: H / 2, "text-anchor": "middle", class: "axis-text" }, `${rangeLabel()}の記録はまだありません`));
-      return;
-    }
-    // HIG charts: say the main message up front, for VoiceOver too
-    const r0 = recs[0], r1 = recs[recs.length - 1];
-    svg.setAttribute("aria-label", recs.length > 1
-      ? `体重の推移グラフ。${rangeLabel()}で${recs.length}回の記録、${fmtMD(r0.id)}の${fmtKg(r0.kg)} kgから${fmtMD(r1.id)}の${fmtKg(r1.kg)} kg。${howTo}`
-      : `体重の推移グラフ。${rangeLabel()}の記録は${fmtMD(r1.id)}の${fmtKg(r1.kg)} kgの1回。${howTo}`);
-    const vals = recs.map((r) => num(r.kg));
-    if (target > 0) vals.push(target);
-    let lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo;
-    if (span < 1) { const mid = (hi + lo) / 2; lo = mid - 0.5; hi = mid + 0.5; span = 1; }
-    const step = niceStep(span / 4);
-    const yLo = Math.floor((lo - span * 0.1) / step) * step;
-    const yHi = Math.ceil((hi + span * 0.1) / step) * step;
-    const y = (v) => padT + ((yHi - v) / (yHi - yLo)) * ph;
-    const x = (d) => padL + (daysBetween(start, d) / Math.max(1, wtRange - 1)) * pw;
-    const dec = step < 1 ? 1 : 0;
+  // a Health-style trend chart: 体重's, and 体脂肪率's once one has been recorded (the user's call), each a plot of its own in
+  // the card under the one period control. say(v) is a value with its unit, fmt(v) the number alone; target() draws a line
+  // across (the weight's goal)
+  function trendChart({ svg, wrap, tip, name, say, fmt, val, target = () => 0, H = 240 }) {
+    const c = { pts: [], hover: -1, overlay: null };
+    c.render = () => {
+      const W = Math.max(300, Math.round(wrap.clientWidth - 16) || 600);
+      // HIG charts: the value labels sit on the trailing side, as in Health, so the plot starts where the card's text starts
+      const padL = 12, padR = 44, padT = 22, padB = 28;
+      const pw = W - padL - padR, ph = H - padT - padB;
+      svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+      svg.setAttribute("width", W); svg.setAttribute("height", H);
+      svg.replaceChildren();
+      tip.hidden = true; c.hover = -1; c.overlay = null;
+      const start = addDays(todayKey, -(wtRange - 1));
+      const recs = sortedWeights().filter((r) => r.id >= start && r.id <= todayKey && val(r) > 0);
+      const goal = target();
+      c.pts = [];
+      const howTo = "矢印キーで点を移動できます。数値は下の一覧にもあります。";
+      if (!recs.length) {
+        svg.setAttribute("aria-label", `${name}の推移グラフ。${rangeLabel()}の記録はまだありません。`);
+        svg.append(svgEl("text", { x: W / 2, y: H / 2, "text-anchor": "middle", class: "axis-text" }, `${rangeLabel()}の記録はまだありません`));
+        return;
+      }
+      // HIG charts: say the main message up front, for VoiceOver too
+      const r0 = recs[0], r1 = recs[recs.length - 1];
+      svg.setAttribute("aria-label", recs.length > 1
+        ? `${name}の推移グラフ。${rangeLabel()}で${recs.length}回の記録、${fmtMD(r0.id)}の${say(val(r0))}から${fmtMD(r1.id)}の${say(val(r1))}。${howTo}`
+        : `${name}の推移グラフ。${rangeLabel()}の記録は${fmtMD(r1.id)}の${say(val(r1))}の1回。${howTo}`);
+      const vals = recs.map(val);
+      if (goal > 0) vals.push(goal);
+      let lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo;
+      if (span < 1) { const mid = (hi + lo) / 2; lo = mid - 0.5; hi = mid + 0.5; span = 1; }
+      const step = niceStep(span / 4);
+      const yLo = Math.floor((lo - span * 0.1) / step) * step;
+      const yHi = Math.ceil((hi + span * 0.1) / step) * step;
+      const y = (v) => padT + ((yHi - v) / (yHi - yLo)) * ph;
+      const x = (d) => padL + (daysBetween(start, d) / Math.max(1, wtRange - 1)) * pw;
+      const dec = step < 1 ? 1 : 0;
 
-    // y grid + ticks
-    const nTicks = Math.round((yHi - yLo) / step);
-    for (let i = 0; i <= nTicks; i++) {
-      const v = yLo + i * step, yy = y(v);
-      svg.append(svgEl("line", { class: "gridline", x1: padL, x2: W - padR, y1: yy, y2: yy }));
-      svg.append(svgEl("text", { class: "axis-text", x: W - padR + 8, y: yy + 4, "text-anchor": "start" }, v.toFixed(dec)));
-    }
-    // x ticks
-    let labelDates = [];
-    if (wtRange <= 30) { for (let i = wtRange - 1; i >= 0; i -= 7) labelDates.unshift(addDays(start, i)); }
-    else if (wtRange <= 90) { for (let i = wtRange - 1; i >= 0; i -= 15) labelDates.unshift(addDays(start, i)); }
-    else { for (let i = 0; i < wtRange; i++) { const d = addDays(start, i); if (d.endsWith("-01")) labelDates.push(d); } }
-    const maxLabels = Math.max(2, Math.floor(pw / 44));
-    if (labelDates.length > maxLabels) { const k = Math.ceil(labelDates.length / maxLabels); labelDates = labelDates.filter((_, i) => (labelDates.length - 1 - i) % k === 0); }
-    for (const d of labelDates) {
-      const xx = x(d);
-      svg.append(svgEl("text", { class: "axis-text", x: xx, y: H - 8, "text-anchor": xx < padL + 20 ? "start" : "middle" }, wtRange > 90 ? `${parseYmd(d).getMonth() + 1}月` : fmtMD(d)));
-    }
-    // marks
-    const pts = recs.map((r) => ({ date: r.id, kg: num(r.kg), x: x(r.id), y: y(num(r.kg)) }));
-    wtPts = pts;
-    if (pts.length > 1) {
-      const base = padT + ph;
-      const lineD = pts.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
-      svg.append(svgEl("path", { class: "area", d: `${lineD} L${pts[pts.length - 1].x.toFixed(1)},${base} L${pts[0].x.toFixed(1)},${base} Z` }));
-      svg.append(svgEl("path", { class: "line", d: lineD }));
-    }
-    if (target > 0) {
-      const ty = y(target);
-      svg.append(svgEl("line", { class: "target", x1: padL, x2: W - padR, y1: ty, y2: ty }));
-      svg.append(svgEl("text", { class: "axis-text", x: padL + 2, y: ty - 5, "text-anchor": "start" }, `目標 ${fmtKg(target)}`));
-    }
-    for (const p of pts) svg.append(svgEl("circle", { class: "dot", cx: p.x, cy: p.y, r: 4 }));
-    const last = pts[pts.length - 1];
-    // the latest value just above its point, so it never sits on the line
-    const nearEnd = last.x > W - padR - 24, above = last.y - 12 > padT;
-    svg.append(svgEl("text", { class: "endlabel", x: nearEnd ? last.x + 4 : last.x, y: above ? last.y - 12 : last.y + 20, "text-anchor": nearEnd ? "end" : "middle" }, fmtKg(last.kg)));
-    // hover overlay
-    const cross = svgEl("line", { class: "cross", x1: 0, x2: 0, y1: padT, y2: padT + ph, visibility: "hidden" });
-    const focusDot = svgEl("circle", { class: "dot", r: 6, visibility: "hidden" });
-    svg.append(cross, focusDot);
-    wtOverlay = { cross, focusDot, W };
-  }
-  function setWtHover(i) {
-    const tip = $("wtTip");
-    wtHover = i;
-    if (!wtOverlay || i < 0 || !wtPts[i]) {
-      if (wtOverlay) { wtOverlay.cross.setAttribute("visibility", "hidden"); wtOverlay.focusDot.setAttribute("visibility", "hidden"); }
-      tip.hidden = true; return;
-    }
-    const p = wtPts[i];
-    wtOverlay.cross.setAttribute("x1", p.x); wtOverlay.cross.setAttribute("x2", p.x); wtOverlay.cross.setAttribute("visibility", "visible");
-    wtOverlay.focusDot.setAttribute("cx", p.x); wtOverlay.focusDot.setAttribute("cy", p.y); wtOverlay.focusDot.setAttribute("visibility", "visible");
-    tip.replaceChildren(el("strong", {}, `${fmtKg(p.kg)} kg`), " " + fmtShort(p.date));
-    tip.style.left = Math.min(Math.max(p.x + 8, 70), wtOverlay.W - 62) + "px";
-    tip.style.top = (p.y + 8 - 12) + "px";
-    tip.hidden = false;
-  }
-  {
-    const svg = $("wtChart");
+      // y grid + ticks
+      const nTicks = Math.round((yHi - yLo) / step);
+      for (let i = 0; i <= nTicks; i++) {
+        const v = yLo + i * step, yy = y(v);
+        svg.append(svgEl("line", { class: "gridline", x1: padL, x2: W - padR, y1: yy, y2: yy }));
+        svg.append(svgEl("text", { class: "axis-text", x: W - padR + 8, y: yy + 4, "text-anchor": "start" }, v.toFixed(dec)));
+      }
+      // x ticks
+      let labelDates = [];
+      if (wtRange <= 30) { for (let i = wtRange - 1; i >= 0; i -= 7) labelDates.unshift(addDays(start, i)); }
+      else if (wtRange <= 90) { for (let i = wtRange - 1; i >= 0; i -= 15) labelDates.unshift(addDays(start, i)); }
+      else { for (let i = 0; i < wtRange; i++) { const d = addDays(start, i); if (d.endsWith("-01")) labelDates.push(d); } }
+      const maxLabels = Math.max(2, Math.floor(pw / 44));
+      if (labelDates.length > maxLabels) { const k = Math.ceil(labelDates.length / maxLabels); labelDates = labelDates.filter((_, i) => (labelDates.length - 1 - i) % k === 0); }
+      for (const d of labelDates) {
+        const xx = x(d);
+        svg.append(svgEl("text", { class: "axis-text", x: xx, y: H - 8, "text-anchor": xx < padL + 20 ? "start" : "middle" }, wtRange > 90 ? `${parseYmd(d).getMonth() + 1}月` : fmtMD(d)));
+      }
+      // marks
+      const pts = recs.map((r) => ({ date: r.id, v: val(r), x: x(r.id), y: y(val(r)) }));
+      c.pts = pts;
+      if (pts.length > 1) {
+        const base = padT + ph;
+        const lineD = pts.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+        svg.append(svgEl("path", { class: "area", d: `${lineD} L${pts[pts.length - 1].x.toFixed(1)},${base} L${pts[0].x.toFixed(1)},${base} Z` }));
+        svg.append(svgEl("path", { class: "line", d: lineD }));
+      }
+      if (goal > 0) {
+        const ty = y(goal);
+        svg.append(svgEl("line", { class: "target", x1: padL, x2: W - padR, y1: ty, y2: ty }));
+        svg.append(svgEl("text", { class: "axis-text", x: padL + 2, y: ty - 5, "text-anchor": "start" }, `目標 ${fmt(goal)}`));
+      }
+      for (const p of pts) svg.append(svgEl("circle", { class: "dot", cx: p.x, cy: p.y, r: 4 }));
+      const last = pts[pts.length - 1];
+      // the latest value just above its point, so it never sits on the line
+      const nearEnd = last.x > W - padR - 24, above = last.y - 12 > padT;
+      svg.append(svgEl("text", { class: "endlabel", x: nearEnd ? last.x + 4 : last.x, y: above ? last.y - 12 : last.y + 20, "text-anchor": nearEnd ? "end" : "middle" }, fmt(last.v)));
+      // hover overlay
+      const cross = svgEl("line", { class: "cross", x1: 0, x2: 0, y1: padT, y2: padT + ph, visibility: "hidden" });
+      const focusDot = svgEl("circle", { class: "dot", r: 6, visibility: "hidden" });
+      svg.append(cross, focusDot);
+      c.overlay = { cross, focusDot, W };
+    };
+    c.setHover = (i) => {
+      c.hover = i;
+      if (!c.overlay || i < 0 || !c.pts[i]) {
+        if (c.overlay) { c.overlay.cross.setAttribute("visibility", "hidden"); c.overlay.focusDot.setAttribute("visibility", "hidden"); }
+        tip.hidden = true; return;
+      }
+      const p = c.pts[i];
+      c.overlay.cross.setAttribute("x1", p.x); c.overlay.cross.setAttribute("x2", p.x); c.overlay.cross.setAttribute("visibility", "visible");
+      c.overlay.focusDot.setAttribute("cx", p.x); c.overlay.focusDot.setAttribute("cy", p.y); c.overlay.focusDot.setAttribute("visibility", "visible");
+      tip.replaceChildren(el("strong", {}, say(p.v)), " " + fmtShort(p.date));
+      tip.style.left = Math.min(Math.max(p.x + 8, 70), c.overlay.W - 62) + "px";
+      tip.style.top = (p.y + 8 - 12) + "px";
+      tip.hidden = false;
+    };
     svg.addEventListener("pointermove", (e) => {
-      if (!wtPts.length || !wtOverlay) return;
+      if (!c.pts.length || !c.overlay) return;
       const r = svg.getBoundingClientRect();
-      const px = (e.clientX - r.left) * (wtOverlay.W / r.width);
+      const px = (e.clientX - r.left) * (c.overlay.W / r.width);
       let best = 0, bd = Infinity;
-      wtPts.forEach((p, i) => { const d = Math.abs(p.x - px); if (d < bd) { bd = d; best = i; } });
-      if (best !== wtHover) setWtHover(best);
+      c.pts.forEach((p, i) => { const d = Math.abs(p.x - px); if (d < bd) { bd = d; best = i; } });
+      if (best !== c.hover) c.setHover(best);
     });
-    svg.addEventListener("pointerleave", () => setWtHover(-1));
-    svg.addEventListener("blur", () => setWtHover(-1));
+    svg.addEventListener("pointerleave", () => c.setHover(-1));
+    svg.addEventListener("blur", () => c.setHover(-1));
     svg.addEventListener("keydown", (e) => {
-      if (!wtPts.length) return;
-      const n = wtPts.length;
-      if (e.key === "ArrowLeft") { setWtHover(wtHover < 0 ? n - 1 : Math.max(0, wtHover - 1)); e.preventDefault(); }
-      else if (e.key === "ArrowRight") { setWtHover(wtHover < 0 ? n - 1 : Math.min(n - 1, wtHover + 1)); e.preventDefault(); }
-      else if (e.key === "Home") { setWtHover(0); e.preventDefault(); }
-      else if (e.key === "End") { setWtHover(n - 1); e.preventDefault(); }
-      else if (e.key === "Escape") setWtHover(-1);
+      if (!c.pts.length) return;
+      const n = c.pts.length;
+      if (e.key === "ArrowLeft") { c.setHover(c.hover < 0 ? n - 1 : Math.max(0, c.hover - 1)); e.preventDefault(); }
+      else if (e.key === "ArrowRight") { c.setHover(c.hover < 0 ? n - 1 : Math.min(n - 1, c.hover + 1)); e.preventDefault(); }
+      else if (e.key === "Home") { c.setHover(0); e.preventDefault(); }
+      else if (e.key === "End") { c.setHover(n - 1); e.preventDefault(); }
+      else if (e.key === "Escape") c.setHover(-1);
     });
-    if ("ResizeObserver" in window) {
-      let last = 0;
-      new ResizeObserver(() => {
-        const w = $("wtChartWrap").clientWidth;
-        if (w && w !== last) { last = w; if (tab === "weight") renderWeightChart(); }
-      }).observe($("wtChartWrap"));
-    }
+    return c;
+  }
+  const wtCharts = [
+    trendChart({ svg: $("wtChart"), wrap: $("wtChartWrap"), tip: $("wtTip"), name: "体重", say: (v) => `${fmtKg(v)} kg`, fmt: fmtKg, val: (r) => num(r.kg), target: wtTarget }),
+    trendChart({ svg: $("fatChart"), wrap: $("fatChartWrap"), tip: $("fatTip"), name: "体脂肪率", say: (v) => `${fmtFat(v)}%`, fmt: fmtFat, val: (r) => num(r.fat), H: 200 }),
+  ];
+  // 体脂肪率's plot shows once one has been recorded, the names over the plots then telling them apart
+  function renderWeightChart() {
+    const fat = sortedWeights().some((r) => num(r.fat) > 0);
+    $("fatPlot").hidden = $("wtChartName").hidden = !fat;
+    wtCharts[0].render();
+    if (fat) wtCharts[1].render();
+  }
+  if ("ResizeObserver" in window) {
+    let last = 0;
+    new ResizeObserver(() => {
+      const w = $("wtChartWrap").clientWidth;
+      if (w && w !== last) { last = w; if (tab === "weight") renderWeightChart(); }
+    }).observe($("wtChartWrap"));
   }
 
   // ---------- 家計簿 ----------
@@ -5996,10 +6036,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     },
     weight: {
       store: weights, title: "体重を編集", del: "この日の体重を削除",
-      fields: (w) => [recRow("体重", recNum("reKg", fmtKg(w.kg), { min: 20, max: 300, step: "any", inputmode: "decimal", required: true }), { unit: "kg" }), recFixedDay(w.id)],
+      fields: (w) => [recRow("体重", recNum("reKg", fmtKg(w.kg), { min: 20, max: 300, step: "any", inputmode: "decimal", required: true }), { unit: "kg" }),
+        recRow("体脂肪率", recNum("reFat", num(w.fat) > 0 ? fmtFat(w.fat) : "", { min: 1, max: 70, step: "any", inputmode: "decimal" }), { unit: "%", opt: true }), recFixedDay(w.id)],
+      // 体脂肪率 emptied, the day has none
       read: () => {
-        const v = Number($("reKg").value);
-        return v >= 20 && v <= 300 ? { kg: Math.round(v * 10) / 10, updatedAt: Date.now() } : recBad("reKg");
+        const v = Number($("reKg").value), raw = $("reFat").value, f = Number(raw);
+        if (!(v >= 20 && v <= 300)) return recBad("reKg");
+        if (raw !== "" && !(f >= 1 && f <= 70)) return recBad("reFat");
+        return { kg: Math.round(v * 10) / 10, fat: raw === "" ? undefined : Math.round(f * 10) / 10, updatedAt: Date.now() };
       },
     },
     // the items as they are now, each checked or not for that day; one deleted since stays done that day, unseen
@@ -6680,7 +6724,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // each with its change from the one before (the user's call), as the 体重 page has it; the first has none
     weight: { label: "体重", oneLine: true, items: () => sortedWeights().map((w, i, all) => ({ ...w, date: w.id, prev: all[i - 1] })),
       rows: (xs, day) => xs.map((w) => el("li", { class: "one" }, el("span", { class: "rec-date" }, day), el("span", { class: "rec-kg" },
-        recOpen("weight", w.id, `「${fmtKg(w.kg)} kg」を編集`, `${fmtKg(w.kg)} kg`),
+        recOpen("weight", w.id, `「${fmtKg(w.kg)} kg${num(w.fat) > 0 ? `・体脂肪率 ${fmtFat(w.fat)}%` : ""}」を編集`, `${fmtKg(w.kg)} kg` + (num(w.fat) > 0 ? `・${fmtFat(w.fat)}%` : "")),
         el("span", { class: "rec-num" }, w.prev ? `${signed(num(w.kg) - num(w.prev.kg))} kg` : "")))) },
     money: { label: "家計簿", items: () => expenses.items, find: "費目やメモで探す", text: (e) => [expenseCat(e) || (e.kind === "in" ? "収入" : "支出"), e.memo].join(" "),
       total: (xs) => {
