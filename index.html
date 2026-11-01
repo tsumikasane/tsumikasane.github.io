@@ -62,7 +62,7 @@
   --c-routine: #4f7a00;     /* olive (lime) */
   --sat: #1662de;           /* Saturdays in the calendar: blue, 4.5:1 even on the chosen day's tint */
   /* behind white glyphs and text (icon squares, selected chips): the same in both modes, each 4.5:1 with white */
-  --f-home: #007d2e; --f-records: #6c6c70;
+  --f-home: #007d2e; --f-records: #6c6c70; --f-tsumi: #0b6b3a;
   --f-todo: #1e6ef4; --f-cal: #b02fc2; --f-journal: #956d51; --f-meal: #c55300;
   --f-workout: #007eae; --f-study: #e7124d; --f-weight: #564ade; --f-money: #a16a00; --f-goal: #008575; --f-routine: #4f7a00;
   /* event label hues, the user's pick among iOS system colours: --lc-* for dots and light tints (follows dark mode),
@@ -201,8 +201,10 @@ button:active:not(:disabled) { opacity: .5; transition: none; }
 .menu .lbl { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 /* the selected tab: tint colour on a lighter bubble */
 .menu button.on, .menu button.in { color: var(--accent); background: var(--pill); box-shadow: 0 1px 4px rgba(0, 0, 0, .12); }
-/* narrow screens (the smaller iPhones with Display Zoom): 10pt, as iOS's own tab bars have, so カレンダー stays whole */
-@media (max-width: 359px) { .menu button { font-size: 10px; } }
+/* six tabs since つみかさね joined them (the user's call): 11pt on a phone and 10pt on the narrower ones, as iOS's own tab
+   bars have, so カレンダー and つみかさね stay whole */
+@media (max-width: 480px) { .menu button { font-size: 11px; } }
+@media (max-width: 389px) { .menu button { font-size: 10px; } }
 /* a page's own row of buttons (the user's call: ToDo and 目標 each have one, in a bar like the tab bar): it floats just
    above the tab bar in the same glass, as iOS puts a bar over its tab bar; on wide screens, at the foot of the page's
    column. Only the page showing has its bar, and the page leaves room under its last row for it. Its words stay one size,
@@ -1027,7 +1029,21 @@ ul.list > li.btn-row { padding: 0; }
 .sum-head { display: flex; align-items: center; gap: 6px; min-height: 28px; margin: 0; color: var(--sum-c); font-size: var(--t-sub); font-weight: 600; line-height: 1.2; }
 .sum-card .big { font-family: var(--font-round); font-size: var(--t-title1); line-height: 1.2; font-weight: 700; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .sum-card .big small { margin-inline-start: 4px; font-family: var(--font-body); font-size: var(--t-sub); font-weight: 600; color: var(--muted); }
-.sum-card .sub { text-wrap: balance; }  /* half a row is narrow: lines of a like length, not まだ記録がありませ／ん */
+.sum-card .sub { text-wrap: balance; }
+/* つみかさね: every record a square block, the blocks stacked as stairs that climb one at a time (the user's call), as the
+   app's icon has them; the yellow one on top of the step being built is its goal */
+.tsumi-card { padding: var(--space-2); display: flex; flex-direction: column; gap: 4px; }
+.tsumi-total { margin: 0; display: flex; align-items: baseline; gap: 4px; }
+.tsumi-big { font-family: var(--font-round); font-size: calc(1rem + 23px); line-height: 1.1; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tsumi-unit { font-size: var(--t-sub); font-weight: 600; color: var(--muted); }
+.tsumi-sub { margin: 0; font-size: var(--t-sub); font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tsumi-sub span { display: inline-block; }
+.tsumi-stairs { margin-top: 8px; }
+.tsumi-stairs canvas { display: block; touch-action: manipulation; cursor: pointer; }
+.tsumi-tip { margin: 0; min-height: 2.8em; font-size: var(--t-sub); line-height: 1.4; overflow-wrap: anywhere; }
+.tsumi-tip .dot { display: inline-block; width: 10px; height: 10px; margin-inline-end: 6px; border-radius: 3px; }
+.tsumi-tip .when { color: var(--muted); }
+#tsumiKinds .sw { display: inline-block; width: 14px; height: 14px; margin-inline-end: 12px; border-radius: 4px; vertical-align: -1px; }  /* half a row is narrow: lines of a like length, not まだ記録がありませ／ん */
 .sum-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: var(--t-sub); line-height: 1.4; }
 .sum-list li { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .sum-list li::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--lc, var(--sum-c)); }
@@ -1148,6 +1164,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   <symbol id="i-calendar" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M8 2.5a1 1 0 0 1 1 1V4h6v-.5a1 1 0 1 1 2 0V4h1.5A2.5 2.5 0 0 1 21 6.5v12a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5v-12A2.5 2.5 0 0 1 5.5 4H7v-.5a1 1 0 0 1 1-1ZM5 9v9.5c0 .28.22.5.5.5h13a.5.5 0 0 0 .5-.5V9H5Zm2 2.5h2.5V14H7v-2.5Zm3.75 0h2.5V14h-2.5v-2.5Zm3.75 0H17V14h-2.5v-2.5ZM7 15.5h2.5v2H7v-2Zm3.75 0h2.5v2h-2.5v-2Z"/></symbol>
   <symbol id="i-todo" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19Zm4.6 6.65a.85.85 0 0 0-1.2 0l-4.65 4.65-2.15-2.15a.85.85 0 1 0-1.2 1.2l2.75 2.75a.85.85 0 0 0 1.2 0l5.25-5.25a.85.85 0 0 0 0-1.2Z"/></symbol>
   <symbol id="i-records" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M5.5 3.5h13A2.5 2.5 0 0 1 21 6v12a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18V6a2.5 2.5 0 0 1 2.5-2.5ZM7.5 7a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2Zm3 .35h7v1.5h-7v-1.5Zm-3 3.55a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2Zm3 .35h7v1.5h-7v-1.5Zm-3 3.55a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2Zm3 .35h7v1.5h-7v-1.5Z"/></symbol>
+  <symbol id="i-stairs" viewBox="0 0 24 24"><rect x="2.4" y="16.2" width="6" height="6" rx="1.5"/><rect x="9" y="16.2" width="6" height="6" rx="1.5"/><rect x="9" y="9.6" width="6" height="6" rx="1.5"/><rect x="15.6" y="16.2" width="6" height="6" rx="1.5"/><rect x="15.6" y="9.6" width="6" height="6" rx="1.5"/><rect x="15.6" y="3" width="6" height="6" rx="1.5"/></symbol>
   <symbol id="i-goal" viewBox="0 0 24 24"><path d="M5.5 2.75a1 1 0 0 1 1 1v.5c1.6-.9 3.37-1.03 5.27-.24 1.75.73 3.33.73 5.08-.1A1 1 0 0 1 18.25 4.8v8.4a1 1 0 0 1-.56.9c-2.37 1.15-4.6 1.2-6.84.26-1.53-.64-2.95-.6-4.35.18v6.71a1 1 0 1 1-2 0V3.75a1 1 0 0 1 1-1Z"/></symbol>
   <symbol id="i-journal" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M7.5 2.5h10.75c.69 0 1.25.56 1.25 1.25v12.5c0 .69-.56 1.25-1.25 1.25H7.5a1.25 1.25 0 0 0 0 2.5h11.25a.75.75 0 0 1 0 1.5H7.5a2.75 2.75 0 0 1-2.75-2.75V5.25A2.75 2.75 0 0 1 7.5 2.5Zm2 3.5a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5h-6Z"/></symbol>
   <symbol id="i-meal" viewBox="0 0 24 24"><path d="M5.25 2.75a.75.75 0 0 1 .75.75V8h1V3.5a.75.75 0 0 1 1.5 0V8h1V3.5a.75.75 0 0 1 1.5 0V9a3 3 0 0 1-2.25 2.9v8.6a1 1 0 1 1-2 0v-8.6A3 3 0 0 1 4.5 9V3.5a.75.75 0 0 1 .75-.75ZM17 2.75c1.79 0 3 2.46 3 6.25 0 1.69-.63 2.86-1.75 3.4v8.1a1 1 0 1 1-2 0V3.6c0-.47.33-.85.75-.85Z"/></symbol>
@@ -1585,6 +1602,21 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <ul class="list card" id="goalNext" aria-label="次にやること" hidden></ul>
         <div class="card" id="goalList"></div>
       </section>
+
+      <!-- つみかさね: every record a square block, the blocks stacked as stairs that climb one at a time (the user's call), as
+           the app's icon has them. A block pressed says the record it is -->
+      <section id="sec-tsumi" style="--sec-c: var(--accent)" hidden>
+        <div class="sec-head"><h2>つみかさね</h2></div>
+        <div class="card tsumi-card">
+          <p class="tsumi-total"><span class="tsumi-big" id="tsumiCount">0</span><span class="tsumi-unit">こ</span></p>
+          <p class="tsumi-sub" id="tsumiSub"></p>
+          <div class="tsumi-stairs" id="tsumiWrap"><canvas id="tsumiCanvas" role="img" tabindex="0"></canvas></div>
+          <p class="tsumi-tip" id="tsumiTip" aria-live="polite"></p>
+        </div>
+        <h3 class="group-head">積みあげた記録</h3>
+        <ul class="list card" id="tsumiKinds"></ul>
+        <p class="group-foot"><span class="phrase">記録を1つするたびに、ブロックが1つ積みあがります。</span><span class="phrase">ブロックを押すと、その記録が見られます。</span><span class="phrase">ToDoは完了したとき、</span><span class="phrase">目標はマスにチェックしたときに積みあがります。</span></p>
+      </section>
     </div>
     <!-- a page's own row of buttons, in a bar like the tab bar (the user's call: ToDo and 目標 each have one): which of
          its items show. Only the page showing has its bar (see .pagebar) -->
@@ -1986,6 +2018,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     { key: "todo", label: "ToDo", icon: "todo", fill: "var(--f-todo)" },
     { key: "records", label: "記録", icon: "records", fill: "var(--f-records)" },
     { key: "goal", label: "目標", icon: "goal", fill: "var(--f-goal)" },
+    { key: "tsumi", label: "つみかさね", icon: "stairs", fill: "var(--f-tsumi)" }, // every record stacked as stairs (the user's call)
   ];
   const RECORDS = [
     { key: "journal", label: "日記", icon: "journal", fill: "var(--f-journal)" },
@@ -2477,6 +2510,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     watchTitle();
     if (key === "weight") draw(renderWeightChart);
     if (key === "records") { draw(renderSummary); draw(renderUsage); }
+    if (key === "tsumi") { tsumiPick = -1; draw(renderTsumi); } // opened, it shows the newest block again
     if (key === "reclist") draw(renderRecList);
     if (key === "trash") draw(renderTrash);
     if (key === "copies") draw(renderCopies);
@@ -6648,6 +6682,126 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return el("ul", { class: "sum-list" }, top.map(([name, amt]) => el("li", { style: `--lc:${colorOf(name)}` },
       el("span", { class: "name" }, name), el("span", { class: "amount" }, fmt(amt)))));
   }
+  // ---------- つみかさね: every record a square block, stacked as stairs (the user's call: one block a record, the stairs
+  // climbing as they pile up, as the app's icon has them). Column c holds c + 1 blocks, oldest first, each a column's
+  // blocks from the ground up; the column being built shows its places to come and, on top, the yellow goal ----------
+  const TSUMI_KINDS = {
+    todo: { label: "ToDo", c: "--c-todo" }, journal: { label: "日記", c: "--c-journal" }, meal: { label: "食事", c: "--c-meal" },
+    workout: { label: "運動", c: "--c-workout" }, study: { label: "勉強", c: "--c-study" }, routine: { label: "ルーティーン", c: "--c-routine" },
+    weight: { label: "からだ", c: "--c-weight" }, money: { label: "家計簿", c: "--c-money" }, goal: { label: "目標", c: "--c-goal" },
+  };
+  // every record so far as a block: a ToDo done, a day's 日記, a meal, a workout, a study, an item of a day's ルーティーン,
+  // a day's からだ, a 家計簿 entry, an action checked in a goal's chart and a goal reached; in the order they were made
+  function tsumiBlocks() {
+    const out = [], add = (kind, day, t, text) => { if (day && day <= todayKey) out.push({ kind, day, t: num(t), text }); };
+    const dayOf = (t) => (num(t) > 0 ? ymd(new Date(num(t))) : "");
+    for (const t of todos.items) if (t.done) { const at = num(t.doneAt) || num(t.updatedAt) || num(t.createdAt); add("todo", dayOf(at), at, oneLine(t.text)); }
+    for (const j of journal.items) if (j.text?.trim()) add("journal", j.date || j.id, j.createdAt || j.updatedAt, oneLine(j.text));
+    for (const m of meals.items) add("meal", m.date, m.createdAt, [m.slot, oneLine(m.text)].filter(Boolean).join("・"));
+    for (const w of workouts.items) add("workout", w.date, w.createdAt, [w.type, workoutDetail(w)].filter(Boolean).join(" "));
+    for (const x of study.items) add("study", x.date, x.createdAt, `${subjectOf(x)?.name || "科目なし"} ${num(x.minutes)} 分`);
+    for (const x of routineDays.items) (x.done || []).forEach((id, i) => add("routine", x.date, num(x.updatedAt) + i, routines.get(id)?.name || "消した項目"));
+    for (const w of sortedWeights()) add("weight", w.id, w.createdAt || w.updatedAt, `${fmtKg(w.kg)} kg` + (num(w.fat) > 0 ? `・体脂肪率 ${fmtFat(w.fat)}%` : ""));
+    for (const e of expenses.items) add("money", e.date, e.createdAt, `${expenseCat(e) || (e.kind === "in" ? "収入" : "支出")} ${fmtYen(num(e.amount))}`);
+    for (const g of goals.items) {
+      (function walk(cells) { for (const c of cells || []) if (c) { if (c.d && c.at) add("goal", dayOf(c.at), c.at, `「${oneLine(c.t)}」を達成`); walk(c.c); } })(g.mandala);
+      if (g.done && g.doneAt) add("goal", dayOf(g.doneAt), g.doneAt, `「${oneLine(g.title)}」を達成`);
+    }
+    return out.sort((a, b) => a.day.localeCompare(b.day) || a.t - b.t);
+  }
+  const tsumiCol = (i) => Math.floor((Math.sqrt(8 * i + 1) - 1) / 2); // the column block i sits in (column c starts at c(c+1)/2)
+  let tsumiShown = [], tsumiGeo = null, tsumiPick = -1; // the blocks drawn, where they were drawn, the one pressed (-1: the newest)
+  function renderTsumi() {
+    if (tab !== "tsumi") return;
+    const blocks = tsumiShown = tsumiBlocks(), n = blocks.length;
+    if (tsumiPick >= n) tsumiPick = -1;
+    const k = tsumiCol(n), r = n - (k * (k + 1)) / 2, left = k + 1 - r; // steps done, blocks on the one being built, blocks to go
+    const week = blocks.filter((b) => b.day >= addDays(todayKey, -6)).length;
+    $("tsumiCount").textContent = n.toLocaleString("ja-JP");
+    setChildren($("tsumiSub"), ...(n
+      ? [el("span", {}, `いま ${k} 段`), "・", el("span", {}, `つぎの段まで あと ${left} こ`), ...(week ? ["・", el("span", {}, `この7日で ＋${week} こ`)] : [])]
+      : [el("span", {}, "記録すると、ここにブロックが積みあがります")]));
+    $("tsumiCanvas").setAttribute("aria-label", n ? `これまでの記録 ${n} こが、${k} 段の階段に積みあがっています。つぎの段まであと ${left} こ。左右の矢印キーで1つずつ見られます。` : "まだブロックがありません。");
+    tsumiGeo = { k, r, left };
+    drawTsumi();
+    sayTsumi();
+    // how many of each kind went in
+    const counts = new Map();
+    for (const b of blocks) counts.set(b.kind, (counts.get(b.kind) || 0) + 1);
+    const rows = Object.entries(TSUMI_KINDS).filter(([key]) => counts.get(key)).map(([key, v]) => el("li", {},
+      el("span", { class: "body" }, el("span", { class: "text" }, el("span", { class: "sw", style: `background: var(${v.c})` }), v.label)), el("span", { class: "num" }, `${counts.get(key).toLocaleString("ja-JP")} こ`)));
+    setChildren($("tsumiKinds"), ...(rows.length ? rows : [el("li", { class: "empty" }, "まだ記録がありません。")]));
+  }
+  function drawTsumi() {
+    const cv = $("tsumiCanvas"), { k, r } = tsumiGeo, n = tsumiShown.length, cols = k + 1;
+    const W = Math.round($("tsumiWrap").clientWidth) || 326, pad = 4; // room round the stairs for the ring
+    // a block's place: as big as the stairs leave room for, at most 44px; small ones touch, so the stairs read as one shape
+    const pitch = Math.min(44, (W - 2 * pad) / cols), gap = pitch >= 16 ? 3 : pitch >= 8 ? 2 : pitch >= 4 ? 1 : 0, size = pitch - gap;
+    const gridH = Math.ceil(pitch * cols) + pad, ox = Math.floor((W - pitch * cols) / 2), H = gridH + 4;
+    Object.assign(tsumiGeo, { pitch, ox, gridH, cols });
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + "px"; cv.style.height = H + "px";
+    const x = cv.getContext("2d");
+    x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    x.clearRect(0, 0, W, H);
+    const css = getComputedStyle(document.documentElement), colour = {};
+    for (const [key, v] of Object.entries(TSUMI_KINDS)) colour[key] = css.getPropertyValue(v.c).trim() || "#8e8e93";
+    const rad = size >= 8 ? Math.min(7, size * 0.24) : 0;
+    const at = (c, row) => [ox + c * pitch + gap / 2, gridH - (row + 1) * pitch + gap / 2];
+    const sq = (px, py, s = size) => { x.beginPath(); if (rad && x.roundRect) x.roundRect(px, py, s, s, rad); else x.rect(px, py, s, s); };
+    tsumiShown.forEach((b, i) => { const c = tsumiCol(i), [px, py] = at(c, i - (c * (c + 1)) / 2); x.fillStyle = colour[b.kind]; sq(px, py); x.fill(); });
+    // the step being built: the places still to fill, faint, and on top the yellow goal, as on the icon
+    x.strokeStyle = css.getPropertyValue("--muted").trim() || "#8e8e93"; x.lineWidth = 1; x.globalAlpha = 0.5;
+    if (size >= 8) x.setLineDash([3, 3]);
+    for (let row = r; row < k; row++) { const [px, py] = at(k, row); sq(px + 0.5, py + 0.5, size - 1); x.stroke(); }
+    x.setLineDash([]); x.globalAlpha = 1;
+    const [gx, gy] = at(k, k); x.fillStyle = "#ffcc00"; sq(gx, gy); x.fill();
+    if (size >= 12) {
+      const cx = gx + size / 2, cy = gy + size / 2 + size * 0.03, R = size * 0.32;
+      x.beginPath();
+      for (let j = 0; j < 10; j++) { const a = -Math.PI / 2 + (j * Math.PI) / 5, d = j % 2 ? R * 0.45 : R; x.lineTo(cx + d * Math.cos(a), cy + d * Math.sin(a)); }
+      x.closePath(); x.fillStyle = "rgba(0, 0, 0, .35)"; x.fill();
+    }
+    // the ground
+    x.fillStyle = css.getPropertyValue("--separator").trim() || "#c6c6c8"; x.fillRect(0, gridH + 1, W, 1);
+    // the block being shown below: ringed
+    const i = tsumiPick >= 0 ? tsumiPick : n - 1;
+    if (i >= 0) {
+      const c = tsumiCol(i), [px, py] = at(c, i - (c * (c + 1)) / 2), m = Math.max(2, 5 - size / 4);
+      x.strokeStyle = css.getPropertyValue("--fg").trim() || "#000000"; x.lineWidth = 2;
+      x.beginPath(); if (x.roundRect) x.roundRect(px - m, py - m, size + 2 * m, size + 2 * m, rad + m); else x.rect(px - m, py - m, size + 2 * m, size + 2 * m); x.stroke();
+    }
+  }
+  // under the stairs: the block pressed (at first the newest), its kind, day and what it holds; or, from the goal, how far
+  function sayTsumi() {
+    const n = tsumiShown.length, tip = $("tsumiTip");
+    if (!n) { tip.replaceChildren(); return; }
+    const i = tsumiPick >= 0 ? tsumiPick : n - 1, b = tsumiShown[i], v = TSUMI_KINDS[b.kind];
+    setChildren(tip, el("span", { class: "dot", style: `background: var(${v.c})` }), el("strong", {}, v.label), " ", b.text || "",
+      el("br"), el("span", { class: "when" }, el("span", { class: "phrase" }, fmtMDW(b.day)), "・", el("span", { class: "phrase" }, `${(i + 1).toLocaleString("ja-JP")} こ目`),
+        i === n - 1 ? el("span", { class: "phrase" }, "（いちばん新しいブロック）") : null));
+  }
+  $("tsumiCanvas").addEventListener("click", (ev) => {
+    if (!tsumiGeo?.pitch) return;
+    const rect = ev.currentTarget.getBoundingClientRect(), { pitch, ox, gridH, cols, k, left } = tsumiGeo;
+    const c = Math.floor((ev.clientX - rect.left - ox) / pitch), row = Math.floor((gridH - (ev.clientY - rect.top)) / pitch);
+    if (c < 0 || c >= cols || row < 0 || row > c) return;
+    const i = (c * (c + 1)) / 2 + row;
+    if (i < tsumiShown.length) { tsumiPick = i; drawTsumi(); sayTsumi(); return; }
+    setChildren($("tsumiTip"), el("span", { class: "dot", style: "background: #ffcc00" }), el("strong", {}, `${k + 1} 段目`), ` まで、あと ${left} こ`);
+  });
+  $("tsumiCanvas").addEventListener("keydown", (ev) => {
+    const n = tsumiShown.length, cur = tsumiPick >= 0 ? tsumiPick : n - 1;
+    const to = { ArrowLeft: cur - 1, ArrowDown: cur - 1, ArrowRight: cur + 1, ArrowUp: cur + 1, Home: 0, End: n - 1 }[ev.key];
+    if (!n || to === undefined) return;
+    ev.preventDefault();
+    tsumiPick = Math.max(0, Math.min(n - 1, to));
+    drawTsumi(); sayTsumi();
+  });
+  // drawn again for a new width, and in the other mode's colours
+  addEventListener("resize", () => { if (tab === "tsumi" && tsumiGeo) drawTsumi(); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => { if (tab === "tsumi" && tsumiGeo) drawTsumi(); });
+
   function renderSummary() {
     if (tab !== "records") return;
     const rec = [...recordedDays()].filter((d) => d && d <= todayKey).sort();
@@ -7697,7 +7851,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ---------- boot ----------
   function renderAll() {
-    for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderTrashRow, renderCopyRow, renderEmptyHint, renderSummary, paintChart]) draw(fn);
+    for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderTrashRow, renderCopyRow, renderEmptyHint, renderSummary, renderTsumi, paintChart]) draw(fn);
     if (tab === "reclist") draw(renderRecList);
     if (tab === "trash") draw(renderTrash);
     if (tab === "copies") draw(renderCopies);
