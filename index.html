@@ -1036,16 +1036,24 @@ ul.list > li.btn-row { padding: 0; }
 .tsumi-total { margin: 0; display: flex; align-items: baseline; gap: 4px; }
 .tsumi-big { font-family: var(--font-round); font-size: calc(1rem + 23px); line-height: 1.1; font-weight: 700; font-variant-numeric: tabular-nums; }
 .tsumi-unit { font-size: var(--t-sub); font-weight: 600; color: var(--muted); }
-.tsumi-sub { margin: 0; font-size: var(--t-sub); font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tsumi-sub, .tsumi-since { margin: 0; font-size: var(--t-sub); font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tsumi-since span { display: inline-block; }  /* each half stays whole, so a narrow line breaks after から */
 .tsumi-views { margin-top: 6px; }
 .tsumi-stairs { margin-top: 8px; }
 .tsumi-stairs canvas { display: block; touch-action: manipulation; cursor: pointer; }
+/* 大きく: the stairs are moved round under a finger, so the page doesn't scroll from on them (it does from the rest) */
+.tsumi-stairs canvas.pan { touch-action: none; cursor: grab; }
+.tsumi-jumps { display: flex; flex-wrap: wrap; gap: 0 var(--space-2); }
+.tsumi-jumps .link-btn, .tsumi-open { min-height: 44px; }
 /* what the block holds, two lines at most (the user's call: a long 日記 ran on and on), then its day */
 .tsumi-tip { min-height: calc(3 * 1.4em); font-size: var(--t-sub); line-height: 1.4; overflow-wrap: anywhere; }
 .tsumi-tip .what { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .tsumi-tip .dot { display: inline-block; width: 10px; height: 10px; margin-inline-end: 6px; border-radius: 3px; }
 .tsumi-tip .when { display: block; overflow: hidden; color: var(--muted); }
-.tsumi-open { align-self: flex-start; min-height: 44px; }
+/* the block before or after, and its record opened */
+.tsumi-acts { display: flex; align-items: center; gap: 4px; }
+.tsumi-acts .icon-btn { margin: 0; }
+.tsumi-acts .tsumi-open { margin-inline-start: auto; }
 /* a kind pressed keeps only its blocks in colour (the user's call: some colours are hard to tell apart) */
 #tsumiKinds .sw { flex: none; width: 14px; height: 14px; border-radius: 4px; }
 #tsumiKinds .row-btn[aria-pressed="true"] { background: var(--fill); font-weight: 600; }
@@ -1616,6 +1624,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="sec-head"><h2>つみかさね</h2></div>
         <div class="card tsumi-card">
           <p class="tsumi-total"><span class="tsumi-big" id="tsumiCount">0</span><span class="tsumi-unit">こ</span></p>
+          <p class="tsumi-since" id="tsumiSince" hidden></p>
           <p class="tsumi-sub due-line" id="tsumiSub"></p>
           <!-- 大きく: blocks of one size round the summit; 全体: the whole staircase. Shown once it no longer fits big -->
           <div class="seg tsumi-views" role="group" aria-label="階段の見え方" id="tsumiViews" hidden>
@@ -1623,12 +1632,24 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <button type="button" data-view="all" aria-pressed="false">全体</button>
           </div>
           <div class="tsumi-stairs" id="tsumiWrap"><canvas id="tsumiCanvas" role="img" tabindex="0"></canvas></div>
+          <!-- 大きく: back to the block shown under the stairs when it is out of the view, or to the summit when that is -->
+          <div class="tsumi-jumps" id="tsumiJumps" hidden>
+            <button type="button" class="link-btn" id="tsumiToNew">いちばん新しいブロックへ</button>
+            <button type="button" class="link-btn" id="tsumiToTop">てっぺんへ</button>
+          </div>
           <div class="tsumi-tip" id="tsumiTip" aria-live="polite"></div>
-          <button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button>
+          <div class="tsumi-acts">
+            <button type="button" class="icon-btn" id="tsumiPrev" aria-label="前のブロック"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-prev"/></svg></button>
+            <button type="button" class="icon-btn" id="tsumiNext" aria-label="次のブロック"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button>
+            <button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button>
+          </div>
         </div>
         <h3 class="group-head">積みあげた記録</h3>
         <ul class="list card" id="tsumiKinds"></ul>
-        <p class="group-foot"><span class="phrase">記録を1つするたびに、ブロックが1つ積みあがります。</span><span class="phrase">ブロックを押すと、その記録が見られます。</span><span class="phrase">ToDoは完了したとき、</span><span class="phrase">目標はマスにチェックしたときに積みあがります。</span><span class="phrase">種類を押すと、その種類のブロックだけに色がつきます。</span></p>
+        <p class="group-foot"><span class="phrase">記録を1つするたびに、ブロックが1つ積みあがります。</span><span class="phrase">ブロックを押すと、その記録が見られます。</span><span class="phrase">ToDoは完了したとき、</span><span class="phrase">目標はマスにチェックしたときに積みあがります。</span><span class="phrase">種類を押すと、その種類のブロックだけに色がつきます。</span><span class="phrase">大きくでは、階段を指でずらして見て回れます。</span></p>
+        <!-- when every fifth step was reached, and the next round step (the user's call) -->
+        <h3 class="group-head" id="tsumiStepsHead" hidden>段の記録</h3>
+        <ul class="list card" id="tsumiSteps" hidden></ul>
       </section>
     </div>
     <!-- a page's own row of buttons, in a bar like the tab bar (the user's call: ToDo and 目標 each have one): which of
@@ -6767,9 +6788,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return out.sort((a, b) => a.t - b.t);
   }
   const tsumiCol = (i) => Math.floor((Math.sqrt(8 * i + 1) - 1) / 2); // the column block i sits in (column c starts at c(c+1)/2)
-  const SEEN_KEY = LS_PREFIX + "tsumiSeen", STEP_KEY = LS_PREFIX + "tsumiStep"; // this phone's last look, and the most steps said
+  const SEEN_KEY = LS_PREFIX + "tsumiSeen"; // this phone's last look at the stairs
   const lsNum = (key) => { try { return num(localStorage.getItem(key)); } catch { return 0; } };
   const lsPut = (key, v) => { try { localStorage.setItem(key, String(v)); } catch {} };
+  try { localStorage.removeItem(LS_PREFIX + "tsumiStep"); } catch {} // the most steps told, kept by the first version; no longer used
   const clampTo = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const easeOut = (p) => 1 - Math.pow(1 - p, 3), easeInOut = (p) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
   let tsumiShown = [], tsumiGeo = null; // the blocks, and where they were last drawn
@@ -6777,7 +6799,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   let tsumiView = "near", tsumiAnchor = null; // 大きく or 全体; 大きく's lower-left place [column, row] when away from the summit
   let tsumiOnly = null; // a kind pressed in 積みあげた記録: only its blocks keep their colour
   let tsumiAnim = null, tsumiFresh = Infinity; // blocks dropping in since the last look; with less motion, the first of them to ring
+  let tsumiDrag = null, tsumiDragged = false; // 大きく moved under a finger; and the press that ended a move, not to be taken as a tap
   const pickIndex = () => (tsumiPick ? tsumiShown.findIndex((b) => b.key === tsumiPick) : -1);
+  const lastOfKind = (kind) => { for (let i = tsumiShown.length - 1; i >= 0; i--) if (tsumiShown[i].kind === kind) return i; return -1; };
+  // the block shown under the stairs: the one pressed, or else the newest; the newest of the kind pressed, when one is (the
+  // user's call: with a kind pressed, the line and the steps still went through every kind)
+  function shownIndex() {
+    const pi = pickIndex();
+    return pi >= 0 ? pi : tsumiOnly ? lastOfKind(tsumiOnly) : tsumiShown.length - 1;
+  }
   function renderTsumi(opening = false) {
     if (tab !== "tsumi") return;
     const blocks = tsumiShown = tsumiBlocks(), n = blocks.length;
@@ -6785,23 +6815,28 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const k = tsumiCol(n), r = n - (k * (k + 1)) / 2, left = k + 1 - r; // steps done, blocks on the one being built, blocks to go
     const since = Date.parse(addDays(todayKey, -6) + "T00:00:00"), week = blocks.filter((b) => b.t >= since).length;
     $("tsumiCount").textContent = n.toLocaleString("ja-JP");
+    // since when, as 記録 says it (the user's call: when the stacking began didn't show)
+    const first = blocks.reduce((m, b) => (b.day < m ? b.day : m), todayKey), f = parseYmd(first);
+    setChildren($("tsumiSince"), el("span", {}, `${f.getFullYear()}年${f.getMonth() + 1}月${f.getDate()}日から`), " ", el("span", {}, `${daysBetween(first, todayKey) + 1} 日の積み重ね`));
+    $("tsumiSince").hidden = !n;
     // its parts kept whole, and the ・ between them dropped where the line breaks (none at a line's end)
     const part = (s) => el("span", { class: "phrase" }, s);
     setChildren($("tsumiSub"), el("span", { class: "due-parts" }, ...(n
       ? [part(`いま ${k} 段`), part(`つぎの段まで あと ${left} こ`), week ? part(`この7日で ＋${week} こ`) : null]
       : [part("記録すると、ここにブロックが積みあがります")])));
-    $("tsumiCanvas").setAttribute("aria-label", n ? `これまでの記録 ${n} こが、${k} 段の階段に積みあがっています。つぎの段まであと ${left} こ。左右の矢印キーで1つずつ見られます。` : "まだブロックがありません。");
+    $("tsumiCanvas").setAttribute("aria-label", n ? `これまでの記録 ${n} こが、${k} 段の階段に積みあがっています。つぎの段まであと ${left} こ。前と次のボタンや左右の矢印キーで1つずつ見られます。` : "まだブロックがありません。");
+    $("tsumiPrev").hidden = $("tsumiNext").hidden = n < 2;
     if (opening) startTsumiDrop();
-    drawTsumi(); sayTsumi(); renderTsumiKinds(blocks);
+    drawTsumi(); sayTsumi(); renderTsumiKinds(blocks); renderTsumiSteps(blocks);
   }
   // the whole staircase as big as the width allows; once its blocks would be smaller than a finger can press (14px), blocks
   // of one size round the summit (大きく; the user's call: the climb didn't show, and small blocks couldn't be aimed at),
-  // with 全体 for the whole. Room on the right for the 段 marks
-  function tsumiLayout() {
+  // with 全体 for the whole. Room on the right for the 段 marks. view: the one to lay out (全体 frames 大きく's)
+  function tsumiLayout(view = tsumiView) {
     const n = tsumiShown.length, k = tsumiCol(n), cols = k + 1;
     const W = Math.round($("tsumiWrap").clientWidth) || 326, pad = 4, axis = 38, inner = W - 2 * pad - axis;
     const fit = Math.min(44, inner / cols), P = clampTo(Math.floor(inner / 13), 18, 28);
-    const big = fit < 14, near = big && tsumiView === "near", pitch = near ? P : fit;
+    const big = fit < 14, near = big && view === "near", pitch = near ? P : fit;
     const C = near ? Math.min(cols, Math.floor(inner / P)) : cols, R = near ? Math.min(cols, Math.round(C * 1.15), Math.floor(420 / P)) : cols;
     return { n, k, cols, W, pad, axis, inner, pitch, C, R, big, near, summit: [cols - C, cols - R] };
   }
@@ -6836,13 +6871,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const L = tsumiLayout(), { n, k, cols, W, axis, pitch, C, R, near } = L, r = n - (k * (k + 1)) / 2;
     let [c0, r0] = near ? tsumiAnchor || L.summit : [0, 0];
     if (a && near && !tsumiAnchor) r0 = t < a.dropEnd ? a.r0a : a.r0a + (L.summit[1] - a.r0a) * easeInOut(Math.min(1, (t - a.dropEnd) / (a.panMs || 1)));
-    c0 = clampTo(c0, 0, cols - C); r0 = clampTo(r0, 0, cols - R);
+    c0 = clampTo(c0, 0, cols - C); r0 = clampTo(r0, 0, cols - R); // a finger moving it leaves it between places
     const gap = pitch >= 16 ? 3 : pitch >= 8 ? 2 : pitch >= 4 ? 1 : 0, size = pitch - gap;
     const gridH = Math.ceil(pitch * R) + L.pad, ox = L.pad + Math.floor((L.inner - pitch * C) / 2), H = gridH + 12;
-    tsumiGeo = { k, r, left: k + 1 - r, pitch, ox, gridH, cols, c0, r0, C, R, near, big: L.big };
+    tsumiGeo = { k, r, left: k + 1 - r, pitch, ox, gridH, cols, c0, r0, C, R, near, big: L.big, below: null };
     $("tsumiViews").hidden = !L.big;
     for (const b of $("tsumiViews").querySelectorAll("button")) b.setAttribute("aria-pressed", String((b.dataset.view === "near") === near));
     const cv = $("tsumiCanvas"), dpr = window.devicePixelRatio || 1;
+    cv.classList.toggle("pan", near);
     if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + "px"; cv.style.height = H + "px"; }
     const x = cv.getContext("2d");
     x.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -6853,9 +6889,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const xOf = (c) => ox + (c - c0) * pitch + gap / 2, yOf = (row) => gridH - (row - r0 + 1) * pitch + gap / 2;
     const sq = (px, py, s = size, rr = rad) => { x.beginPath(); if (rr && x.roundRect) x.roundRect(px, py, s, s, rr); else x.rect(px, py, s, s); };
     const lands = (i) => a.start + (i - a.from) * a.step; // when block i lands, while they drop in
-    x.save(); x.beginPath(); x.rect(0, 0, W, gridH); x.clip();
-    const lo = Math.max(0, Math.floor(r0)), hi = Math.min(cols - 1, Math.ceil(r0 + R));
-    for (let c = c0; c < Math.min(cols, c0 + C); c++) {
+    x.save(); x.beginPath(); x.rect(ox - 2, 0, C * pitch + 4, gridH); x.clip();
+    const cLo = Math.max(0, Math.floor(c0)), cHi = Math.min(cols - 1, Math.ceil(c0 + C) - 1);
+    const lo = Math.max(0, Math.floor(r0)), hi = Math.min(cols - 1, Math.ceil(r0 + R) - 1);
+    for (let c = cLo; c <= cHi; c++) {
       const base = (c * (c + 1)) / 2;
       for (let row = lo; row <= Math.min(c, hi); row++) {
         const i = base + row;
@@ -6869,7 +6906,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     x.globalAlpha = 1;
     // the step being built: the places still to fill, faint, and on top the yellow goal, as on the icon
-    if (k >= c0 && k < c0 + C) {
+    if (k >= cLo && k <= cHi) {
       x.strokeStyle = tone("--muted", "#8e8e93"); x.lineWidth = 1; x.globalAlpha = 0.5;
       if (size >= 8) x.setLineDash([3, 3]);
       for (let row = Math.max(r, lo); row < k && row <= hi; row++) { sq(xOf(k) + 0.5, yOf(row) + 0.5, size - 1); x.stroke(); }
@@ -6892,36 +6929,54 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const every = [5, 10, 20, 50, 100, 200, 500].find((v) => v * pitch >= 18) || 1000;
     x.fillStyle = tone("--muted", "#8e8e93"); x.font = `11px ${getComputedStyle(document.body).fontFamily}`; x.textBaseline = "middle";
     for (let j = every - 1; j <= k; j += every) { const y = gridH - (j - r0 + 0.5) * pitch; if (y > 6 && y < gridH - 2) x.fillText(`${j + 1}段`, ox + C * pitch + 6, y); }
-    // the block shown under the stairs: ringed, or, when it is below the view, a mark at the foot pointing down to it
-    const pi = pickIndex(), si = pi >= 0 ? pi : n - 1;
+    // 全体: a frame round what 大きく shows (the user's call: going back and forth lost the place)
+    if (!near && L.big) {
+      const N = tsumiLayout("near"), fc = clampTo(Math.round((tsumiAnchor || N.summit)[0]), 0, cols - N.C), fr = clampTo(Math.round((tsumiAnchor || N.summit)[1]), 0, cols - N.R);
+      x.strokeStyle = tone("--fg", "#000000"); x.globalAlpha = 0.6; x.lineWidth = 2; x.beginPath();
+      if (x.roundRect) x.roundRect(ox + fc * pitch - 2, gridH - (fr + N.R) * pitch - 2, N.C * pitch + 4, N.R * pitch + 4, 4); else x.rect(ox + fc * pitch - 2, gridH - (fr + N.R) * pitch - 2, N.C * pitch + 4, N.R * pitch + 4);
+      x.stroke(); x.globalAlpha = 1;
+    }
+    // the block shown under the stairs: ringed, or, when it is below 大きく's view, a mark at the foot that goes down to it
+    const si = shownIndex();
+    let seen = true;
     if (si >= 0 && !(a && si >= a.from && t < lands(si) + 380)) {
-      const c = tsumiCol(si), row = si - (c * (c + 1)) / 2;
-      if (c >= c0 && c < c0 + C) {
-        x.strokeStyle = x.fillStyle = tone("--fg", "#000000");
-        if (row < r0 - 0.5) { const cx = xOf(c) + size / 2; x.beginPath(); x.moveTo(cx - 5, gridH + 4); x.lineTo(cx + 5, gridH + 4); x.lineTo(cx, gridH + 10); x.closePath(); x.fill(); }
-        else if (row <= r0 + R - 0.5) {
-          const px = xOf(c), py = yOf(row), m = Math.max(2, 5 - size / 4);
-          x.lineWidth = 2; x.beginPath();
-          if (x.roundRect) x.roundRect(px - m, py - m, size + 2 * m, size + 2 * m, rad + m); else x.rect(px - m, py - m, size + 2 * m, size + 2 * m);
-          x.stroke();
-        }
+      const c = tsumiCol(si), row = si - (c * (c + 1)) / 2, inCols = c > c0 - 0.5 && c < c0 + C - 0.5, inRows = row > r0 - 0.5 && row < r0 + R - 0.5;
+      seen = inCols && inRows;
+      x.strokeStyle = x.fillStyle = tone("--fg", "#000000");
+      if (seen) {
+        const px = xOf(c), py = yOf(row), m = Math.max(2, 5 - size / 4);
+        x.lineWidth = 2; x.beginPath();
+        if (x.roundRect) x.roundRect(px - m, py - m, size + 2 * m, size + 2 * m, rad + m); else x.rect(px - m, py - m, size + 2 * m, size + 2 * m);
+        x.stroke();
+      } else if (inCols && row < r0) {
+        const cx = xOf(c) + size / 2;
+        x.beginPath(); x.moveTo(cx - 5, gridH + 4); x.lineTo(cx + 5, gridH + 4); x.lineTo(cx, gridH + 10); x.closePath(); x.fill();
+        tsumiGeo.below = { x: cx };
       }
     }
+    // 大きく away from the shown block or from the summit: a way back to each (the user's call: the newest block was often out of sight)
+    const atTop = Math.abs(c0 - L.summit[0]) < 0.5 && Math.abs(r0 - L.summit[1]) < 0.5, b = si >= 0 ? tsumiShown[si] : null;
+    $("tsumiToNew").hidden = !near || !!a || seen || !b;
+    $("tsumiToTop").hidden = !near || !!a || atTop;
+    if (b) $("tsumiToNew").textContent = si === n - 1 ? "いちばん新しいブロックへ" : tsumiOnly && si === lastOfKind(tsumiOnly) ? `いちばん新しい${TSUMI_KINDS[tsumiOnly].label}へ` : "選んだブロックへ";
+    $("tsumiJumps").hidden = $("tsumiToNew").hidden && $("tsumiToTop").hidden;
   }
-  // under the stairs: the block pressed (at first the newest): its kind and what it holds in two lines at most, its day, and
-  // 「この記録を開く」 for one that can be opened (the user's call)
+  // under the stairs: the block shown (at first the newest): its kind and what it holds in two lines at most, its day, the
+  // day it was stacked when that was later (the user's call: a day gone by on top looked out of place), and 「この記録を開く」
   function sayTsumi() {
     const n = tsumiShown.length, tip = $("tsumiTip"), open = $("tsumiOpen");
     open.hidden = true;
-    if (!n) { tip.replaceChildren(); return; }
-    const pi = pickIndex(), i = pi >= 0 ? pi : n - 1, b = tsumiShown[i], v = TSUMI_KINDS[b.kind], part = (s) => el("span", { class: "phrase" }, s);
+    const i = shownIndex();
+    if (!n || i < 0) { tip.replaceChildren(); return; }
+    const b = tsumiShown[i], v = TSUMI_KINDS[b.kind], part = (s) => el("span", { class: "phrase" }, s), made = ymd(new Date(b.t));
+    const newest = i === n - 1 ? "いちばん新しいブロック" : tsumiOnly && i === lastOfKind(tsumiOnly) ? `いちばん新しい${v.label}` : null;
     setChildren(tip, el("span", { class: "what" }, el("span", { class: "dot", style: `background: var(${v.c})` }), el("strong", {}, v.label), " ", b.text || ""),
-      el("span", { class: "when" }, el("span", { class: "due-parts" }, part(fmtMDW(b.day)), part(`${(i + 1).toLocaleString("ja-JP")} こ目`),
-        i === n - 1 ? part("いちばん新しいブロック") : null, b.gone ? part("削除したToDo") : null)));
+      el("span", { class: "when" }, el("span", { class: "due-parts" }, part(fmtMDW(b.day)), made > b.day ? part(`${fmtMD(made)} に積んだ`) : null,
+        part(`${(i + 1).toLocaleString("ja-JP")} こ目`), newest ? part(newest) : null, b.gone ? part("削除したToDo") : null)));
     if (b.open) { open.hidden = false; open.dataset.edit = b.open.id || b.open.goal; } // the sheet hands focus back to it
   }
-  // how many of each kind went in; one pressed keeps only its blocks in colour, pressed again all of them (the user's call:
-  // some colours are hard to tell apart)
+  // how many of each kind went in; one pressed keeps only its blocks in colour, and the line under the stairs and its
+  // steps keep to them; pressed again, all of them (the user's call: some colours are hard to tell apart)
   function renderTsumiKinds(blocks) {
     const counts = new Map();
     for (const b of blocks) counts.set(b.kind, (counts.get(b.kind) || 0) + 1);
@@ -6929,23 +6984,56 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const list = $("tsumiKinds"), focused = document.activeElement?.closest?.("#tsumiKinds button")?.dataset.kind;
     list.classList.toggle("only", !!tsumiOnly);
     const rows = Object.entries(TSUMI_KINDS).filter(([key]) => counts.get(key)).map(([key, v]) => el("li", { class: "btn-row" },
-      el("button", { type: "button", class: "row-btn nav", "data-kind": key, "aria-pressed": String(tsumiOnly === key), onclick: () => { tsumiOnly = tsumiOnly === key ? null : key; renderTsumi(); } },
-        el("span", { class: "sw", style: `background: var(${v.c})` }), el("span", {}, v.label), el("span", { class: "row-count" }, `${counts.get(key).toLocaleString("ja-JP")} こ`))));
+      el("button", { type: "button", class: "row-btn nav", "data-kind": key, "aria-pressed": String(tsumiOnly === key), onclick: () => {
+        tsumiOnly = tsumiOnly === key ? null : key; tsumiPick = null; tsumiAnim = null;
+        if (tsumiOnly) tsumiFollow(shownIndex()); // its newest comes into view
+        renderTsumi();
+      } }, el("span", { class: "sw", style: `background: var(${v.c})` }), el("span", {}, v.label), el("span", { class: "row-count" }, `${counts.get(key).toLocaleString("ja-JP")} こ`))));
     setChildren(list, ...(rows.length ? rows : [el("li", { class: "empty" }, "まだ記録がありません。")]));
     if (focused) list.querySelector(`button[data-kind="${focused}"]`)?.focus();
+  }
+  // 段の記録: the day every fifth step was reached (the day the block that finished it was stacked), newest first, under the
+  // next round step to aim at (the user's call: when each step came wasn't kept)
+  function renderTsumiSteps(blocks) {
+    const n = blocks.length, k = tsumiCol(n), list = $("tsumiSteps");
+    $("tsumiStepsHead").hidden = list.hidden = !n;
+    if (!n) return;
+    const goal = k < 10 ? (Math.floor(k / 5) + 1) * 5 : (Math.floor(k / 10) + 1) * 10, need = (goal * (goal + 1)) / 2 - n;
+    const row = (a, b) => el("li", {}, el("span", { class: "body" }, el("span", { class: "text" }, a)), el("span", { class: "num" }, b));
+    const rows = [row(`つぎは ${goal} 段`, `あと ${need.toLocaleString("ja-JP")} こ`)];
+    for (let st = Math.floor(k / 5) * 5; st >= 5 && rows.length <= 12; st -= 5) rows.push(row(`${st} 段`, fmtMDW(ymd(new Date(blocks[(st * (st + 1)) / 2 - 1].t)))));
+    setChildren(list, ...rows);
   }
   // 大きく's view moved so block i shows, when it doesn't
   function tsumiFollow(i) {
     const g = tsumiGeo, c = tsumiCol(i), row = i - (c * (c + 1)) / 2;
-    if (!g?.near || (c >= g.c0 && c < g.c0 + g.C && row >= g.r0 && row < g.r0 + g.R)) return;
+    if (i < 0 || !g?.near || (c > g.c0 - 0.5 && c < g.c0 + g.C - 0.5 && row > g.r0 - 0.5 && row < g.r0 + g.R - 0.5)) return;
     tsumiAnchor = [clampTo(c - Math.floor(g.C / 2), 0, g.cols - g.C), clampTo(row - Math.floor(g.R / 2), 0, g.cols - g.R)];
   }
-  $("tsumiCanvas").addEventListener("click", (ev) => {
+  // a block before or after: by the keys, or ◀ ▶ under the stairs (the user's call: on a phone there were no keys); with a
+  // kind pressed, only its blocks
+  function stepTsumi(to) {
+    const n = tsumiShown.length, ok = (i) => !tsumiOnly || tsumiShown[i].kind === tsumiOnly;
+    if (!n) return;
+    let i = shownIndex();
+    if (to === "first") { i = 0; while (i < n - 1 && !ok(i)) i++; }
+    else if (to === "last") { i = n - 1; while (i > 0 && !ok(i)) i--; }
+    else { let j = i + to; while (j >= 0 && j < n && !ok(j)) j += to; if (j < 0 || j >= n) return; i = j; }
+    tsumiAnim = null; tsumiPick = tsumiShown[i].key;
+    tsumiFollow(i);
+    drawTsumi(); sayTsumi();
+  }
+  const tsumiCanvas = $("tsumiCanvas");
+  tsumiCanvas.addEventListener("click", (ev) => {
+    if (tsumiDragged) { tsumiDragged = false; return; } // the end of a move, not a press
     const g = tsumiGeo;
     if (!g?.pitch) return;
     tsumiAnim = null; // a press ends the drop at once
-    const rect = ev.currentTarget.getBoundingClientRect();
-    let c = g.c0 + Math.floor((ev.clientX - rect.left - g.ox) / g.pitch), row = Math.floor(g.r0 + (g.gridH - (ev.clientY - rect.top)) / g.pitch);
+    const rect = ev.currentTarget.getBoundingClientRect(), px = ev.clientX - rect.left, py = ev.clientY - rect.top;
+    // under the stairs: the ▼ goes down to the block it points at; anything else there picks nothing (the user's call: a
+    // press just under the view picked a block out of sight)
+    if (py > g.gridH) { if (g.below && Math.abs(px - g.below.x) <= 22) $("tsumiToNew").click(); else drawTsumi(); return; }
+    let c = Math.floor(g.c0 + (px - g.ox) / g.pitch), row = Math.floor(g.r0 + (g.gridH - py) / g.pitch);
     if (g.big && !g.near) {
       // 全体: the place pressed comes up in 大きく, with its block shown
       c = clampTo(c, 0, g.cols - 1); row = clampTo(row, 0, c);
@@ -6956,52 +7044,84 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       drawTsumi(); sayTsumi();
       return;
     }
+    const inView = px >= g.ox && px < g.ox + g.C * g.pitch && row >= Math.floor(g.r0) && row < Math.ceil(g.r0 + g.R);
     const i = (c * (c + 1)) / 2 + row;
-    if (c >= g.c0 && c < Math.min(g.cols, g.c0 + g.C) && row >= 0 && row <= c && i < tsumiShown.length) { tsumiPick = tsumiShown[i].key; drawTsumi(); sayTsumi(); return; }
+    if (inView && row >= 0 && row <= c && i < tsumiShown.length) { tsumiPick = tsumiShown[i].key; drawTsumi(); sayTsumi(); return; }
     drawTsumi();
     // the step being built: how far its goal is
-    if (c === g.k && row >= 0 && row <= c) {
+    if (inView && c === g.k && row >= 0 && row <= c) {
       setChildren($("tsumiTip"), el("span", { class: "what" }, el("span", { class: "dot", style: "background: #ffcc00" }), el("strong", {}, `${g.k + 1} 段目`), ` まで、あと ${g.left} こ`));
       $("tsumiOpen").hidden = true;
     }
   });
-  $("tsumiCanvas").addEventListener("keydown", (ev) => {
-    const n = tsumiShown.length, pi = pickIndex(), cur = pi >= 0 ? pi : n - 1;
-    const to = { ArrowLeft: cur - 1, ArrowDown: cur - 1, ArrowRight: cur + 1, ArrowUp: cur + 1, Home: 0, End: n - 1 }[ev.key];
-    if (!n || to === undefined) return;
-    ev.preventDefault();
-    tsumiAnim = null;
-    const i = clampTo(to, 0, n - 1);
-    tsumiPick = tsumiShown[i].key;
-    tsumiFollow(i);
-    drawTsumi(); sayTsumi();
+  // 大きく: the stairs moved round under a finger or the mouse (the user's call: the view could only be moved from 全体)
+  tsumiCanvas.addEventListener("pointerdown", (ev) => {
+    const g = tsumiGeo;
+    if (!g?.near || ev.button > 0) return;
+    tsumiDrag = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, c0: g.c0, r0: g.r0, moved: false };
   });
+  tsumiCanvas.addEventListener("pointermove", (ev) => {
+    const d = tsumiDrag, g = tsumiGeo;
+    if (!d || d.id !== ev.pointerId || !g?.near) return;
+    const dx = ev.clientX - d.x, dy = ev.clientY - d.y;
+    if (!d.moved) {
+      if (Math.hypot(dx, dy) < 6) return;
+      d.moved = true; tsumiAnim = null;
+      try { tsumiCanvas.setPointerCapture(ev.pointerId); } catch {}
+    }
+    tsumiAnchor = [clampTo(d.c0 - dx / g.pitch, 0, g.cols - g.C), clampTo(d.r0 + dy / g.pitch, 0, g.cols - g.R)];
+    drawTsumi();
+  });
+  const endTsumiDrag = (ev) => {
+    const d = tsumiDrag;
+    if (!d || d.id !== ev.pointerId) return;
+    tsumiDrag = null;
+    if (!d.moved) return;
+    tsumiDragged = true; setTimeout(() => { tsumiDragged = false; }, 60); // its click, if one comes, is the move's end
+    if (tsumiAnchor) tsumiAnchor = tsumiAnchor.map(Math.round); // settled on whole places
+    drawTsumi();
+  };
+  tsumiCanvas.addEventListener("pointerup", endTsumiDrag);
+  tsumiCanvas.addEventListener("pointercancel", endTsumiDrag);
+  tsumiCanvas.addEventListener("keydown", (ev) => {
+    const to = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, Home: "first", End: "last" }[ev.key];
+    if (to === undefined) return;
+    ev.preventDefault();
+    stepTsumi(to);
+  });
+  $("tsumiPrev").addEventListener("click", () => stepTsumi(-1));
+  $("tsumiNext").addEventListener("click", () => stepTsumi(1));
+  $("tsumiToNew").addEventListener("click", () => { tsumiAnim = null; tsumiFollow(shownIndex()); drawTsumi(); });
+  $("tsumiToTop").addEventListener("click", () => { tsumiAnim = null; tsumiAnchor = null; drawTsumi(); });
+  // 大きく or 全体; 大きく comes back where it was (全体 frames it), the summit by てっぺんへ
   $("tsumiViews").addEventListener("click", (ev) => {
     const b = ev.target.closest("button[data-view]");
     if (!b) return;
-    tsumiView = b.dataset.view; tsumiAnchor = null; tsumiAnim = null;
-    if (tsumiView === "near") tsumiPick = null; // 大きく: the summit again, with the newest block
+    tsumiView = b.dataset.view; tsumiAnim = null;
     drawTsumi(); sayTsumi();
   });
   $("tsumiOpen").addEventListener("click", (ev) => {
-    const pi = pickIndex(), o = tsumiShown[pi >= 0 ? pi : tsumiShown.length - 1]?.open;
+    const o = tsumiShown[shownIndex()]?.open;
     if (!o) return;
     if (o.goal) openChart(o.goal, ev.detail === 0, o.path || [], o.spot ?? null); else openRecEdit(o.kind, o.id, ev.detail === 0);
   });
   // drawn again for a new width, and in the other mode's colours
   addEventListener("resize", () => { if (tab === "tsumi" && tsumiGeo) drawTsumi(); });
   matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => { if (tab === "tsumi" && tsumiGeo) drawTsumi(); });
-  // a step finished past the most this phone has told: said where it was recorded, after that record's own message and
-  // with its 元に戻す (the user's call: nothing was said). The first count since the app opened only notes where it is
-  let tsumiStepBest = null;
+  // a step finished by a record just made: said where it was recorded, after that record's own message and with its 元に戻す
+  // (the user's call: nothing was said). Many blocks at once, as a backup read in or taken back, say nothing and start the
+  // count afresh (the user's call: one read in was said, with 「。。」, and after taking it back no step was said again);
+  // a step said once isn't said again when a block taken away comes back
+  let tsumiCounted = null; // { n, k, best }: blocks and steps at the last count, and the most steps said since then
   function noteTsumiStep() {
-    const k = tsumiCol(tsumiBlocks(false).length);
-    if (tsumiStepBest === null) { tsumiStepBest = Math.max(k, lsNum(STEP_KEY)); lsPut(STEP_KEY, tsumiStepBest); return; }
-    if (k <= tsumiStepBest) return;
-    tsumiStepBest = k; lsPut(STEP_KEY, k);
+    const n = tsumiBlocks(false).length, k = tsumiCol(n), was = tsumiCounted;
+    if (!was || Math.abs(n - was.n) > 3) { tsumiCounted = { n, k, best: k }; return; }
+    const rise = k > was.k && k > was.best;
+    tsumiCounted = { n, k, best: rise ? k : was.best };
+    if (!rise) return;
     setTimeout(() => {
       const say = `つみかさねが ${k} 段になりました`;
-      if (flashed && Date.now() < flashed.until && typeof flashed.msg === "string") flash(`${flashed.msg}。${say}`, flashed.undo); else flash(say);
+      if (flashed && Date.now() < flashed.until && typeof flashed.msg === "string") flash(`${flashed.msg.replace(/。$/, "")}。${say}`, flashed.undo); else flash(say);
     }, 150);
   }
 
