@@ -964,9 +964,10 @@ dialog.ask::backdrop { background: rgba(0, 0, 0, .2); }
 #todoMenu { max-height: 100dvh; overflow-y: auto; }  /* with large text, scrolled rather than off the top */
 @media (prefers-reduced-motion: no-preference) { dialog.ask[open] { animation: ask-up .24s ease-out; } }
 @keyframes ask-up { from { transform: translateY(24px); opacity: 0; } }
-/* the bar on top: the title between キャンセル and 完了 or 保存; it stays put while the sheet scrolls, and it is the part to pull */
+/* the bar on top: the title between キャンセル and 完了 or 保存; it stays put while the sheet scrolls (over the rows' checks
+   and ×, which sit a layer up in their rows), and it is the part to pull */
 .sheet-head {
-  position: sticky; top: 0; z-index: 1;
+  position: sticky; top: 0; z-index: 2;
   display: grid; grid-template-columns: minmax(max-content, 1fr) minmax(0, max-content) minmax(max-content, 1fr); align-items: center; gap: var(--space-1);
   min-height: 60px; padding: 14px var(--space-1) 4px; background: var(--bg); touch-action: none;
 }
@@ -1489,9 +1490,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <p class="group-foot"><span class="phrase">名前はタップすると書きかえられます。</span><span class="phrase">× を2回押すと、その項目を消します。</span></p>
       </section>
 
-      <!-- からだ: 体重, and 体脂肪率 with it (the page's name, the user's call; its fields and plots keep 体重) -->
+      <!-- からだ: 体重, and 体脂肪率 with it (the page's name, the user's call; its fields and plots keep 体重). Its goals and
+           its list of records are in the settings under the gear by its title (the user's call), as 勉強's subjects are -->
       <section id="sec-weight" style="--sec-c: var(--c-weight)" hidden>
-        <div class="sec-head"><h2>からだ</h2><div class="datenav"></div></div>
+        <div class="sec-head">
+          <div class="title-row"><h2>からだ</h2><button type="button" class="icon-btn" id="wtSettings" aria-label="からだの設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button></div>
+          <div class="datenav"></div>
+        </div>
         <form class="add" id="wtForm" autocomplete="off">
           <label class="flabel" for="wtInput" id="wtFormLabel">きょうの体重</label>
           <div class="ffield"><input type="number" id="wtInput" step="0.1" min="20" max="300" placeholder="65.0" inputmode="decimal" required><span class="unit">kg</span></div>
@@ -1528,17 +1533,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           </div>
         </div>
         <div class="stats" id="wtStats"></div>
-        <form class="add" id="wtTargetForm" autocomplete="off">
-          <label class="flabel" for="wtTarget">目標体重<span class="sr-only">（kg）</span></label>
-          <div class="ffield"><input type="number" id="wtTarget" step="0.1" min="20" max="300" placeholder="未設定" inputmode="decimal"><span class="unit">kg</span><button class="btn ghost sm" type="submit">保存</button></div>
-          <!-- 目標体脂肪率 under it (the user's call), a line on 体脂肪率's plot as 目標体重 is on 体重's -->
-          <label class="flabel" for="fatTarget">目標体脂肪率<span class="sr-only">（%）</span></label>
-          <div class="ffield"><input type="number" id="fatTarget" step="0.1" min="1" max="70" placeholder="未設定" inputmode="decimal"><span class="unit">%</span><button class="btn ghost sm" type="submit">保存</button></div>
-        </form>
-        <div class="card">
-          <div class="card-head">記録の一覧</div>
-          <ul class="list" id="wtList"></ul>
-        </div>
       </section>
 
       <!-- 家計簿 -->
@@ -1670,7 +1664,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     </div>
     <!-- the calendar's settings, opened from the gear on the month bar (or from a day when there are no labels yet) -->
     <div class="sheet-view" id="settingsView" hidden>
-      <!-- one group shows at a time: the calendar's labels, 勉強's subjects, or きょう's tiles -->
+      <!-- one group shows at a time: the calendar's labels, 勉強's subjects, きょう's tiles, or からだ's goals and records -->
       <div class="sheet-view" id="labelsGroup">
         <h3 class="group-head">週のはじまり</h3>
         <div class="seg" role="group" aria-label="週のはじまり" id="weekStart">
@@ -1702,6 +1696,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <h3 class="group-head">きょうのタイル</h3>
         <ul class="list card" id="tileList"></ul>
         <p class="group-foot"><span class="phrase">チェックを付けたタイルが、きょうに出ます。</span><span class="phrase">≡&nbsp;を上下にドラッグすると、順番を変えられます。</span></p>
+      </div>
+      <div class="sheet-view" id="bodyGroup" hidden>
+        <h3 class="group-head">目標</h3>
+        <form class="add" id="wtTargetForm" autocomplete="off">
+          <label class="flabel" for="wtTarget">目標体重<span class="sr-only">（kg）</span></label>
+          <div class="ffield"><input type="number" id="wtTarget" step="0.1" min="20" max="300" placeholder="未設定" inputmode="decimal"><span class="unit">kg</span><button class="btn ghost sm" type="submit">保存</button></div>
+          <!-- 目標体脂肪率 under it (the user's call), a line on 体脂肪率's plot as 目標体重 is on 体重's -->
+          <label class="flabel" for="fatTarget">目標体脂肪率<span class="sr-only">（%）</span></label>
+          <div class="ffield"><input type="number" id="fatTarget" step="0.1" min="1" max="70" placeholder="未設定" inputmode="decimal"><span class="unit">%</span><button class="btn ghost sm" type="submit">保存</button></div>
+        </form>
+        <h3 class="group-head">記録の一覧</h3>
+        <ul class="list card" id="wtList"></ul>
+        <p class="group-foot"><span class="phrase">記録を押すと、その日をページで開いて直せます。</span><span class="phrase">× を2回押すと、その日の記録を削除します。</span></p>
       </div>
     </div>
     <!-- a new plan, from the ＋ beside the calendar's gear: キャンセル and 追加 on the bar, as for a new goal. Its day starts
@@ -3556,14 +3563,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     wtInput.value = ""; wtFat.value = ""; wtState.textContent = "";
     removeWithUndo(weights, viewDate);
   });
-  // 目標体重 and 目標体脂肪率 share one form, so either 保存 (or the return key) saves whichever was changed; emptied, that
-  // goal goes
+  // 目標体重 and 目標体脂肪率 share one form (in the settings under the gear), so either 保存 (or the return key) saves
+  // whichever was changed, as closing the sheet does; emptied, that goal goes
   $("wtTargetForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
-    saveBodyTarget("weight", wtTargetInput, 20, 300);
-    saveBodyTarget("fat", fatTargetInput, 1, 70);
+    saveBodyTargets();
     if (ev.currentTarget.contains(document.activeElement)) document.activeElement.blur();
   });
+  function saveBodyTargets() {
+    saveBodyTarget("weight", wtTargetInput, 20, 300);
+    saveBodyTarget("fat", fatTargetInput, 1, 70);
+  }
   function saveBodyTarget(id, input, min, max) {
     const raw = input.value;
     if (raw === "") { if (settings.get(id)) act(() => settings.remove(id)); return; }
@@ -3578,6 +3588,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     });
   });
   const rangeLabel = () => ({ 30: "1か月", 90: "3か月", 365: "1年" })[wtRange] || `${wtRange}日`;
+  $("wtSettings").addEventListener("click", (ev) => openSettings(ev.detail === 0, "weight"));
 
   function renderWeight() {
     const entry = weights.get(viewDate);
@@ -3611,23 +3622,23 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     renderWeightChart();
 
-    // table view of the same data, newest first
+    // the list in the settings under the gear: every record, newest first, the period above not reaching it there; a row
+    // closes the sheet and opens its day on the page
     const list = $("wtList");
     list.replaceChildren();
-    const startList = addDays(todayKey, -(wtRange - 1));
-    const rows = all.filter((r) => r.id >= startList).reverse();
-    if (!rows.length) { list.append(el("li", { class: "empty" }, all.length ? `${rangeLabel()}の記録はありません。` : "まだ記録がありません。上の欄に体重を入れて「記録する」を押してください。")); return; }
+    const rows = all.slice().reverse();
+    if (!rows.length) { list.append(el("li", { class: "empty" }, "まだ記録がありません。")); return; }
     const shown = rows.slice(0, 120);
     for (const r of shown) {
       const idx = all.indexOf(r); const p = idx > 0 ? all[idx - 1] : null;
-      list.append(el("li", { class: "clickable" + (r.id === viewDate ? " current" : ""), onclick: () => setViewDate(r.id) },
+      list.append(el("li", { class: "clickable" + (r.id === viewDate ? " current" : ""), onclick: () => { closeSheet(); setViewDate(r.id); } },
         el("span", { class: "datecell" }, r.id === todayKey ? "きょう" : fmtShort(r.id)),
         el("span", { class: "body" }, el("span", { class: "text" }, `${fmtKg(r.kg)} kg`), num(r.fat) > 0 ? el("span", { class: "sub" }, el("span", { class: "phrase" }, "体脂肪"), " ", el("span", { class: "phrase" }, `${fmtFat(r.fat)}%`)) : null),
         p ? el("span", { class: "num" }, `${signed(num(r.kg) - num(p.kg))} kg`) : null,
         delButton(() => removeWithUndo(weights, r.id))
       ));
     }
-    if (rows.length > shown.length) list.append(el("li", { class: "note" }, `ほか ${rows.length - shown.length} 件`));
+    if (rows.length > shown.length) list.append(el("li", { class: "note" }, `ほか ${rows.length - shown.length} 件（記録タブで見られます）`));
   }
   // 体脂肪率, once one has been recorded: the latest, and how it has gone over the period showing
   function fatStat(all, start) {
@@ -4637,8 +4648,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const sheetHead = $("sheetHead"), edDelete = $("edDelete");
   let editingId = null, editingStart = null, editScope = "one", editBase = "", editDays = "", edLabelChoice = "", sheetByKey = false, sheetClosing = false, sheetAnims = [], closeTimer = null, drag = null, delTimer = null;
   let settingsFrom = null; // the settings showing: "gear" when opened from the month bar, "day" when from a day's sheet
-  let sheetOpener = "day"; // what keyboard focus goes back to when the sheet closes: the day, the calendar's gear or ＋, 勉強's or きょう's gear, ToDo's (or the top bar's) or 目標's ＋
-  let settingsScope = "calendar"; // whose settings: the calendar's labels, 勉強's subjects or きょう's tiles ("home")
+  let sheetOpener = "day"; // what keyboard focus goes back to when the sheet closes: the day, the calendar's gear or ＋, 勉強's, きょう's or からだ's gear, ToDo's (or the top bar's) or 目標's ＋
+  let settingsScope = "calendar"; // whose settings: the calendar's labels, 勉強's subjects, きょう's tiles ("home") or からだ's goals and records ("weight")
   let tileDrag = null; // きょう's tile whose row is being dragged by its grip in the settings
   let goalNew = false; // the sheet holds a new goal's form, opened from 目標's ＋
   let planNew = false; // the sheet holds a new plan's form, opened from the ＋ beside the calendar's gear
@@ -4673,7 +4684,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function syncSheetHead() {
     const mode = sheetMode(), adding = mode === "goal" || mode === "plan" || mode === "todo", changing = mode === "edit" || mode === "rec";
     for (const [m, id] of Object.entries(SHEET_VIEWS)) $(id).hidden = m !== mode;
-    $("labelsGroup").hidden = settingsScope !== "calendar"; $("subjectsGroup").hidden = settingsScope !== "study"; $("tilesGroup").hidden = settingsScope !== "home";
+    $("labelsGroup").hidden = settingsScope !== "calendar"; $("subjectsGroup").hidden = settingsScope !== "study"; $("tilesGroup").hidden = settingsScope !== "home"; $("bodyGroup").hidden = settingsScope !== "weight";
     $("sheetDone").hidden = changing || adding; $("sheetSave").hidden = mode !== "edit"; $("recSave").hidden = mode !== "rec";
     $("goalSave").hidden = mode !== "goal"; $("planSave").hidden = mode !== "plan"; $("todoSave").hidden = mode !== "todo";
     $("sheetCancel").hidden = !(changing || adding || (mode === "chart" && (mPath.length || chartFromDay)) || (mode === "settings" && settingsFrom === "day") || (mode === "day" && dayFromFind));
@@ -5039,6 +5050,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function closeSheet(instant) {
     if (!sheetEl.open || sheetClosing) return;
     commitChartText(); saveGoalEdit(); // what was typed last is saved now, not when the close event comes (it can come late)
+    if (settingsFrom && settingsScope === "weight") saveBodyTargets(); // からだ's goals too, as 完了 says
     if (todoNewIds.length) spotTodos(todoNewIds); // the ToDos added from it, lit in the list it uncovers
     if (instant === true || reduceMotion.matches) { sheetEl.close(); handOverFlash(); return; }
     sheetClosing = true;
@@ -5056,7 +5068,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     resetSheet();
     // keyboard users land back on what they opened it from: the day (the grid has been redrawn since), the gear, or an
     // entry's row on the page showing (記録's list and the record page can hold the same entry)
-    if (sheetByKey) ({ find: $("calFind"), month: $("calMonthBtn"), gear: $("calSettings"), plan: $("calAdd"), todo: $("todoAdd"), todonav: navbar.classList.contains("scrolled") ? $("navAdd") : $("todoAdd"), rec: $("sec-" + tab).querySelector(`[data-edit="${recReturnId}"]`), study: $("studySettings"), home: $("homeSettings"), tiletodo: $("homeTiles").querySelector(".td-add button"), goal: $("goalAdd"), chart: $("goalList").querySelector(`[data-goal="${chartReturnId}"]`) || $("goalAdd") }[sheetOpener] || $("calGrid").querySelector(".cal-day.sel"))?.focus();
+    if (sheetByKey) ({ find: $("calFind"), month: $("calMonthBtn"), gear: $("calSettings"), plan: $("calAdd"), todo: $("todoAdd"), todonav: navbar.classList.contains("scrolled") ? $("navAdd") : $("todoAdd"), rec: $("sec-" + tab).querySelector(`[data-edit="${recReturnId}"]`), study: $("studySettings"), home: $("homeSettings"), weight: $("wtSettings"), tiletodo: $("homeTiles").querySelector(".td-add button"), goal: $("goalAdd"), chart: $("goalList").querySelector(`[data-goal="${chartReturnId}"]`) || $("goalAdd") }[sheetOpener] || $("calGrid").querySelector(".cal-day.sel"))?.focus();
   });
   // Esc: from an edit form (or settings or a chart reached from a day) back to the day's list, from a chart's cell back
   // out of it, otherwise out of the sheet
