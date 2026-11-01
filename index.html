@@ -611,6 +611,18 @@ li.done .text { color: var(--muted); }  /* done: grey, not struck through (the u
 .goal .title { font-weight: 600; overflow-wrap: anywhere; }
 /* achieved or on hold (保留): the name muted, not struck through (the user's call: a line through looked like given up) */
 .goal.done .title, .goal.paused .title { color: var(--muted); }
+/* a goal held down is picked up and dragged to another place in its section (goalDrag): lifted over the rest, which slide
+   out of its way, and not dimmed as a pressed button is. Nothing in a row is picked up as text or given iOS's callout */
+.goal { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+#goalList.dragging { cursor: grabbing; }
+#goalList.dragging > .goal:not(.lifted) { transition: transform .2s ease; }
+.goal.lifted { z-index: 2; border-radius: 12px; background: var(--surface); box-shadow: 0 6px 20px rgba(0, 0, 0, .2); }
+.goal.lifted::before { display: none; }
+.goal.lifted .goal-open { opacity: 1; }
+/* in dark mode a raised row is lighter than the card, as iOS draws it, the shadow not showing on black */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .goal.lifted { background: #2c2c2e; box-shadow: 0 6px 20px rgba(0, 0, 0, .6); } }
+:root[data-theme="dark"] .goal.lifted { background: #2c2c2e; box-shadow: 0 6px 20px rgba(0, 0, 0, .6); }
+@media (prefers-reduced-motion: reduce) { #goalList.dragging > .goal:not(.lifted) { transition: none; } }
 .progress { display: flex; align-items: center; gap: var(--space-1); }
 .bar-track { flex: 1; height: 8px; border-radius: 999px; background: var(--fill); overflow: hidden; }
 .bar-track i { display: block; height: 100%; border-radius: 999px; background: var(--sec-c); }
@@ -2043,6 +2055,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     async update(id, patch) {
       const it = this.items.find((x) => x.id === id);
       if (it) Object.assign(it, patch);
+      this.saveLocal(); renderAll();
+    }
+    // several changed at once ([id, patch] pairs), with one save and one redraw (the goals numbered anew as one is moved)
+    async updateMany(patches) {
+      for (const [id, patch] of patches) { const it = this.items.find((x) => x.id === id); if (it) Object.assign(it, patch); }
       this.saveLocal(); renderAll();
     }
     remove(id) { return this.removeMany([id]); }
@@ -3924,10 +3941,22 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // 保留 (goal.pausedAt): set aside for now, in a section of its own, never 期限切れ, and off the calendar and きょう
   const goalSection = (g) => (g.done ? "達成" : g.pausedAt ? "保留" : g.deadline && g.deadline < todayKey ? "期限切れ" : "進行中");
   const pausedText = (g) => `${fmtDay(ymd(new Date(g.pausedAt)))}から保留`;
+  // the goals in the list's order, a section at a time (期限切れ, 進行中, 保留, 達成): in each, the order the user put
+  // them in by moving one (order), or the section's own, the 期限 soonest first, the last put on hold or achieved first.
+  // One with no order (added since) comes after those with one
+  const GOAL_SECTIONS = ["期限切れ", "進行中", "保留", "達成"];
+  const byOrder = (cmp) => (a, b) => (num(a.order) && num(b.order) ? num(a.order) - num(b.order) : num(a.order) ? -1 : num(b.order) ? 1 : cmp(a, b));
+  function goalGroups() {
+    const rank = (g) => GOAL_SECTIONS.indexOf(goalSection(g));
+    const active = goals.items.filter((g) => !g.done && !g.pausedAt).sort((a, b) => rank(a) - rank(b)
+      || byOrder((x, y) => (x.deadline || "9999").localeCompare(y.deadline || "9999") || num(x.createdAt) - num(y.createdAt))(a, b));
+    const paused = goals.items.filter((g) => !g.done && g.pausedAt).sort(byOrder((a, b) => num(b.pausedAt) - num(a.pausedAt)));
+    const done = goals.items.filter((g) => g.done).sort(byOrder((a, b) => num(b.doneAt) - num(a.doneAt)));
+    return { active, paused, done };
+  }
   function renderGoals() {
-    const active = goals.items.filter((g) => !g.done && !g.pausedAt).sort((a, b) => (a.deadline || "9999").localeCompare(b.deadline || "9999") || num(a.createdAt) - num(b.createdAt));
-    const paused = goals.items.filter((g) => !g.done && g.pausedAt).sort((a, b) => num(b.pausedAt) - num(a.pausedAt));
-    const done = goals.items.filter((g) => g.done).sort((a, b) => num(b.doneAt) - num(a.doneAt));
+    if (goalDrag) return; // drawn once the goal being dragged is let go (endGoalDrag)
+    const { active, paused, done } = goalGroups();
     const list = $("goalList");
     list.replaceChildren();
     renderNextActions(goalFilter === "done" ? [] : active);
@@ -3964,6 +3993,115 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           el("span", { class: "chev" }, icon("next", 16)))));
     }
   }
+
+  // ---------- a goal held down: moved to another place in its section ----------
+  // a goal's row held down for half a second is picked up (the user's call: the goals couldn't be put in the order
+  // wanted): it follows the finger up and down its section, the rows it passes moving out of its way, and goes where it
+  // is let go, with 元に戻す; held near the top or bottom of the screen, the page scrolls. The finger moving before then
+  // is a scroll, as before, and the tap a hold ends with opens nothing. From the keyboard, Alt＋↑↓ moves the goal in focus
+  // a place. 次にやること follows the same order
+  const GOAL_HOLD = 500;
+  const goalListEl = $("goalList");
+  let goalHold = null, goalDrag = null, goalTapGone = 0; // the hold going on; the drag; when one ended
+  const dropGoalHold = () => { clearTimeout(goalHold?.timer); goalHold = null; };
+  // the goal moved to place to in its section: every goal numbered in the order the list then has (order), so one put on
+  // hold and taken off it again comes back to where it was; 元に戻す puts back the numbers they had
+  function moveGoal(id, to) {
+    const { active, paused, done } = goalGroups(), all = [...active, ...paused, ...done], g = goals.get(id);
+    const same = g ? all.filter((x) => goalSection(x) === goalSection(g)) : [], from = same.indexOf(g);
+    if (from < 0 || to === from || to < 0 || to >= same.length) return false;
+    const moved = same.filter((x) => x !== g);
+    moved.splice(to, 0, g);
+    const start = all.indexOf(same[0]), order = [...all.slice(0, start), ...moved, ...all.slice(start + same.length)];
+    const was = goals.items.map((x) => [x.id, { order: x.order }]);
+    act(() => goals.updateMany(order.map((x, i) => [x.id, { order: i + 1 }])));
+    flash(`「${clip(g.title, 40)}」の順番を変えました`, () => act(() => goals.updateMany(was)));
+    return true;
+  }
+  goalListEl.addEventListener("pointerdown", (ev) => {
+    dropGoalHold();
+    goalTapGone = 0;
+    const btn = ev.target.closest(".goal-open[data-goal]");
+    if (!btn || goalDrag || !ev.isPrimary || ev.button !== 0) return;
+    const hold = { id: ev.pointerId, y: ev.clientY, x: ev.clientX, btn };
+    hold.timer = setTimeout(() => { goalHold = null; startGoalDrag(hold); }, GOAL_HOLD);
+    goalHold = hold;
+  });
+  goalListEl.addEventListener("pointermove", (ev) => {
+    if (goalHold && ev.pointerId === goalHold.id && Math.hypot(ev.clientX - goalHold.x, ev.clientY - goalHold.y) > 10) dropGoalHold();
+    if (goalDrag && ev.pointerId === goalDrag.id) { goalDrag.py = ev.clientY; placeGoalDrag(); }
+  });
+  for (const type of ["pointerup", "pointercancel"]) goalListEl.addEventListener(type, (ev) => { dropGoalHold(); endGoalDrag(ev); });
+  // while one is dragged the finger moves it, not the page; a long press doesn't bring up Android's own menu
+  goalListEl.addEventListener("touchmove", (ev) => { if (goalDrag) ev.preventDefault(); }, { passive: false });
+  goalListEl.addEventListener("contextmenu", (ev) => { if (ev.target.closest(".goal")) ev.preventDefault(); });
+  goalListEl.addEventListener("click", (ev) => {
+    if (goalTapGone && performance.now() - goalTapGone < 1000) { ev.preventDefault(); ev.stopPropagation(); }
+    goalTapGone = 0;
+  }, true);
+  // picked up: the rows of its section (between the section names around it) can move out of its way
+  function startGoalDrag(hold) {
+    const row = hold.btn.closest(".goal"), g = goals.get(hold.btn.dataset.goal);
+    if (!row?.isConnected || !g || sheetEl.open) return;
+    const rows = [row];
+    for (let r = row.previousElementSibling; r?.classList.contains("goal"); r = r.previousElementSibling) rows.unshift(r);
+    for (let r = row.nextElementSibling; r?.classList.contains("goal"); r = r.nextElementSibling) rows.push(r);
+    try { hold.btn.setPointerCapture(hold.id); } catch {}
+    const box = (r) => r.getBoundingClientRect(), base = box(goalListEl).top, from = rows.indexOf(row);
+    goalDrag = { id: hold.id, gid: g.id, row, rows, from, to: from, y: hold.y, py: hold.y, scroll: window.scrollY,
+      mids: rows.map((r) => box(r).top - base + box(r).height / 2), top: box(row).top - base, h: box(row).height,
+      lo: box(rows[0]).top - base, hi: box(rows[rows.length - 1]).bottom - base };
+    row.classList.add("lifted"); goalListEl.classList.add("dragging");
+    navigator.vibrate?.(15);
+    goalDrag.raf = requestAnimationFrame(scrollGoalDrag);
+  }
+  // it follows the finger within its section and takes a row's place once it covers half of it
+  function placeGoalDrag() {
+    const d = goalDrag, y = Math.min(d.hi - d.top - d.h, Math.max(d.lo - d.top, d.py - d.y + window.scrollY - d.scroll));
+    d.row.style.transform = `translateY(${y}px)`;
+    const top = d.top + y;
+    let to = d.from;
+    while (to > 0 && top < d.mids[to - 1]) to--;
+    while (to < d.rows.length - 1 && top + d.h > d.mids[to + 1]) to++;
+    if (to === d.to) return;
+    d.to = to;
+    d.rows.forEach((r, i) => { if (r !== d.row) r.style.transform = i > d.from && i <= to ? `translateY(${-d.h}px)` : i < d.from && i >= to ? `translateY(${d.h}px)` : ""; });
+  }
+  // held near the top bar or the bars at the bottom, the page scrolls
+  function scrollGoalDrag() {
+    const d = goalDrag;
+    if (!d) return;
+    const top = navbar.getBoundingClientRect().bottom + 48, bottom = ($("goalFilters").getBoundingClientRect().top || innerHeight) - 48;
+    const by = d.py < top ? d.py - top : d.py > bottom ? d.py - bottom : 0, was = window.scrollY;
+    if (by) window.scrollBy(0, by / 4);
+    if (window.scrollY !== was) placeGoalDrag();
+    d.raf = requestAnimationFrame(scrollGoalDrag);
+  }
+  // let go: the list drawn anew in the new order, the row gliding from where it was let go into its place; let go where it
+  // was picked up (or the drag cut off), as it was. Drawn once the click the release brings has come and gone: it still
+  // finds the row it was pressed on in the list, where it is swallowed (a row taken out of the list opened its chart)
+  function endGoalDrag(ev) {
+    const d = goalDrag;
+    if (!d || ev.pointerId !== d.id) return;
+    cancelAnimationFrame(d.raf);
+    goalDrag = null;
+    goalTapGone = performance.now(); // the click it ends with opens nothing
+    goalListEl.classList.remove("dragging");
+    const was = d.row.getBoundingClientRect().top, moved = ev.type === "pointerup" && d.to !== d.from;
+    setTimeout(() => {
+      if (goalDrag) return; // another picked up meanwhile: drawn as that one is let go
+      if (!moved || !moveGoal(d.gid, d.to)) { renderGoals(); return; }
+      const row = goalListEl.querySelector(`[data-goal="${d.gid}"]`)?.closest(".goal");
+      if (row && !reduceMotion.matches) row.animate([{ transform: `translateY(${was - row.getBoundingClientRect().top}px)` }, { transform: "none" }], { duration: 150, easing: "ease-out" });
+    });
+  }
+  goalListEl.addEventListener("keydown", (ev) => {
+    const btn = ev.target.closest?.(".goal-open[data-goal]"), g = btn && goals.get(btn.dataset.goal);
+    if (!g || !ev.altKey || (ev.key !== "ArrowUp" && ev.key !== "ArrowDown")) return;
+    ev.preventDefault();
+    const { active, paused, done } = goalGroups(), same = [...active, ...paused, ...done].filter((x) => goalSection(x) === goalSection(g));
+    if (moveGoal(g.id, same.indexOf(g) + (ev.key === "ArrowUp" ? -1 : 1))) goalListEl.querySelector(`[data-goal="${g.id}"]`)?.focus();
+  });
 
   // 次にやること (the user's call: the next thing to do was out of sight until a goal was opened): for each goal under way,
   // its first action not done yet, under where it is (the goal's name cut short, as in the trail). Its check ticks it off
