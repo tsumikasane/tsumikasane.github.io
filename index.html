@@ -2510,7 +2510,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         lastWd = wd;
         days.hidden = repeat.value !== "weekly";
       }
-      if (until) { until.closest(".form-rows").hidden = until.disabled = !repeat.value; until.min = due.value; }
+      // a 期限 moved past it lets it go, as an end before the first turn means nothing (and a day before its min would keep
+      // the form from saving at all)
+      if (until) { if (until.value && due.value && until.value < due.value) until.value = ""; until.closest(".form-rows").hidden = until.disabled = !repeat.value; until.min = due.value; }
       for (const o of repeat.options) o.textContent = repeatName(o.value, from, true, true, o.value === "weekly" && from ? keptDays(picked, from) : null);
       // the one of きょう・あした・来週 that is the 期限 shows it (the user's call: a tap changed only the date's digits)
       for (const b of quick.children) b.setAttribute("aria-pressed", String(due.value === b.dataset.day));
