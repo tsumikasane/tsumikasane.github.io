@@ -1485,9 +1485,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <p class="group-foot"><span class="phrase">名前はタップすると書きかえられます。</span><span class="phrase">× を2回押すと、その項目を消します。</span></p>
       </section>
 
-      <!-- 体重 -->
+      <!-- からだ: 体重, and 体脂肪率 with it (the page's name, the user's call; its fields and plots keep 体重) -->
       <section id="sec-weight" style="--sec-c: var(--c-weight)" hidden>
-        <div class="sec-head"><h2>体重</h2><div class="datenav"></div></div>
+        <div class="sec-head"><h2>からだ</h2><div class="datenav"></div></div>
         <form class="add" id="wtForm" autocomplete="off">
           <label class="flabel" for="wtInput" id="wtFormLabel">きょうの体重</label>
           <div class="ffield"><input type="number" id="wtInput" step="0.1" min="20" max="300" placeholder="65.0" inputmode="decimal" required><span class="unit">kg</span></div>
@@ -1979,7 +1979,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     { key: "workout", label: "運動", icon: "workout", fill: "var(--f-workout)" },
     { key: "study", label: "勉強", icon: "study", fill: "var(--f-study)" },
     { key: "routine", label: "ルーティーン", icon: "routine", fill: "var(--f-routine)" },
-    { key: "weight", label: "体重", icon: "weight", fill: "var(--f-weight)" },
+    { key: "weight", label: "からだ", icon: "weight", fill: "var(--f-weight)" }, // 体重 and 体脂肪率 (the user's call: once 体重)
     { key: "money", label: "家計簿", icon: "money", fill: "var(--f-money)" },
   ];
   const PAGES = [...TABS, ...RECORDS];
@@ -2187,7 +2187,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const deleted = new Store("deleted"); // the records deleted here: {id: "store/id", store, rid, at}
   const ALL_STORES = [todos, journal, meals, workouts, weights, expenses, goals, settings, events, labels, study, subjects, routines, routineDays, deleted];
   // the names the notices use for each kind of record
-  const STORE_NAMES = { todos: "ToDo", journal: "日記", meals: "食事", workouts: "運動", weights: "体重", expenses: "家計簿", goals: "目標", events: "予定", labels: "予定のラベル", study: "勉強", subjects: "勉強の科目", routines: "ルーティーン", routineDays: "ルーティーンのチェック" };
+  const STORE_NAMES = { todos: "ToDo", journal: "日記", meals: "食事", workouts: "運動", weights: "からだ", expenses: "家計簿", goals: "目標", events: "予定", labels: "予定のラベル", study: "勉強", subjects: "勉強の科目", routines: "ルーティーン", routineDays: "ルーティーンのチェック" };
 
   // ---------- 消した記録 ----------
   // each record deleted here is remembered (its kind, id and when, and for 30 days what it held, for 最近削除した項目), so a
@@ -2258,7 +2258,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // a deletion with 元に戻す in its message for the seconds it shows (the user's call, as plans have it): the records come
   // back as they were, with their ids, so nothing pointing at them needs putting right
-  const DELETED_WORDS = { todos: "ToDoを削除しました", journal: "日記を削除しました", meals: "食事の記録を削除しました", workouts: "運動の記録を削除しました", weights: "体重の記録を削除しました", expenses: "家計簿の記録を削除しました", goals: "目標を削除しました", labels: "ラベルを削除しました", study: "勉強の記録を削除しました", subjects: "科目を削除しました", routines: "ルーティーンの項目を削除しました", routineDays: "ルーティーンのチェックを削除しました" };
+  const DELETED_WORDS = { todos: "ToDoを削除しました", journal: "日記を削除しました", meals: "食事の記録を削除しました", workouts: "運動の記録を削除しました", weights: "からだの記録を削除しました", expenses: "家計簿の記録を削除しました", goals: "目標を削除しました", labels: "ラベルを削除しました", study: "勉強の記録を削除しました", subjects: "科目を削除しました", routines: "ルーティーンの項目を削除しました", routineDays: "ルーティーンのチェックを削除しました" };
   function removeWithUndo(st, ids, msg = DELETED_WORDS[st.name]) {
     const list = [].concat(ids), before = list.map((id) => st.get(id)).filter(Boolean).map((x) => JSON.parse(JSON.stringify(x)));
     if (!before.length) return;
@@ -3582,13 +3582,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const stats = $("wtStats");
     stats.replaceChildren();
     if (all.length) {
-      const last = all[all.length - 1], prev = all[all.length - 2];
+      const last = all[all.length - 1];
       const start = addDays(todayKey, -(wtRange - 1));
       const inRange = all.filter((r) => r.id >= start && r.id <= todayKey);
       const first = inRange[0];
       setChildren(stats,
         stat("最新", `${fmtKg(last.kg)} kg`, relLabel(last.id) ? relLabel(last.id) + "の記録" : fmtShort(last.id)),
-        stat("前回比", prev ? `${signed(num(last.kg) - num(prev.kg))} kg` : "—", prev ? `${fmtMD(prev.id)} の ${fmtKg(prev.kg)} kg と比べて` : "記録が1件のみ"),
         stat(`${rangeLabel()}の変化`, inRange.length > 1 ? `${signed(num(last.kg) - num(first.kg))} kg` : "—", inRange.length > 1 ? `${fmtMD(first.id)} から ${inRange.length} 回記録` : "この期間の記録が足りません"),
         target > 0 ? stat("目標まで", targetText(num(last.kg), target), `目標 ${fmtKg(target)} kg`) : null,
         fatStat(all, start)
@@ -3628,7 +3627,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function targetText(cur, target) {
     const diff = cur - target;
     if (Math.abs(diff) < 0.05) return "達成しています";
-    return `あと ${Math.abs(diff).toFixed(1)} kg ${diff > 0 ? "減" : "増"}`;
+    // above it, just the kg left (the user's call: no 減); below it, 増 still says which way
+    return `あと ${Math.abs(diff).toFixed(1)} kg` + (diff > 0 ? "" : " 増");
   }
   function niceStep(raw) {
     for (const s of [0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 50]) if (s >= raw) return s;
@@ -6035,7 +6035,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       },
     },
     weight: {
-      store: weights, title: "体重を編集", del: "この日の体重を削除",
+      store: weights, title: "からだの記録を編集", del: "この日の記録を削除",
       fields: (w) => [recRow("体重", recNum("reKg", fmtKg(w.kg), { min: 20, max: 300, step: "any", inputmode: "decimal", required: true }), { unit: "kg" }),
         recRow("体脂肪率", recNum("reFat", num(w.fat) > 0 ? fmtFat(w.fat) : "", { min: 1, max: 70, step: "any", inputmode: "decimal" }), { unit: "%", opt: true }), recFixedDay(w.id)],
       // 体脂肪率 emptied, the day has none
@@ -6318,7 +6318,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     { key: "workout", label: "運動", color: "var(--c-workout)" },
     { key: "study", label: "勉強", color: "var(--c-study)" },
     { key: "routine", label: "ルーティーン", color: "var(--c-routine)", wide: true },
-    { key: "weight", label: "体重", color: "var(--c-weight)" },
+    { key: "weight", label: "からだ", color: "var(--c-weight)" },
     { key: "money", label: "家計簿", color: "var(--c-money)" },
     { key: "goal", label: "目標", color: "var(--c-goal)", wide: true },
   ];
@@ -6671,7 +6671,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       sumCard("var(--c-workout)", "workout", "運動", ...durBig(wMin),
         `${ws.length} 回・${new Set(ws.map((w) => w.date)).size} 日` + (wKm > 0 ? `・${Math.round(wKm * 10) / 10} km` : ""), null, null, "workout"),
       // 体重 beside 運動, so on a phone the four short cards make two rows
-      sumCard("var(--c-weight)", "weight", "体重", wLast ? fmtKg(wLast.kg) : "—", wLast ? "kg" : null,
+      sumCard("var(--c-weight)", "weight", "からだ", wLast ? fmtKg(wLast.kg) : "—", wLast ? "kg" : null,
         !wLast ? "まだ記録がありません" : wts.length > 1
           ? `${wts.length} 回・${fmtMD(wFirst.id)}から ${signed(num(wLast.kg) - num(wFirst.kg))} kg` // the count first, as 運動's and 勉強's
           : `${fmtMD(wLast.id)}の記録`, null, null, "weight"),
@@ -6722,7 +6722,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           { words: names.length ? names.map((n, i) => el("span", { class: "phrase" }, n + (i < names.length - 1 ? "・" : ""))) : "（消した項目）", n: `${x.done.length} 項目` });
       }) },
     // each with its change from the one before (the user's call), as the 体重 page has it; the first has none
-    weight: { label: "体重", oneLine: true, items: () => sortedWeights().map((w, i, all) => ({ ...w, date: w.id, prev: all[i - 1] })),
+    weight: { label: "からだ", oneLine: true, items: () => sortedWeights().map((w, i, all) => ({ ...w, date: w.id, prev: all[i - 1] })),
       rows: (xs, day) => xs.map((w) => el("li", { class: "one" }, el("span", { class: "rec-date" }, day), el("span", { class: "rec-kg" },
         recOpen("weight", w.id, `「${fmtKg(w.kg)} kg${num(w.fat) > 0 ? `・体脂肪率 ${fmtFat(w.fat)}%` : ""}」を編集`, `${fmtKg(w.kg)} kg` + (num(w.fat) > 0 ? `・${fmtFat(w.fat)}%` : "")),
         el("span", { class: "rec-num" }, w.prev ? `${signed(num(w.kg) - num(w.prev.kg))} kg` : "")))) },
