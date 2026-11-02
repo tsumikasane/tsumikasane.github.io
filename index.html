@@ -1083,6 +1083,9 @@ details.tsumi-more { margin-top: calc(-1 * var(--space-2)); } /* right under the
 .tsumi-more summary { display: flex; align-items: center; min-height: 44px; color: var(--accent); cursor: pointer; list-style: none; }
 .tsumi-more summary::-webkit-details-marker { display: none; }
 .tsumi-more:not([open]) .less, .tsumi-more[open] .more { display: none; }
+/* its words in three short parts, each under its name (the user's call: fourteen lines in a row were hard to read) */
+.tsumi-more p { margin: 0 0 10px; }
+.tsumi-more p > strong { display: block; color: var(--fg); font-weight: 600; }
 /* a kind pressed keeps only its blocks in colour (the user's call: some colours are hard to tell apart) */
 #tsumiKinds .sw { flex: none; width: 14px; height: 14px; border-radius: 4px; }
 #tsumiKinds .row-btn[aria-pressed="true"] { background: var(--fill); font-weight: 600; }
@@ -1680,7 +1683,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <ul class="list card" id="tsumiKinds"></ul>
         <p class="group-foot"><span class="phrase">記録を1つするたびに、ブロックが1つ積みあがります。</span><span class="phrase">ブロックを押すとその記録が、</span><span class="phrase">★を押すとつぎの段まであと何こかが見られます。</span><span class="phrase">点の付いたブロックは、きょう積んだものです。</span></p>
         <!-- the rest of the words, behind くわしく (the user's call: ten lines were too many) -->
-        <details class="group-foot tsumi-more"><summary><span class="more">くわしく</span><span class="less">とじる</span></summary><span class="phrase">1段目は1こ、2段目は2こ…と、</span><span class="phrase">段が上がるほど1段に積むブロックが増えます。</span><span class="phrase">点線のマスと★は、いま積んでいる段です。</span><span class="phrase">★では、このペースだといつごろ届くかも見られます。</span><span class="phrase">同じ日に積んだブロックには、枠が付きます。</span><span class="phrase">ToDoは完了したとき、</span><span class="phrase">目標はマスにチェックしたときに積みあがります。</span><span class="phrase">種類を押すと、その種類のブロックだけに色がつきます。</span><span class="phrase">大きくでは、長押ししてからなぞると階段を動かせます。</span><span class="phrase">全体の四角い枠は、大きくで見ているところです。</span><span class="phrase">◀ ▶ は、押しつづけると続けて進みます。</span><span class="phrase">階段の上の「5月」などは、その月に積みはじめたところです。</span><span class="phrase">押すと、その月の最初のブロックが見られます。</span><span class="phrase">「きょう ＋N こ」を押すと、きょう積んだ最初のブロックが見られます。</span></details>
+        <details class="group-foot tsumi-more"><summary><span class="more">くわしく</span><span class="less">とじる</span></summary><p><strong>見かた</strong><span class="phrase">1段目は1こ、2段目は2こ…と、</span><span class="phrase">段が上がるほど1段に積むブロックが増えます。</span><span class="phrase">点線のマスと★は、いま積んでいる段です。</span><span class="phrase">ToDoは完了したとき、</span><span class="phrase">目標はマスにチェックしたときに積みあがります。</span></p><p><strong>しるし</strong><span class="phrase">同じ日に積んだブロックには、枠が付きます。</span><span class="phrase">階段の上の「5月」などは、</span><span class="phrase">その月に積みはじめたところです。</span><span class="phrase">全体の四角い枠は、</span><span class="phrase">大きくで見ているところです。</span></p><p><strong>押すと</strong><span class="phrase">★：このペースだと、いつごろ届くか。</span><span class="phrase">月の名前：その月の最初のブロック。</span><span class="phrase">「きょう ＋N こ」：きょう積んだ最初のブロック。</span><span class="phrase">種類：その種類のブロックだけに色がつきます。</span><span class="phrase">◀ ▶：押しつづけると続けて進みます。</span><span class="phrase">大きく：長押ししてからなぞると動かせます。</span></p></details>
         <!-- when every fifth step was reached, and the next round step (the user's call); a step pressed shows its block -->
         <h3 class="group-head" id="tsumiStepsHead" hidden>段の記録</h3>
         <ul class="list card" id="tsumiSteps" hidden></ul>
@@ -2130,6 +2133,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   })();
   // つみかさね's last tally (tsumiBlocks, mode "tally"), kept till a record or a setting is saved next
   let tsumiTallied = null;
+  // and its blocks, made afresh after the same, not on every kind pressed (the user's call: 6,000 records took a moment a press)
+  let tsumiStale = true;
   class Store {
     constructor(name) {
       this.name = name; this.unsaved = false;
@@ -2153,7 +2158,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // a save the browser won't take (full) leaves the records here in the page, marked unsaved: the note at the top says
     // so, today's copy takes them in (keepUnsaved), and the next save that goes through brings them along (retryUnsaved)
     saveLocal() {
-      tsumiTallied = null;
+      tsumiTallied = null; tsumiStale = true;
       if (this.big) {
         if (this.loaded) { saveBig(this); return true; }
         this.unsaved = true; saveFails++; showError(); renderSaveNote(); // never read in: not saved over
@@ -6625,6 +6630,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const tz = tsumiBlocks(false, "tally"), tk = tsumiCol(tz.n), tLeft = tk + 1 - (tz.n - (tk * (tk + 1)) / 2);
     // and the days on end, or what today's would make them, as つみかさね says it (the user's call: they showed there only)
     const tRun = runOf(tz.days), tEnd = !tz.days.has(todayKey) && tRun >= 1 ? `${tz.today ? "きょうの分を" : "きょう"}積むと ${(tRun + 1).toLocaleString("ja-JP")} 日つづけて` : tRun >= 2 ? `${tRun.toLocaleString("ja-JP")} 日つづけて` : "";
+    // after a break, the days on end that came last, as つみかさね says them (the user's call: they showed there only)
+    const [tLast, tLastRun] = !tRun && tz.days.size ? lastRunOf(tz.days) : ["", 0];
+    const tPast = tLastRun >= 2 ? `${shortDay(tLast)} まで ${tLastRun.toLocaleString("ja-JP")} 日つづけていました` : "";
 
     const tiles = [
       // its big number what is to do by today, as ToDo's tab counts (the user's call: it counted next year's too), the rest
@@ -6657,7 +6665,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         !nearest ? (goals.items.length ? "新しい目標を立ててみましょう。" : "目標を立ててみましょう。")
           : `「${nearest.title}」` + (left > 0 ? "の期限まで" : left === 0 ? "の期限です" : "")),
       tile("tsumi", tz.n ? String(tk) : "まだ", tz.n ? "段" : null,
-        tz.n ? [`つぎの段まで あと ${tLeft} こ`, tz.today ? `きょう ＋${tz.today} こ` : "", tEnd].filter(Boolean).join("・") : "記録すると、ブロックが積みあがります"),
+        tz.n ? [`つぎの段まで あと ${tLeft} こ`, tz.today ? `きょう ＋${tz.today} こ` : "", tEnd, tPast].filter(Boolean).join("・") : "記録すると、ブロックが積みあがります"),
     ];
     // the ones shown, in the user's order. Two to a row: one left without a partner (beside one hidden, or moved next to a
     // wide one) takes the row, rather than leave half of it empty
@@ -6969,10 +6977,28 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const d of [...days].sort()) { cur = prev && addDays(prev, 1) === d ? cur + 1 : 1; best = Math.max(best, cur); prev = d; }
     return best;
   }
-  // when the blocks to go may be in, at the pace of the last 7 days, or none with no pace
+  // when the blocks to go may be in, at the pace of the last 7 days, or none with no pace; the day written as the page's
+  // others are (the user's call: 「2027/1/6ごろ」 stood out), in two parts kept whole, so a line breaks between them and
+  // not before 「ろ」
   function paceWhen(left) {
     const days = tsumiPace > 0 ? Math.ceil(left / tsumiPace) - 1 : -1, on = days > 1 ? addDays(todayKey, days) : null;
-    return days < 0 ? null : days === 0 ? "このペースだと きょうのうちに" : days === 1 ? "このペースだと あしたごろ" : `このペースだと ${on.slice(0, 4) === todayKey.slice(0, 4) ? "" : Number(on.slice(0, 4)) + "/"}${fmtMD(on)}ごろ`;
+    if (days < 0) return null;
+    return [el("span", { class: "phrase" }, "このペースだと"), " ", el("span", { class: "phrase" }, days === 0 ? "きょうのうちに" : days === 1 ? "あしたごろ" : `${fmtDayLong(on)}ごろ`)];
+  }
+  // the days on end that came last, before a break: [their last day, how many]; and a day as 「M/D」 (with its year, when
+  // not this one)
+  function lastRunOf(days) {
+    const last = [...days].reduce((m, d) => (d > m ? d : m), "");
+    let run = 0;
+    for (let d = last; days.has(d); d = addDays(d, -1)) run++;
+    return [last, run];
+  }
+  function shortDay(d) { return d.slice(0, 4) === todayKey.slice(0, 4) ? fmtMD(d) : `${Number(d.slice(0, 4))}/${fmtMD(d)}`; }
+  // month m's first block, of the kind pressed (-1: none of it that month)
+  function tsumiMonthBlock(m) {
+    const s0 = tsumiMonths[m][0], e = tsumiMonths[m + 1]?.[0] ?? tsumiShown.length;
+    for (let j = s0; j < e; j++) if (!tsumiOnly || tsumiShown[j].kind === tsumiOnly) return j;
+    return -1;
   }
   const pickIndex = () => (tsumiPick ? tsumiShown.findIndex((b) => b.key === tsumiPick) : -1);
   const lastOfKind = (kind) => { for (let i = tsumiShown.length - 1; i >= 0; i--) if (tsumiShown[i].kind === kind) return i; return -1; };
@@ -6984,7 +7010,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function renderTsumi(opening = false) {
     if (tab !== "tsumi") return;
-    const blocks = tsumiShown = tsumiBlocks(), n = blocks.length;
+    const fresh = tsumiStale || !tsumiShown.length, blocks = tsumiShown = fresh ? tsumiBlocks() : tsumiShown, n = blocks.length;
+    tsumiStale = false;
     if (pickIndex() < 0) tsumiPick = null;
     if (tsumiOnly && !blocks.some((b) => b.kind === tsumiOnly)) tsumiOnly = null; // its last one deleted
     const k = tsumiCol(n), r = n - (k * (k + 1)) / 2, left = k + 1 - r; // steps done, blocks on the one being built, blocks to go
@@ -7001,9 +7028,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const span = n ? clampTo(daysBetween(ymd(new Date(blocks[0].t)), todayKey) + 1, 1, 7) : 7;
     tsumiPace = (v ? blocks.filter((b) => b.t >= since).length : week) / span;
     // where each month began, for the stairs (the user's call: which month a step was didn't show)
-    tsumiMonths = [];
-    let was = "";
-    blocks.forEach((b, i) => { const mo = ymd(new Date(b.t)).slice(0, 7); if (mo !== was) tsumiMonths.push([i, mo]); was = mo; });
+    if (fresh) {
+      tsumiMonths = [];
+      let was = "";
+      blocks.forEach((b, i) => { const mo = ymd(new Date(b.t)).slice(0, 7); if (mo !== was) tsumiMonths.push([i, mo]); was = mo; });
+    }
     $("tsumiCount").textContent = mine.length.toLocaleString("ja-JP");
     $("tsumiKind").hidden = !v;
     if (v) setChildren($("tsumiKind"), el("span", { class: "dot", style: `background: var(${v.c})` }), v.label);
@@ -7025,10 +7054,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // was said)
     let pastText = "";
     if (!run && dayset.size) {
-      const lastDay = [...dayset].reduce((m, d) => (d > m ? d : m), "");
-      let lastRun = 0;
-      for (let d = lastDay; dayset.has(d); d = addDays(d, -1)) lastRun++;
-      if (lastRun >= 2) pastText = `${lastDay.slice(0, 4) === todayKey.slice(0, 4) ? fmtMD(lastDay) : `${Number(lastDay.slice(0, 4))}/${fmtMD(lastDay)}`} まで ${nf(lastRun)} 日つづけていました${most(lastRun)}`;
+      const [lastDay, lastRun] = lastRunOf(dayset);
+      if (lastRun >= 2) pastText = `${shortDay(lastDay)} まで ${nf(lastRun)} 日つづけていました${most(lastRun)}`;
     }
     // the most said as days on end (the user's call: 「いちばん長いのは」 didn't say of what)
     const onEnd = endText ? part(endText) : null, onPast = pastText ? part(pastText) : null;
@@ -7038,12 +7065,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const t0 = Date.parse(todayKey + "T00:00:00"), j = tsumiShown.findIndex((b) => b.t >= t0 && (!tsumiOnly || b.kind === tsumiOnly));
       if (j >= 0) { showTsumiBlock(j); showTsumiStairs(); }
     } }, `きょう ＋${today} こ`) : null;
+    // the last 7 days, when they are more than today's (the user's call: day one said ＋1 twice)
+    const onWeek = week && week !== today ? part(`この7日で ＋${week} こ`) : null;
     setChildren($("tsumiSub"), el("span", { class: "due-parts" }, ...(!n ? [part("記録すると、ここにブロックが積みあがります")]
-      : v ? [onToday0, week ? part(`この7日で ＋${week} こ`) : null, onEnd, onPast, onMost, part(`全部で ${n.toLocaleString("ja-JP")} こ`), part(`いま ${k} 段`)]
-      : [part(`いま ${k} 段`), part(`つぎの段まで あと ${left} こ`), onToday0, week ? part(`この7日で ＋${week} こ`) : null, onEnd, onPast, onMost])));
+      : v ? [onToday0, onWeek, onEnd, onPast, onMost, part(`全部で ${n.toLocaleString("ja-JP")} こ`), part(`いま ${k} 段`)]
+      : [part(`いま ${k} 段`), part(`つぎの段まで あと ${left} こ`), onToday0, onWeek, onEnd, onPast, onMost])));
     // the stairs said for a screen reader with the count as it shows, the kind pressed, the days on end and the ★ after the
     // newest (the user's calls: the ★ couldn't be reached but by a finger; the kind pressed wasn't said)
-    $("tsumiCanvas").setAttribute("aria-label", n ? `これまでの記録 ${nf(n)} こが、${k} 段の階段に積みあがっています。${v ? `${v.label}のブロック ${nf(mine.length)} こだけに色を付けています。` : ""}つぎの段まであと ${left} こ。${!v && today ? `きょうは ${today} こ積みました。` : ""}${!v && (endText || pastText) ? (endText || pastText) + "。" : ""}前と次のボタンや左右の矢印キーで1つずつ見られます。いちばん新しいブロックの次は★です。` : "まだブロックがありません。");
+    $("tsumiCanvas").setAttribute("aria-label", n ? `これまでの記録 ${nf(n)} こが、${k} 段の階段に積みあがっています。${v ? `${v.label}のブロック ${nf(mine.length)} こだけに色を付けています。` : ""}つぎの段まであと ${left} こ。${!v && today ? `きょうは ${today} こ積みました。` : ""}${!v && (endText || pastText) ? (endText || pastText) + "。" : ""}前と次のボタンや左右の矢印キーで1つずつ、PageUp と PageDown で月ごとに見られます。いちばん新しいブロックの次は★です。` : "まだブロックがありません。");
     // the picture's button says when it will be the kind pressed (the user's call: that didn't show)
     $("tsumiImage").textContent = v ? `${v.label}の画像で保存` : "画像で保存";
     $("tsumiPrev").hidden = $("tsumiNext").hidden = n < 2;
@@ -7231,19 +7260,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const mf = tsumiMark(), spots = [];
     x.save(); x.beginPath(); x.rect(ox - 2, 0, C * pitch + 4, gridH); x.clip();
     x.font = `${mf}px ${getComputedStyle(document.body).fontFamily}`; x.textAlign = "right"; x.textBaseline = "alphabetic";
-    for (const [i, mo] of tsumiMonths) {
-      const c = tsumiCol(i), label = monthName(mo);
+    for (let m = 0; m < tsumiMonths.length; m++) {
+      const [i, mo] = tsumiMonths[m], c = tsumiCol(i), label = monthName(mo);
       if (c < cLo || c > cHi) continue;
-      // over the ring a block may wear (the user's call: a name sat on it)
-      const rx = xOf(c) + size - 1, by = yOf(c) - Math.max(2, 5 - size / 4) - 4, w = x.measureText(label).width;
-      if (rx - w >= ox - 2 && rx <= ox + C * pitch + 2 && by >= mf && by <= gridH) spots.push({ label, rx, by, w, year: mo.endsWith("-01"), i });
+      // over the ring a block may wear (the user's call: a name sat on it), and, beside the ★, clear of its ring (the user's
+      // call: with few records 「11月」 ran into it)
+      const rx = xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by = yOf(c) - Math.max(2, 5 - size / 4) - 4, w = x.measureText(label).width;
+      if (rx - w >= ox - 2 && rx <= ox + C * pitch + 2 && by >= mf && by <= gridH) spots.push({ label, rx, by, w, year: mo.endsWith("-01"), m });
     }
     x.lineWidth = 3; x.lineJoin = "round"; x.strokeStyle = tone("--surface", "#ffffff"); x.fillStyle = tone("--muted", "#8e8e93");
     const placed = fitMonths(spots, mf);
     for (const p of placed) { x.strokeText(p.label, p.rx, p.by); x.fillText(p.label, p.rx, p.by); }
     x.restore();
     // where they are, to be pressed for the month's first block (the user's call: pressing one did nothing)
-    tsumiGeo.months = placed.map((p) => ({ x0: p.rx - p.w - 6, x1: p.rx + 1, y0: p.by - mf - 6, y1: p.by + 2, i: p.i }));
+    tsumiGeo.months = placed.map((p) => ({ x0: p.rx - p.w, x1: p.rx, y0: p.by - mf, y1: p.by, m: p.m }));
     // the block shown under the stairs: ringed, or, when it is below 大きく's view, a mark at the foot that goes down to it; the
     // ★ ringed when it was pressed (the user's call: the ring stayed on the block shown before)
     const si = tsumiAtGoal ? (k * (k + 1)) / 2 + k : shownIndex();
@@ -7361,6 +7391,32 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren(list, ...rows);
   }
   // a step pressed: 大きく, round the block that finished it when it was out of the view, that block shown
+  // the month name nearest a press, within reach of its box
+  function nearMonth(g, px, py, reach) {
+    let best = null, bd = reach;
+    for (const m of g.months || []) {
+      const d = Math.hypot(Math.max(m.x0 - px, 0, px - m.x1), Math.max(m.y0 - py, 0, py - m.y1));
+      if (d <= bd) { bd = d; best = m; }
+    }
+    return best;
+  }
+  // month m's first block shown, of the kind pressed; with none of it that month, the kind lets go (the user's call: with a
+  // kind pressed, a month's name showed another kind's block)
+  function goTsumiMonth(m) {
+    let j = tsumiMonthBlock(m);
+    if (j < 0) { tsumiOnly = null; renderTsumi(); j = tsumiMonths[m][0]; }
+    showTsumiBlock(j); showTsumiTip();
+  }
+  // PageUp / PageDown: the month before or after the block shown, its first block (of the kind pressed) (the user's call:
+  // keys couldn't go month by month)
+  function stepTsumiMonth(dir) {
+    const n = tsumiShown.length;
+    if (!n || !tsumiMonths.length) return;
+    const i = tsumiAtGoal ? n - 1 : Math.max(0, shownIndex());
+    let m = 0;
+    while (m + 1 < tsumiMonths.length && tsumiMonths[m + 1][0] <= i) m++;
+    for (let x = m + dir; x >= 0 && x < tsumiMonths.length; x += dir) { const j = tsumiMonthBlock(x); if (j >= 0) { showTsumiBlock(j); return; } }
+  }
   // block i shown: picked and brought into 大きく's view (from 全体 too)
   function showTsumiBlock(i) {
     tsumiAnim = null; tsumiAtGoal = false; tsumiPick = tsumiShown[i].key;
@@ -7403,7 +7459,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // a block before or after: by the keys, or ◀ ▶ under the stairs (the user's call: on a phone there were no keys); with a
   // kind pressed, only its blocks
-  function stepTsumi(to) {
+  function stepTsumi(to, times = 1) {
     const n = tsumiShown.length, ok = (i) => !tsumiOnly || tsumiShown[i].kind === tsumiOnly;
     if (!n) return;
     if (tsumiAtGoal) { if (to === 1) return; if (to === -1) to = "last"; } // from the ★, ◀ goes back to the newest
@@ -7411,10 +7467,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (to === "first") { i = 0; while (i < n - 1 && !ok(i)) i++; }
     else if (to === "last") { i = n - 1; while (i > 0 && !ok(i)) i--; }
     else {
-      let j = i + to;
-      while (j >= 0 && j < n && !ok(j)) j += to;
-      if (j < 0) return;
-      if (j >= n) { const k = tsumiCol(n); tsumiAnim = null; tsumiAtGoal = true; tsumiPick = null; tsumiFollow((k * (k + 1)) / 2 + k); drawTsumi(); sayTsumi(); return; } // past the newest: the ★
+      // times blocks on (◀ ▶ held long), stopping at the first or the newest; one past the newest: the ★
+      let j = i;
+      for (let t = 0; t < times; t++) {
+        let x = j + to;
+        while (x >= 0 && x < n && !ok(x)) x += to;
+        if (x < 0) break;
+        if (x >= n) {
+          if (t) break;
+          const k = tsumiCol(n); tsumiAnim = null; tsumiAtGoal = true; tsumiPick = null; tsumiFollow((k * (k + 1)) / 2 + k); drawTsumi(); sayTsumi(); return;
+        }
+        j = x;
+      }
+      if (j === i) return;
       i = j;
     }
     tsumiAnim = null; tsumiPick = tsumiShown[i].key; tsumiAtGoal = false;
@@ -7428,13 +7493,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!g?.pitch) return;
     tsumiAnim = null; // a press ends the drop at once
     const rect = ev.currentTarget.getBoundingClientRect(), px = ev.clientX - rect.left, py = ev.clientY - rect.top;
-    // a month's name: the first block of that month
-    const month = g.months?.find((m) => px >= m.x0 && px <= m.x1 && py >= m.y0 && py <= m.y1);
-    if (month) { showTsumiBlock(month.i); showTsumiTip(); return; }
     // under the stairs: the ▼ goes down to the block it points at; anything else there picks nothing (the user's call: a
     // press just under the view picked a block out of sight)
     if (py > g.gridH) { if (g.below && Math.abs(px - g.below.x) <= 22) $("tsumiToNew").click(); else drawTsumi(); return; }
     let c = Math.floor(g.c0 + (px - g.ox) / g.pitch), row = Math.floor(g.r0 + (g.gridH - py) / g.pitch);
+    // a month's name, or a finger's width round it (less in 全体), though not on the stairs (a block, the places to come or
+    // the ★): that month's first block (the user's calls: pressing one did nothing; then it was hard to hit)
+    const whole = g.big && !g.near, onStairs = c >= 0 && c <= g.k && row >= 0 && row <= c;
+    const month = onStairs ? null : nearMonth(g, px, py, whole ? 12 : 22);
+    if (month) { goTsumiMonth(month.m); return; }
     if (g.big && !g.near) {
       // 全体: the place pressed comes up in 大きく, with its block shown, or, for the step being built, the ★'s words (the
       // user's call: the ★ pressed there showed the newest block)
@@ -7493,6 +7560,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   tsumiCanvas.addEventListener("pointerup", endTsumiDrag);
   tsumiCanvas.addEventListener("pointercancel", endTsumiDrag);
   tsumiCanvas.addEventListener("keydown", (ev) => {
+    if (ev.key === "PageUp" || ev.key === "PageDown") { ev.preventDefault(); stepTsumiMonth(ev.key === "PageUp" ? -1 : 1); return; }
     const to = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, Home: "first", End: "last" }[ev.key];
     if (to === undefined) return;
     ev.preventDefault();
@@ -7510,7 +7578,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       let steps = 0;
       const go = () => {
         if (b.getAttribute("aria-disabled") === "true") { stop(); return; }
-        held = true; stepTsumi(to); steps++;
+        // more blocks a step the longer it is held (the user's call: a thousand back took over a minute)
+        held = true; stepTsumi(to, steps < 40 ? 1 : steps < 80 ? 3 : steps < 120 ? 10 : 30); steps++;
         timer = setTimeout(go, steps < 6 ? 160 : steps < 20 ? 80 : 40);
       };
       timer = setTimeout(go, 450);
@@ -7629,7 +7698,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const spots = [];
     x.font = `600 12px ${font}`; x.textAlign = "right"; x.textBaseline = "alphabetic"; x.fillStyle = "#8e8e93";
     for (const [i, mo] of tsumiMonths) {
-      const c = tsumiCol(i), label = monthName(mo), rx = xOf(c) + size - 1, by = yOf(c) - 4, w = x.measureText(label).width;
+      const c = tsumiCol(i), label = monthName(mo), rx = xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by = yOf(c) - 4, w = x.measureText(label).width;
       if (rx - w >= 4) spots.push({ label, rx, by, w, year: mo.endsWith("-01") });
     }
     for (const p of fitMonths(spots, 12)) x.fillText(p.label, p.rx, p.by);
@@ -8735,7 +8804,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ---------- boot ----------
   function renderAll() {
-    tsumiTallied = null; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)
+    tsumiTallied = null; tsumiStale = true; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)
     for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderTrashRow, renderCopyRow, renderEmptyHint, renderSummary, renderTsumi, noteTsumiStep, paintChart]) draw(fn);
     if (tab === "reclist") draw(renderRecList);
     if (tab === "trash") draw(renderTrash);
