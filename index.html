@@ -1065,6 +1065,15 @@ ul.list > li.btn-row { padding: 0; }
 .tsumi-tip .when { display: block; overflow: hidden; color: var(--muted); }
 /* the block's record opened */
 .tsumi-acts { display: flex; justify-content: flex-end; }
+/* 段の記録: a step's row with the days it took under it */
+#tsumiSteps .step-name { display: flex; flex-direction: column; flex: none; }
+#tsumiSteps .took { font-size: var(--t-sub); color: var(--muted); }
+#tsumiSteps .row-count { text-align: right; } /* a date that wraps, with large text, stays by the › */
+/* the words under 積みあげた記録: the rest behind くわしく, which says とじる while they show */
+details.tsumi-more { margin-top: calc(-1 * var(--space-2)); } /* right under the three lines */
+.tsumi-more summary { display: flex; align-items: center; min-height: 44px; color: var(--accent); cursor: pointer; list-style: none; }
+.tsumi-more summary::-webkit-details-marker { display: none; }
+.tsumi-more:not([open]) .less, .tsumi-more[open] .more { display: none; }
 /* a kind pressed keeps only its blocks in colour (the user's call: some colours are hard to tell apart) */
 #tsumiKinds .sw { flex: none; width: 14px; height: 14px; border-radius: 4px; }
 #tsumiKinds .row-btn[aria-pressed="true"] { background: var(--fill); font-weight: 600; }
@@ -1660,7 +1669,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="card" id="tsumiImageCard" hidden><button type="button" class="link-btn sheet-row" id="tsumiImage">画像で保存</button></div>
         <h3 class="group-head">積みあげた記録</h3>
         <ul class="list card" id="tsumiKinds"></ul>
-        <p class="group-foot"><span class="phrase">記録を1つするたびに、ブロックが1つ積みあがります。</span><span class="phrase">1段目は1こ、2段目は2こ…と、</span><span class="phrase">段が上がるほど1段に積むブロックが増えます。</span><span class="phrase">ブロックを押すと、その記録が見られます。</span><span class="phrase">同じ日に積んだブロックには、枠が付きます。</span><span class="phrase">ToDoは完了したとき、</span><span class="phrase">目標はマスにチェックしたときに積みあがります。</span><span class="phrase">種類を押すと、その種類のブロックだけに色がつきます。</span><span class="phrase">大きくでは、長押ししてからなぞると階段を動かせます。</span><span class="phrase">点の付いたブロックは、きょう積んだものです。</span></p>
+        <p class="group-foot"><span class="phrase">記録を1つするたびに、ブロックが1つ積みあがります。</span><span class="phrase">ブロックを押すと、その記録が見られます。</span><span class="phrase">点の付いたブロックは、きょう積んだものです。</span></p>
+        <!-- the rest of the words, behind くわしく (the user's call: ten lines were too many) -->
+        <details class="group-foot tsumi-more"><summary><span class="more">くわしく</span><span class="less">とじる</span></summary><span class="phrase">1段目は1こ、2段目は2こ…と、</span><span class="phrase">段が上がるほど1段に積むブロックが増えます。</span><span class="phrase">同じ日に積んだブロックには、枠が付きます。</span><span class="phrase">ToDoは完了したとき、</span><span class="phrase">目標はマスにチェックしたときに積みあがります。</span><span class="phrase">種類を押すと、その種類のブロックだけに色がつきます。</span><span class="phrase">大きくでは、長押ししてからなぞると階段を動かせます。</span><span class="phrase">階段の上の「5月」などは、その月に積みはじめたところです。</span></details>
         <!-- when every fifth step was reached, and the next round step (the user's call); a step pressed shows its block -->
         <h3 class="group-head" id="tsumiStepsHead" hidden>段の記録</h3>
         <ul class="list card" id="tsumiSteps" hidden></ul>
@@ -2082,7 +2093,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a page a level down, under a tab, outside the menu: a record's entries under 記録
   const SUBPAGES = [{ key: "reclist", parent: "records" }, { key: "trash", parent: "records" }, { key: "copies", parent: "records" }];
   // the page a page sits under: きょう for the record pages, 記録 for a record's entries
-  const parentOf = (key) => (isRecord(key) ? "home" : key === "trash" && trashOf === "todos" ? "todo" : SUBPAGES.find((p) => p.key === key)?.parent || null);
+  const parentOf = (key) => (isRecord(key) ? "home" : key === "trash" && (trashBack || trashOf === "todos") ? trashBack || "todo" : SUBPAGES.find((p) => p.key === key)?.parent || null);
   const SLOTS = ["朝食", "昼食", "夕食", "間食"];
 
   let tab = "home";
@@ -2091,6 +2102,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   let todoFilter = "all";
   let todoQuery = ""; // the words ToDo's list is narrowed to, each of them in a ToDo's name or memo (none: all of it)
   let trashOf = null; // 最近削除した項目 opened from ToDo's page shows its ToDos alone ("todos"), and goes back there; null: all, from 記録
+  let trashBack = null; // and the page it goes back to when not that one: つみかさね, opened from a deleted one's block
   let calMonth = monthOf(todayKey), calDay = todayKey;
 
   // ---------- storage: this device's browser (localStorage) ----------
@@ -3001,7 +3013,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("todoTrashCount").textContent = n ? n.toLocaleString("ja-JP") : "";
     $("todoTrash").setAttribute("aria-label", `最近削除したToDo、${n} 件`);
   }
-  $("todoTrash").addEventListener("click", () => { trashOf = "todos"; renderTrash(); showTab("trash"); });
+  $("todoTrash").addEventListener("click", () => { trashOf = "todos"; trashBack = null; renderTrash(); showTab("trash"); });
   function renderTodoBadge() {
     const n = todos.items.filter((t) => !t.done && t.due && t.due <= todayKey).length, mi = menuEl.querySelector('button[data-tab="todo"] .mi');
     if (!mi) return;
@@ -6904,11 +6916,22 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const easeOut = (p) => 1 - Math.pow(1 - p, 3);
   let tsumiShown = [], tsumiGeo = null; // the blocks, and where they were last drawn
   let tsumiPick = null; // the block pressed (its key), or null for the newest
-  let tsumiView = "near", tsumiAnchor = null; // 大きく or 全体; 大きく's lower-left place [column, row] when away from the summit
+  // 大きく or 全体, as last chosen on this phone (the user's call: 全体 went back to 大きく); 大きく's lower-left place
+  // [column, row] when away from the summit
+  const VIEW_KEY = LS_PREFIX + "tsumiView";
+  let tsumiView = (() => { try { return localStorage.getItem(VIEW_KEY) === "all" ? "all" : "near"; } catch { return "near"; } })(), tsumiAnchor = null;
   let tsumiOnly = null; // a kind pressed in 積みあげた記録: only its blocks keep their colour
   let tsumiAnim = null, tsumiFresh = Infinity; // blocks dropping in since the last look; with less motion, the first of them to ring
   let tsumiDrag = null, tsumiDragged = false; // 大きく moved under a finger; and the press that ended a move, not to be taken as a tap
   let tsumiAllSteps = false; // 段の記録 with every step, after もっと見る (till the page is opened again)
+  let tsumiPace = 0, tsumiMonths = []; // blocks a day of late; [block, "YYYY-MM"] where each month began
+  // days on end with a block, up to today, or yesterday while today has none yet
+  function tsumiRun(list) {
+    const days = new Set(list.map((b) => b.day));
+    let run = 0;
+    for (let d = days.has(todayKey) ? todayKey : addDays(todayKey, -1); days.has(d); d = addDays(d, -1)) run++;
+    return run;
+  }
   const pickIndex = () => (tsumiPick ? tsumiShown.findIndex((b) => b.key === tsumiPick) : -1);
   const lastOfKind = (kind) => { for (let i = tsumiShown.length - 1; i >= 0; i--) if (tsumiShown[i].kind === kind) return i; return -1; };
   // the block shown under the stairs: the one pressed, or else the newest; the newest of the kind pressed, when one is (the
@@ -6929,21 +6952,28 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // and how many went on today (the user's call: it didn't show), which wear a white dot on the stairs
     const today = mine.filter((b) => b.t >= Date.parse(todayKey + "T00:00:00")).length;
     // and how many days on end, up to today (or yesterday, today's not on yet), have some (the user's call: it showed on 記録 only)
-    const days = new Set(mine.map((b) => b.day));
-    let run = 0;
-    for (let d = days.has(todayKey) ? todayKey : addDays(todayKey, -1); days.has(d); d = addDays(d, -1)) run++;
+    const run = tsumiRun(mine);
+    // the pace of the last 7 days, every kind's, for when the next step may come (the ★)
+    tsumiPace = (v ? blocks.filter((b) => b.t >= since).length : week) / 7;
+    // where each month began, for the stairs (the user's call: which month a step was didn't show)
+    tsumiMonths = [];
+    let was = "";
+    blocks.forEach((b, i) => { const mo = ymd(new Date(b.t)).slice(0, 7); if (mo !== was) tsumiMonths.push([i, mo]); was = mo; });
     $("tsumiCount").textContent = mine.length.toLocaleString("ja-JP");
     $("tsumiKind").hidden = !v;
     if (v) setChildren($("tsumiKind"), el("span", { class: "dot", style: `background: var(${v.c})` }), v.label);
-    // since when, as 記録 says it (the user's call: when the stacking began didn't show)
-    const first = blocks.reduce((m, b) => (b.day < m ? b.day : m), todayKey), f = parseYmd(first);
+    // since when, as 記録 says it, the kind's own with one pressed (the user's calls: when the stacking began didn't show;
+    // with a kind pressed it stayed every kind's)
+    const first = mine.reduce((m, b) => (b.day < m ? b.day : m), todayKey), f = parseYmd(first);
     setChildren($("tsumiSince"), el("span", {}, `${f.getFullYear()}年${f.getMonth() + 1}月${f.getDate()}日から`), " ", el("span", {}, `${(daysBetween(first, todayKey) + 1).toLocaleString("ja-JP")} 日の積み重ね`));
     $("tsumiSince").hidden = !n;
     // its parts kept whole, and the ・ between them dropped where the line breaks (none at a line's end)
     const part = (s) => el("span", { class: "phrase" }, s);
+    // the days on end, or, today's not on yet, what today's would make them (the user's call: they were about to break unsaid)
+    const onEnd = !today && run >= 1 ? part(`きょう積むと ${run + 1} 日つづけて`) : run >= 2 ? part(`${run} 日つづけて`) : null;
     setChildren($("tsumiSub"), el("span", { class: "due-parts" }, ...(!n ? [part("記録すると、ここにブロックが積みあがります")]
-      : v ? [today ? part(`きょう ＋${today} こ`) : null, week ? part(`この7日で ＋${week} こ`) : null, run >= 2 ? part(`${run} 日つづけて`) : null, part(`全部で ${n.toLocaleString("ja-JP")} こ`), part(`いま ${k} 段`)]
-      : [part(`いま ${k} 段`), part(`つぎの段まで あと ${left} こ`), today ? part(`きょう ＋${today} こ`) : null, week ? part(`この7日で ＋${week} こ`) : null, run >= 2 ? part(`${run} 日つづけて`) : null])));
+      : v ? [today ? part(`きょう ＋${today} こ`) : null, week ? part(`この7日で ＋${week} こ`) : null, onEnd, part(`全部で ${n.toLocaleString("ja-JP")} こ`), part(`いま ${k} 段`)]
+      : [part(`いま ${k} 段`), part(`つぎの段まで あと ${left} こ`), today ? part(`きょう ＋${today} こ`) : null, week ? part(`この7日で ＋${week} こ`) : null, onEnd])));
     $("tsumiCanvas").setAttribute("aria-label", n ? `これまでの記録 ${n} こが、${k} 段の階段に積みあがっています。つぎの段まであと ${left} こ。${!v && today ? `きょうは ${today} こ積みました。` : ""}前と次のボタンや左右の矢印キーで1つずつ見られます。` : "まだブロックがありません。");
     $("tsumiPrev").hidden = $("tsumiNext").hidden = n < 2;
     $("tsumiImageCard").hidden = !n;
@@ -7113,6 +7143,27 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (x.roundRect) x.roundRect(ox + fc * pitch - 2, gridH - (fr + N.R) * pitch - 2, N.C * pitch + 4, N.R * pitch + 4, 4); else x.rect(ox + fc * pitch - 2, gridH - (fr + N.R) * pitch - 2, N.C * pitch + 4, N.R * pitch + 4);
       x.stroke(); x.globalAlpha = 1;
     }
+    // where each month began (the user's call: which month a step was didn't show): its name just over the top of the column
+    // it began in, set to its right edge (the slope above is empty), whole or not at all, edged in the card's colour where
+    // 全体's frame runs under it; the year at January. The years go first, then the months where they fit, or the years
+    // alone when most months wouldn't (全体 of years of records). The column being built has none
+    const mf = tsumiMark(), spots = [];
+    x.save(); x.beginPath(); x.rect(ox - 2, 0, C * pitch + 4, gridH); x.clip();
+    x.font = `${mf}px ${getComputedStyle(document.body).fontFamily}`; x.textAlign = "right"; x.textBaseline = "alphabetic";
+    for (const [i, mo] of tsumiMonths) {
+      const c = tsumiCol(i), year = mo.endsWith("-01"), label = year ? `${Number(mo.slice(0, 4))}年` : `${Number(mo.slice(5))}月`;
+      if (c >= k || c < cLo || c > cHi) continue;
+      const rx = xOf(c) + size - 1, by = yOf(c) - 3, w = x.measureText(label).width;
+      if (rx - w >= ox - 2 && rx <= ox + C * pitch + 2 && by >= mf && by <= gridH) spots.push({ label, rx, by, w, year });
+    }
+    const hits = (a, b) => a.rx - a.w < b.rx + 6 && b.rx - b.w < a.rx + 6 && Math.abs(a.by - b.by) < mf + 2;
+    const fit = (list) => list.reduce((put, p) => (put.some((q) => hits(p, q)) ? put : [...put, p]), []);
+    const years = spots.filter((p) => p.year), months = spots.length - years.length;
+    let put = fit([...years, ...spots.filter((p) => !p.year)]);
+    if (put.length - fit(years).length < (months * 2) / 3) put = fit(years);
+    x.lineWidth = 3; x.lineJoin = "round"; x.strokeStyle = tone("--surface", "#ffffff"); x.fillStyle = tone("--muted", "#8e8e93");
+    for (const p of put) { x.strokeText(p.label, p.rx, p.by); x.fillText(p.label, p.rx, p.by); }
+    x.restore();
     // the block shown under the stairs: ringed, or, when it is below 大きく's view, a mark at the foot that goes down to it
     const si = shownIndex();
     let seen = true;
@@ -7160,7 +7211,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren(tip, el("span", { class: "what" }, el("span", { class: "dot", style: `background: var(${v.c})` }), el("strong", {}, v.label), " ", b.text || ""),
       el("span", { class: "when" }, el("span", { class: "due-parts" }, part(fmtDayLong(b.day)), made > b.day ? part(`${made.slice(0, 4) === todayKey.slice(0, 4) ? fmtMD(made) : `${Number(made.slice(0, 4))}/${fmtMD(made)}`} に積んだ`) : null,
         part(`その日 ${hi - lo + 1} こ`), part(nth), top ? part(`${col + 1} 段目を仕上げた`) : null, newest ? part(newest) : null, b.gone ? part(b.kind === "goal" ? "削除した目標" : "削除したToDo") : null)));
-    if (b.open) { open.hidden = false; open.dataset.edit = b.open.id || b.open.goal; } // the sheet hands focus back to it
+    // its record opened; or, a ToDo or goal deleted that can still be put back, 最近削除した項目 (the user's call: there was
+    // no way back to it from its block)
+    open.textContent = "この記録を開く"; delete open.dataset.trash; delete open.dataset.edit;
+    const binned = b.gone && b.rid && deleted.get(`${b.kind === "goal" ? "goals" : "todos"}/${b.rid}`)?.data;
+    if (binned) { open.hidden = false; open.textContent = b.kind === "goal" ? "最近削除した項目で見る" : "最近削除したToDoで見る"; open.dataset.trash = b.kind === "goal" ? "all" : "todos"; }
+    else if (b.open) { open.hidden = false; open.dataset.edit = b.open.id || b.open.goal; } // the sheet hands focus back to it
   }
   // how many of each kind went in; one pressed keeps only its blocks in colour, and the line under the stairs and its
   // steps keep to them; pressed again, all of them (the user's call: some colours are hard to tell apart)
@@ -7190,8 +7246,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const steps = [];
     for (let st = Math.floor(k / 5) * 5; st >= 5; st -= 5) steps.push(st);
     const shown = tsumiAllSteps ? steps : steps.slice(0, 12);
+    // each with the days it took from the five before (from the first block, for 5 段) under it (the user's call: the pace
+    // didn't show)
+    const dayOf = (st) => (st ? ymd(new Date(blocks[(st * (st + 1)) / 2 - 1].t)) : blocks.reduce((m, b) => (b.day < m ? b.day : m), todayKey));
+    const took = (st) => { const d = daysBetween(dayOf(st - 5), dayOf(st)); return d > 0 ? `${d}日で` : "その日のうちに"; };
     for (const st of shown) rows.push(el("li", { class: "btn-row" }, el("button", { type: "button", class: "row-btn nav", "data-step": st, onclick: () => goTsumiStep(st) },
-      el("span", {}, `${st} 段`), el("span", { class: "row-count" }, fmtDayLong(ymd(new Date(blocks[(st * (st + 1)) / 2 - 1].t)))), el("span", { class: "chev" }, icon("next", 16)))));
+      el("span", { class: "step-name" }, el("span", {}, `${st} 段`), el("span", { class: "took" }, took(st))),
+      el("span", { class: "row-count" }, fmtDayLong(dayOf(st))), el("span", { class: "chev" }, icon("next", 16)))));
     if (shown.length < steps.length) rows.push(el("li", { class: "btn-row" }, el("button", { type: "button", class: "row-btn", onclick: () => {
       tsumiAllSteps = true; renderTsumiSteps(tsumiShown);
       list.querySelector(`button[data-step="${shown[shown.length - 1] - 5}"]`)?.focus(); // on from where the list ended
@@ -7267,7 +7328,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     drawTsumi();
     // the step being built: how far its goal is
     if (inView && c === g.k && row >= 0 && row <= c) {
-      setChildren($("tsumiTip"), el("span", { class: "what" }, el("span", { class: "dot", style: "background: #ffcc00" }), el("strong", {}, `${g.k + 1} 段目`), ` まで、あと ${g.left} こ`));
+      // and when, at the pace of the last 7 days (the user's call: it didn't say)
+      const days = tsumiPace > 0 ? Math.ceil(g.left / tsumiPace) - 1 : -1, on = days > 1 ? addDays(todayKey, days) : null;
+      const when = days < 0 ? null : days === 0 ? "このペースだと きょうのうちに" : days === 1 ? "このペースだと あしたごろ" : `このペースだと ${on.slice(0, 4) === todayKey.slice(0, 4) ? "" : Number(on.slice(0, 4)) + "/"}${fmtMD(on)}ごろ`;
+      setChildren($("tsumiTip"), el("span", { class: "what" }, el("span", { class: "dot", style: "background: #ffcc00" }), el("strong", {}, `${g.k + 1} 段目`), ` まで、あと ${g.left} こ`),
+        when ? el("span", { class: "when" }, when) : null);
       $("tsumiOpen").hidden = true;
       showTsumiTip();
     }
@@ -7325,9 +7390,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const b = ev.target.closest("button[data-view]");
     if (!b) return;
     tsumiView = b.dataset.view; tsumiAnim = null;
+    lsPut(VIEW_KEY, tsumiView);
     drawTsumi(); sayTsumi();
   });
   $("tsumiOpen").addEventListener("click", (ev) => {
+    if (ev.currentTarget.dataset.trash) { trashOf = ev.currentTarget.dataset.trash === "todos" ? "todos" : null; trashBack = "tsumi"; renderTrash(); showTab("trash"); return; }
     const o = tsumiShown[shownIndex()]?.open;
     if (!o) return;
     if (o.goal) openChart(o.goal, ev.detail === 0, o.path || [], o.spot ?? null); else openRecEdit(o.kind, o.id, ev.detail === 0);
@@ -7340,7 +7407,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const blocks = tsumiShown, n = blocks.length;
     if (!n) return;
     const k = tsumiCol(n), r = n - (k * (k + 1)) / 2, cols = k + 1, font = getComputedStyle(document.body).fontFamily, round = getComputedStyle($("tsumiCount")).fontFamily;
-    const PAD = 28, SIZE = 480, HEAD = 112, SCALE = 2, W = SIZE + PAD * 2, pitch = Math.min(48, SIZE / cols);
+    // and today's, the days on end and the 段 marks on the right (the user's call: the picture had none of them)
+    const today = blocks.filter((b) => b.t >= Date.parse(todayKey + "T00:00:00")).length, run = tsumiRun(blocks);
+    const extra = [today ? `きょう ＋${today} こ` : "", run >= 2 ? `${run} 日つづけて` : ""].filter(Boolean).join("・");
+    const PAD = 28, SIZE = 480, AX = 44, HEAD = extra ? 136 : 112, SCALE = 2, W = SIZE + PAD * 2, pitch = Math.min(48, (SIZE - AX) / cols);
     const gap = pitch >= 16 ? 3 : pitch >= 8 ? 2 : pitch >= 4 ? 1 : 0, size = pitch - gap, rad = size >= 8 ? Math.min(8, size * 0.24) : 0;
     const first = blocks.reduce((m, b) => (b.day < m ? b.day : m), todayKey), f = parseYmd(first), t = parseYmd(todayKey);
     // the kinds and their counts, set in lines under the stairs
@@ -7372,8 +7442,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     x.fillText("こ", PAD + cw + 6, PAD + 62);
     x.font = `600 15px ${font}`;
     x.fillText(`いま ${k} 段・${f.getFullYear()}年${f.getMonth() + 1}月${f.getDate()}日から ${(daysBetween(first, todayKey) + 1).toLocaleString("ja-JP")} 日の積み重ね`, PAD, PAD + 90, SIZE);
+    if (extra) x.fillText(extra, PAD, PAD + 114, SIZE);
     // the stairs, from the ground up, as on the screen: the step being built with its places to come and the yellow goal
-    const ox = PAD + (SIZE - cols * pitch) / 2, xOf = (c) => ox + c * pitch + gap / 2, yOf = (row) => ground - (row + 1) * pitch + gap / 2;
+    const ox = PAD + (SIZE - AX - cols * pitch) / 2, xOf = (c) => ox + c * pitch + gap / 2, yOf = (row) => ground - (row + 1) * pitch + gap / 2;
     const sq = (px, py, s = size, rr = rad) => { x.beginPath(); if (rr && x.roundRect) x.roundRect(px, py, s, s, rr); else x.rect(px, py, s, s); };
     blocks.forEach((b, i) => { const c = tsumiCol(i); x.fillStyle = TSUMI_LIGHT[b.kind]; sq(xOf(c), yOf(i - (c * (c + 1)) / 2)); x.fill(); });
     x.strokeStyle = "#6c6c70"; x.lineWidth = 1; x.globalAlpha = 0.5;
@@ -7388,6 +7459,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       x.closePath(); x.fillStyle = "rgba(0, 0, 0, .35)"; x.fill();
     }
     x.fillStyle = "#c6c6c8"; x.fillRect(PAD, ground + 1, SIZE, 1);
+    // the 段 marks, as on the screen
+    const every = [5, 10, 20, 50, 100, 200, 500].find((v) => v * pitch >= 20) || 1000;
+    x.fillStyle = "#6c6c70"; x.font = `600 13px ${font}`; x.textBaseline = "middle";
+    for (let j = every - 1; j <= k; j += every) x.fillText(`${j + 1}段`, ox + cols * pitch + 8, ground - (j + 0.5) * pitch);
     x.font = `600 15px ${font}`; x.textBaseline = "middle";
     for (const it of keys) {
       const ly = ground + 28 + it.line * 26 + 8;
@@ -8370,7 +8445,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }));
   }
   // drawn before the page slides in, so it arrives whole
-  $("trashBtn").addEventListener("click", () => { trashOf = null; renderTrash(); showTab("trash"); });
+  $("trashBtn").addEventListener("click", () => { trashOf = null; trashBack = null; renderTrash(); showTab("trash"); });
 
   // ---------- 書きかけ ----------
   // what was being typed into an add form and not yet added is kept as the app goes away, and put back when it opens
@@ -8478,6 +8553,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ---------- boot ----------
   function renderAll() {
+    tsumiTallied = null; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)
     for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderTrashRow, renderCopyRow, renderEmptyHint, renderSummary, renderTsumi, noteTsumiStep, paintChart]) draw(fn);
     if (tab === "reclist") draw(renderRecList);
     if (tab === "trash") draw(renderTrash);
