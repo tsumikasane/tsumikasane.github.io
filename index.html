@@ -2106,6 +2106,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       return false;
     }
   })();
+  // つみかさね's last tally (tsumiBlocks, mode "tally"), kept till a record or a setting is saved next
+  let tsumiTallied = null;
   class Store {
     constructor(name) {
       this.name = name; this.unsaved = false;
@@ -2129,6 +2131,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // a save the browser won't take (full) leaves the records here in the page, marked unsaved: the note at the top says
     // so, today's copy takes them in (keepUnsaved), and the next save that goes through brings them along (retryUnsaved)
     saveLocal() {
+      tsumiTallied = null;
       if (this.big) {
         if (this.loaded) { saveBig(this); return true; }
         this.unsaved = true; saveFails++; showError(); renderSaveNote(); // never read in: not saved over
@@ -2359,8 +2362,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function removeWithUndo(st, ids, msg = DELETED_WORDS[st.name]) {
     const list = [].concat(ids), before = list.map((id) => st.get(id)).filter(Boolean).map((x) => JSON.parse(JSON.stringify(x)));
     if (!before.length) return;
+    // a ToDo done, or a goal reached or with checks, leaves its blocks in つみかさね, and says so (the user's call: whether
+    // they went too didn't show)
+    const checked = (cells) => (cells || []).some((c) => c && (c.d || checked(c.c)));
+    const keeps = (st === todos && before.some((t) => t.done)) || (st === goals && before.some((g) => g.done || checked(g.mandala)));
     act(() => st.removeMany(list));
-    flash(msg, () => act(async () => { await st.putBack(before); flash("元に戻しました"); }));
+    flash(keeps ? `${msg.replace(/。$/, "")}。つみかさねのブロックは残ります` : msg, () => act(async () => { await st.putBack(before); flash("元に戻しました"); }));
   }
 
   // ---------- 保存できないとき ----------
@@ -3334,6 +3341,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // every page counts from todayKey, fixed when the page loads; brought back on a later day, the app loads again so the date
   // on top and everything else move on to the new day
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && ymd(new Date()) !== todayKey) location.reload(); });
+  // the day turning while the app is open (the user's call: past midnight きょう stayed yesterday, and a record went to
+  // yesterday): at midnight it starts afresh, as when it is brought back on another day, once nothing is being written (no
+  // sheet open, no field in use), the 日記 saved first; it says so when it is up again (boot)
+  const DAY_TURNED = "tsumikasane:dayTurned";
+  const toMidnight = () => { const now = new Date(); return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime() + 500; };
+  function turnDay() {
+    if (ymd(new Date()) === todayKey) { setTimeout(turnDay, toMidnight()); return; } // woken a moment early
+    if (document.visibilityState !== "visible") return; // brought back later, it starts afresh then (above)
+    const f = document.activeElement, typing = f?.matches?.("input, textarea, select, [contenteditable]") && !f.closest("dialog:not([open])"); // a field left in a sheet closed doesn't count
+    if (document.querySelector("dialog[open]") || typing) { setTimeout(turnDay, 15000); return; }
+    try { sessionStorage.setItem(DAY_TURNED, "1"); } catch {}
+    flushJournal().then(() => location.reload());
+  }
+  setTimeout(turnDay, toMidnight());
   function markJournalDirty() {
     journalDirty = true;
     journalState.textContent = "未保存";
@@ -6449,6 +6470,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     { key: "weight", label: "からだ", color: "var(--c-weight)" },
     { key: "money", label: "家計簿", color: "var(--c-money)" },
     { key: "goal", label: "目標", color: "var(--c-goal)", wide: true },
+    { key: "tsumi", label: "つみかさね", color: "var(--accent)" },
   ];
   const homeTile = (key) => HOME_TILES.find((t) => t.key === key);
   // which of them show, and in what order, is the user's to choose (the user's call), from the gear by the date. The
@@ -6567,6 +6589,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // the next plan to come: the soonest turn starting after today, looking a year ahead
     const nextEv = events.items.map((e) => ({ e, start: turnStarts(e, addDays(todayKey, 1), addDays(todayKey, 366)).find((d) => d > todayKey) }))
       .filter((x) => x.start).sort((a, b) => a.start.localeCompare(b.start) || byTime(a.e, b.e))[0];
+    // つみかさね: the steps done, how far the next one is and what went on today (the user's call: it showed on its tab only)
+    const tz = tsumiBlocks(false, "tally"), tk = tsumiCol(tz.n), tLeft = tk + 1 - (tz.n - (tk * (tk + 1)) / 2);
 
     const tiles = [
       // its big number what is to do by today, as ToDo's tab counts (the user's call: it counted next year's too), the rest
@@ -6598,6 +6622,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         left > 0 ? "日" : null,
         !nearest ? (goals.items.length ? "新しい目標を立ててみましょう。" : "目標を立ててみましょう。")
           : `「${nearest.title}」` + (left > 0 ? "の期限まで" : left === 0 ? "の期限です" : "")),
+      tile("tsumi", tz.n ? String(tk) : "まだ", tz.n ? "段" : null,
+        tz.n ? `つぎの段まで あと ${tLeft} こ` + (tz.today ? `・きょう ＋${tz.today} こ` : "") : "記録すると、ブロックが積みあがります"),
     ];
     // the ones shown, in the user's order. Two to a row: one left without a partner (beside one hidden, or moved next to a
     // wide one) takes the row, rather than leave half of it empty
@@ -6709,18 +6735,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("homeSettings").addEventListener("click", (ev) => openSettings(ev.detail === 0, "home"));
 
   // ---------- 記録: これまでの積み重ね (the user's call: everything so far in one view; no weeks, months or years, no charts) ----------
-  // a day counts as recorded when it has any record: a journal entry, a meal, a workout, study, a weight or money in or out
-  function recordedDays() {
-    const s = new Set();
-    for (const j of journal.items) s.add(j.date || j.id);
-    for (const x of meals.items) s.add(x.date);
-    for (const x of workouts.items) s.add(x.date);
-    for (const x of study.items) s.add(x.date);
-    for (const x of routineDays.items) if (x.done?.length) s.add(x.date);
-    for (const w of sortedWeights()) s.add(w.id);
-    for (const x of expenses.items) s.add(x.date);
-    return s;
-  }
+  // a day counts as recorded when it has any record, as つみかさね counts them, a ToDo done and a goal's check too (the
+  // user's call: 記録 left those out, so its days on end and since when differed from つみかさね's)
+  function recordedDays() { return tsumiBlocks(false, "tally").days; }
   // minutes as hours once they add up: 53 時間 20 分, or 56 時間 when it comes to whole hours (the user's call: no 0 分)
   const durBig = (min) => (min >= 60 ? [String(Math.floor(min / 60)), min % 60 ? `時間 ${min % 60} 分` : "時間"] : [String(min), "分"]);
   const durText = (min) => durBig(min).join(" ");
@@ -6820,14 +6837,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // every record so far as a block, oldest first: a ToDo done, a day's 日記, a meal, a workout, a study, an item of a day's
   // ルーティーン, a day's からだ, a 家計簿 entry, an action checked in a goal's chart and a goal reached. Each holds what it
-  // says (cut short) and how to open it; words: false leaves the words out, for a count
-  function tsumiBlocks(words = true) {
+  // says (cut short) and how to open it; words: false leaves the words out. mode "tally" makes no blocks, only { n, today,
+  // days }: how many, how many went on today, and the days they are of, without the sort and the dates worked out, and
+  // kept till the next save (the user's call: every save counted them all, twice with きょう's tile)
+  function tsumiBlocks(words = true, mode = "blocks") {
+    if (mode === "tally" && tsumiTallied) return tsumiTallied; // nothing saved since
     const out = [], say = (s) => { if (!words) return ""; s = oneLine(s); return s.length > 120 ? s.slice(0, 120) + "…" : s; };
+    const tally = { n: 0, today: 0, days: new Set(), first: Infinity }, dayStart = Date.parse(todayKey + "T00:00:00");
     // rid: the record's id (a ToDo's, a goal's), by which a deleted one's blocks are kept. One made ahead for a day to come
     // (翌日) goes from the start of its day, so it lands on top when that day comes (the user's call: it slid in under the
     // ones recorded after it, and didn't drop in)
     const add = (key, kind, day, t, text, open, gone = false, rid = open && (open.goal || open.id)) => {
-      if (day && day <= todayKey) out.push({ key, kind, day, t: Math.max(t || noonOf(day), Date.parse(day + "T00:00:00")), text: say(text), open, gone, rid });
+      if (!day || day > todayKey) return;
+      if (mode === "tally") { tally.n++; tally.days.add(day); if (day === todayKey || t >= dayStart) tally.today++; tally.first = Math.min(tally.first, t || noonOf(day)); return; }
+      out.push({ key, kind, day, t: Math.max(t || noonOf(day), Date.parse(day + "T00:00:00")), text: say(text), open, gone, rid });
     };
     const names = tsumiNames();
     // the blocks kept of a kind's records deleted, while no record of their id is here, and the ones folded
@@ -6854,7 +6877,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const w of sortedWeights()) add("weight:" + w.id, "weight", w.id, realTime(w.createdAt), `${fmtKg(w.kg)} kg` + (num(w.fat) > 0 ? `・体脂肪率 ${fmtFat(w.fat)}%` : ""), { kind: "weight", id: w.id });
     for (const e of expenses.items) add("money:" + e.id, "money", e.date, realTime(e.createdAt), `${expenseCat(e) || (e.kind === "in" ? "収入" : "支出")} ${fmtYen(num(e.amount))}`, { kind: "money", id: e.id });
     // a goal with no time of its own (none is made so now) sits with the first record, so it doesn't move from day to day
-    const first = out.reduce((m, x) => Math.min(m, x.t), Infinity), firstT = Number.isFinite(first) ? first : noonOf(todayKey);
+    const first = mode === "tally" ? tally.first : out.reduce((m, x) => Math.min(m, x.t), Infinity), firstT = Number.isFinite(first) ? first : noonOf(todayKey);
     for (const g of goals.items) {
       // a check from before check days were kept counts too (the user's call: they were left out), from when its goal was made
       const made = realTime(g.createdAt, g.updatedAt) || firstT;
@@ -6870,7 +6893,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (g.done) { const at = realTime(g.doneAt) || made; add("goal:" + g.id, "goal", ymd(new Date(at)), at, `「${oneLine(g.title)}」を達成`, { goal: g.id }); }
     }
     keptOf("goal", new Set(goals.items.map((g) => g.id)));
-    return out.sort((a, b) => a.t - b.t);
+    return mode === "tally" ? (tsumiTallied = tally) : out.sort((a, b) => a.t - b.t);
   }
   const tsumiCol = (i) => Math.floor((Math.sqrt(8 * i + 1) - 1) / 2); // the column block i sits in (column c starts at c(c+1)/2)
   const SEEN_KEY = LS_PREFIX + "tsumiSeen"; // this phone's last look at the stairs
@@ -7386,7 +7409,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const tsumiRound = (n) => (n >= 1000 ? Math.floor(n / 1000) * 1000 : [500, 300, 200, 100].find((v) => n >= v) || 0);
   let tsumiCounted = null; // { n, k, best, top }: blocks and steps at the last count, and the most steps and the round count said since
   function noteTsumiStep() {
-    const n = tsumiBlocks(false).length, k = tsumiCol(n), round = tsumiRound(n), was = tsumiCounted;
+    const n = tsumiBlocks(false, "tally").n, k = tsumiCol(n), round = tsumiRound(n), was = tsumiCounted;
     if (!was || Math.abs(n - was.n) > 3) { tsumiCounted = { n, k, best: k, top: round }; return; }
     const rise = k > was.k && k > was.best, hit = round > tsumiRound(was.n) && round > was.top;
     tsumiCounted = { n, k, best: rise ? k : was.best, top: hit ? round : was.top };
@@ -8469,6 +8492,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     showMode();
     checkRestore().then(() => saveCopy());
     askPersist();
+    // started afresh at midnight (turnDay): said so
+    try { if (sessionStorage.getItem(DAY_TURNED)) { sessionStorage.removeItem(DAY_TURNED); setTimeout(() => flash("日付が変わったので、きょうの日付にしました"), 300); } } catch {}
     const initial = (location.hash || "").slice(1);
     // straight there: no slide in from きょう as the app opens (a record's entries open at 記録, which record being unknown)
     draw(() => setTab(["reclist", "trash", "copies"].includes(initial) ? "records" : PAGES.some((p) => p.key === initial) ? initial : "home"));
