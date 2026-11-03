@@ -9148,7 +9148,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // here waits in a queue kept in localStorage until it has gone up, so nothing is lost offline; what comes down is put in
   // place without going back up. This device's own settings (the backup reminder's) and what deleted records held stay
   // here. A device signed in for the first time sends everything it has, and gets everything the others have
-  const FIREBASE_CONFIG = null; // the project's web config (apiKey, authDomain, projectId, appId …), once it is set up
+  // the project's web config. It isn't a secret: who may read and write what is set by the project's Firestore rules
+  // (users/{uid}/… only for that user, signed in)
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCCb7x0-Dvwlomj_7_IlH2UXcHumPjgLNs",
+    authDomain: "tsumikasane-2e494.firebaseapp.com",
+    projectId: "tsumikasane-2e494",
+    storageBucket: "tsumikasane-2e494.firebasestorage.app",
+    messagingSenderId: "421060393684",
+    appId: "1:421060393684:web:07dfc55c88f3b5b1e45941",
+  };
   const syncReady = () => !!(FIREBASE_CONFIG || window.__syncRemote);
   let remote = null, syncUser = null, syncBusy = null;
   // what came down: a record changed there later than here (or not waiting here at all) takes its place, or goes when it
@@ -9246,11 +9255,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         Object.assign(syncState, { at: Date.now(), error: "" });
         saveSyncState();
         if (byHand) flash(got || sent ? `同期しました。受け取り ${got} 件・送り ${sent} 件です。` : "同期しました。変わったところはありません。");
-      } catch {
+      } catch (e) {
         syncFresh();
-        syncState.error = navigator.onLine === false ? "offline" : "failed";
+        const denied = e?.code === "permission-denied"; // the project's rules let nothing through
+        syncState.error = navigator.onLine === false ? "offline" : denied ? "denied" : "failed";
         saveSyncState();
-        if (byHand) flash(navigator.onLine === false ? "インターネットにつながっていません。つながったら同期します。" : "同期できませんでした。少しあとで、もう一度ためしてください。");
+        if (byHand) flash(navigator.onLine === false ? "インターネットにつながっていません。つながったら同期します。"
+          : denied ? "Firebase のルールで止められています。Firestore のルールを確かめてください。" : "同期できませんでした。少しあとで、もう一度ためしてください。");
       } finally {
         syncBusy = null;
         draw(renderSyncRow);
@@ -9321,7 +9332,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function renderSyncRow() {
     $("syncRow").hidden = !syncReady() || !canStoreLocal;
-    const on = !!(syncUser && syncState.uid), bad = on && syncState.error === "failed";
+    const on = !!(syncUser && syncState.uid), bad = on && (syncState.error === "failed" || syncState.error === "denied");
     $("syncState").textContent = !remote && syncReady() && syncState.error === "offline" ? "オフライン" : !on ? "オフ" : syncState.error === "offline" ? "オフライン" : bad ? "うまくいっていません" : "オン";
     $("syncState").classList.toggle("warn", bad);
     $("syncBtn").setAttribute("aria-label", `同期、${$("syncState").textContent}`);
@@ -9335,7 +9346,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("syncWho").textContent = `${syncUser.email || ""} でログインしています。同じアカウントでログインしたほかの端末と、記録が自動でそろいます。`;
     const at = syncState.at ? new Date(syncState.at) : null, waiting = Object.keys(syncState.pending).length;
     $("syncLast").textContent = (at ? `最後に同期：${fmtMDW(ymd(at))} ${at.getHours()}:${pad(at.getMinutes())}` : "まだ同期していません")
-      + (waiting ? `・送るのを待っている記録 ${waiting.toLocaleString("ja-JP")} 件` : "");
+      + (waiting ? `・送るのを待っている記録 ${waiting.toLocaleString("ja-JP")} 件` : "")
+      + (syncState.error === "denied" ? "・Firebase のルールで止められています" : "");
   }
   const SYNC_ERRORS = {
     "auth/invalid-email": "メールアドレスの形がちがいます。",
@@ -9347,6 +9359,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     "auth/network-request-failed": "インターネットにつながっていません。",
     "auth/too-many-requests": "何度もまちがえたので、しばらく待ってからためしてください。",
     "auth/missing-email": "メールアドレスを入れてください。",
+    "auth/operation-not-allowed": "Firebase で「メール / パスワード」のログインが、まだ有効になっていません。",
   };
   function showSyncError(msg) { $("syncError").textContent = msg; $("syncError").hidden = !msg; }
   async function syncAuth(kind) {
