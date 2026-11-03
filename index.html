@@ -1109,6 +1109,19 @@ details.tsumi-more { margin-top: calc(-1 * var(--space-2)); } /* right under the
 /* its words in three short parts, each under its name (the user's call: fourteen lines in a row were hard to read) */
 .tsumi-more p { margin: 0 0 10px; }
 .tsumi-more p > strong { display: block; color: var(--fg); font-weight: 600; }
+/* 運動's menu for the day (the user's weekly sheet): the weekday and its theme, then a row a move, its name on a line of its
+   own and what to do under it; the sheet's notes fold away under メモ, as つみかさね's くわしく does */
+.wo-menu .card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); }
+.wo-menu ul.list .chip { min-width: 4.6em; text-align: center; }  /* the names line up in a column */
+.wo-menu-sum { margin: 0; padding: 4px var(--space-2) 0; }
+.wo-notes { padding: 0 var(--space-2) 4px; font-size: var(--t-sub); line-height: 1.5; }
+.wo-notes summary { display: flex; align-items: center; min-height: 44px; color: var(--accent); cursor: pointer; list-style: none; }
+.wo-notes summary::-webkit-details-marker { display: none; }
+.wo-notes:not([open]) .less, .wo-notes[open] .more { display: none; }
+.wo-notes dl { margin: 0; }
+.wo-notes dt { font-weight: 600; }
+.wo-notes dd { margin: 0 0 10px; color: var(--muted); }
+.wo-notes .week { margin: 0 0 10px; font-weight: 600; }
 /* a kind pressed keeps only its blocks in colour (the user's call: some colours are hard to tell apart) */
 #tsumiKinds .sw { flex: none; width: 14px; height: 14px; border-radius: 4px; }
 #tsumiKinds .row-btn[aria-pressed="true"] { background: var(--fill); font-weight: 600; }
@@ -1563,6 +1576,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </div>
         <div class="diet-part" id="part-workout" style="--sec-c: var(--c-workout)" hidden>
           <h3 class="sr-only">運動</h3>
+          <!-- the day's menu, by its weekday, from the user's weekly training sheet (the user's call: 週間トレーニングメニュー,
+               as the sheet has it): ラン, then 筋トレ's moves, the day's sets added up, and the sheet's notes under メモ -->
+          <div class="card wo-menu" id="woMenu"></div>
           <!-- the kind picked from a menu, then the fields for that kind (the user's call: ランニング・ウォーキング take 距離・時間・
                消費カロリー, 筋トレ takes 種目・重さ・回数・セット数; no example text in the fields) -->
           <form class="add" id="workoutForm" autocomplete="off">
@@ -3654,6 +3670,55 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const total = sum(items, (w) => w.minutes);
     const wk = weekMinutes();
     $("workoutTotal").textContent = (items.length ? `この日 ${total} 分（${items.length} 件）・` : "") + `この7日間 ${wk.minutes} 分、${wk.days} 日`;
+    renderWoMenu();
+  }
+
+  // ---------- 運動のメニュー ----------
+  // the user's weekly training sheet (週間トレーニングメニュー, made 2026-11-03), shown on 運動 for the weekday of the day
+  // showing (the user's call: as the sheet has it). A day by getDay(), 0 being 日曜: its theme, its run (km and how), and
+  // its moves as [区分, 種目, セット, 回数]
+  const WO_MENU = [
+    { theme: "軽め", km: 4, run: "ゆっくり", moves: [["補助", "プランク", 2, "30秒"], ["補助", "サイドプランク", 2, "左右30秒"], ["補助", "ロータリートルソー", 2, "12〜15回"], ["補助", "アームカール", 2, "12〜15回"], ["補助", "カーフレイズ", 2, "12〜15回"]] },
+    { theme: "脚", km: 4, run: "ゆっくり", moves: [["メイン", "レッグプレス", 3, "10回"], ["メイン", "レッグカール", 3, "10回"], ["補助", "ヒップアブダクション", 2, "12〜15回"], ["補助", "カーフレイズ", 2, "12〜15回"]] },
+    { theme: "押す", km: 4, run: "ゆっくり", moves: [["メイン", "チェストプレス", 3, "10回"], ["メイン", "ショルダープレス", 3, "10回"], ["補助", "サイドレイズ", 2, "12〜15回"], ["補助", "アブドミナルクランチ", 2, "12〜15回"]] },
+    { theme: "引く", km: 5, run: "ゆっくり", moves: [["メイン", "ラットプルダウン", 3, "10回"], ["メイン", "シーテッドロー", 3, "10回"], ["補助", "アームカール", 2, "12〜15回"], ["補助", "バックエクステンション", 2, "12〜15回"]] },
+    { theme: "脚", km: 4, run: "ゆっくり", moves: [["メイン", "シーテッドレッグプレス", 3, "10回"], ["メイン", "レッグカール", 3, "10回"], ["補助", "ヒップアダクション", 2, "12〜15回"]] },
+    { theme: "押す", km: 4, run: "ゆっくり", moves: [["メイン", "チェストプレス", 3, "10回"], ["メイン", "ショルダープレス", 3, "10回"], ["補助", "サイドレイズ", 2, "12〜15回"]] },
+    { theme: "引く", km: 5, run: "変化走", moves: [["メイン", "懸垂", 3, "できる回数"], ["メイン", "シーテッドロー", 3, "10回"], ["補助", "バックエクステンション", 2, "12〜15回"]] },
+  ];
+  // the sheet's メモ, in its order, each in the parts its lines break between (one led by a space keeps it before it)
+  const WO_NOTES = [
+    ["ペース", ["変化走以外は、", "話しながら走れるペース"]],
+    ["変化走", ["5分ジョグ →", "「1分速め（息が弾む程度）", "＋2分ゆっくり」×6回", " → 5分ジョグ"]],
+    ["重さ", ["メインは10回でややきつい重さ。", "3セットとも12回できたら1段階上げる"]],
+    ["時間", ["筋トレは1回20〜25分"]],
+    ["日曜", ["大きな筋肉を休ませる軽い日なので、", "メイン種目はなし"]],
+    ["順番", ["ランと筋トレを同じ時間にやる日は、", "筋トレを先にすると重さを保ちやすい"]],
+    ["疲れた日", ["月〜土は、", "忙しい日や疲れが残る日は", "メインの2種目だけで十分"]],
+    ["痛みが出た日", ["完全に休む日がないので、", "膝やすねの疲れは抜けにくい。", "走り出して10分たっても痛みが引かない日は、", "ランをエアロバイク30分に替える"]],
+    ["食事", ["週の合計が同じなので、", "2,500kcalのまま"]],
+  ];
+  let woNotesOpen = false; // メモ stays open while the day or the records change under it
+  // the day's menu: ラン, then 筋トレ's moves (メイン in 運動's colour, 補助 in grey, as the sheet tells them apart), the
+  // day's sets added up as the sheet does, and the sheet's notes behind メモ, with the week's totals; 変化走's way of
+  // running under its line
+  function renderWoMenu() {
+    const day = parseYmd(viewDate).getDay(), m = WO_MENU[day];
+    const say = (parts) => parts.flatMap((p) => (p.startsWith(" ") ? [" ", el("span", { class: "phrase" }, p.slice(1))] : [el("span", { class: "phrase" }, p)]));
+    const chip = (word, c) => el("span", { class: "chip", style: `--chip-c: ${c}` }, word);
+    setChildren($("woMenu"),
+      el("div", { class: "card-head" }, el("span", {}, `${WD[day]}曜日のメニュー`), chip(m.theme, "var(--c-workout)")),
+      el("ul", { class: "list" },
+        el("li", {}, chip("ラン", "var(--c-workout)"),
+          el("span", { class: "body" }, el("span", { class: "text" }, `${m.km} km`),
+            el("span", { class: "sub" }, m.run === "変化走" ? ["変化走：", ...say(WO_NOTES.find(([k]) => k === "変化走")[1])] : m.run))),
+        m.moves.map(([kind, name, sets, reps]) => el("li", {}, chip(kind, kind === "メイン" ? "var(--c-workout)" : "var(--muted)"),
+          el("span", { class: "body" }, el("span", { class: "text" }, name), el("span", { class: "sub" }, `${reps} × ${sets}セット`))))),
+      el("p", { class: "wo-menu-sum muted small" }, `1日の合計 ${sum(m.moves, (x) => x[2])} セット`),
+      el("details", { class: "wo-notes", open: woNotesOpen, ontoggle: (ev) => { woNotesOpen = ev.currentTarget.open; } },
+        el("summary", {}, el("span", { class: "more" }, "メモを見る"), el("span", { class: "less" }, "メモをとじる")),
+        el("dl", {}, WO_NOTES.flatMap(([k, parts]) => [el("dt", {}, k), el("dd", {}, say(parts))])),
+        el("p", { class: "week" }, `週の合計：ラン ${sum(WO_MENU, (x) => x.km)} km・筋トレ ${sum(WO_MENU, (x) => sum(x.moves, (y) => y[2]))} セット`)));
   }
 
   // ---------- 勉強 ----------
