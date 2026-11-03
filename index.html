@@ -1353,11 +1353,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
       <!-- ホーム -->
       <section id="sec-home" style="--sec-c: var(--accent)">
-        <!-- the large title is today's date itself (the user's call), not the word きょう with a small date above it; the tab
-             still says きょう. The year is left out so the date stays on one line on a phone. The gear at its end opens the
-             settings for the tiles: which show, and in what order -->
+        <!-- the large title is the page's name, as on every other page; no date (the user's call: today's date over it was
+             taken out). The gear at its end opens the settings for the tiles: which show, and in what order -->
         <div class="sec-head">
-          <div class="title-row"><h2 id="homeDate"></h2><button type="button" class="icon-btn" id="homeSettings" aria-label="タイルの設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button></div>
+          <div class="title-row"><h2 id="homeDate">きょう</h2><button type="button" class="icon-btn" id="homeSettings" aria-label="タイルの設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button></div>
           <p class="home-hol" id="homeHoliday" hidden></p>
         </div>
         <!-- a quiet reminder when it has been a while since the last backup -->
@@ -2202,7 +2201,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   const todayKey = ymd(new Date());
   // set before the first page shows, so the top bar can take it up as the title once it scrolls under
-  $("homeDate").textContent = fmtMDW(todayKey);
   $("homeHoliday").textContent = holidayName(todayKey); // a holiday's name under it (the user's call), as the calendar has
   $("homeHoliday").hidden = !$("homeHoliday").textContent;
 
@@ -4683,8 +4681,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ---------- カレンダー ----------
   // untimed (all-day) events sort first
-  const byTime = (a, b) => (a.time || "").localeCompare(b.time || "") || num(a.createdAt) - num(b.createdAt);
-  const evText = (e) => (e.time ? e.time + " " : "") + e.title;
   // a plan can run over several days (endDate, its last day), have an end time (endTime) and come round again (repeat:
   // every day, week, month or year from its first day, up to repeatUntil, less the turns taken out of it, skip); the
   // user's call. The month, a day's list and きょう read plans as turns: { e, start, day, days } — the turn's first day,
@@ -6862,7 +6858,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return el("div", { class: "card tile", "data-tile": key, style: `--tile-c:${color}` },
       el("button", { type: "button", class: "tile-head", "aria-label": label + "を開く", onclick: () => openFromHome(key) },
         icon(page.icon, 18), el("span", { class: "lbl" }, label), el("span", { class: "chev" }, icon("next", 16))),
-      big != null ? el("div", { class: "big" + (/^[\d.,]+$/.test(big) ? "" : " word") }, big, unit ? el("small", {}, unit) : null) : null,
+      big != null ? el("div", { class: "big" + (/^[+−]?[\d.,]+$/.test(big) ? "" : " word") }, big, unit ? el("small", {}, unit) : null) : null,
       sub ? el("div", { class: "sub" }, parts) : null,
       extra);
   }
@@ -6873,23 +6869,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("span", { class: "dt-val" + (/^[\d.,]+$/.test(big) ? "" : " word") }, big, unit ? el("small", {}, unit) : null),
       sub ? el("span", { class: "sub dt-sub" }, sub) : null);
   }
-  // under 運動's and 勉強's time, what it was (the user's call): 運動 by kind, with the km run or walked (else its minutes),
-  // and 筋トレ by its moves; 勉強 by subject, with its minutes. One to a line, three lines at most (two and ほか N 件 when there
-  // are more), so half a row stays short; a name too long for its line is cut short, its amount never is; nothing on a day
-  // without any
-  const fewParts = (list) => (list.length
-    ? el("span", { class: "lines" }, (list.length > 3 ? [...list.slice(0, 2), [`ほか ${list.length - 2} 件`]] : list)
-      .map(([name, amount]) => el("span", { class: "line" }, el("span", { class: "name" }, name), amount ? el("span", { class: "amount" }, amount) : null)))
-    : null);
-  function workoutLine(ws) {
-    const kinds = [...groupBy(ws.filter((w) => !w.exercise), (w) => w.type)].map(([type, xs]) => {
-      const km = sum(xs, (w) => w.km);
-      return [type, km > 0 ? `${Math.round(km * 100) / 100} km` : `${sum(xs, (w) => w.minutes)} 分`];
-    });
-    return fewParts([...kinds, ...[...new Set(ws.filter((w) => w.exercise).map((w) => w.exercise))].map((move) => [move])]);
-  }
-  function studyLine(xs) {
-    return fewParts([...groupBy(xs, (x) => subjectOf(x)?.name || "科目なし")].map(([name, ys]) => [name, `${sum(ys, (y) => y.minutes)} 分`]));
+  // a day's menu (運動のメニュー) all done: its run as far as it says (one recorded without a distance counts), and every move
+  // as many sets as it says, by the 種目's name recorded (the user's call: きょう's tile says only whether)
+  function woMenuDone(day) {
+    const m = WO_MENU[parseYmd(day).getDay()], ws = workouts.items.filter((w) => w.date === day);
+    const key = (words) => String(words || "").normalize("NFKC").replace(/\s+/g, "");
+    const runs = ws.filter((w) => w.type === "ランニング"), ran = runs.length > 0 && (sum(runs, (w) => num(w.km)) >= m.km || runs.some((w) => !(num(w.km) > 0)));
+    const sets = new Map();
+    for (const w of ws) if (w.exercise) sets.set(key(w.exercise), (sets.get(key(w.exercise)) || 0) + num(w.sets));
+    return ran && m.moves.every(([, name, n]) => (sets.get(key(name)) || 0) >= n);
   }
   // 日記 on きょう's tile (the user's call): a day written shows its words, up to three lines, the tile opening the page as
   // before; a day not written yet has a field to write the day's ひとこと in right there. It is saved as the 日記 page saves:
@@ -6946,34 +6934,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const top = todos.items.filter((t) => !todoPlaced(t).done && !held.has(t.id)).sort((a, b) => todoOrder(todoPlaced(a), todoPlaced(b))).slice(0, 3);
     const j = journal.get(todayKey);
     const ms = meals.items.filter((m) => m.date === todayKey);
-    const kcal = sum(ms.filter((m) => typeof m.kcal === "number"), (m) => m.kcal);
-    const slotsDone = SLOTS.filter((s) => ms.some((m) => m.slot === s));
-    const ws = workouts.items.filter((w) => w.date === todayKey);
-    const mins = sum(ws, (w) => w.minutes);
     const sts = study.items.filter((x) => x.date === todayKey), stMins = sum(sts, (x) => x.minutes);
     const rts = sortedRoutines(), rtDone = routineDone(todayKey), rtLeft = rts.filter((r) => !rtDone.has(r.id));
     const wts = sortedWeights();
-    const wLast = wts[wts.length - 1], wPrev = wts[wts.length - 2];
-    const mon = monthSummary(monthOf(todayKey));
-    const budget = monthlyBudget();
-    const todayOut = sum(mon.outs.filter((e) => e.date === todayKey), (e) => e.amount);
+    const wLast = wts[wts.length - 1];
+    const mon = monthSummary(monthOf(todayKey)), bal = Math.round(mon.inn - mon.out);
     // the goal due soonest; one made before 期限 was needed may have none, so those come last
     const active = goals.items.filter((g) => !g.done && !g.pausedAt), onHold = goals.items.some((g) => !g.done && g.pausedAt);
     const nearest = [...active].sort((a, b) => (a.deadline || "9999").localeCompare(b.deadline || "9999"))[0];
     const left = nearest?.deadline ? daysUntil(nearest.deadline) : null;
     const evToday = turnsByDay(todayKey, todayKey).get(todayKey) || [];
-    // the next plan to come: the soonest turn starting after today, looking a year ahead
-    const nextEv = events.items.map((e) => ({ e, start: turnStarts(e, addDays(todayKey, 1), addDays(todayKey, 366)).find((d) => d > todayKey) }))
-      .filter((x) => x.start).sort((a, b) => a.start.localeCompare(b.start) || byTime(a.e, b.e))[0];
-    // つみかさね: the steps done, how far the next one is and what went on today (the user's call: it showed on its tab only)
-    const tz = tsumiBlocks(false, "tally"), tk = tsumiCol(tz.n), tLeft = tk + 1 - (tz.n - (tk * (tk + 1)) / 2);
-    // and the days on end, or what today's would make them, as つみかさね says it (the user's call: they showed there only)
-    const tRun = runOf(tz.days), tEnd = !tz.days.has(todayKey) && tRun >= 1 ? `${tz.today ? "きょうの分を" : "きょう"}積むと ${(tRun + 1).toLocaleString("ja-JP")} 日つづけて` : tRun >= 2 ? `${tRun.toLocaleString("ja-JP")} 日つづけて` : "";
-    // after a break, the days on end that came last, as つみかさね says them (the user's call: they showed there only)
-    const [tLast, tLastRun] = !tRun && tz.days.size ? lastRunOf(tz.days) : ["", 0];
-    const tPast = tLastRun >= 2 ? `${shortDay(tLast)} まで ${tLastRun.toLocaleString("ja-JP")} 日つづけていました` : "";
-    // and back after a break, today beginning them again, as つみかさね says it (the user's call)
-    const tAgain = tz.days.has(todayKey) && tRun === 1 && tz.days.size > 1 ? "きょうからまた 1 日目" : "";
+    // つみかさね: the steps done, alone (the user's call: the next step, today's and the days on end under it were taken out)
+    const tz = tsumiBlocks(false, "tally"), tk = tsumiCol(tz.n);
 
     const tiles = [
       // its big number what is to do by today, as ToDo's tab counts (the user's call: it counted next year's too), the rest
@@ -6981,36 +6953,31 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       tile("todo", String(dueToday + overdue), "件 きょうまで",
         undone.length ? todoTileSub(overdue, undone.length - dueToday - overdue) : (todos.items.length ? "すべて完了" : "まだありません"),
         todoTileList(top)),
-      tile("calendar", String(evToday.length), "件",
-        evToday.length ? null : nextEv ? `次の予定：${fmtShort(nextEv.start)} ${evText(nextEv.e)}` : "予定はありません",
+      // none today: 0 件 only (the user's call: the next plan under it was taken out)
+      tile("calendar", String(evToday.length), "件", null,
         evToday.length ? el("ul", { class: "ev" }, evToday.slice(0, 3).map((t) => el("li", { title: t.e.title, style: `--dot:${labelHue(labelOf(t.e))}` }, (turnTime(t) ? turnTime(t) + " " : "") + t.e.title))) : null),
       tile("journal", null, null, null, journalTile(j)),
-      // ダイエット: からだ, 食事 and 運動, each as its own tile had it (the user's call: the three in one)
+      // ダイエット: からだ, 食事 and 運動 (the user's call: the three in one), each saying only what it must (the user's
+      // calls): からだ the last weight, 食事 whether today's is recorded, 運動 whether today's menu is all done
       tile("diet", null, null, null, el("div", { class: "dt-cols" },
-        dietCol("weight", wLast ? fmtKg(wLast.kg) : "未記録", wLast ? "kg" : null, wLast ? fewParts([
-          [wLast.id === todayKey ? "きょうの記録" : `${relLabel(wLast.id) || fmtMD(wLast.id)}の記録`],
-          ...(wPrev ? [["前回比", `${signed(num(wLast.kg) - num(wPrev.kg))} kg`]] : [])]) : null),
-        dietCol("meal", String(ms.length), "回", ms.length ? subParts([kcal ? `${kcal} kcal` : "", ...slotsDone].filter(Boolean).join("・")) : null),
-        dietCol("workout", ws.length && !mins ? String(ws.length) : String(mins), ws.length && !mins ? "件" : "分", workoutLine(ws)))),
-      // 勉強 like 運動: today's time, and what it went on (the user's call: no line about the last 7 days)
-      tile("study", String(stMins), "分", studyLine(sts)),
+        dietCol("weight", wLast ? fmtKg(wLast.kg) : "未記録", wLast ? "kg" : null),
+        dietCol("meal", ms.length ? "記録済み" : "未記録", null),
+        dietCol("workout", woMenuDone(todayKey) ? "完了" : "未完了", null))),
+      // 勉強: today's time alone (the user's call: the subjects under it were taken out)
+      tile("study", String(stMins), "分"),
       // 「0 / 3」 alone, without 「できた」 (the user's call)
       tile("routine", rts.length ? String(rts.length - rtLeft.length) : "まだ", rts.length ? `/ ${rts.length}` : null,
         rts.length ? null : "毎日やることを登録して、チェックしていきましょう。", routineTileList(rts, rtDone)),
-      // 今月の支出 leads the line under the sum, the unit beside it being just 円, so the sum keeps its line in half a row
-      tile("money", Math.round(mon.out).toLocaleString("ja-JP"), "円",
-        "今月の支出・" + (budget > 0 ? (budget - mon.out >= 0 ? `予算の残り ${fmtYen(budget - mon.out)}` : `予算を ${fmtYen(mon.out - budget)} 超過`) : `収入 ${fmtYen(mon.inn)}`) + `・きょう ${fmtYen(todayOut)}`),
+      // this month's balance, 収入 less 支出, signed, and nothing under it (the user's call: the month's 支出 showed, with a line
+      // of 支出・収入・きょう)
+      tile("money", (bal > 0 ? "+" : bal < 0 ? "−" : "") + Math.abs(bal).toLocaleString("ja-JP"), "円"),
       // 目標: no counts, as on its page (the user's call); the goal due soonest and the days left to it
       tile("goal",
         !nearest ? (onHold ? "保留中" : goals.items.length ? "すべて達成" : "まだ") : left === null ? "期限なし" : left < 0 ? "期限切れ" : left === 0 ? "きょう" : String(left),
         left > 0 ? "日" : null,
         !nearest ? (goals.items.length ? "新しい目標を立ててみましょう。" : "目標を立ててみましょう。")
           : `「${nearest.title}」` + (left > 0 ? "の期限まで" : left === 0 ? "の期限です" : "")),
-      // its parts as つみかさね's page has them, the ・ dropped where a line breaks, each broken only at its spaces (the
-      // user's call: a line ended in 「・」)
-      tile("tsumi", tz.n ? String(tk) : "まだ", tz.n ? "段" : null,
-        tz.n ? el("span", { class: "due-line" }, el("span", { class: "due-parts" }, [`つぎの段まで あと\u00a0${tLeft}\u00a0こ`, tz.today ? `きょう\u00a0＋${tz.today}\u00a0こ` : "", tEnd, tAgain, tPast]
-          .filter(Boolean).map((words) => el("span", { class: "phrase keep" }, keepUnits(words))))) : "記録すると、ブロックが積みあがります"),
+      tile("tsumi", tz.n ? String(tk) : "まだ", tz.n ? "段" : null, tz.n ? null : "記録すると、ブロックが積みあがります"),
     ];
     // the ones shown, in the user's order. Two to a row: one left without a partner (beside one hidden, or moved next to a
     // wide one) takes the row, rather than leave half of it empty
