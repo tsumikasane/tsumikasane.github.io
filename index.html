@@ -217,12 +217,15 @@ button:active:not(:disabled) { opacity: .5; transition: none; }
   background: var(--glass); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
   box-shadow: var(--shadow), inset 0 0 0 .5px var(--glass-edge);
 }
-html[data-tab="todo"] #todoFilters, html[data-tab="goal"] #goalFilters { display: flex; }
+html[data-tab="todo"] #todoFilters, html[data-tab="goal"] #goalFilters, html[data-tab="diet"] #dietParts { display: flex; }
 .pagebar button { flex: 1 1 0; min-width: 0; padding: 0 8px; background: transparent; border: 0; border-radius: 999px; color: var(--fg); font-size: 14px; font-weight: 600; line-height: 1.2; cursor: pointer; }
 /* the one picked: tint on the lighter bubble, as the selected tab */
 .pagebar button[aria-pressed="true"] { color: var(--accent); background: var(--pill); box-shadow: 0 1px 4px rgba(0, 0, 0, .12); }
-html:is([data-tab="todo"], [data-tab="goal"]) .wrap { padding-bottom: calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + var(--space-1) + var(--pagebar) + var(--space-4)); }
-html:is([data-tab="todo"], [data-tab="goal"]) #status { bottom: calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + var(--space-1) + var(--pagebar) + 12px); }
+/* ダイエット's: each of からだ・食事・運動 with its symbol beside its name, as the tab bar's pages have theirs */
+#dietParts button { display: flex; align-items: center; justify-content: center; gap: 6px; }
+#dietParts .icon { flex: none; width: 20px; height: 20px; }
+html:is([data-tab="todo"], [data-tab="goal"], [data-tab="diet"]) .wrap { padding-bottom: calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + var(--space-1) + var(--pagebar) + var(--space-4)); }
+html:is([data-tab="todo"], [data-tab="goal"], [data-tab="diet"]) #status { bottom: calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + var(--space-1) + var(--pagebar) + 12px); }
 
 /* the top bar: clear while the large title shows, glass with the page title once it has scrolled under */
 .navbar {
@@ -282,8 +285,8 @@ html[data-tab="calendar"] .wrap { padding-top: max(var(--space-1), env(safe-area
   .wrap { max-width: 760px; padding: 0 var(--space-4) var(--space-8); }
   /* no tab bar here: a page's own bar sits at the foot of its column, beside the sidebar */
   .pagebar { left: 272px; right: 0; bottom: max(var(--space-2), env(safe-area-inset-bottom, 0px)); }
-  html:is([data-tab="todo"], [data-tab="goal"]) .wrap { padding-bottom: calc(max(var(--space-2), env(safe-area-inset-bottom, 0px)) + var(--pagebar) + var(--space-8)); }
-  html:is([data-tab="todo"], [data-tab="goal"]) #status { bottom: calc(max(var(--space-2), env(safe-area-inset-bottom, 0px)) + var(--pagebar) + 12px); }
+  html:is([data-tab="todo"], [data-tab="goal"], [data-tab="diet"]) .wrap { padding-bottom: calc(max(var(--space-2), env(safe-area-inset-bottom, 0px)) + var(--pagebar) + var(--space-8)); }
+  html:is([data-tab="todo"], [data-tab="goal"], [data-tab="diet"]) #status { bottom: calc(max(var(--space-2), env(safe-area-inset-bottom, 0px)) + var(--pagebar) + 12px); }
   .navbar { padding-inline: var(--space-3); }
   .back { display: none; }
   html:is([data-tab="reclist"], [data-tab="trash"], [data-tab="copies"]) .back { display: grid; }
@@ -295,6 +298,8 @@ section { display: flex; flex-direction: column; gap: var(--space-2); }
 /* the large title (HIG): bold, left-aligned under the top bar */
 .sec-head h2 { margin: 0; font-size: var(--t-large); line-height: 1.2; font-weight: 700; overflow-wrap: anywhere; }
 .sec-head .small { font-size: var(--t-sub); }
+/* ダイエット's three parts: one shows at a time, laid out as a page is */
+.diet-part { display: flex; flex-direction: column; gap: var(--space-2); }
 
 /* date / month navigation: plain tint buttons, as in iOS */
 .datenav, .monthnav { display: flex; align-items: center; gap: 4px var(--space-1); flex-wrap: wrap; margin-inline-start: -8px; }
@@ -349,6 +354,11 @@ form.add > .full, form.add > .actions { grid-column: 1 / -1; }
 .lines-note .link-btn { min-height: 44px; font-size: inherit; }
 .flabel { min-width: 0; }
 .flabel .opt { margin-inline-start: 2px; font-size: var(--t-foot); color: var(--muted); }
+/* a long name (メンテナンスカロリー) breaks between its words, rather than taking the fields' room */
+.flabel.long { max-width: 8em; }
+/* 基礎代謝, worked out rather than typed: its number where a field's would be, in line with theirs */
+.calc { flex: 0 1 7em; min-width: 0; min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; padding: 0 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+#wtBmrSet { flex: 0 1 auto; min-height: 44px; white-space: normal; text-align: left; }
 .ffield { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
 .ffield input[type="text"], .ffield > textarea, .ffield > .seg { flex: 1 1 auto; }
 .ffield > .seg { max-width: 22em; }
@@ -380,6 +390,7 @@ form.add > .flabel:has(+ .ffield > textarea.grow), form.add > .flabel:has(+ .ffi
 @container (max-width: 19.5em) {
   form.add { grid-template-columns: minmax(0, 1fr); row-gap: 6px; }
   form.add > .flabel { margin-top: 6px; }
+  .flabel.long { max-width: none; }
   form.add > .flabel:has(+ .ffield > textarea.grow), form.add > .flabel:has(+ .ffield.below) { padding-top: 0; }
 }
 form.add input, form.add select, textarea, .inline input, .datenav input[type="date"], .label-row input, .label-row select {
@@ -395,9 +406,9 @@ textarea.grow { padding: 10px 12px; line-height: 1.3; resize: none; overflow: hi
 .inline input { width: 7em; padding: 0 10px; text-align: right; font-variant-numeric: tabular-nums; }
 .unit { color: var(--muted); }
 /* 目標体重's kg and 目標体脂肪率's % take the same room and 保存 keeps to one line (the field gives way), so the two 保存
-   line up */
-#wtTargetForm .unit { min-width: 1.5em; }
-#wtTargetForm .btn { flex: none; }
+   line up; 身長's and 年齢's too */
+#wtTargetForm .unit, #bodyForm .unit { min-width: 1.5em; }
+#wtTargetForm .btn, #bodyForm .btn { flex: none; }
 
 /* buttons: a filled capsule for the main action (at most one per view), gray capsules for the rest, plain tint text links */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--accent-fill); color: var(--accent-ink); font-weight: 600; line-height: 1.2; cursor: pointer; }
@@ -733,8 +744,8 @@ li.done .text { color: var(--muted); }  /* done: grey, not struck through (the u
 .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 @media (min-width: 480px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tile.wide { grid-column: 1 / -1; } }
 /* きょう's tiles go two to a row on iPhone too (the user's call: the page was a long column of ten): ToDo and the day's
-   plans (their lines cut short to fit), 日記 and 食事, 運動 and 勉強, 体重 and 家計簿, while ルーティーン, with its
-   checklist, and 目標, with its longer line, keep a row each. With large text, or on the narrowest screens, the page is
+   plans (their lines cut short to fit), 日記 and 勉強, 家計簿 and つみかさね, while ダイエット, with its three, ルーティーン,
+   with its checklist, and 目標, with its longer line, keep a row each. With large text, or on the narrowest screens, the page is
    too narrow for two and they stay one to a row */
 @container (min-width: 20em) { #homeTiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } #homeTiles > .tile.wide { grid-column: 1 / -1; } }
 .tile { position: relative; padding: 10px var(--space-2) var(--space-2); display: flex; flex-direction: column; gap: 4px; }
@@ -747,6 +758,18 @@ li.done .text { color: var(--muted); }  /* done: grey, not struck through (the u
 .tile .big small { margin-inline-start: 4px; font-family: var(--font-body); font-size: var(--t-sub); font-weight: 600; color: var(--muted); }
 .tile .sub { line-height: 1.4; }
 .tile .big.word { font-size: var(--t-title2); }
+/* ダイエット's tile: what からだ, 食事 and 運動 each have today, side by side in their own colours, as their tiles had it
+   (the user's call: the three in one); each opens the page at its part, the rest of the tile at the part last shown */
+.dt-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.dt-col { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; padding: 6px 6px 8px; background: color-mix(in srgb, var(--part-c) 10%, transparent); border: 0; border-radius: 12px; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.dt-col:active { background: color-mix(in srgb, var(--part-c) 20%, transparent); }
+.dt-lbl { display: flex; align-items: center; gap: 4px; color: var(--part-c); font-size: var(--t-foot); font-weight: 600; line-height: 1.3; }
+.dt-val { font-family: var(--font-round); font-size: var(--t-title3); font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.dt-val small { margin-inline-start: 3px; font-family: var(--font-body); font-size: var(--t-foot); font-weight: 600; color: var(--muted); }
+.dt-val.word { font-size: var(--t-body); }
+.tile .dt-sub { width: 100%; font-size: var(--t-foot); line-height: 1.35; }
+/* too narrow for three side by side (large text, the narrowest screens): one under another */
+@container (max-width: 19.5em) { .dt-cols { grid-template-columns: minmax(0, 1fr); } }
 .tiles-none { grid-column: 1 / -1; margin: 0; padding: var(--space-2); color: var(--muted); }  /* every tile hidden */
 .tile .sub .line { display: flex; column-gap: 0.3em; white-space: nowrap; }  /* 運動's and 勉強's: one to a line */
 .tile .sub .line .name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }  /* cut short before the amount is */
@@ -1221,6 +1244,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M4.75 11.5v-2A2.5 2.5 0 0 1 7.25 7H18m-2.75-2.75L18 7l-2.75 2.75M19.25 12.5v2a2.5 2.5 0 0 1-2.5 2.5H6m2.75 2.75L6 17l2.75-2.75" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 2.75a1 1 0 0 1 1 1v.53l11.2 3.9a.75.75 0 0 1 0 1.42L7 13.47v6.78a1 1 0 1 1-2 0V3.75a1 1 0 0 1 1-1Z"/></symbol>
   <symbol id="i-routine" viewBox="0 0 24 24"><path d="M20.22 9.01A8.75 8.75 0 1 1 12 3.25V5.25A6.75 6.75 0 1 0 18.34 9.69Z"/><path d="M12 .9 16 4.25 12 7.6Z"/><path d="M10.6 15.6 7.6 12.6l1.2-1.2 1.8 1.8 4.6-4.6 1.2 1.2-5.8 5.8Z"/></symbol>
+  <symbol id="i-diet" viewBox="0 0 24 24"><path d="M12.6 2.2c.3 2.4 1.6 4 3 5.6C17.4 9.8 19 11.8 19 14.8a7 7 0 0 1-14 0c0-2.6 1.3-4.6 3-6 .1 1.6.8 2.9 2 3.6-.1-3.9.9-7.3 2.6-10.2Z"/></symbol>
   <symbol id="i-weight" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4Zm1.25 7.5h7.5a3.75 3.75 0 0 0-7.5 0Z"/><path d="m11.4 10.1 1.6-2.75a.6.6 0 0 1 1.04.6l-1.6 2.75a.6.6 0 0 1-1.04-.6Z"/></symbol>
   <symbol id="i-money" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19ZM8.3 6.9l1.3-.9 2.4 3.5 2.4-3.5 1.3.9-2.6 3.8H15v1.5h-2.25v1.2H15v1.5h-2.25V18h-1.5v-3.1H9v-1.5h2.25v-1.2H9v-1.5h1.9L8.3 6.9Z"/></symbol>
   <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 2.25a.75.75 0 0 1 .53.22l3.25 3.25a.75.75 0 0 1-1.06 1.06l-1.97-1.97v9.44a.75.75 0 0 1-1.5 0V4.81L9.28 6.78a.75.75 0 0 1-1.06-1.06l3.25-3.25A.75.75 0 0 1 12 2.25ZM6.5 9.5h2a.75.75 0 0 1 0 1.5h-2a.5.5 0 0 0-.5.5v8c0 .28.22.5.5.5h11a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-2a.75.75 0 0 1 0-1.5h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/></symbol>
@@ -1459,64 +1483,119 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </div>
       </section>
 
-      <!-- 食事 -->
-      <section id="sec-meal" style="--sec-c: var(--c-meal)" hidden>
-        <div class="sec-head"><h2>食事</h2><div class="datenav"></div></div>
-        <form class="add" id="mealForm" autocomplete="off">
-          <input type="text" id="mealText" class="full" list="mealHints" placeholder="食べたもの" aria-label="食べたもの" maxlength="200" required>
-          <datalist id="mealHints"></datalist>
-          <span class="flabel" id="mealSlotLabel">区分</span>
-          <div class="ffield">
-            <div class="seg seg-radio" role="radiogroup" aria-labelledby="mealSlotLabel">
-              <label><input type="radio" name="mealSlot" value="朝食" checked><span>朝食</span></label>
-              <label><input type="radio" name="mealSlot" value="昼食"><span>昼食</span></label>
-              <label><input type="radio" name="mealSlot" value="夕食"><span>夕食</span></label>
-              <label><input type="radio" name="mealSlot" value="間食"><span>間食</span></label>
+      <!-- ダイエット: からだ・食事・運動 in one page (the user's call), one of them showing at a time, picked from the bar at
+           the foot (#dietParts) as the tab bar picks a page; one date for the three. The gear holds からだ's goals, the
+           身長・年齢・性別 its 基礎代謝 is worked out from, and its records -->
+      <section id="sec-diet" hidden>
+        <div class="sec-head">
+          <div class="title-row"><h2>ダイエット</h2><button type="button" class="icon-btn" id="wtSettings" aria-label="ダイエットの設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button></div>
+          <div class="datenav"></div>
+        </div>
+        <!-- からだ: 体重, and 体脂肪率 with it (the part's name, the user's call; its fields and plots keep 体重) -->
+        <div class="diet-part" id="part-weight" style="--sec-c: var(--c-weight)">
+          <h3 class="sr-only">からだ</h3>
+          <form class="add" id="wtForm" autocomplete="off">
+            <label class="flabel" for="wtInput" id="wtFormLabel">きょうの体重</label>
+            <div class="ffield"><input type="number" id="wtInput" step="0.1" min="20" max="300" placeholder="65.0" inputmode="decimal" required><span class="unit">kg</span></div>
+            <!-- the day's 体脂肪率 with its weight, when there is one (the user's call) -->
+            <label class="flabel" for="wtFat">体脂肪率 <span class="opt">任意</span></label>
+            <div class="ffield"><input type="number" id="wtFat" step="0.1" min="1" max="70" inputmode="decimal"><span class="unit">%</span></div>
+            <!-- the day's 基礎代謝, worked out from the weight above and the 身長・年齢・性別 under the gear (the user's call: not
+                 typed), and its メンテナンスカロリー and 摂取カロリー as typed (the user's call), with how the two stand -->
+            <span class="flabel" id="wtBmrLabel">基礎代謝</span>
+            <div class="ffield"><span class="calc" id="wtBmr" hidden></span><span class="unit" id="wtBmrUnit" hidden>kcal</span><span class="muted small" id="wtBmrNote" hidden>体重を入れると出ます</span><button type="button" class="link-btn" id="wtBmrSet" aria-haspopup="dialog"><span class="phrase">身長・年齢・性別を</span><span class="phrase">入れる</span></button></div>
+            <label class="flabel long" for="wtMaint"><span class="phrase">メンテナンス</span><span class="phrase">カロリー</span> <span class="opt">任意</span></label>
+            <div class="ffield"><input type="number" id="wtMaint" step="1" min="1" max="9999" inputmode="numeric"><span class="unit">kcal</span></div>
+            <label class="flabel" for="wtIntake"><span class="phrase">摂取</span><span class="phrase">カロリー</span> <span class="opt">任意</span></label>
+            <div class="ffield"><input type="number" id="wtIntake" step="1" min="0" max="9999" inputmode="numeric"><span class="unit">kcal</span></div>
+            <p class="field-note muted small" id="wtBalance"></p>
+            <div class="actions">
+              <button type="button" class="link-btn danger" id="wtDelete" hidden>この日の記録を削除</button>
+              <span class="muted small" id="wtState"></span>
+              <button class="btn" type="submit" id="wtSubmit">記録する</button>
+            </div>
+          </form>
+          <!-- Health-style chart card: the period control on top, then the plot (HIG charts) -->
+          <div class="card">
+            <div class="chart-head">
+              <div class="seg" role="group" aria-label="グラフの期間" id="wtRanges">
+                <button type="button" data-range="30" aria-pressed="true">1か月</button>
+                <button type="button" data-range="90" aria-pressed="false">3か月</button>
+                <button type="button" data-range="365" aria-pressed="false">1年</button>
+              </div>
+            </div>
+            <p class="chart-name" id="wtChartName" hidden>体重（kg）</p>
+            <div class="chart-wrap" id="wtChartWrap">
+              <svg class="chart" id="wtChart" role="img" tabindex="0" aria-label="体重の推移グラフ。矢印キーで点を移動できます。数値は下の一覧にもあります。"></svg>
+              <div class="tip" id="wtTip" hidden></div>
+            </div>
+            <!-- 体脂肪率's plot, under the same period, once one has been recorded -->
+            <div id="fatPlot" hidden>
+              <p class="chart-name">体脂肪率（%）</p>
+              <div class="chart-wrap" id="fatChartWrap">
+                <svg class="chart" id="fatChart" role="img" tabindex="0" aria-label="体脂肪率の推移グラフ。"></svg>
+                <div class="tip" id="fatTip" hidden></div>
+              </div>
             </div>
           </div>
-          <label class="flabel" for="mealKcal">カロリー<span class="sr-only">（kcal）</span></label>
-          <div class="ffield"><input type="number" id="mealKcal" placeholder="任意" min="0" max="9999" inputmode="numeric"><span class="unit">kcal</span></div>
-          <div class="actions"><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
-        </form>
-        <ul class="list card" id="mealList"></ul>
-        <div class="muted small" id="mealTotal"></div>
-      </section>
-
-      <!-- 運動 -->
-      <section id="sec-workout" style="--sec-c: var(--c-workout)" hidden>
-        <div class="sec-head"><h2>運動</h2><div class="datenav"></div></div>
-        <!-- the kind picked from a menu, then the fields for that kind (the user's call: ランニング・ウォーキング take 距離・時間・
-             消費カロリー, 筋トレ takes 種目・重さ・回数・セット数; no example text in the fields) -->
-        <form class="add" id="workoutForm" autocomplete="off">
-          <select id="woType" class="full" aria-label="種目">
-            <option value="ランニング">ランニング</option>
-            <option value="ウォーキング">ウォーキング</option>
-            <option value="筋トレ">筋トレ</option>
-          </select>
-          <div class="wo-group" id="woCardio">
-            <label class="flabel" for="woDist">距離 <span class="opt">任意</span></label>
-            <div class="ffield"><input type="number" id="woDist" min="0.01" max="500" step="any" inputmode="decimal"><span class="unit">km</span></div>
-            <label class="flabel" for="woMin">時間</label>
-            <div class="ffield"><input type="number" id="woMin" min="1" max="1440" inputmode="numeric" required><span class="unit">分</span></div>
-            <label class="flabel" for="woKcal">消費カロリー <span class="opt">任意</span></label>
-            <div class="ffield"><input type="number" id="woKcal" min="1" max="9999" inputmode="numeric"><span class="unit">kcal</span></div>
-          </div>
-          <div class="wo-group" id="woStrength" hidden>
-            <label class="flabel" for="woExercise">種目</label>
-            <div class="ffield"><input type="text" id="woExercise" list="woExerciseHints" maxlength="40" required><datalist id="woExerciseHints"></datalist></div>
-            <label class="flabel" for="woWeight">重さ <span class="opt">任意</span></label>
-            <div class="ffield"><input type="number" id="woWeight" min="0.1" max="999" step="any" inputmode="decimal"><span class="unit">kg</span></div>
-            <label class="flabel" for="woReps">回数</label>
-            <div class="ffield"><input type="number" id="woReps" min="1" max="999" inputmode="numeric" required><span class="unit">回</span></div>
-            <label class="flabel" for="woSets">セット数</label>
-            <div class="ffield"><input type="number" id="woSets" min="1" max="99" inputmode="numeric" required><span class="unit">セット</span></div>
-          </div>
-          <label class="flabel" for="woNote">メモ <span class="opt">任意</span></label>
-          <div class="ffield"><input type="text" id="woNote" maxlength="1000"></div>
-          <div class="actions"><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
-        </form>
-        <ul class="list card" id="workoutList"></ul>
-        <div class="muted small" id="workoutTotal"></div>
+          <div class="stats" id="wtStats"></div>
+        </div>
+        <div class="diet-part" id="part-meal" style="--sec-c: var(--c-meal)" hidden>
+          <h3 class="sr-only">食事</h3>
+          <form class="add" id="mealForm" autocomplete="off">
+            <input type="text" id="mealText" class="full" list="mealHints" placeholder="食べたもの" aria-label="食べたもの" maxlength="200" required>
+            <datalist id="mealHints"></datalist>
+            <span class="flabel" id="mealSlotLabel">区分</span>
+            <div class="ffield">
+              <div class="seg seg-radio" role="radiogroup" aria-labelledby="mealSlotLabel">
+                <label><input type="radio" name="mealSlot" value="朝食" checked><span>朝食</span></label>
+                <label><input type="radio" name="mealSlot" value="昼食"><span>昼食</span></label>
+                <label><input type="radio" name="mealSlot" value="夕食"><span>夕食</span></label>
+                <label><input type="radio" name="mealSlot" value="間食"><span>間食</span></label>
+              </div>
+            </div>
+            <label class="flabel" for="mealKcal">カロリー<span class="sr-only">（kcal）</span></label>
+            <div class="ffield"><input type="number" id="mealKcal" placeholder="任意" min="0" max="9999" inputmode="numeric"><span class="unit">kcal</span></div>
+            <div class="actions"><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
+          </form>
+          <ul class="list card" id="mealList"></ul>
+          <div class="muted small" id="mealTotal"></div>
+        </div>
+        <div class="diet-part" id="part-workout" style="--sec-c: var(--c-workout)" hidden>
+          <h3 class="sr-only">運動</h3>
+          <!-- the kind picked from a menu, then the fields for that kind (the user's call: ランニング・ウォーキング take 距離・時間・
+               消費カロリー, 筋トレ takes 種目・重さ・回数・セット数; no example text in the fields) -->
+          <form class="add" id="workoutForm" autocomplete="off">
+            <select id="woType" class="full" aria-label="種目">
+              <option value="ランニング">ランニング</option>
+              <option value="ウォーキング">ウォーキング</option>
+              <option value="筋トレ">筋トレ</option>
+            </select>
+            <div class="wo-group" id="woCardio">
+              <label class="flabel" for="woDist">距離 <span class="opt">任意</span></label>
+              <div class="ffield"><input type="number" id="woDist" min="0.01" max="500" step="any" inputmode="decimal"><span class="unit">km</span></div>
+              <label class="flabel" for="woMin">時間</label>
+              <div class="ffield"><input type="number" id="woMin" min="1" max="1440" inputmode="numeric" required><span class="unit">分</span></div>
+              <label class="flabel" for="woKcal">消費カロリー <span class="opt">任意</span></label>
+              <div class="ffield"><input type="number" id="woKcal" min="1" max="9999" inputmode="numeric"><span class="unit">kcal</span></div>
+            </div>
+            <div class="wo-group" id="woStrength" hidden>
+              <label class="flabel" for="woExercise">種目</label>
+              <div class="ffield"><input type="text" id="woExercise" list="woExerciseHints" maxlength="40" required><datalist id="woExerciseHints"></datalist></div>
+              <label class="flabel" for="woWeight">重さ <span class="opt">任意</span></label>
+              <div class="ffield"><input type="number" id="woWeight" min="0.1" max="999" step="any" inputmode="decimal"><span class="unit">kg</span></div>
+              <label class="flabel" for="woReps">回数</label>
+              <div class="ffield"><input type="number" id="woReps" min="1" max="999" inputmode="numeric" required><span class="unit">回</span></div>
+              <label class="flabel" for="woSets">セット数</label>
+              <div class="ffield"><input type="number" id="woSets" min="1" max="99" inputmode="numeric" required><span class="unit">セット</span></div>
+            </div>
+            <label class="flabel" for="woNote">メモ <span class="opt">任意</span></label>
+            <div class="ffield"><input type="text" id="woNote" maxlength="1000"></div>
+            <div class="actions"><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
+          </form>
+          <ul class="list card" id="workoutList"></ul>
+          <div class="muted small" id="workoutTotal"></div>
+        </div>
       </section>
 
       <!-- 勉強: time by subject, entered after studying (the user's call: no timer). The subjects are the user's own, each with
@@ -1552,51 +1631,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="actions"><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
         </form>
         <p class="group-foot"><span class="phrase">名前はタップすると書きかえられます。</span><span class="phrase">× を2回押すと、その項目を消します。</span></p>
-      </section>
-
-      <!-- からだ: 体重, and 体脂肪率 with it (the page's name, the user's call; its fields and plots keep 体重). Its goals and
-           its list of records are in the settings under the gear by its title (the user's call), as 勉強's subjects are -->
-      <section id="sec-weight" style="--sec-c: var(--c-weight)" hidden>
-        <div class="sec-head">
-          <div class="title-row"><h2>からだ</h2><button type="button" class="icon-btn" id="wtSettings" aria-label="からだの設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button></div>
-          <div class="datenav"></div>
-        </div>
-        <form class="add" id="wtForm" autocomplete="off">
-          <label class="flabel" for="wtInput" id="wtFormLabel">きょうの体重</label>
-          <div class="ffield"><input type="number" id="wtInput" step="0.1" min="20" max="300" placeholder="65.0" inputmode="decimal" required><span class="unit">kg</span></div>
-          <!-- the day's 体脂肪率 with its weight, when there is one (the user's call) -->
-          <label class="flabel" for="wtFat">体脂肪率 <span class="opt">任意</span></label>
-          <div class="ffield"><input type="number" id="wtFat" step="0.1" min="1" max="70" inputmode="decimal"><span class="unit">%</span></div>
-          <div class="actions">
-            <button type="button" class="link-btn danger" id="wtDelete" hidden>この日の記録を削除</button>
-            <span class="muted small" id="wtState"></span>
-            <button class="btn" type="submit" id="wtSubmit">記録する</button>
-          </div>
-        </form>
-        <!-- Health-style chart card: the period control on top, then the plot (HIG charts) -->
-        <div class="card">
-          <div class="chart-head">
-            <div class="seg" role="group" aria-label="グラフの期間" id="wtRanges">
-              <button type="button" data-range="30" aria-pressed="true">1か月</button>
-              <button type="button" data-range="90" aria-pressed="false">3か月</button>
-              <button type="button" data-range="365" aria-pressed="false">1年</button>
-            </div>
-          </div>
-          <p class="chart-name" id="wtChartName" hidden>体重（kg）</p>
-          <div class="chart-wrap" id="wtChartWrap">
-            <svg class="chart" id="wtChart" role="img" tabindex="0" aria-label="体重の推移グラフ。矢印キーで点を移動できます。数値は下の一覧にもあります。"></svg>
-            <div class="tip" id="wtTip" hidden></div>
-          </div>
-          <!-- 体脂肪率's plot, under the same period, once one has been recorded -->
-          <div id="fatPlot" hidden>
-            <p class="chart-name">体脂肪率（%）</p>
-            <div class="chart-wrap" id="fatChartWrap">
-              <svg class="chart" id="fatChart" role="img" tabindex="0" aria-label="体脂肪率の推移グラフ。"></svg>
-              <div class="tip" id="fatTip" hidden></div>
-            </div>
-          </div>
-        </div>
-        <div class="stats" id="wtStats"></div>
       </section>
 
       <!-- 家計簿 -->
@@ -1702,6 +1736,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       <button type="button" data-filter="active" aria-pressed="false">進行中</button>
       <button type="button" data-filter="done" aria-pressed="false">達成</button>
     </div>
+    <!-- ダイエット's: which of からだ・食事・運動 shows (the user's call: the three in a row at the foot, as the tab bar has) -->
+    <div class="pagebar" role="group" aria-label="ダイエットの記録の切り替え" id="dietParts">
+      <button type="button" data-part="weight" aria-pressed="true"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-weight"/></svg>からだ</button>
+      <button type="button" data-part="meal" aria-pressed="false"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-meal"/></svg>食事</button>
+      <button type="button" data-part="workout" aria-pressed="false"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-workout"/></svg>運動</button>
+    </div>
   </main>
 </div>
 
@@ -1767,7 +1807,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     </div>
     <!-- the calendar's settings, opened from the gear on the month bar (or from a day when there are no labels yet) -->
     <div class="sheet-view" id="settingsView" hidden>
-      <!-- one group shows at a time: the calendar's labels, 勉強's subjects, きょう's tiles, or からだ's goals and records -->
+      <!-- one group shows at a time: the calendar's labels, 勉強's subjects, きょう's tiles, or ダイエット's goals, 身長・年齢・性別
+           and records -->
       <div class="sheet-view" id="labelsGroup">
         <h3 class="group-head">週のはじまり</h3>
         <div class="seg" role="group" aria-label="週のはじまり" id="weekStart">
@@ -1809,7 +1850,23 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <label class="flabel" for="fatTarget">目標体脂肪率<span class="sr-only">（%）</span></label>
           <div class="ffield"><input type="number" id="fatTarget" step="0.1" min="1" max="70" placeholder="未設定" inputmode="decimal"><span class="unit">%</span><button class="btn ghost sm" type="submit">保存</button></div>
         </form>
-        <h3 class="group-head">記録の一覧</h3>
+        <!-- what 基礎代謝 is worked out from with the day's weight (the user's call: worked out, not typed) -->
+        <h3 class="group-head">基礎代謝の計算</h3>
+        <form class="add" id="bodyForm" autocomplete="off">
+          <label class="flabel" for="bodyHeight">身長<span class="sr-only">（cm）</span></label>
+          <div class="ffield"><input type="number" id="bodyHeight" step="0.1" min="100" max="250" placeholder="未設定" inputmode="decimal"><span class="unit">cm</span><button class="btn ghost sm" type="submit">保存</button></div>
+          <label class="flabel" for="bodyAge">年齢<span class="sr-only">（歳）</span></label>
+          <div class="ffield"><input type="number" id="bodyAge" step="1" min="10" max="120" placeholder="未設定" inputmode="numeric"><span class="unit">歳</span><button class="btn ghost sm" type="submit">保存</button></div>
+          <span class="flabel" id="bodySexLabel">性別</span>
+          <div class="ffield">
+            <div class="seg seg-radio" role="radiogroup" aria-labelledby="bodySexLabel">
+              <label><input type="radio" name="bodySex" value="m"><span>男性</span></label>
+              <label><input type="radio" name="bodySex" value="f"><span>女性</span></label>
+            </div>
+          </div>
+        </form>
+        <p class="group-foot"><span class="phrase">基礎代謝は、</span><span class="phrase">その日の体重と</span><span class="phrase">身長・年齢・性別から、</span><span class="phrase">国立健康・栄養研究所の式で出します。</span></p>
+        <h3 class="group-head">からだの記録</h3>
         <ul class="list card" id="wtList"></ul>
         <p class="group-foot"><span class="phrase">記録を押すと、その日をページで開いて直せます。</span><span class="phrase">× を2回押すと、その日の記録を削除します。</span></p>
       </div>
@@ -2093,11 +2150,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   ];
   const RECORDS = [
     { key: "journal", label: "日記", icon: "journal", fill: "var(--f-journal)" },
-    { key: "meal", label: "食事", icon: "meal", fill: "var(--f-meal)" },
-    { key: "workout", label: "運動", icon: "workout", fill: "var(--f-workout)" },
+    // 食事・運動・からだ in one page (the user's call), each still a kind of record of its own (記録, つみかさね)
+    { key: "diet", label: "ダイエット", icon: "diet", fill: "var(--f-weight)" },
     { key: "study", label: "勉強", icon: "study", fill: "var(--f-study)" },
     { key: "routine", label: "ルーティーン", icon: "routine", fill: "var(--f-routine)" },
-    { key: "weight", label: "からだ", icon: "weight", fill: "var(--f-weight)" }, // 体重 and 体脂肪率 (the user's call: once 体重)
     { key: "money", label: "家計簿", icon: "money", fill: "var(--f-money)" },
   ];
   const PAGES = [...TABS, ...RECORDS];
@@ -2538,6 +2594,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   let lastRecord = null; // the record page the きょう tab returns to (HIG: a tab keeps its place while you visit others)
   let recListKind = null; // the record whose entries show under 記録; the 記録 tab returns to them the same way
   let recQuery = ""; // the words those entries are narrowed to, each of them in an entry (none: all of them)
+  // ダイエット's part showing: からだ, 食事 or 運動 (the user's call: one page, a bar at its foot picking which), kept for
+  // the next time it opens
+  const DIET_PARTS = [{ key: "weight", label: "からだ" }, { key: "meal", label: "食事" }, { key: "workout", label: "運動" }];
+  const isDietPart = (k) => DIET_PARTS.some((p) => p.key === k);
+  const DIET_KEY = LS_PREFIX + "dietPart";
+  let dietPart = (() => { try { const k = localStorage.getItem(DIET_KEY); return isDietPart(k) ? k : "weight"; } catch { return "weight"; } })();
+  // the page a kind of record is made on: 食事's, 運動's and からだ's is ダイエット
+  const pageOf = (k) => (isDietPart(k) ? "diet" : k);
   function menuButton(p) {
     return el("button", { type: "button", "data-tab": p.key, style: `--item-f:${p.fill}`, onclick: () => openTab(p.key) },
       el("span", { class: "mi" }, icon(p.icon, 24)), el("span", { class: "lbl" }, p.label));
@@ -2594,7 +2658,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     try { history.replaceState(null, "", "#" + key); } catch {}
     window.scrollTo(0, 0);
     watchTitle();
-    if (key === "weight") draw(renderWeightChart);
+    if (key === "diet") syncDietPart(); // its part, and からだ's chart at the width it now has
     if (key === "records") { draw(renderSummary); draw(renderUsage); }
     // つみかさね opened: the newest, and what came since; back from 最近削除した項目 opened from a block there: as it was, the
     // kind pressed, the block shown, 大きく's place and the page's (the user's call: they were all gone)
@@ -2626,7 +2690,25 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // browsers send scroll events at most once a frame, and this only reads two boxes
   window.addEventListener("scroll", updateBar, { passive: true });
 
-  // ---------- date navigation (shared by 日記・食事・運動・体重) ----------
+  // ダイエット's bar: a press shows that part from its top (pressed again, back to its top), as a tab does
+  function setDietPart(part) {
+    if (!isDietPart(part)) return;
+    dietPart = part;
+    try { localStorage.setItem(DIET_KEY, part); } catch {}
+    syncDietPart();
+  }
+  function syncDietPart() {
+    for (const p of DIET_PARTS) $("part-" + p.key).hidden = p.key !== dietPart;
+    $("dietParts").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.part === dietPart)));
+    if (tab === "diet" && dietPart === "weight") draw(renderWeightChart);
+  }
+  $("dietParts").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+    setDietPart(b.dataset.part);
+    window.scrollTo(0, 0); updateBar();
+  }));
+  syncDietPart();
+
+  // ---------- date navigation (shared by 日記・ダイエット・勉強・ルーティーン) ----------
   let lastNavDate = null;
   function setViewDate(s) {
     if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s) || s === viewDate) return;
@@ -2652,7 +2734,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("button", { type: "button", class: "navbtn", onclick: () => setViewDate(addDays(viewDate, -1)) }, icon("prev"), "前日"),
         el("input", { type: "date", value: viewDate, "aria-label": "日付を選ぶ", onchange: (e) => setViewDate(e.target.value) }),
         el("button", { type: "button", class: "navbtn", onclick: () => setViewDate(addDays(viewDate, 1)) }, "翌日", icon("next")),
-        rel && !nav.closest("#sec-weight") ? el("span", { class: "rel" }, rel) : null, // not on からだ's (the user's call)
+        rel && !nav.closest("#sec-diet") ? el("span", { class: "rel" }, rel) : null, // not on ダイエット's, as からだ's had none (the user's call)
         viewDate !== todayKey ? el("button", { type: "button", class: "chip-btn", onclick: () => setViewDate(todayKey) }, "きょうへ") : null
       );
     });
@@ -3686,25 +3768,33 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- 体重 ----------
   let wtRange = 30;
   const wtInput = $("wtInput"), wtFat = $("wtFat"), wtState = $("wtState"), wtTargetInput = $("wtTarget"), fatTargetInput = $("fatTarget");
+  const wtMaint = $("wtMaint"), wtIntake = $("wtIntake");
   const wtTarget = () => num((settings.get("weight") || {}).target);
   const fatTarget = () => num((settings.get("fat") || {}).target); // 目標体脂肪率 (the user's call), kept as 目標体重 is
   const sortedWeights = () => weights.items.filter((r) => num(r.kg) > 0 && /^\d{4}-\d{2}-\d{2}$/.test(r.id)).sort((a, b) => a.id.localeCompare(b.id));
   $("wtForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
     const v = Number(wtInput.value), rawFat = wtFat.value, f = Number(rawFat);
+    const rawMaint = wtMaint.value, m = Number(rawMaint), rawIntake = wtIntake.value, i = Number(rawIntake);
     if (!(v >= 20 && v <= 300)) { wtState.textContent = "20〜300 の範囲で入力してください"; return; }
     // 体脂肪率 may stay empty: then the day has none (emptied, the one it had goes)
     if (rawFat !== "" && !(f >= 1 && f <= 70)) { wtState.textContent = "体脂肪率は 1〜70 の範囲で入力してください"; return; }
-    const date = viewDate;
+    // so may メンテナンスカロリー and 摂取カロリー (the user's call: the day's, typed once known)
+    if (rawMaint !== "" && !(m >= 1 && m <= 9999)) { wtState.textContent = "メンテナンスカロリーは 1〜9999 の範囲で入力してください"; return; }
+    if (rawIntake !== "" && !(i >= 0 && i <= 9999)) { wtState.textContent = "摂取カロリーは 0〜9999 の範囲で入力してください"; return; }
+    const date = viewDate, kg = Math.round(v * 10) / 10;
     wtState.textContent = "保存中…";
     act(async () => {
       const was = weights.get(date); // first written when (つみかさね's order); one from before that, at its day's noon
-      await weights.write(date, { date, kg: Math.round(v * 10) / 10, ...(rawFat !== "" ? { fat: Math.round(f * 10) / 10 } : {}), createdAt: was?.createdAt || (was ? noonOf(date) : Date.now()), updatedAt: Date.now() });
+      await weights.write(date, { date, kg, ...(rawFat !== "" ? { fat: Math.round(f * 10) / 10 } : {}), ...dayBmr(kg, was),
+        ...(rawMaint !== "" ? { maint: Math.round(m) } : {}), ...(rawIntake !== "" ? { intake: Math.round(i) } : {}),
+        createdAt: was?.createdAt || (was ? noonOf(date) : Date.now()), updatedAt: Date.now() });
       if (date === viewDate) wtState.textContent = weights.unsaved ? "保存できませんでした" : "記録しました";
     });
   });
   armLink($("wtDelete"), "この日の記録を削除", "もう一度押すと削除します", () => {
-    wtInput.value = ""; wtFat.value = ""; wtState.textContent = "";
+    wtInput.value = ""; wtFat.value = ""; wtMaint.value = ""; wtIntake.value = ""; wtState.textContent = "";
+    syncWtCalc();
     removeWithUndo(weights, viewDate);
   });
   // 目標体重 and 目標体脂肪率 share one form (in the settings under the gear), so either 保存 (or the return key) saves
@@ -3724,6 +3814,59 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const v = Math.round(Number(raw) * 10) / 10;
     if (v >= min && v <= max && v !== num((settings.get(id) || {}).target)) act(() => settings.set(id, { target: v, updatedAt: Date.now() }));
   }
+  // 身長・年齢・性別, what 基礎代謝 is worked out from (the user's call: worked out, not typed), set under the gear as the goals
+  // are: 保存, the return key or the sheet closing keeps them, 性別 as it is picked; emptied, that one goes
+  const bodyProfile = () => settings.get("body") || {};
+  const profileReady = (p = bodyProfile()) => num(p.height) > 0 && num(p.age) > 0 && (p.sex === "m" || p.sex === "f");
+  // 基礎代謝 in kcal a day, by the National Institute of Health and Nutrition's formula for Japanese people (国立健康・栄養
+  // 研究所の式, Ganpule 2007); null without what it needs
+  function bmrOf(kg, p = bodyProfile()) {
+    if (!(kg > 0) || !profileReady(p)) return null;
+    return Math.round((0.1238 + 0.0481 * kg + 0.0234 * num(p.height) - 0.0138 * num(p.age) - 0.5473 * (p.sex === "f" ? 2 : 1)) * 1000 / 4.186);
+  }
+  // the day's 基礎代謝, kept with its weight (the user's call); without 身長・年齢・性別 to work it out from, the one it had
+  // stays while its weight does
+  const dayBmr = (kg, was) => {
+    const b = bmrOf(kg) ?? (was && num(was.kg) === kg ? num(was.bmr) || null : null);
+    return b ? { bmr: b } : {};
+  };
+  $("bodyForm").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    saveBodyProfile();
+    if (ev.currentTarget.contains(document.activeElement)) document.activeElement.blur();
+  });
+  $("bodyForm").addEventListener("change", (ev) => { if (ev.target.name === "bodySex") saveBodyProfile(); });
+  function saveBodyProfile() {
+    const cur = bodyProfile();
+    // a number out of range keeps the one there was
+    const pick = (raw, min, max, round, was) => (raw === "" ? undefined : Number(raw) >= min && Number(raw) <= max ? round(Number(raw)) : was);
+    const next = {
+      height: pick($("bodyHeight").value, 100, 250, (v) => Math.round(v * 10) / 10, cur.height),
+      age: pick($("bodyAge").value, 10, 120, Math.round, cur.age),
+      sex: $("bodyForm").querySelector('input[name="bodySex"]:checked')?.value || cur.sex,
+    };
+    if (next.height === cur.height && next.age === cur.age && next.sex === cur.sex) return;
+    act(() => (next.height == null && next.age == null && !next.sex ? settings.remove("body") : settings.set("body", { ...next, updatedAt: Date.now() })));
+  }
+  // what the form shows as it is typed in: the day's 基礎代謝 from the weight in the field, and how 摂取カロリー stands to
+  // メンテナンスカロリー
+  function syncWtCalc() {
+    const kg = Number(wtInput.value), ready = profileReady(), bmr = ready && kg >= 20 && kg <= 300 ? bmrOf(kg) : null;
+    $("wtBmr").textContent = bmr ? bmr.toLocaleString("ja-JP") : "";
+    $("wtBmr").hidden = $("wtBmrUnit").hidden = !bmr;
+    $("wtBmrNote").hidden = !ready || !!bmr;
+    $("wtBmrSet").hidden = ready;
+    const m = wtMaint.value, i = wtIntake.value, d = Math.round(Number(i)) - Math.round(Number(m));
+    $("wtBalance").replaceChildren(...(m === "" || i === "" || !(Number(m) >= 1) || !(Number(i) >= 0) ? []
+      : d === 0 ? ["メンテナンスカロリーと同じ"]
+      : [el("span", { class: "phrase" }, "メンテナンスカロリーより"), " ", el("span", { class: "phrase" }, `${Math.abs(d).toLocaleString("ja-JP")} kcal ${d < 0 ? "少ない" : "多い"}`)]));
+  }
+  for (const x of [wtInput, wtMaint, wtIntake]) x.addEventListener("input", syncWtCalc);
+  // without 身長・年齢・性別, a press opens the gear's settings at the first one missing
+  $("wtBmrSet").addEventListener("click", (ev) => {
+    const p = bodyProfile();
+    openSettings(ev.detail === 0, "weight", !(num(p.height) > 0) ? $("bodyHeight") : !(num(p.age) > 0) ? $("bodyAge") : $("bodyForm").querySelector('input[name="bodySex"]'));
+  });
   $("wtRanges").querySelectorAll("button").forEach((b) => {
     b.addEventListener("click", () => {
       wtRange = Number(b.dataset.range);
@@ -3746,6 +3889,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (document.activeElement !== wtTargetInput) wtTargetInput.value = target > 0 ? fmtKg(target) : "";
     const fatGoal = fatTarget();
     if (document.activeElement !== fatTargetInput) fatTargetInput.value = fatGoal > 0 ? fmtFat(fatGoal) : "";
+    // the day's メンテナンスカロリー and 摂取カロリー, and the 身長・年齢・性別 its 基礎代謝 comes from
+    if (document.activeElement !== wtMaint) wtMaint.value = num(entry?.maint) > 0 ? String(entry.maint) : "";
+    if (document.activeElement !== wtIntake) wtIntake.value = typeof entry?.intake === "number" ? String(entry.intake) : "";
+    const prof = bodyProfile();
+    if (document.activeElement !== $("bodyHeight")) $("bodyHeight").value = num(prof.height) > 0 ? String(prof.height) : "";
+    if (document.activeElement !== $("bodyAge")) $("bodyAge").value = num(prof.age) > 0 ? String(prof.age) : "";
+    for (const r of document.getElementsByName("bodySex")) r.checked = r.value === prof.sex;
+    syncWtCalc();
 
     // stats
     const all = sortedWeights();
@@ -3775,7 +3926,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const shown = rows.slice(0, 120);
     for (const r of shown) {
       const idx = all.indexOf(r); const p = idx > 0 ? all[idx - 1] : null;
-      list.append(el("li", { class: "clickable" + (r.id === viewDate ? " current" : ""), onclick: () => { closeSheet(); setViewDate(r.id); } },
+      list.append(el("li", { class: "clickable" + (r.id === viewDate ? " current" : ""), onclick: () => { closeSheet(); setDietPart("weight"); setViewDate(r.id); } },
         el("span", { class: "datecell" }, r.id === todayKey ? "きょう" : fmtShort(r.id)),
         el("span", { class: "body" }, el("span", { class: "text" }, `${fmtKg(r.kg)} kg`), num(r.fat) > 0 ? el("span", { class: "sub" }, el("span", { class: "phrase" }, "体脂肪"), " ", el("span", { class: "phrase" }, `${fmtFat(r.fat)}%`)) : null),
         p ? el("span", { class: "num" }, `${signed(num(r.kg) - num(p.kg))} kg`) : null,
@@ -3943,7 +4094,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     let last = 0;
     new ResizeObserver(() => {
       const w = $("wtChartWrap").clientWidth;
-      if (w && w !== last) { last = w; if (tab === "weight") renderWeightChart(); }
+      if (w && w !== last) { last = w; if (tab === "diet" && dietPart === "weight") renderWeightChart(); }
     }).observe($("wtChartWrap"));
   }
 
@@ -4793,7 +4944,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   let editingId = null, editingStart = null, editScope = "one", editBase = "", editDays = "", edLabelChoice = "", sheetByKey = false, sheetClosing = false, sheetAnims = [], closeTimer = null, drag = null, delTimer = null;
   let settingsFrom = null; // the settings showing: "gear" when opened from the month bar, "day" when from a day's sheet
   let sheetOpener = "day"; // what keyboard focus goes back to when the sheet closes: the day, the calendar's gear or ＋, 勉強's, きょう's or からだ's gear, ToDo's (or the top bar's) or 目標's ＋
-  let settingsScope = "calendar"; // whose settings: the calendar's labels, 勉強's subjects, きょう's tiles ("home") or からだ's goals and records ("weight")
+  let settingsScope = "calendar"; // whose settings: the calendar's labels, 勉強's subjects, きょう's tiles ("home") or ダイエット's goals, 身長・年齢・性別 and records ("weight")
   let tileDrag = null; // きょう's tile whose row is being dragged by its grip in the settings
   let goalNew = false; // the sheet holds a new goal's form, opened from 目標's ＋
   let planNew = false; // the sheet holds a new plan's form, opened from the ＋ beside the calendar's gear
@@ -5109,7 +5260,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("mpToday").addEventListener("click", () => { setCalDay(todayKey); closeSheet(); });
   // the settings open in the same sheet: the calendar's labels from its gear or from a day's sheet, 勉強's subjects and
   // きょう's tiles from their own gears
-  function openSettings(byKey, scope = "calendar") {
+  function openSettings(byKey, scope = "calendar", field = null) {
     settingsScope = scope;
     if (sheetEl.open) {
       settingsFrom = "day"; editingId = null; disarmDelete(); syncSheetHead();
@@ -5119,7 +5270,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     resetSheet();
     settingsFrom = "gear"; syncSheetHead();
-    presentSheet(byKey, scope === "calendar" ? "gear" : scope);
+    presentSheet(byKey, scope === "calendar" ? "gear" : scope, field);
   }
   // a new goal: the form takes the sheet, its name field ready to type in (what was typed stays if the sheet is pulled away)
   function openNewGoal(byKey) {
@@ -5194,7 +5345,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function closeSheet(instant) {
     if (!sheetEl.open || sheetClosing) return;
     commitChartText(); saveGoalEdit(); // what was typed last is saved now, not when the close event comes (it can come late)
-    if (settingsFrom && settingsScope === "weight") saveBodyTargets(); // からだ's goals too, as 完了 says
+    if (settingsFrom && settingsScope === "weight") { saveBodyTargets(); saveBodyProfile(); } // ダイエット's goals and 身長・年齢 too, as 完了 says
     if (todoNewIds.length) spotTodos(todoNewIds); // the ToDos added from it, lit in the list it uncovers
     if (instant === true || reduceMotion.matches) { sheetEl.close(); handOverFlash(); return; }
     sheetClosing = true;
@@ -6009,8 +6160,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // the form's rows as the add forms have them: the label beside its field (任意 when it may stay empty), then the unit
   // or a button that goes with the field
-  function recRow(label, field, { opt = false, unit = null, after = null, below = false } = {}) {
-    return [el("label", { class: "flabel", for: field.id }, label, opt ? " " : null, opt ? el("span", { class: "opt" }, "任意") : null),
+  function recRow(label, field, { opt = false, unit = null, after = null, below = false, long = false } = {}) {
+    return [el("label", { class: "flabel" + (long ? " long" : ""), for: field.id }, label, opt ? " " : null, opt ? el("span", { class: "opt" }, "任意") : null),
       el("div", { class: "ffield" + (below ? " below" : "") }, field, unit ? el("span", { class: "unit" }, unit) : null, after)];
   }
   // one of a few, as a segmented control (区分, 支出・収入)
@@ -6217,13 +6368,22 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     weight: {
       store: weights, title: "からだの記録を編集", del: "この日の記録を削除",
       fields: (w) => [recRow("体重", recNum("reKg", fmtKg(w.kg), { min: 20, max: 300, step: "any", inputmode: "decimal", required: true }), { unit: "kg" }),
-        recRow("体脂肪率", recNum("reFat", num(w.fat) > 0 ? fmtFat(w.fat) : "", { min: 1, max: 70, step: "any", inputmode: "decimal" }), { unit: "%", opt: true }), recFixedDay(w.id)],
-      // 体脂肪率 emptied, the day has none
-      read: () => {
+        recRow("体脂肪率", recNum("reFat", num(w.fat) > 0 ? fmtFat(w.fat) : "", { min: 1, max: 70, step: "any", inputmode: "decimal" }), { unit: "%", opt: true }),
+        // the day's メンテナンスカロリー and 摂取カロリー, as on ダイエット's page (the user's call); 基礎代謝 is worked out
+        recRow([el("span", { class: "phrase" }, "メンテナンス"), el("span", { class: "phrase" }, "カロリー")], recNum("reMaint", w.maint, { min: 1, max: 9999, step: 1, inputmode: "numeric" }), { unit: "kcal", opt: true, long: true }),
+        recRow([el("span", { class: "phrase" }, "摂取"), el("span", { class: "phrase" }, "カロリー")], el("input", { type: "number", id: "reIntake", value: typeof w.intake === "number" ? w.intake : "", min: 0, max: 9999, step: 1, inputmode: "numeric" }), { unit: "kcal", opt: true }),
+        recFixedDay(w.id)],
+      // 体脂肪率, メンテナンスカロリー or 摂取カロリー emptied, the day has none; 基礎代謝 worked out again for the weight
+      read: (w) => {
         const v = Number($("reKg").value), raw = $("reFat").value, f = Number(raw);
+        const rawM = $("reMaint").value, m = Number(rawM), rawI = $("reIntake").value, i = Number(rawI);
         if (!(v >= 20 && v <= 300)) return recBad("reKg");
         if (raw !== "" && !(f >= 1 && f <= 70)) return recBad("reFat");
-        return { kg: Math.round(v * 10) / 10, fat: raw === "" ? undefined : Math.round(f * 10) / 10, updatedAt: Date.now() };
+        if (rawM !== "" && !(m >= 1 && m <= 9999)) return recBad("reMaint");
+        if (rawI !== "" && !(i >= 0 && i <= 9999)) return recBad("reIntake");
+        const kg = Math.round(v * 10) / 10;
+        return { kg, fat: raw === "" ? undefined : Math.round(f * 10) / 10, bmr: dayBmr(kg, w).bmr,
+          maint: rawM === "" ? undefined : Math.round(m), intake: rawI === "" ? undefined : Math.round(i), updatedAt: Date.now() };
       },
     },
     // the items as they are now, each checked or not for that day; one deleted since stays done that day, unseen
@@ -6489,35 +6649,43 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- ホーム ----------
   // a tile shows today, so the page it opens starts at today too: a record page left on another day comes back to today
   // and the calendar to this month, so today's entry can't slip into another day unnoticed
-  function openFromHome(key) {
+  function openFromHome(key, part = null) {
     if (isRecord(key)) setViewDate(todayKey);
+    if (part) setDietPart(part); // ダイエット at the part pressed on its tile
     if (key === "calendar") setCalDay(todayKey);
     showTab(key);
   }
-  // きょう's tiles, in the order they first come in: each opens its page, in the page's colour. ルーティーン, with its
-  // checklist, and 目標, with its longer line, take a row each; the others go two to a row on a phone
+  // きょう's tiles, in the order they first come in: each opens its page, in the page's colour. ダイエット, with its three,
+  // ルーティーン, with its checklist, and 目標, with its longer line, take a row each; the others go two to a row on a phone
   const HOME_TILES = [
     { key: "todo", label: "ToDo", color: "var(--c-todo)" },
     { key: "calendar", label: "きょうの予定", color: "var(--c-cal)" },
     { key: "journal", label: "日記", color: "var(--c-journal)" },
-    { key: "meal", label: "食事", color: "var(--c-meal)" },
-    { key: "workout", label: "運動", color: "var(--c-workout)" },
     { key: "study", label: "勉強", color: "var(--c-study)" },
+    // 食事's, 運動's and からだ's tiles in one (the user's call), the three side by side
+    { key: "diet", label: "ダイエット", color: "var(--c-weight)", wide: true },
     { key: "routine", label: "ルーティーン", color: "var(--c-routine)", wide: true },
-    { key: "weight", label: "からだ", color: "var(--c-weight)" },
     { key: "money", label: "家計簿", color: "var(--c-money)" },
-    { key: "goal", label: "目標", color: "var(--c-goal)", wide: true },
     { key: "tsumi", label: "つみかさね", color: "var(--accent)" },
+    { key: "goal", label: "目標", color: "var(--c-goal)", wide: true },
   ];
   const homeTile = (key) => HOME_TILES.find((t) => t.key === key);
   // which of them show, and in what order, is the user's to choose (the user's call), from the gear by the date. The
   // settings keep the keys of both, the order and the ones hidden, so a tile the app gains later shows, at the end
   const homePrefs = () => settings.get("home") || {};
+  // ダイエット's tile took over 食事's, 運動's and からだ's (the user's call): it comes where the first of them was, and is
+  // hidden only if all three were
+  const DIET_TILES = ["meal", "workout", "weight"];
   function homeTileOrder() {
-    const saved = (homePrefs().order || []).filter((k) => homeTile(k));
+    const saved = [...new Set((homePrefs().order || []).map((k) => (DIET_TILES.includes(k) ? "diet" : k)))].filter((k) => homeTile(k));
     return [...saved, ...HOME_TILES.map((t) => t.key).filter((k) => !saved.includes(k))];
   }
-  const homeHidden = () => new Set(homePrefs().hidden || []);
+  function homeHidden() {
+    const h = new Set(homePrefs().hidden || []);
+    if (DIET_TILES.every((k) => h.has(k))) h.add("diet");
+    for (const k of DIET_TILES) h.delete(k);
+    return h;
+  }
   const saveHomePrefs = (patch) => act(() => settings.set("home", { ...homePrefs(), ...patch, updatedAt: Date.now() }));
   // half a row on a phone is narrow (きょう's tiles, 記録's cards), so a line of parts (合計 1150 kcal・朝食・昼食) breaks
   // between its parts rather than inside one, and a number keeps its unit on its line (keepUnits)
@@ -6533,6 +6701,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       big != null ? el("div", { class: "big" + (/^[\d.,]+$/.test(big) ? "" : " word") }, big, unit ? el("small", {}, unit) : null) : null,
       sub ? el("div", { class: "sub" }, parts) : null,
       extra);
+  }
+  // ダイエット's tile: one of its three, its name in its colour over what it has today, opening the page at that part
+  function dietCol(part, big, unit, sub) {
+    return el("button", { type: "button", class: "dt-col", style: `--part-c:var(--c-${part})`, onclick: () => openFromHome("diet", part) },
+      el("span", { class: "dt-lbl" }, icon(part, 16), DIET_PARTS.find((p) => p.key === part).label),
+      el("span", { class: "dt-val" + (/^[\d.,]+$/.test(big) ? "" : " word") }, big, unit ? el("small", {}, unit) : null),
+      sub ? el("span", { class: "sub dt-sub" }, sub) : null);
   }
   // under 運動's and 勉強's time, what it was (the user's call): 運動 by kind, with the km run or walked (else its minutes),
   // and 筋トレ by its moves; 勉強 by subject, with its minutes. One to a line, three lines at most (two and ほか N 件 when there
@@ -6644,17 +6819,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         evToday.length ? null : nextEv ? `次の予定：${fmtShort(nextEv.start)} ${evText(nextEv.e)}` : "予定はありません",
         evToday.length ? el("ul", { class: "ev" }, evToday.slice(0, 3).map((t) => el("li", { title: t.e.title, style: `--dot:${labelHue(labelOf(t.e))}` }, (turnTime(t) ? turnTime(t) + " " : "") + t.e.title))) : null),
       tile("journal", null, null, null, journalTile(j)),
-      tile("meal", String(ms.length), "回",
-        ms.length ? (kcal ? `合計 ${kcal} kcal・` : "") + slotsDone.join("・") : "まだありません"),
-      tile("workout", ws.length && !mins ? String(ws.length) : String(mins), ws.length && !mins ? "件" : "分", workoutLine(ws)),
+      // ダイエット: からだ, 食事 and 運動, each as its own tile had it (the user's call: the three in one)
+      tile("diet", null, null, null, el("div", { class: "dt-cols" },
+        dietCol("weight", wLast ? fmtKg(wLast.kg) : "未記録", wLast ? "kg" : null, wLast ? fewParts([
+          [wLast.id === todayKey ? "きょうの記録" : `${relLabel(wLast.id) || fmtMD(wLast.id)}の記録`],
+          ...(wPrev ? [["前回比", `${signed(num(wLast.kg) - num(wPrev.kg))} kg`]] : [])]) : null),
+        dietCol("meal", String(ms.length), "回", ms.length ? subParts([kcal ? `${kcal} kcal` : "", ...slotsDone].filter(Boolean).join("・")) : null),
+        dietCol("workout", ws.length && !mins ? String(ws.length) : String(mins), ws.length && !mins ? "件" : "分", workoutLine(ws)))),
       // 勉強 like 運動: today's time, and what it went on (the user's call: no line about the last 7 days)
       tile("study", String(stMins), "分", studyLine(sts)),
       tile("routine", rts.length ? String(rts.length - rtLeft.length) : "まだ", rts.length ? `/ ${rts.length} できた` : null,
         rts.length ? null : "毎日やることを登録して、チェックしていきましょう。", routineTileList(rts, rtDone)),
-      tile("weight", wLast ? fmtKg(wLast.kg) : "未記録", wLast ? "kg" : null,
-        wLast
-          ? (wLast.id === todayKey ? "きょう記録済み" : `${relLabel(wLast.id) || fmtMD(wLast.id)}の記録`) + (wPrev ? `・前回比 ${signed(num(wLast.kg) - num(wPrev.kg))} kg` : "")
-          : "最初の1回を記録しましょう"),
       // 今月の支出 leads the line under the sum, the unit beside it being just 円, so the sum keeps its line in half a row
       tile("money", Math.round(mon.out).toLocaleString("ja-JP"), "円",
         "今月の支出・" + (budget > 0 ? (budget - mon.out >= 0 ? `予算の残り ${fmtYen(budget - mon.out)}` : `予算を ${fmtYen(mon.out - budget)} 超過`) : `収入 ${fmtYen(mon.inn)}`) + `・きょう ${fmtYen(todayOut)}`),
@@ -8737,7 +8912,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       try { prev = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch {}
       const same = !!prev && JSON.stringify(prev.forms || {}) === JSON.stringify(forms); // the same typing: its age goes on
       const since = same ? num(prev.since || prev.at) : Date.now(), told = same && !!prev.told;
-      if (Object.keys(forms).length || edit) localStorage.setItem(DRAFT_KEY, JSON.stringify({ at: Date.now(), since, told, tab, open, forms, edit }));
+      if (Object.keys(forms).length || edit) localStorage.setItem(DRAFT_KEY, JSON.stringify({ at: Date.now(), since, told, tab, part: dietPart, open, forms, edit }));
       else localStorage.removeItem(DRAFT_KEY);
     } catch {}
   }
@@ -8795,8 +8970,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const sheetForm = !edited && d.open && ids.find((id) => DRAFT_FORMS[id] === d.open);
     if (sheetForm) DRAFT_SHEETS[d.open](false);
     else if (atHome && !edited) {
-      const page = ids.map((id) => DRAFT_FORMS[id]).find((k) => k === d.tab && isRecord(k)) || ids.map((id) => DRAFT_FORMS[id]).find(isRecord);
-      if (page) setTab(page);
+      // ダイエット's forms open it at their part (the tab a part's own key, for typing from before ダイエット)
+      const keys = ids.map((id) => DRAFT_FORMS[id]), showing = d.tab === "diet" ? d.part : d.tab;
+      const page = keys.find((k) => k === showing && isRecord(pageOf(k))) || keys.find((k) => isRecord(pageOf(k)));
+      if (page) { if (isDietPart(page)) setDietPart(page); setTab(pageOf(page)); }
     }
     for (const id of ids) fillForm($(id), d.forms[id]);
     flash("書きかけの入力を戻しました。");
@@ -8821,7 +8998,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     askPersist();
     // started afresh at midnight (turnDay): said so
     try { if (sessionStorage.getItem(DAY_TURNED)) { sessionStorage.removeItem(DAY_TURNED); setTimeout(() => flash("日付が変わったので、きょうの日付にしました"), 300); } } catch {}
-    const initial = (location.hash || "").slice(1);
+    let initial = (location.hash || "").slice(1);
+    if (isDietPart(initial)) { setDietPart(initial); initial = "diet"; } // 食事's, 運動's and からだ's own pages, from before ダイエット
     // straight there: no slide in from きょう as the app opens (a record's entries open at 記録, which record being unknown)
     draw(() => setTab(["reclist", "trash", "copies"].includes(initial) ? "records" : PAGES.some((p) => p.key === initial) ? initial : "home"));
     draw(loadJournalForm);
