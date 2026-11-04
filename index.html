@@ -1099,9 +1099,13 @@ ul.list > li.btn-row { padding: 0; }
    outlined while it does (the user's call: the page didn't scroll from on them). The mouse moves them at once */
 .tsumi-stairs canvas.pan { cursor: grab; }
 .tsumi-stairs canvas.grab { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; cursor: grabbing; }
+/* 大きく and 全体 (the switch showing): a sideways move on them is the stairs' own, 大きく sliding along its slope under the
+   finger, and two fingers pinched or spread switch to 全体 or 大きく (the user's calls: a sideways swipe did nothing, as the
+   calendar's turns its month; a pinch zoomed the page); up and down still scroll the page */
+.tsumi-stairs canvas.zoom { touch-action: pan-y; }
 /* ◀ ▶ right under the stairs, and beside them 大きく's ways back: ◀ ▶ stay where they are whichever of those show and
    whatever the words under them hold (the user's call: they moved under the finger as they were pressed) */
-.tsumi-nav { display: flex; align-items: flex-start; gap: 4px; }
+.tsumi-nav { position: relative; display: flex; align-items: flex-start; gap: 4px; } /* (its mouse label set over ◀ ▶) */
 .tsumi-nav .icon-btn { flex: none; margin: 0; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; } /* held down without a menu */
 /* no block before or after (of the kind pressed): dimmed, though still in the tab order (the user's call: ▶ on the newest
    did nothing, though it looked pressable) */
@@ -1136,6 +1140,13 @@ ul.list > li.btn-row { padding: 0; }
   .tsumi-said:has(.tsumi-tip.none) { min-height: 0; }
   .tsumi-said .tsumi-tip { min-height: 0; }
 }
+/* a wide, low screen (a laptop; a phone held sideways): ◀ ▶ and the words beside the stairs instead of under them, so the
+   stairs take the screen's height (the user's call: at 1366×657 大きく was 7×6 blocks and 全体 220px, most of the card
+   empty); ◀ ▶ level with the stairs' top, the links under them where they don't fit beside */
+.tsumi-body { display: flex; flex-direction: column; gap: 4px; } /* (as they were in the card) */
+.tsumi-body.beside { display: grid; grid-template-columns: auto minmax(11em, 1fr); grid-template-rows: auto 1fr; gap: 4px var(--space-3); align-items: start; }
+.tsumi-body.beside > .tsumi-stairs { grid-row: 1 / span 2; }
+.tsumi-body.beside > .tsumi-nav { flex-wrap: wrap; margin-top: 8px; }
 /* 「きょう ＋N こ」 over the stairs, pressed for today's first block: a link, its ・ as the line's, a finger's height */
 .tsumi-today { margin: -8px 0; padding: 8px 0; border: 0; background: none; color: var(--accent); font: inherit; cursor: pointer; }
 .tsumi-today::before { color: var(--muted); }
@@ -1804,22 +1815,27 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <button type="button" data-view="near" aria-pressed="true">大きく</button>
             <button type="button" data-view="all" aria-pressed="false">全体</button>
           </div>
-          <div class="tsumi-stairs" id="tsumiWrap"><canvas id="tsumiCanvas" role="img" tabindex="0"></canvas><canvas class="tsumi-over" id="tsumiOver" aria-hidden="true"></canvas><div class="tip" id="tsumiHover" aria-hidden="true" hidden></div></div>
-          <!-- ◀ ▶: the block before or after; beside them, in 大きく, back to the block shown under the stairs when it is out
-               of the view, or to the summit when that is -->
-          <div class="tsumi-nav">
-            <button type="button" class="icon-btn" id="tsumiPrev" aria-label="前のブロック"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-prev"/></svg></button>
-            <button type="button" class="icon-btn" id="tsumiNext" aria-label="次のブロック"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button>
-            <div class="tsumi-jumps" id="tsumiJumps" hidden>
-              <button type="button" class="link-btn" id="tsumiToNew">いちばん新しいブロックへ</button>
-              <button type="button" class="link-btn" id="tsumiToTop">てっぺんへ</button>
+          <!-- the stairs, and ◀ ▶ and the words under them; on a wide, low screen those two beside the stairs (tsumiSideW) -->
+          <div class="tsumi-body" id="tsumiBody">
+            <div class="tsumi-stairs" id="tsumiWrap"><canvas id="tsumiCanvas" role="img" tabindex="0"></canvas><canvas class="tsumi-over" id="tsumiOver" aria-hidden="true"></canvas><div class="tip" id="tsumiHover" aria-hidden="true" hidden></div></div>
+            <!-- ◀ ▶: the block before or after; beside them, in 大きく, back to the block shown under the stairs when it is out
+                 of the view, or to the summit when that is -->
+            <div class="tsumi-nav">
+              <button type="button" class="icon-btn" id="tsumiPrev" aria-label="前のブロック"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-prev"/></svg></button>
+              <button type="button" class="icon-btn" id="tsumiNext" aria-label="次のブロック"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button>
+              <div class="tsumi-jumps" id="tsumiJumps" hidden>
+                <button type="button" class="link-btn" id="tsumiToNew">いちばん新しいブロックへ</button>
+                <button type="button" class="link-btn" id="tsumiToTop">てっぺんへ</button>
+              </div>
+              <!-- (a PC) the mouse on ◀ ▶: what they do -->
+              <div class="tip" id="tsumiNavTip" aria-hidden="true" hidden></div>
             </div>
-          </div>
-          <!-- the block's words and the way to its record: on a wide page the link right under the words, the room for three
-               lines kept round both, so nothing under them moves from block to block -->
-          <div class="tsumi-said">
-            <div class="tsumi-tip" id="tsumiTip" aria-live="polite"></div>
-            <div class="tsumi-acts"><button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button></div>
+            <!-- the block's words and the way to its record: on a wide page the link right under the words, the room for three
+                 lines kept round both, so nothing under them moves from block to block -->
+            <div class="tsumi-said">
+              <div class="tsumi-tip" id="tsumiTip" aria-live="polite"></div>
+              <div class="tsumi-acts"><button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button></div>
+            </div>
           </div>
         </div>
         <!-- the whole staircase as a picture, as a goal's 全体 can be (the user's call) -->
@@ -1832,7 +1848,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <ul class="list card" id="tsumiKinds"></ul>
             <p class="group-foot"><span class="foot-line"><span class="phrase">記録を1つするたびに、</span><span class="phrase">ブロックが1つ積みあがります。</span></span><span class="foot-line"><span class="phrase">ブロックを押すとその記録が、</span></span><span class="foot-line"><span class="phrase">★を押すと</span><span class="phrase">つぎの段まで</span><span class="phrase">あと何こかが見られます。</span></span><span class="foot-line"><span class="phrase">点の付いたブロックは、</span><span class="phrase">きょう積んだものです。</span></span></p>
             <!-- the rest of the words, behind くわしく (the user's call: ten lines were too many) -->
-            <details class="group-foot tsumi-more"><summary><span class="more">くわしく</span><span class="less">とじる</span></summary><p><strong>見かた</strong><span class="phrase">1段目は1こ、2段目は2こ…と、</span><span class="phrase">段が上がるほど1段に積むブロックが増えます。</span><span class="phrase">点線のマスと★は、いま積んでいる段です。</span><span class="phrase">ToDoは完了したとき、</span><span class="phrase">目標はマスにチェックしたときに積みあがります。</span></p><p><strong>しるし</strong><span class="phrase">選んでいるブロックと同じ日に</span><span class="phrase">積んだものには、枠が付きます。</span><span class="phrase">階段の上の「5月」などは、</span><span class="phrase">その月に積みはじめたところです。</span><span class="phrase">月の名前が見えないときは、</span><span class="phrase">大きくの左上に、</span><span class="phrase">いま見ているところの月が出ます。</span><span class="phrase">全体の四角い枠は、</span><span class="phrase">大きくで見ているところです。</span><span class="phrase">大きくの右の「<span id="tsumiMoreStep">12</span>段目」は、</span><span class="phrase">いま積んでいる段です。</span></p><p><strong>押すと</strong><span class="phrase">★：この4週間のペースだと、</span><span class="phrase">いつごろ届くか。</span><span class="phrase">月の名前：その月の最初のブロックと、</span><span class="phrase">その月に積んだ数。</span><span class="phrase">「きょう ＋N こ」：きょう積んだ最初のブロック。</span><span class="phrase">「その日 N こ」：その日の最初のブロック。</span><span class="phrase">種類：その種類のブロックだけに色がつきます。</span><span class="phrase">◀ ▶：押しつづけると続けて進みます。</span><span class="phrase">大きく：長押ししてからなぞると動かせます。</span></p><p class="pc-only"><strong>パソコンでは</strong><span class="phrase">ブロックにマウスを重ねると、</span><span class="phrase">種類と日付が出ます。</span><span class="phrase">大きく：ドラッグすると動かせます。</span><span class="phrase">階段をクリックしたあとは、</span><span class="phrase">← → キーで1つずつ、</span><span class="phrase">PageUp・PageDown キーで月ごとに進みます。</span><span class="phrase">Enter キーで、その記録が開きます。</span></p></details>
+            <details class="group-foot tsumi-more"><summary><span class="more">くわしく</span><span class="less">とじる</span></summary><p><strong>見かた</strong><span class="phrase">1段目は1こ、2段目は2こ…と、</span><span class="phrase">段が上がるほど1段に積むブロックが増えます。</span><span class="phrase">点線のマスと★は、いま積んでいる段です。</span><span class="phrase">ToDoは完了したとき、</span><span class="phrase">目標はマスにチェックしたときに積みあがります。</span></p><p><strong>しるし</strong><span class="phrase">選んでいるブロックと同じ日に</span><span class="phrase">積んだものには、枠が付きます。</span><span class="phrase">階段の上の「5月」などは、</span><span class="phrase">その月に積みはじめたところです。</span><span class="phrase">月の名前が見えないときは、</span><span class="phrase">大きくの左上に、</span><span class="phrase">いま見ているところの月が出ます。</span><span class="phrase">全体の四角い枠は、</span><span class="phrase">大きくで見ているところです。</span><span class="phrase">大きくの右の「<span id="tsumiMoreStep">12</span>段目」は、</span><span class="phrase">いま積んでいる段です。</span></p><p><strong>押すと</strong><span class="phrase">★：この4週間のペースだと、</span><span class="phrase">いつごろ届くか。</span><span class="phrase">月の名前：その月の最初のブロックと、</span><span class="phrase">その月に積んだ数。</span><span class="phrase">「きょう ＋N こ」：きょう積んだ最初のブロック。</span><span class="phrase">「その日 N こ」：その日の最初のブロック。</span><span class="phrase">種類：その種類のブロックだけに色がつきます。</span><span class="phrase">◀ ▶：押しつづけると続けて進みます。</span><span class="phrase">上のふちの▲★：上にかくれている★へ。</span><span class="phrase">大きく：横になぞると、階段にそって動きます。</span><span class="phrase">長押ししてからなぞると、どこへでも動かせます。</span><span class="phrase">2本の指でつまむと全体、</span><span class="phrase">広げるとそのあたりが大きくで見られます。</span></p><p class="pc-only"><strong>パソコンでは</strong><span class="phrase">ブロックにマウスを重ねると、</span><span class="phrase">種類と日付が出ます。</span><span class="phrase">大きく：ドラッグすると動かせます。</span><span class="phrase">階段をクリックしたあとは、</span><span class="phrase">← → キーで1つずつ、</span><span class="phrase">PageUp・PageDown キーで月ごとに進みます。</span><span class="phrase">Enter キーか、ブロックのダブルクリックで、</span><span class="phrase">その記録が開きます。</span></p></details>
           </div>
           <div class="tsumi-col">
             <!-- when every fifth step was reached, and the next round step (the user's call); a step pressed shows its block -->
@@ -7317,6 +7333,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   let tsumiAnim = null, tsumiFresh = Infinity; // blocks dropping in since the last look; with less motion, the first of them to ring
   let tsumiDrag = null, tsumiDragged = false; // 大きく moved under a finger; and the press that ended a move, not to be taken as a tap
   let tsumiHoverAt = null; // where the mouse rests on the stairs (a PC), the block there outlined and named (drawTsumi)
+  // what last pressed the stairs (a mouse's double click opens a block; a finger's doesn't), whether that press showed a
+  // block, and the fingers on them (two: a pinch, not a move)
+  let tsumiPointer = "", tsumiClicked = false;
+  const tsumiTouches = new Set(), tsumiFine = matchMedia("(hover: hover) and (pointer: fine)");
   let tsumiAllSteps = false; // 段の記録 with every step, after もっと見る (till the page is opened again)
   let tsumiAtGoal = false; // the ★ pressed: its words under the stairs and the ring on it, till a block is shown
   let tsumiBack = null; // the page as it was when 最近削除した項目 was opened from a block, to come back to
@@ -7325,12 +7345,42 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a month's name over the stairs, the year at January; and the names to write: the years first, then the months where
   // they don't run into one, or the years alone when most months wouldn't fit (全体 of years of records)
   const monthName = (mo) => (mo.endsWith("-01") ? `${Number(mo.slice(0, 4))}年` : `${Number(mo.slice(5))}月`);
+  const monthHits = (a, b, h) => a.rx - a.w < b.rx + 6 && b.rx - b.w < a.rx + 6 && Math.abs(a.by - b.by) < h + 2;
   function fitMonths(spots, h) {
-    const hits = (a, b) => a.rx - a.w < b.rx + 6 && b.rx - b.w < a.rx + 6 && Math.abs(a.by - b.by) < h + 2;
-    const fit = (list) => list.reduce((put, p) => (put.some((q) => hits(p, q)) ? put : [...put, p]), []);
+    const fit = (list) => list.reduce((put, p) => (put.some((q) => monthHits(p, q, h)) ? put : [...put, p]), []);
     const years = spots.filter((p) => p.year), months = spots.length - years.length, put = fit([...years, ...spots.filter((p) => !p.year)]);
     return put.length - fit(years).length < (months * 2) / 3 ? fit(years) : put;
   }
+  // and a year where none would be written (the user's calls: a past year's months read as this year's, the picture saying
+  // today's date over them; with years alone, the year the stairs began in had no name, its January being before them).
+  // put: fitMonths's names, each with m (its tsumiMonths index); measure: a name's width; left: where a name may begin;
+  // at(c): where a name over column c goes ({ rx, by }), or null where none can. With years alone, the first year's name
+  // where it first fits from the first month's column on; else, with no year among them and the months not this year's,
+  // the leftmost with room for it written with its year (「2025年8月」)
+  function yearMonths(put, h, measure, left, at) {
+    if (!put.length) return put;
+    const out = [...put].sort((a, b) => a.m - b.m), clear = (q, p) => q.rx - q.w >= left && !out.some((o) => o !== p && monthHits(q, o, h));
+    if (out.every((p) => p.year)) {
+      const [i0, mo0] = tsumiMonths[0];
+      if (mo0.endsWith("-01") || out.some((p) => p.m === 0)) return out;
+      const label = `${Number(mo0.slice(0, 4))}年`, w = measure(label), till = tsumiCol(tsumiMonths[out[0].m][0]);
+      for (let c = tsumiCol(i0); c < till; c++) {
+        const spot = at(c), q = spot && { label, rx: spot.rx, by: spot.by, w, year: true, m: 0 };
+        if (q && clear(q, null)) { out.unshift(q); break; }
+      }
+      return out;
+    }
+    if (out.some((p) => p.year)) return out;
+    for (const p of out) {
+      const mo = tsumiMonths[p.m][1];
+      if (mo.slice(0, 4) === todayKey.slice(0, 4)) break;
+      const label = `${Number(mo.slice(0, 4))}年${Number(mo.slice(5))}月`, q = { ...p, label, w: measure(label) };
+      if (clear(q, p)) { out[out.indexOf(p)] = q; break; }
+    }
+    return out;
+  }
+  // a month as the mouse names it: with its year when that isn't this one
+  const monthWords = (mo) => (mo.endsWith("-01") || mo.slice(0, 4) === todayKey.slice(0, 4) ? monthName(mo) : `${Number(mo.slice(0, 4))}年${Number(mo.slice(5))}月`);
   // days on end with a block, up to today, or yesterday while today has none yet; and the most days on end there have been
   function runOf(days) {
     let run = 0;
@@ -7534,7 +7584,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // them take there, a set amount, so the stairs keep their size while those words change (a kind pressed, the switch
   // showing: the 大きく window was placed for one size and drawn at another, the newest out of it)
   function tsumiRoomTop() {
+    // ◀ ▶ and the words beside the stairs (tsumiSideW): less only what is over the stairs, a set amount as before; on a
+    // screen too low for that and the stairs together (a phone held sideways), as tall as the screen under the top bar and
+    // the switch (the user's calls: on a 1366×657 PC 大きく was 7×6 blocks; held sideways the stairs began 286px down a
+    // 390px screen, ◀ ▶ and the words off it)
+    if (tsumiSideW()) return innerHeight < 500 ? Math.max(160, innerHeight - navbar.offsetHeight - 64) : Math.max(220, innerHeight - 300);
     return Math.max(220, innerHeight - 440);
+  }
+  // on a wide, low screen, the width the stairs may take with ◀ ▶ and the words beside them (the card's, less the gap and
+  // 11em for those), or 0 where those go under the stairs: a screen tall enough for all of them one under another (870px:
+  // 大きく is whole there), or a card too narrow for both
+  function tsumiSideW() {
+    if (!wideScreen.matches || innerHeight >= 870) return 0;
+    const body = $("tsumiBody"), w = body.clientWidth - 11 * (parseFloat(getComputedStyle(body).fontSize) || 17) - 24;
+    return w >= 200 ? Math.floor(w) : 0;
   }
   // the whole staircase as big as the width allows; once its blocks would be smaller than a finger can press (14px), blocks
   // of one size round the summit (大きく; the user's call: the climb didn't show, and small blocks couldn't be aimed at),
@@ -7563,7 +7626,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const n = tsumiShown.length, k = tsumiCol(n), cols = k + 1;
     // top: room over the top row for a month's name, over the ★ too (the user's call: the month being stacked didn't show)
     // room: the height the stairs may take, on a phone as it opened (fitTsumiOpen) but in 全体, which keeps the band's
-    const W = Math.round($("tsumiWrap").clientWidth) || 326, pad = 4, top = tsumiMark() + 6, band = wideScreen.matches ? tsumiRoomTop() : tsumiRoom();
+    // side: the stairs' width beside ◀ ▶ and the words (tsumiSideW); the canvas is then only as wide as they take (used)
+    const side = tsumiSideW(), W = side || Math.round($("tsumiWrap").clientWidth) || 326, pad = 4, top = tsumiMark() + 6, band = wideScreen.matches ? tsumiRoomTop() : tsumiRoom();
     const room = !wideScreen.matches && tsumiOpenRoom ? Math.min(band, tsumiOpenRoom) : band;
     let axis = tsumiAxis(cols), inner = W - 2 * pad - axis;
     // no taller than the screen has room for, either (the user's call: on a PC 全体 ran a third past the window's foot, and
@@ -7575,14 +7639,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // fill the width (the user's call: it never showed)
     const g0 = fit0 >= 16 ? 3 : fit0 >= 8 ? 2 : fit0 >= 4 ? 1 : 0, first = !near && fit0 < 44 && tsumiMonths.length ? tsumiTextWidth(monthName(tsumiMonths[0][1])) : 0;
     const lead = first ? Math.max(0, Math.ceil(first - fit0 + g0 / 2 + 1)) : 0;
-    const fit = Math.min(44, (inner - lead) / cols, big && !near ? Math.max(120, band - pad - top - 12) / cols : tall), P = clampTo(Math.floor(inner / 13), 18, 28), pitch = near ? P : fit;
+    // 大きく's blocks: 13 across, or, beside ◀ ▶ and the words, as many as the height has room for too, more with a mouse,
+    // which can aim at smaller ones (the user's call: on a 1366×657 PC it showed 7×6)
+    const fit = Math.min(44, (inner - lead) / cols, big && !near ? Math.max(120, band - pad - top - 12) / cols : tall);
+    const P = side ? clampTo(Math.floor(Math.min(inner, Math.max(120, room - pad - top - 12)) / (tsumiFine.matches ? 12 : 10)), 18, 28) : clampTo(Math.floor(inner / 13), 18, 28), pitch = near ? P : fit;
     const C0 = near ? Math.min(cols, Math.floor(inner / P)) : cols;
     // (the room over the top row taken from 大きく's height, so the words under the stairs stay where they were)
     const R = near ? Math.min(cols, Math.round(C0 * 1.15 - top / P), Math.floor((420 - top) / P), Math.max(6, Math.floor((room - pad - top - 12) / P))) : cols;
     // 大きく no wider than tall by more than a column: further left, the rows round the summit hold no blocks (the user's
     // call: on a PC its left half was empty); drawTsumi sets it in the middle
     const C = near ? Math.min(C0, R + 1) : cols;
-    return { n, k, cols, W, pad, top, axis, inner, lead, pitch, C, R, big, near, summit: [cols - C, cols - R] };
+    return { n, k, cols, W, pad, top, axis, inner, lead, pitch, C, R, big, near, side: !!side, used: Math.ceil(2 * pad + axis + lead + C * pitch), summit: [cols - C, cols - R] };
   }
   // what a press at a point on the stairs (canvas px) takes, and so what the mouse there shows: { i, at } for a block (its
   // index) or the ★ (n and up; at: the place under the point, one to come or the ★ itself), { m, box } for a month's name,
@@ -7594,6 +7661,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // under the stairs: the ▼ that goes down to the block shown, a finger's width round it (the user's call: the mouse showed
     // nothing over it)
     if (py > g.gridH) return g.below && Math.abs(px - g.below.x) <= 22 ? { below: true } : null;
+    // over the view's top row: the ▲★ that goes up to the ★, a finger's width round it
+    if (g.above && py < g.above.bottom && Math.abs(px - g.above.x) <= 22) return { above: true };
     const n = tsumiShown.length, goal = (g.k * (g.k + 1)) / 2 + g.k, whole = g.big && !g.near;
     const c = Math.floor(g.c0 + (px - g.ox) / g.pitch), row = Math.floor(g.r0 + (g.gridH - py) / g.pitch);
     const inCols = px >= g.ox && px < g.ox + g.C * g.pitch, inRows = row >= Math.floor(g.r0) && row < Math.ceil(g.r0 + g.R);
@@ -7675,6 +7744,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function drawTsumi(now = 0) {
     const a = tsumiAnim, t = a ? now || performance.now() : 0;
+    $("tsumiBody").classList.toggle("beside", !!tsumiSideW()); // ◀ ▶ and the words beside the stairs or under them
     const L = tsumiLayout(), { n, k, cols, W, axis, pitch, C, R, near } = L, r = n - (k * (k + 1)) / 2;
     let [c0, r0] = near ? tsumiAnchor || L.summit : [0, 0];
     c0 = clampTo(c0, 0, cols - C); r0 = clampTo(r0, 0, cols - R); // a finger moving it leaves it between places
@@ -7682,12 +7752,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // (on a wide page at the left, in line with the switch over them and ◀ ▶ and the words under them: the user's call,
     // they stood apart in the card's middle)
     const gridH = Math.ceil(pitch * R) + L.pad + L.top, ox = L.pad + L.lead + (wideScreen.matches ? 0 : Math.floor((L.inner - L.lead - pitch * C) / 2)), H = gridH + 12;
-    tsumiGeo = { k, r, left: k + 1 - r, pitch, ox, gridH, cols, c0, r0, C, R, near, big: L.big, below: null };
+    tsumiGeo = { k, r, left: k + 1 - r, pitch, ox, gridH, cols, c0, r0, C, R, near, big: L.big, below: null, above: null };
     $("tsumiViews").hidden = !L.big;
     for (const b of $("tsumiViews").querySelectorAll("button")) b.setAttribute("aria-pressed", String((b.dataset.view === "near") === near));
-    const cv = $("tsumiCanvas"), dpr = window.devicePixelRatio || 1;
-    cv.classList.toggle("pan", near);
-    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + "px"; cv.style.height = H + "px"; }
+    const cv = $("tsumiCanvas"), dpr = window.devicePixelRatio || 1, CW = L.side ? Math.min(W, L.used) : W;
+    cv.classList.toggle("pan", near); cv.classList.toggle("zoom", L.big);
+    if (cv.width !== Math.round(CW * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(CW * dpr); cv.height = Math.round(H * dpr); cv.style.width = CW + "px"; cv.style.height = H + "px"; }
     const x = cv.getContext("2d");
     x.setTransform(dpr, 0, 0, dpr, 0, 0);
     x.clearRect(0, 0, W, H);
@@ -7797,7 +7867,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (rx - w >= ox - 2 - L.lead && rx <= ox + C * pitch + 2 && by >= mf && by <= gridH) spots.push({ label, rx, by, w, year: mo.endsWith("-01"), m });
     }
     x.lineWidth = 3; x.lineJoin = "round"; x.strokeStyle = tone("--surface", "#ffffff"); x.fillStyle = tone("--muted", "#8e8e93");
-    const placed = fitMonths(spots, mf);
+    const spotAt = (c) => {
+      if (c < cLo || c > cHi || c > k) return null;
+      const rx = xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by = yOf(c) - Math.max(2, 5 - size / 4) - 4;
+      return rx <= ox + C * pitch + 2 && by >= mf && by <= gridH ? { rx, by } : null;
+    };
+    const placed = yearMonths(fitMonths(spots, mf), mf, (w) => x.measureText(w).width, ox - 2 - L.lead, spotAt);
     for (const p of placed) { x.strokeText(p.label, p.rx, p.by); x.fillText(p.label, p.rx, p.by); }
     // 大きく with no month's name in it (away from the summit, the columns' tops out of sight): the month its blocks are
     // of, or the months, at its top left and fainter, as where it is rather than where one began (the user's call: which
@@ -7809,7 +7884,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (iB >= 0) {
         const mo = (i) => ymd(new Date(tsumiShown[i].t)).slice(0, 7), A = mo((cF * (cF + 1)) / 2 + lo), B = mo(iB);
         const ym = (s) => `${s.slice(0, 4) === todayKey.slice(0, 4) ? "" : Number(s.slice(0, 4)) + "年"}${Number(s.slice(5))}月`;
-        const words = A === B ? ym(A) : `${ym(A)}〜${A.slice(0, 4) === B.slice(0, 4) ? Number(B.slice(5)) + "月" : ym(B)}`;
+        // (both years when they differ: the user's call, 「2025年9月〜11月」 ran on to 2026's November)
+        const yr = (s) => `${Number(s.slice(0, 4))}年${Number(s.slice(5))}月`;
+        const words = A === B ? ym(A) : A.slice(0, 4) === B.slice(0, 4) ? `${ym(A)}〜${Number(B.slice(5))}月` : `${yr(A)}〜${yr(B)}`;
         const lx = ox + gap / 2, ly = L.pad + L.top + gap / 2 - Math.max(2, 5 - size / 4) - 4;
         x.textAlign = "left"; x.globalAlpha = 0.8; x.strokeText(words, lx, ly); x.fillText(words, lx, ly); x.globalAlpha = 1;
       }
@@ -7836,6 +7913,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         tsumiGeo.below = { x: cx };
       }
     }
+    // the ★ over 大きく's view, in a column in it: a gold ▲ and ★ at the view's top edge, which go up to it (the user's call:
+    // on a small iPhone the ★ was out of sight, nothing saying it was there), as the ▼ goes down to the block shown
+    if (near && !a && k >= cLo && k <= cHi && k > hi) {
+      const ax = xOf(k) + size / 2, s = 5, cy = L.pad + L.top - 7;
+      x.fillStyle = "#ffcc00"; x.strokeStyle = "#c79a00"; x.lineWidth = 1;
+      x.beginPath(); x.moveTo(ax - 4, cy - s - 2); x.lineTo(ax + 4, cy - s - 2); x.lineTo(ax, cy - s - 6); x.closePath(); x.fill(); x.stroke();
+      x.beginPath();
+      for (let j = 0; j < 10; j++) { const ang = -Math.PI / 2 + (j * Math.PI) / 5, d = j % 2 ? s * 0.45 : s; x.lineTo(ax + d * Math.cos(ang), cy + d * Math.sin(ang)); }
+      x.closePath(); x.fill(); x.stroke();
+      tsumiGeo.above = { x: ax, bottom: L.pad + L.top };
+    }
     tsumiGeo.si = si; // (the mouse's ring leaves it to the one drawn here)
     // 大きく away from the shown block or from the summit: a way back to each (the user's call: the newest block was often out of sight)
     const atTop = Math.abs(c0 - L.summit[0]) < 0.5 && Math.abs(r0 - L.summit[1]) < 0.5, b = si >= 0 ? tsumiShown[si] : null;
@@ -7856,7 +7944,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function drawTsumiHover(again = false) {
     const main = $("tsumiCanvas"), cv = $("tsumiOver"), g = tsumiGeo, label = $("tsumiHover");
     const t = tsumiHoverAt && g?.pitch && !tsumiAnim && !tsumiDrag?.moved ? tsumiTarget(tsumiHoverAt.x, tsumiHoverAt.y) : null;
-    const key = t ? JSON.stringify([t.i, t.m, t.at, t.below]) : "";
+    const key = t ? JSON.stringify([t.i, t.m, t.at, t.below, t.above]) : "";
     if (!again && key === tsumiHoverKey) return;
     tsumiHoverKey = key;
     const dpr = window.devicePixelRatio || 1;
@@ -7874,10 +7962,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (t.below) {
       setChildren(label, $("tsumiToNew").textContent);
       cx = g.below.x; top = g.gridH + 2; bottom = g.gridH + 14; // over it, clear of ◀ ▶ and the links beside them
+    } else if (t.above) {
+      setChildren(label, el("strong", {}, `${g.k + 1} 段目`), `まで あと ${g.left} こ`);
+      cx = g.above.x; top = -1e4; bottom = g.above.bottom + 2; // under it, the view's top being the canvas's
     } else if (t.m !== undefined) {
       const b = t.box;
       x.fillRect(b.x0, b.y1 + 2, b.x1 - b.x0, 1.5);
-      setChildren(label, el("strong", {}, monthName(tsumiMonths[t.m][1])), "のはじめへ");
+      setChildren(label, el("strong", {}, monthWords(tsumiMonths[t.m][1])), "のはじめへ");
       cx = (b.x0 + b.x1) / 2; top = b.y0 - 4; bottom = b.y1 + 8;
     } else {
       const n = tsumiShown.length, k = g.k, lo = Math.max(0, Math.floor(g.r0)), hi = Math.min(g.cols - 1, Math.ceil(g.r0 + g.R) - 1);
@@ -8090,7 +8181,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function showTsumiStairs() {
     if (!$("tsumiWrap").offsetHeight) return;
     const [head, low] = tsumiBand(), top = ($("tsumiViews").hidden ? $("tsumiWrap") : $("tsumiViews")).getBoundingClientRect().top - 8;
-    const bottom = $("tsumiTip").getBoundingClientRect().bottom + 8;
+    const bottom = Math.max($("tsumiTip").getBoundingClientRect().bottom, $("tsumiWrap").getBoundingClientRect().bottom) + 8; // (the words beside the stairs on a wide, low screen)
     if (top >= head && bottom <= low) return;
     scrollBy({ top: top < head || bottom - top > low - head ? top - head : bottom - low, behavior: reduceMotion.matches ? "auto" : "smooth" });
   }
@@ -8099,6 +8190,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function showTsumiTip() {
     const [head, low] = tsumiBand(), over = $("tsumiTip").getBoundingClientRect().bottom + 8 - low, room = $("tsumiWrap").getBoundingClientRect().top - head;
     if (over > 0 && room > 0) scrollBy({ top: Math.min(over, room), behavior: reduceMotion.matches ? "auto" : "smooth" });
+  }
+  // the ★ shown, 大きく's view brought round it: ▶ past the newest, the ▲★ over the view
+  function goTsumiGoal() {
+    const k = tsumiCol(tsumiShown.length);
+    tsumiAnim = null; tsumiAtGoal = true; tsumiPick = null; tsumiFollow((k * (k + 1)) / 2 + k); drawTsumi(); sayTsumi();
   }
   // 大きく's view moved so block i shows, when it doesn't
   function tsumiFollow(i) {
@@ -8124,7 +8220,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         if (x < 0) break;
         if (x >= n) {
           if (t) break;
-          const k = tsumiCol(n); tsumiAnim = null; tsumiAtGoal = true; tsumiPick = null; tsumiFollow((k * (k + 1)) / 2 + k); drawTsumi(); sayTsumi(); return;
+          goTsumiGoal(); return;
         }
         j = x;
       }
@@ -8138,6 +8234,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const tsumiCanvas = $("tsumiCanvas");
   tsumiCanvas.addEventListener("click", (ev) => {
     if (tsumiDragged) { tsumiDragged = false; return; } // the end of a move, not a press
+    if (ev.detail > 1 && tsumiPointer === "mouse") return; // a double click's second: the first showed the block, the double click opens it
+    tsumiClicked = false;
     const g = tsumiGeo;
     if (!g?.pitch) return;
     tsumiAnim = null; // a press ends the drop at once
@@ -8149,9 +8247,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // name, or a finger's width round it (less in 全体), its first block (the user's calls: pressing one did nothing; then
     // it was hard to hit)
     const hit = tsumiTarget(px, py);
+    if (hit?.above) { goTsumiGoal(); return; }
     if (hit?.m !== undefined) { goTsumiMonth(hit.m); return; }
     if (!hit) { drawTsumi(); return; }
     const i = hit.i, atGoal = i >= tsumiShown.length;
+    tsumiClicked = !atGoal;
     if (g.big && !g.near) {
       // 全体: the place pressed comes up in 大きく, with its block shown, or, for the step being built, the ★'s words (the
       // user's call: the ★ pressed there showed the newest block)
@@ -8166,10 +8266,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!atGoal && tsumiOnly && tsumiShown[i].kind !== tsumiOnly) { letTsumiKindGo(); renderTsumi(); } else { drawTsumi(); sayTsumi(); }
     showTsumiTip();
   });
+  // (a PC) a block double-clicked: its record, as 「この記録を開く」 opens it (the user's call: it took the link under the
+  // words, or Enter); not the ★ or a month's name, nor a finger's double tap
+  tsumiCanvas.addEventListener("dblclick", () => {
+    if (tsumiPointer === "mouse" && tsumiClicked && !tsumiAtGoal && !$("tsumiOpen").hidden) $("tsumiOpen").click();
+  });
   // 大きく: the stairs moved round under the mouse, or under a finger held still for a moment first (the user's calls: the
-  // view could only be moved from 全体; then the page didn't scroll from on the stairs). A finger moving at once scrolls
+  // view could only be moved from 全体; then the page didn't scroll from on the stairs). A finger moving at once scrolls up
+  // and down; sideways, it slides the stairs along their slope (the user's call: a sideways swipe did nothing, as the
+  // calendar's turns its month). A second finger: a pinch, no move
   const TSUMI_HOLD = 400;
   tsumiCanvas.addEventListener("pointerdown", (ev) => {
+    tsumiPointer = ev.pointerType;
+    if (ev.pointerType === "touch") tsumiTouches.add(ev.pointerId);
+    if (tsumiTouches.size > 1) { if (tsumiDrag) { clearTimeout(tsumiDrag.timer); tsumiDrag = null; tsumiCanvas.classList.remove("grab"); } return; }
     const g = tsumiGeo;
     if (!g?.near || ev.button > 0) return;
     if (tsumiDrag) { clearTimeout(tsumiDrag.timer); tsumiCanvas.classList.remove("grab"); } // one let go off the stairs gives way
@@ -8181,17 +8291,43 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!d || d.id !== ev.pointerId || !g?.near) return;
     if (!ev.buttons) { endTsumiDrag(ev); return; } // the mouse let go off the stairs: no move goes on without it
     const dx = ev.clientX - d.x, dy = ev.clientY - d.y;
-    if (!d.held) { if (Math.hypot(dx, dy) > 8) endTsumiDrag(ev); return; } // moving before the hold: the page's scroll
+    // moving before the hold: up and down, the page's scroll; sideways, the stairs, a row down for each column back
+    if (!d.held) {
+      if (Math.hypot(dx, dy) <= 8) return;
+      if (Math.abs(dx) <= Math.abs(dy)) { endTsumiDrag(ev); return; }
+      clearTimeout(d.timer); d.held = d.along = true;
+    }
     if (!d.moved) {
       if (Math.hypot(dx, dy) < 6) return;
       d.moved = true; tsumiAnim = null;
       try { tsumiCanvas.setPointerCapture(ev.pointerId); } catch {}
     }
-    tsumiAnchor = [clampTo(d.c0 - dx / g.pitch, 0, g.cols - g.C), clampTo(d.r0 + dy / g.pitch, 0, g.cols - g.R)];
+    tsumiAnchor = [clampTo(d.c0 - dx / g.pitch, 0, g.cols - g.C), clampTo(d.along ? d.r0 - dx / g.pitch : d.r0 + dy / g.pitch, 0, g.cols - g.R)];
     drawTsumi();
   });
   // while the stairs move, the page doesn't, and a long press opens no menu
-  tsumiCanvas.addEventListener("touchmove", (ev) => { if (tsumiDrag?.held) ev.preventDefault(); }, { passive: false });
+  // two fingers on the stairs (the switch showing): pinched in, 全体; spread, 大きく round the place between them, once a
+  // pinch (the user's call: a pinch zoomed the page)
+  let tsumiPinch = null;
+  const tsumiSpan = (ts) => Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY);
+  tsumiCanvas.addEventListener("touchstart", (ev) => { tsumiPinch = ev.targetTouches.length === 2 && tsumiGeo?.big ? { d: tsumiSpan(ev.targetTouches), done: false } : null; }, { passive: true });
+  tsumiCanvas.addEventListener("touchmove", (ev) => {
+    if (tsumiDrag?.held) ev.preventDefault();
+    const p = tsumiPinch, ts = ev.targetTouches;
+    if (!p || ts.length !== 2) return;
+    ev.preventDefault();
+    const d = tsumiSpan(ts);
+    if (p.done || !p.d) return;
+    if (d < p.d * 0.7 && tsumiView === "near") { p.done = true; setTsumiView("all"); }
+    else if (d > p.d * 1.4 && tsumiView !== "near") {
+      p.done = true;
+      const box = tsumiCanvas.getBoundingClientRect(), hit = tsumiTarget((ts[0].clientX + ts[1].clientX) / 2 - box.left, (ts[0].clientY + ts[1].clientY) / 2 - box.top);
+      setTsumiView("near", hit?.at);
+    }
+    if (p.done) { tsumiDragged = true; setTimeout(() => { tsumiDragged = false; }, 400); } // no press as the fingers lift
+  }, { passive: false });
+  for (const type of ["touchend", "touchcancel"]) tsumiCanvas.addEventListener(type, (ev) => { if (ev.targetTouches.length < 2) tsumiPinch = null; if (!ev.targetTouches.length) tsumiTouches.clear(); });
+  for (const type of ["pointerup", "pointercancel"]) tsumiCanvas.addEventListener(type, (ev) => tsumiTouches.delete(ev.pointerId));
   tsumiCanvas.addEventListener("contextmenu", (ev) => { if (tsumiDrag) ev.preventDefault(); });
   const endTsumiDrag = (ev) => {
     const d = tsumiDrag;
@@ -8249,15 +8385,32 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (b.getAttribute("aria-disabled") !== "true") stepTsumi(to);
     });
   }
+  // (a PC) the mouse on ◀ ▶: what they do (▶ at the newest: 「★（つぎの段）へ」), in the stairs' black label over them (the
+  // user's call: blocks, the ★, months and the ▼ said what they were under the mouse, ◀ ▶ nothing); gone once pressed
+  const navTip = $("tsumiNavTip"), hideNavTip = () => { navTip.hidden = true; };
+  for (const id of ["tsumiPrev", "tsumiNext"]) {
+    const b = $(id);
+    b.addEventListener("pointerenter", (ev) => {
+      if (ev.pointerType !== "mouse") return;
+      navTip.textContent = b.getAttribute("aria-label"); navTip.hidden = false;
+      navTip.style.left = Math.max(navTip.offsetWidth / 2, b.offsetLeft + b.offsetWidth / 2) + "px"; navTip.style.top = b.offsetTop - 4 + "px";
+    });
+    for (const type of ["pointerleave", "pointerdown"]) b.addEventListener(type, hideNavTip);
+  }
+  addEventListener("scroll", hideNavTip, { passive: true });
   $("tsumiToNew").addEventListener("click", () => { tsumiAnim = null; tsumiFollow(shownIndex()); drawTsumi(); });
   $("tsumiToTop").addEventListener("click", () => { tsumiAnim = null; tsumiAnchor = null; drawTsumi(); });
   // 大きく or 全体; 大きく comes back where it was (全体 frames it), the summit by てっぺんへ
+  // (a pinch spread in 全体: 大きく round the place at, as a press there brings it)
+  function setTsumiView(view, at = null) {
+    tsumiView = view; tsumiAnim = null;
+    lsPut(VIEW_KEY, tsumiView);
+    if (view === "near" && at) { const L = tsumiLayout("near"); tsumiAnchor = [clampTo(at[0] - Math.floor(L.C / 2), 0, L.cols - L.C), clampTo(at[1] - Math.floor(L.R / 2), 0, L.cols - L.R)]; }
+    drawTsumi(); sayTsumi();
+  }
   $("tsumiViews").addEventListener("click", (ev) => {
     const b = ev.target.closest("button[data-view]");
-    if (!b) return;
-    tsumiView = b.dataset.view; tsumiAnim = null;
-    lsPut(VIEW_KEY, tsumiView);
-    drawTsumi(); sayTsumi();
+    if (b) setTsumiView(b.dataset.view);
   });
   $("tsumiOpen").addEventListener("click", (ev) => {
     const d = ev.currentTarget.dataset;
@@ -8369,11 +8522,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // the month names, as on the screen (the user's call: the picture had none)
     const spots = [];
     x.font = `600 12px ${font}`; x.textAlign = "right"; x.textBaseline = "alphabetic"; x.fillStyle = "#8e8e93";
-    for (const [i, mo] of tsumiMonths) {
+    tsumiMonths.forEach(([i, mo], m) => {
       const c = tsumiCol(i), label = monthName(mo), rx = xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by = yOf(c) - 4, w = x.measureText(label).width;
-      if (rx - w >= 4) spots.push({ label, rx, by, w, year: mo.endsWith("-01") });
-    }
-    for (const p of fitMonths(spots, 12)) x.fillText(p.label, p.rx, p.by);
+      if (rx - w >= 4) spots.push({ label, rx, by, w, year: mo.endsWith("-01"), m });
+    });
+    const spotAt = (c) => (c <= k ? { rx: xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by: yOf(c) - 4 } : null);
+    for (const p of yearMonths(fitMonths(spots, 12), 12, (w) => x.measureText(w).width, 4, spotAt)) x.fillText(p.label, p.rx, p.by);
     x.textAlign = "left";
     // the 段 marks, as on the screen
     const every = [5, 10, 20, 50, 100, 200, 500].find((v) => v * pitch >= 20) || 1000;
