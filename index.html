@@ -1164,7 +1164,9 @@ ul.list > li.btn-row { padding: 0; }
 .tsumi-drop-warn { flex-basis: 100%; margin: 0 0 var(--space-2); font-size: var(--t-sub); line-height: 1.4; color: var(--warn); text-align: end; }
 .tsumi-acts .link-btn { text-align: end; }
 @media (min-width: 768px) { .tsumi-acts .link-btn, .tsumi-drop-warn { text-align: start; } }
-.tsumi-unkind { margin-inline-start: auto; align-self: center; min-height: 44px; padding: 0; }
+/* しぼりをはずす, and まとめて削除 under it with only the deleted ones pressed, at the count's right */
+.tsumi-total-acts { margin-inline-start: auto; align-self: center; display: flex; flex-direction: column; align-items: flex-end; }
+.tsumi-total-acts .link-btn { min-height: 44px; padding: 0; text-align: end; }
 .tsumi-month { position: relative; flex: none; display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0 6px; color: var(--accent); cursor: pointer; }
 .tsumi-month .icon { width: 14px; height: 14px; transform: rotate(90deg); }
 .tsumi-month select { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; padding: 0; opacity: 0; font-size: 16px; cursor: pointer; }
@@ -1873,7 +1875,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       <section id="sec-tsumi" style="--sec-c: var(--accent)" hidden>
         <div class="sec-head"><h2>つみかさね</h2></div>
         <div class="card tsumi-card">
-          <p class="tsumi-total"><span class="tsumi-kind" id="tsumiKind" hidden></span><span class="tsumi-big" id="tsumiCount">0</span><span class="tsumi-unit">こ</span><button type="button" class="link-btn tsumi-unkind" id="tsumiUnkind" hidden>しぼりをはずす</button></p>
+          <p class="tsumi-total"><span class="tsumi-kind" id="tsumiKind" hidden></span><span class="tsumi-big" id="tsumiCount">0</span><span class="tsumi-unit">こ</span><span class="tsumi-total-acts" id="tsumiTotalActs" hidden><button type="button" class="link-btn" id="tsumiUnkind">しぼりをはずす</button><button type="button" class="link-btn danger" id="tsumiDropAll" hidden>まとめて削除</button></span></p>
           <p class="tsumi-sub due-line" id="tsumiSub"></p>
           <!-- 大きく: blocks of one size round the summit; 全体: the whole staircase. Shown once it no longer fits big -->
           <div class="seg tsumi-views" role="group" aria-label="階段の見え方" id="tsumiViews" hidden>
@@ -1901,7 +1903,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
                  lines kept round both, so nothing under them moves from block to block -->
             <div class="tsumi-said">
               <div class="tsumi-tip" id="tsumiTip" aria-live="polite"></div>
-              <div class="tsumi-acts"><button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button><button type="button" class="link-btn danger tsumi-open" id="tsumiDrop" hidden>このブロックを削除</button><p class="tsumi-drop-warn" id="tsumiDropWarn" role="status" hidden></p><button type="button" class="link-btn danger tsumi-open" id="tsumiDropAll" hidden></button></div>
+              <div class="tsumi-acts"><button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button><button type="button" class="link-btn danger tsumi-open" id="tsumiDrop" hidden>このブロックを削除</button><p class="tsumi-drop-warn" id="tsumiDropWarn" role="status" hidden></p></div>
             </div>
           </div>
         </div>
@@ -2753,15 +2755,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // with undo (a plan just deleted), a 元に戻す button in it for those seconds. One showing in the sheet as it closes
   // carries on under the page for the rest of its time (flashed, handOverFlash), 元に戻す and all
   let flashed = null;
-  function flash(msg, undo, ms = 6000) {
+  function flash(msg, undo, ms = 6000, label = "元に戻す") {
     clearTimeout(statusTimer);
     const t = sheetEl.open && !sheetClosing ? sheetStatus : statusEl;
     (t === statusEl ? sheetStatus : statusEl).classList.remove("show");
     t.replaceChildren(msg);
-    if (undo) t.append(el("button", { type: "button", class: "toast-undo", onclick: () => { clearTimeout(statusTimer); t.classList.remove("show"); flashed = null; undo(); } }, "元に戻す"));
+    if (undo) t.append(el("button", { type: "button", class: "toast-undo", onclick: () => { clearTimeout(statusTimer); t.classList.remove("show"); flashed = null; undo(); } }, label));
     t.classList.toggle("has-undo", !!undo);
     t.classList.add("show");
-    flashed = { msg, undo, until: Date.now() + ms };
+    flashed = { msg, undo, until: Date.now() + ms, label };
     statusTimer = setTimeout(() => { t.classList.remove("show"); flashed = null; }, ms);
   }
   function showError() { flash("保存できませんでした。端末の空き容量が足りているか確かめてください。"); }
@@ -7376,7 +7378,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a block of a deleted record taken off the stairs by hand (tsumiDrop) is noted in dropped, its key with when, so a
   // keeping from another device or a file read in doesn't bring it back (joinTsumi); a record deleted again after that is
   // kept again, being kept later than it was dropped
-  const tsumiDropped = (set = tsumiSet()) => (set.dropped && typeof set.dropped === "object" ? set.dropped : {});
+  const tsumiDropRaw = (set = tsumiSet()) => (set.dropped && typeof set.dropped === "object" ? set.dropped : {});
+  const tsumiPutBack = (set = tsumiSet()) => (set.back && typeof set.back === "object" ? set.back : {});
+  // the marks of blocks taken off that still count: none put back since (back, a later time)
+  const tsumiDropped = (set = tsumiSet()) => {
+    const d = tsumiDropRaw(set), b = tsumiPutBack(set), out = {};
+    for (const [key, at] of Object.entries(d)) if (!(num(b[key]) > num(at))) out[key] = at;
+    return out;
+  };
   const keptKey = (x) => x.key || "todo:" + x.id;
   const isDropped = (dropped, x) => keptKey(x) in dropped && num(dropped[keptKey(x)]) >= num(x.at);
   function tsumiKeep(store, ids) {
@@ -7420,10 +7429,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // there and not here, and the names; this device's own where both have one. null when it adds nothing
   function joinTsumi(mine, theirs) {
     const keyOf = keptKey, have = new Set((mine.kept || []).map(keyOf));
-    // the blocks taken off on either (the later time where both have one), and none of them kept from either
-    const dropped = { ...tsumiDropped(mine) };
+    // the blocks taken off on either (the later time where both have one), and none of them kept from either; and the
+    // ones put back on either, likewise: a block put back after it was taken off stays (the user's call: it went again)
+    const rawD = { ...tsumiDropRaw(mine) }, rawB = { ...tsumiPutBack(mine) };
     let changed = false;
-    for (const [key, at] of Object.entries(tsumiDropped(theirs))) if (Number.isFinite(at) && !(num(dropped[key]) >= at)) { dropped[key] = at; changed = true; }
+    for (const [key, at] of Object.entries(tsumiDropRaw(theirs))) if (Number.isFinite(at) && !(num(rawD[key]) >= at)) { rawD[key] = at; changed = true; }
+    for (const [key, at] of Object.entries(tsumiPutBack(theirs))) if (Number.isFinite(at) && !(num(rawB[key]) >= at)) { rawB[key] = at; changed = true; }
+    const dropped = tsumiDropped({ dropped: rawD, back: rawB });
     const more = (Array.isArray(theirs.kept) ? theirs.kept : []).filter((x) => x && typeof x.id === "string" && isDay(x.day) && Number.isFinite(x.t)
       && (x.kind === undefined || (x.kind === "goal" && typeof x.key === "string")) && !have.has(keyOf(x)) && !isDropped(dropped, x) && have.add(keyOf(x)));
     if (more.length) changed = true;
@@ -7441,13 +7453,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     const names = { ...(theirs.names && typeof theirs.names === "object" ? theirs.names : {}), ...(mine.names || {}) };
     if (Object.keys(names).length !== Object.keys(mine.names || {}).length) changed = true;
-    return changed ? { ...mine, kept, folded, names, dropped, updatedAt: Date.now() } : null;
+    return changed ? { ...mine, kept, folded, names, dropped: rawD, back: rawB, updatedAt: Date.now() } : null;
   }
   // blocks of deleted records (a ToDo done, a goal's check) taken off the stairs (the user's call: one deleted for good
   // stayed, with no way to take it off): their keeping goes, and dropped notes them, in one save. Gives back, for each, what
   // puts it back ([block, info], for tsumiUndrop)
   function tsumiDropMany(bs) {
-    const set = tsumiSet(), now = Date.now(), dropped = { ...tsumiDropped(set) }, folded = { ...(set.folded || {}) };
+    const set = tsumiSet(), now = Date.now(), dropped = { ...tsumiDropRaw(set) }, folded = { ...(set.folded || {}) };
     let kept = set.kept || [];
     const done = [];
     for (const b of bs) {
@@ -7472,14 +7484,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // blocks taken off, back as they were (元に戻す, or 戻す in 最近削除した項目)
   function tsumiUndrop(infos) {
-    const s2 = tsumiSet(), d2 = { ...tsumiDropped(s2) }, f2 = { ...(s2.folded || {}) };
+    const s2 = tsumiSet(), b2 = { ...tsumiPutBack(s2) }, f2 = { ...(s2.folded || {}) }, now = Date.now();
     let kept = s2.kept || [];
     for (const info of infos) {
-      delete d2[info.dkey];
+      b2[info.dkey] = now; // (its mark stays, for another device's to be taken as older)
       if (info.fk) { if (!(f2[info.fk] || []).includes(info.sec)) f2[info.fk] = [...(f2[info.fk] || []), info.sec]; }
       else kept = [...kept.filter((x) => keptKey(x) !== info.key), ...(info.gone || [])];
     }
-    settings.set("tsumi", { ...s2, kept, folded: f2, dropped: d2, updatedAt: Date.now() });
+    settings.set("tsumi", { ...s2, kept, folded: f2, back: b2, updatedAt: now });
   }
   // and into 最近削除した項目 for 30 days, as any deleted record goes (the user's call: only the message's 元に戻す, for
   // a few seconds, brought one back); several at one moment make a group there, with まとめて戻す
@@ -7491,6 +7503,31 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       deleted.items.push({ id, store: "tsumi", rid: b.key, at, data: { kind: b.kind, day: b.day, text: b.text || "", info } });
     }
     deleted.saveLocal(); renderTrashRow();
+  }
+  // the つみかさね set as it was and as another device's made it: its blocks taken off there into 最近削除した項目 (one row
+  // each, at one time, so they group), and the rows here of ones put back there gone
+  function tsumiTrashFrom(was, now) {
+    if (!was || !now) return;
+    const d2 = tsumiDropped(now), at = Date.now(), keptNow = new Set((now.kept || []).map(keptKey));
+    let changed = false;
+    for (const x of was.kept || []) {
+      const key = keptKey(x);
+      if (keptNow.has(key) || !isDropped(d2, x) || deleted.get(`tsumi/${key}`)) continue;
+      deleted.items.push({ id: `tsumi/${key}`, store: "tsumi", rid: key, at, data: { kind: x.kind || "todo", day: x.day, text: x.text || "", info: { key, dkey: key, gone: [x], fk: null, sec: null } } });
+      changed = true;
+    }
+    for (const [fk, secs] of Object.entries(was.folded || {})) {
+      const left = new Set(now.folded?.[fk] || []), [kind, day] = fk.split("|");
+      for (const sec of secs) {
+        const dkey = `${fk}|${sec}`, rid = `${kind}:folded:${day}:s${sec}`;
+        if (left.has(sec) || !(dkey in d2) || deleted.get(`tsumi/${rid}`)) continue;
+        deleted.items.push({ id: `tsumi/${rid}`, store: "tsumi", rid, at, data: { kind, day, text: "", info: { key: rid, dkey, gone: [], fk, sec } } });
+        changed = true;
+      }
+    }
+    const back = deleted.items.filter((t) => t.store === "tsumi" && t.data?.info && !(t.data.info.dkey in d2));
+    if (back.length) { deleted.items = deleted.items.filter((t) => !back.includes(t)); changed = true; }
+    if (changed) { deleted.saveLocal(); renderTrashRow(); }
   }
   const untrashDrops = (done) => { const ids = new Set(done.map(([b]) => `tsumi/${b.key}`)); deleted.items = deleted.items.filter((t) => !ids.has(t.id)); deleted.saveLocal(); renderTrashRow(); };
   // the deleted ones' blocks still on the stairs, of the ToDos and goals in 最近削除した項目's entries ts
@@ -7744,7 +7781,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       tsumiOnly = null; tsumiGoneOnly = false;
       setTimeout(() => {
         if (!flashed || typeof flashed.msg !== "string") flash(words);
-        else if (!flashed.msg.includes(words)) flash(`${flashed.msg.replace(/。$/, "")}。${words}`, flashed.undo);
+        else if (!flashed.msg.includes(words)) flash(`${flashed.msg.replace(/。$/, "")}。${words}`, flashed.undo, undefined, flashed.label);
       }, 0);
     } else if (tsumiGone && !tsumiOnly && blocks.some((b) => b.key === tsumiGone.key)) {
       tsumiOnly = tsumiGone.kind; tsumiPick = tsumiGone.key; tsumiGone = null;
@@ -7772,7 +7809,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     $("tsumiCount").textContent = fmtN(mine.length);
     $("tsumiMoreStep").textContent = k + 1; // くわしく, as 大きく says it (the user's call: it said 「12段目」 by the 47段目)
-    $("tsumiKind").hidden = $("tsumiUnkind").hidden = !v;
+    $("tsumiKind").hidden = $("tsumiTotalActs").hidden = !v;
+    // every deleted one at once, with only they pressed and two or more of them
+    const goneMany = tsumiGoneOnly && v ? mine.length : 0;
+    $("tsumiDropAll").hidden = goneMany < 2;
+    if (goneMany >= 2) $("tsumiDropAll").setAttribute("aria-label", `削除した${v.label}のブロック ${fmtN(goneMany)} こを、まとめて削除`);
     if (v) setChildren($("tsumiKind"), tsumiGoneOnly ? el("span", { class: "dot gone", style: `color: var(${v.c})` }) : el("span", { class: "dot", style: `background: var(${v.c})` }), onlyLabel());
     // くわしく's example month: one on the stairs (January's name is its year)
     const exMonth = [...tsumiMonths].reverse().find(([, mo]) => !mo.endsWith("-01"));
@@ -7817,15 +7858,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const onWeek = week && week !== today ? el("span", { class: vs ? "phrase keep close" : "phrase keep" }, `この7日で ＋${nf(week)}\u00a0こ`, vs ? el("span", { class: "vs" }, vs) : null) : null;
     // back after a break: today begins the days on end again (the user's call: only the longest was said)
     const onAgain = onToday && run === 1 && dayset.size > 1 ? part("きょうからまた 1 日目") : null;
-    tsumiSaid = { today, week: week && week !== today ? `この7日で ＋${nf(week)}\u00a0こ` : "", vs: week && week !== today ? vs : "", run: onAgain ? "きょうからまた 1 日目" : picRun, most: onMost ? `いちばん長くつづけたのは ${nf(longest)} 日` : "" };
+    tsumiSaid = tsumiGoneOnly ? { today: 0, week: "", vs: "", run: "", most: "" } // (the picture says as the page does)
+      : { today, week: week && week !== today ? `この7日で ＋${nf(week)}\u00a0こ` : "", vs: week && week !== today ? vs : "", run: onAgain ? "きょうからまた 1 日目" : picRun, most: onMost ? `いちばん長くつづけたのは ${nf(longest)} 日` : "" };
     setChildren($("tsumiSub"), el("span", { class: "due-parts" }, ...(!n ? [part("記録すると、ここにブロックが積みあがります")]
+      : v && tsumiGoneOnly ? [part(`全部で ${fmtN(n)} こ`), part(`いま ${k} 段`)]
       : v ? [onToday0, onWeek, onEnd, onPast, onAgain, onMost, part(`全部で ${fmtN(n)} こ`), part(`いま ${k} 段`)]
       : [part(`いま ${k} 段`), part(`つぎの段まで あと ${left} こ`), onToday0, onWeek, onEnd, onPast, onAgain, onMost])));
     // the stairs said for a screen reader with the count as it shows, the kind pressed, the days on end and the ★ after the
     // newest (the user's calls: the ★ couldn't be reached but by a finger; the kind pressed wasn't said)
     $("tsumiCanvas").setAttribute("aria-label", n ? `これまでの記録 ${nf(n)} こが、${k} 段の階段に積みあがっています。${v ? `${onlyLabel()}のブロック ${nf(mine.length)} こだけに色を付けています。` : ""}つぎの段まであと ${left} こ。${!v && today ? `きょうは ${today} こ積みました。` : ""}${!v && (endText || pastText) ? (endText || pastText) + "。" : ""}前と次のボタンや左右の矢印キーで1つずつ、PageUp と PageDown で月ごとに見られます。いちばん新しいブロックの次は★です。Enter キーで、見ているブロックの記録が開きます。` : "まだブロックがありません。");
     // the picture's button says when it will be the kind pressed (the user's call: that didn't show)
-    $("tsumiImage").textContent = v ? `${v.label}の画像で保存` : "画像で保存";
+    $("tsumiImage").textContent = v ? `${onlyLabel()}の画像で保存` : "画像で保存";
     $("tsumiPrev").hidden = $("tsumiNext").hidden = n < 2;
     $("tsumiImageCard").hidden = !n;
     // opened with blocks gone on since the last look: the newest (of the kind pressed), where they drop in; else as it was
@@ -7842,6 +7885,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       tsumiAnchor = null; placeTsumiView(); startTsumiDrop(true);
     }
     drawTsumi(); sayTsumi(); renderTsumiKinds(blocks); renderTsumiSteps(blocks);
+    if (opening && innerHeight < 500 && tsumiSideW()) requestAnimationFrame(() => {
+      const top = ($("tsumiViews").hidden ? $("tsumiWrap") : $("tsumiViews")).getBoundingClientRect().top - tsumiBand()[0] - 8;
+      if (top > 0) window.scrollTo(0, scrollY + top);
+    });
   }
   // the 段 marks' size, growing with the text size (the user's call: they stayed small with large text), and the room on
   // the right that the highest of them takes
@@ -8330,13 +8377,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const [lo, hi] = tsumiDayRun(i), col = tsumiCol(i), top = i - (col * (col + 1)) / 2 === col;
     const newest = i === n - 1 ? "いちばん新しいブロック" : tsumiOnly && i === lastIn() ? `いちばん新しい${onlyLabel()}` : null;
     // its place among them all, or, with its kind pressed, among that kind's, as the count over the stairs is then
-    const nth = tsumiOnly && tsumiIn(b) ? `${onlyLabel()}の ${fmtN(tsumiShown.slice(0, i + 1).filter(tsumiIn).length)} こ目` : `${fmtN((i + 1))} こ目`;
+    const nth = tsumiOnly && tsumiIn(b) ? `${tsumiGoneOnly ? "" : onlyLabel() + "の "}${fmtN(tsumiShown.slice(0, i + 1).filter(tsumiIn).length)} こ目` : `${fmtN((i + 1))} こ目`;
     // its day's first block (of the kind pressed) a press away, when this isn't it (the user's call: 「きょう ＋N こ」 could be
     // pressed, this couldn't)
     let dayFirst = lo;
     if (tsumiOnly) { dayFirst = -1; for (let j = lo; j <= hi && dayFirst < 0; j++) if (tsumiIn(tsumiShown[j])) dayFirst = j; }
     // with a kind pressed, its own that day, as the month's count and the number are (the user's call: 「その日 12 こ」 had 2 of it)
-    const dayWords = tsumiOnly ? `その日の${onlyLabel()} ${tsumiShown.slice(lo, hi + 1).filter(tsumiIn).length} こ` : `その日 ${hi - lo + 1} こ`;
+    const dayWords = tsumiOnly ? `その日${tsumiGoneOnly ? "" : "の" + onlyLabel()} ${tsumiShown.slice(lo, hi + 1).filter(tsumiIn).length} こ` : `その日 ${hi - lo + 1} こ`;
     const dayPart = dayFirst >= 0 && dayFirst < i ? el("button", { type: "button", class: "phrase tsumi-today", onclick: () => showTsumiBlock(dayFirst) }, dayWords) : part(dayWords);
     // the first block of its month (of the kind pressed), as a month's name shows it: what that month holds (the user's
     // call: a month's name pressed didn't say)
@@ -8347,7 +8394,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const [s0, mo] = tsumiMonths[m], cnt = tsumiShown.slice(s0, tsumiMonths[m + 1]?.[0] ?? n).filter(tsumiIn).length;
         // this month's said as so far, the year left to the date before it (the user's calls: this month's read as done; the
         // year came twice); none when the day holds all the month has (the user's call: 1 was said three times over)
-        if (tsumiOnly || cnt !== hi - lo + 1) monthWords = `${Number(mo.slice(5))}月${tsumiOnly ? `の${onlyLabel()}` : ""}は${mo === todayKey.slice(0, 7) ? "ここまで" : ""} ${fmtN(cnt)} こ`;
+        if (tsumiOnly || cnt !== hi - lo + 1) monthWords = `${Number(mo.slice(5))}月${tsumiOnly && !tsumiGoneOnly ? `の${onlyLabel()}` : ""}は${mo === todayKey.slice(0, 7) ? "ここまで" : ""} ${fmtN(cnt)} こ`;
       }
       break;
     }
@@ -8365,11 +8412,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const drop = $("tsumiDrop");
     drop.hidden = !b.gone;
     if (drop.dataset.key !== b.key) { drop.dataset.key = b.key; disarmTsumiDrop(); }
-    // and every deleted one of its kind at once, when there are more, with 「うち削除した…」 pressed (the user's call: 14 took
-    // 28 presses, one by one)
-    const many = b.gone && tsumiGoneOnly && tsumiOnly === b.kind ? tsumiShown.filter((x) => x.gone && x.kind === b.kind).length : 0;
-    $("tsumiDropAll").hidden = many < 2;
-    if (many >= 2) setChildren($("tsumiDropAll"), el("span", { class: "phrase" }, `削除した${v.label}のブロックを`), el("span", { class: "phrase" }, `まとめて削除（${fmtN(many)} こ）`));
     renderTsumiMonthPick();
   }
   // the ★ pressed: the step it finishes, how many to go and, at the pace of the last 7 days, when (the user's call: it didn't
@@ -8379,7 +8421,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("tsumiTip").classList.remove("none");
     setChildren($("tsumiTip"), el("span", { class: "what" }, el("span", { class: "dot", style: "background: #ffcc00" }), el("strong", {}, `${k + 1} 段目`), `まで、あと ${left} こ`),
       when ? el("span", { class: "when" }, when) : null);
-    $("tsumiOpen").hidden = true; $("tsumiDrop").hidden = true; $("tsumiDropAll").hidden = true; disarmTsumiDrop(); renderTsumiMonthPick();
+    $("tsumiOpen").hidden = true; $("tsumiDrop").hidden = true; disarmTsumiDrop(); renderTsumiMonthPick();
     $("tsumiPrev").setAttribute("aria-disabled", String(!tsumiShown.some(tsumiIn)));
     $("tsumiNext").setAttribute("aria-disabled", "true"); $("tsumiNext").setAttribute("aria-label", "次のブロック");
   }
@@ -8399,7 +8441,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         for (let i = tsumiShown.length - 1; i >= 0 && j < 0; i--) if (tsumiShown[i].gone && tsumiShown[i].kind === key) j = i;
         if (j < 0) return;
         tsumiOnly = key; tsumiGoneOnly = true; tsumiPick = tsumiShown[j].key;
-        tsumiFollow(j); renderTsumi(); showTsumiStairs();
+        tsumiFollow(j); renderTsumi(); showTsumiStairs(true);
       } }, el("span", { class: "sw gone", style: `color: var(${v.c})` }), el("span", {}, `うち削除した${v.label}`), el("span", { class: "row-count" }, `${fmtN(gone.get(key))} こ`)));
     const fb = document.activeElement?.closest?.("#tsumiKinds button"), list = $("tsumiKinds"), focused = fb?.dataset.kind, focusedGone = fb?.dataset.gone;
     list.classList.toggle("only", !!tsumiOnly);
@@ -8516,9 +8558,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the switch, the stairs, ◀ ▶ and the words under them brought into the band when any of them is out of it: from the
   // top of them when they are above it or don't fit, else up as far as the words (the user's calls: a kind pressed down
   // the page changed the stairs out of sight; on a small iPhone the words were under the tab bar)
-  function showTsumiStairs() {
+  // (withCount: from the count over them, with まとめて削除 by it)
+  function showTsumiStairs(withCount = false) {
     if (!$("tsumiWrap").offsetHeight) return;
-    const [head, low] = tsumiBand(), top = ($("tsumiViews").hidden ? $("tsumiWrap") : $("tsumiViews")).getBoundingClientRect().top - 8;
+    const [head, low] = tsumiBand(), top = (withCount ? $("tsumiCount").closest(".tsumi-total") : $("tsumiViews").hidden ? $("tsumiWrap") : $("tsumiViews")).getBoundingClientRect().top - 8;
     const bottom = Math.max($("tsumiTip").getBoundingClientRect().bottom, $("tsumiWrap").getBoundingClientRect().bottom) + 8; // (the words beside the stairs on a wide, low screen)
     if (top >= head && bottom <= low) return;
     scrollBy({ top: top < head || bottom - top > low - head ? top - head : bottom - low, behavior: reduceMotion.matches ? "auto" : "smooth" });
@@ -8754,20 +8797,29 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("tsumiUnkind").addEventListener("click", () => { tsumiOnly = null; tsumiGoneOnly = false; tsumiAnim = null; tsumiGone = null; renderTsumi(); });
   // the months there are blocks in, newest first, the shown block's picked; one picked shows its first block (of the kind
   // pressed; one without it lets the kind go, as a month's name does)
+  const monthPickName = (mo) => (monthWords(mo).endsWith("年") ? `${Number(mo.slice(0, 4))}年1月` : monthWords(mo));
+  let tsumiPickMonths = null; // { shown, only, gone, months: [{ s0, mo, cnt }] }: the list as last built
   function renderTsumiMonthPick() {
-    const box = $("tsumiMonthBox"), pick = $("tsumiMonth"), months = tsumiMonths;
-    box.hidden = months.length < 2;
-    if (box.hidden) return;
-    const sig = months.map(([, mo]) => mo).join(",");
-    if (pick.dataset.sig !== sig) {
-      pick.dataset.sig = sig;
-      setChildren(pick, [...months].reverse().map(([, mo]) => el("option", { value: mo }, monthWords(mo).endsWith("年") ? `${Number(mo.slice(0, 4))}年1月` : monthWords(mo))));
+    const box = $("tsumiMonthBox"), pick = $("tsumiMonth"), n = tsumiShown.length;
+    let c = tsumiPickMonths;
+    if (!c || c.shown !== tsumiShown || c.only !== tsumiOnly || c.gone !== tsumiGoneOnly) {
+      const months = [];
+      tsumiMonths.forEach(([s0, mo], m) => {
+        const e = tsumiMonths[m + 1]?.[0] ?? n;
+        let cnt = e - s0;
+        if (tsumiOnly) { cnt = 0; for (let j = s0; j < e; j++) if (tsumiIn(tsumiShown[j])) cnt++; }
+        if (cnt) months.push({ s0, mo, cnt });
+      });
+      c = tsumiPickMonths = { shown: tsumiShown, only: tsumiOnly, gone: tsumiGoneOnly, months };
+      box.hidden = months.length < 2;
+      if (!box.hidden) setChildren(pick, [...months].reverse().map((x) => el("option", { value: x.mo }, tsumiOnly ? `${monthPickName(x.mo)}（${fmtN(x.cnt)} こ）` : monthPickName(x.mo))));
     }
-    const i = tsumiAtGoal ? tsumiShown.length - 1 : Math.max(0, shownIndex());
-    let m = 0;
-    while (m + 1 < months.length && months[m + 1][0] <= i) m++;
-    if (months[m]) pick.value = months[m][1];
-    $("tsumiMonthText").textContent = pick.selectedOptions[0]?.textContent || "";
+    if (box.hidden) return;
+    const i = tsumiAtGoal ? n - 1 : Math.max(0, shownIndex());
+    let at = c.months[0];
+    for (const x of c.months) if (x.s0 <= i) at = x;
+    pick.value = at.mo;
+    $("tsumiMonthText").textContent = monthPickName(at.mo);
   }
   $("tsumiMonth").addEventListener("change", (ev) => {
     const m = tsumiMonths.findIndex(([, mo]) => mo === ev.target.value);
@@ -8796,9 +8848,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   });
   // every deleted one of the shown block's kind, asked first with what goes with them
   $("tsumiDropAll").addEventListener("click", () => {
-    const b = tsumiShown[shownIndex()];
-    if (!b?.gone) return;
-    const bs = tsumiShown.filter((x) => x.gone && x.kind === b.kind), label = TSUMI_KINDS[b.kind].label;
+    if (!tsumiGoneOnly || !tsumiOnly) return;
+    const bs = tsumiShown.filter((x) => x.gone && x.kind === tsumiOnly), label = TSUMI_KINDS[tsumiOnly].label;
+    if (!bs.length) return;
     askFirst(`削除した${label}のブロック ${fmtN(bs.length)} こを、階段からまとめて削除しますか？${dropCost(bs)}「最近削除した項目」から30日のあいだ戻せます。`, `${fmtN(bs.length)} こを削除`,
       () => dropTsumiBlocks(bs, `削除した${label}のブロックを ${fmtN(bs.length)} こ削除しました`));
   });
@@ -8834,7 +8886,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const k = tsumiCol(n), r = n - (k * (k + 1)) / 2, cols = k + 1, font = getComputedStyle(document.body).fontFamily, round = getComputedStyle($("tsumiCount")).fontFamily;
     // with a kind pressed, its count, its days and only its blocks in colour, as on the screen (the user's call: the picture
     // was every kind's)
-    const only = tsumiOnly, v = TSUMI_KINDS[only], mine = only ? blocks.filter((b) => b.kind === only) : blocks;
+    const only = tsumiOnly, v = TSUMI_KINDS[only], mine = only ? blocks.filter(tsumiIn) : blocks, label = v ? onlyLabel() : "";
     // and today's, the days on end and the 段 marks on the right (the user's call: the picture had none of them)
     const today = mine.filter((b) => b.t >= Date.parse(todayKey + "T00:00:00")).length, days = new Set(mine.map((b) => b.day)), run = runOf(days);
     // under the count, as the page says them: today's and the last 7 days (the 7 days before on a line of their own when
@@ -8854,21 +8906,29 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const t = parseYmd(todayKey);
     // the kinds and their counts, set in lines under the stairs
     const counts = new Map();
-    for (const b of blocks) counts.set(b.kind, (counts.get(b.kind) || 0) + 1);
+    let goneN = 0;
+    for (const b of blocks) { counts.set(b.kind, (counts.get(b.kind) || 0) + 1); if (b.gone && (!only || tsumiIn(b))) goneN++; }
+    const items = Object.entries(TSUMI_KINDS).filter(([key]) => counts.get(key)).map(([key, kv]) => ({ label: kv.label, n: counts.get(key), colour: TSUMI_LIGHT[key], on: !only || (key === only && !tsumiGoneOnly) }));
+    // and the deleted ones (of the kind pressed), as they are drawn (gone)
+    if (goneN) items.push({ label: only ? `削除した${v.label}` : "削除したもの", n: goneN, colour: only ? TSUMI_LIGHT[only] : "#8e8e93", gone: true, on: true });
     const m = document.createElement("canvas").getContext("2d"), keys = [];
     m.font = `600 15px ${font}`;
     let lx = 0, lines = 1;
-    for (const [key, v] of Object.entries(TSUMI_KINDS)) {
-      if (!counts.get(key)) continue;
-      const w = 18 + m.measureText(`${v.label} ${fmtN(counts.get(key))}`).width;
+    for (const it of items) {
+      const w = 18 + m.measureText(`${it.label} ${fmtN(it.n)}`).width;
       if (lx && lx + w > SIZE) { lx = 0; lines++; }
-      keys.push({ key, v, x: lx, line: lines - 1 }); lx += w + 18;
+      keys.push({ ...it, x: lx, line: lines - 1 }); lx += w + 18;
     }
     const top = PAD + HEAD, ground = top + cols * pitch, H = ground + 28 + lines * 26 + PAD;
     const canvas = document.createElement("canvas");
     canvas.width = W * SCALE; canvas.height = H * SCALE;
     const x = canvas.getContext("2d");
     x.scale(SCALE, SCALE);
+    // a deleted one's swatch, drawn as this picture's blocks are: faint with lines, or with an edge where they are small
+    const goneSwatch = (px, py, s, rr, colour, sw) => {
+      if (size >= 10) { goneMarks(x, px, py, s, rr, colour, sw); return; }
+      x.strokeStyle = colour; x.lineWidth = 1.5; sw(px + 0.75, py + 0.75, s - 1.5, Math.max(0, rr - 0.75)); x.stroke();
+    };
     x.fillStyle = "#f2f2f7"; x.fillRect(0, 0, W, H);
     x.textBaseline = "alphabetic";
     x.fillStyle = "#6c6c70"; x.font = `600 15px ${font}`;
@@ -8877,11 +8937,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     x.textAlign = "left";
     let cx = PAD; // the count's place: after the kind's colour and name, with one pressed
     if (v) {
-      x.fillStyle = TSUMI_LIGHT[only]; x.beginPath();
-      if (x.roundRect) x.roundRect(PAD, PAD + 42, 18, 18, 5); else x.rect(PAD, PAD + 42, 18, 18);
-      x.fill();
-      x.fillStyle = "#000000"; x.font = `700 26px ${font}`; x.fillText(v.label, PAD + 26, PAD + 60);
-      cx = PAD + 26 + x.measureText(v.label).width + 12;
+      const sw = (px, py, s = 18, rr = 5) => { x.beginPath(); if (x.roundRect) x.roundRect(px, py, s, s, rr); else x.rect(px, py, s, s); };
+      x.fillStyle = TSUMI_LIGHT[only]; x.globalAlpha = tsumiGoneOnly ? 0.3 : 1; sw(PAD, PAD + 42); x.fill(); x.globalAlpha = 1;
+      if (tsumiGoneOnly) goneSwatch(PAD, PAD + 42, 18, 5, TSUMI_LIGHT[only], sw);
+      x.fillStyle = "#000000"; x.font = `700 26px ${font}`; x.fillText(label, PAD + 26, PAD + 60);
+      cx = PAD + 26 + x.measureText(label).width + 12;
     }
     x.fillStyle = "#000000"; x.font = `700 44px ${round}`;
     const count = fmtN(mine.length), cw = x.measureText(count).width;
@@ -8896,7 +8956,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const ox = PAD + (SIZE - AX - cols * pitch) / 2, xOf = (c) => ox + c * pitch + gap / 2, yOf = (row) => ground - (row + 1) * pitch + gap / 2;
     const sq = (px, py, s = size, rr = rad) => { x.beginPath(); if (rr && x.roundRect) x.roundRect(px, py, s, s, rr); else x.rect(px, py, s, s); };
     blocks.forEach((b, i) => {
-      const c = tsumiCol(i), dim = only && b.kind !== only ? 0.16 : 1, px = xOf(c), py = yOf(i - (c * (c + 1)) / 2);
+      const c = tsumiCol(i), dim = tsumiIn(b) ? 1 : 0.16, px = xOf(c), py = yOf(i - (c * (c + 1)) / 2);
       x.globalAlpha = b.gone ? dim * 0.3 : dim; x.fillStyle = TSUMI_LIGHT[b.kind]; sq(px, py); x.fill();
       // a deleted one as on the screen: faint, with lines across it
       if (b.gone && size >= 5) { x.globalAlpha = dim; goneMarks(x, px, py, size, rad, TSUMI_LIGHT[b.kind], sq); }
@@ -8907,7 +8967,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     blocks.forEach((b, i) => {
       if (b.t < dayStart) return;
       const c = tsumiCol(i), px = xOf(c), py = yOf(i - (c * (c + 1)) / 2);
-      x.globalAlpha = only && b.kind !== only ? 0.16 : 1; x.fillStyle = tsumiMarkColour(TSUMI_LIGHT[b.kind]);
+      x.globalAlpha = tsumiIn(b) ? 1 : 0.16; x.fillStyle = tsumiMarkColour(TSUMI_LIGHT[b.kind]);
       if (size >= 8) { x.beginPath(); x.arc(px + size / 2, py + size / 2, Math.max(1.5, size * 0.13), 0, 2 * Math.PI); x.fill(); }
       else { const s = Math.max(1, Math.round(size * 0.5)); x.fillRect(px + (size - s) / 2, py + (size - s) / 2, s, s); }
     });
@@ -8941,14 +9001,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (let j = every - 1; j <= k; j += every) x.fillText(`${j + 1} 段`, ox + cols * pitch + 8, ground - (j + 0.5) * pitch);
     x.font = `600 15px ${font}`; x.textBaseline = "middle";
     for (const it of keys) {
-      x.globalAlpha = only && it.key !== only ? 0.35 : 1;
-      const ly = ground + 28 + it.line * 26 + 8;
-      x.fillStyle = TSUMI_LIGHT[it.key]; sq(PAD + it.x, ly - 6, 12, 3); x.fill();
-      x.fillStyle = "#000000"; x.fillText(it.v.label, PAD + it.x + 18, ly);
-      x.fillStyle = "#6c6c70"; x.fillText(fmtN(counts.get(it.key)), PAD + it.x + 18 + x.measureText(it.v.label + " ").width, ly);
+      const a = it.on ? 1 : 0.35, ly = ground + 28 + it.line * 26 + 8, sw = (px, py, s = 12, rr = 3) => sq(px, py, s, rr);
+      x.globalAlpha = it.gone ? a * 0.3 : a; x.fillStyle = it.colour; sw(PAD + it.x, ly - 6); x.fill();
+      x.globalAlpha = a;
+      if (it.gone) goneSwatch(PAD + it.x, ly - 6, 12, 3, it.colour, sw);
+      x.fillStyle = "#000000"; x.fillText(it.label, PAD + it.x + 18, ly);
+      x.fillStyle = "#6c6c70"; x.fillText(fmtN(it.n), PAD + it.x + 18 + x.measureText(it.label + " ").width, ly);
     }
     x.globalAlpha = 1;
-    await savePicture(canvas, `tsumikasane-stairs-${only ? only + "-" : ""}${todayKey}.png`, v ? `つみかさね（${v.label}）` : "つみかさね");
+    await savePicture(canvas, `tsumikasane-stairs-${only ? only + (tsumiGoneOnly ? "-deleted" : "") + "-" : ""}${todayKey}.png`, v ? `つみかさね（${label}）` : "つみかさね");
   }
   $("tsumiImage").addEventListener("click", saveTsumiImage);
   // drawn again for a new width, and in the other mode's colours
@@ -8969,7 +9030,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!rise && !hit) return;
     setTimeout(() => {
       const say = `つみかさねが ${[hit ? `${fmtN(round)} こ` : "", rise ? `${k} 段` : ""].filter(Boolean).join("・")}になりました`;
-      if (flashed && Date.now() < flashed.until && typeof flashed.msg === "string") flash(`${flashed.msg.replace(/。$/, "")}。${say}`, flashed.undo); else flash(say);
+      if (flashed && Date.now() < flashed.until && typeof flashed.msg === "string") flash(`${flashed.msg.replace(/。$/, "")}。${say}`, flashed.undo, undefined, flashed.label); else flash(say);
     }, 150);
   }
 
@@ -9835,9 +9896,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const [when, left] = whenOf(t), text = trashText(t);
       return el("li", { class: t === marked ? "marked" : null },
         el("span", { class: "body" }, el("span", { class: "text clamp" }, text || "（中身なし）"),
-          el("span", { class: "sub" }, keepUnits(`${STORE_NAMES[t.store] || ""}・${when}削除・あと ${left} 日`))),
+          el("span", { class: "sub" }, keepUnits(`${t.store === "tsumi" ? "ブロック" : STORE_NAMES[t.store] || ""}・${when}削除・あと ${left} 日`))),
         el("button", { type: "button", class: "link-btn", "aria-label": `「${text}」を戻す`, onclick: () => restoreFromTrash(t.id) }, "戻す"),
-        delButton(() => purgeTrash([t.id]), "完全に削除"));
+        delButton(() => purgeTrash([t.id], false, true), "完全に削除"));
     };
     // deleted together (完了したものを削除, a day's 日記 written over…), at the one moment: a group with まとめて戻す (the
     // user's call: 60 ToDos deleted at once took 60 presses of 戻す), its rows folded past the first two
@@ -9869,7 +9930,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // one there now going to 最近削除した項目, so neither is lost (the user's call); another deleted one of the same day stays
   // there, apart
   function restoreManyFromTrash(keys) {
-    const touched = new Set();
+    const touched = new Set(), blockRows = new Set(), goalRows = new Set();
     let n = 0, swapped = 0, kind = "";
     for (const key of keys) {
       // a block taken off つみかさね: back on the stairs as it was
@@ -9883,7 +9944,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       st.items = now ? st.items.map((x) => (x.id === back.id ? back : x)) : [...st.items, back];
       syncNote(st, [back.id]);
       touched.add(st); n++; kind = STORE_NAMES[st.name];
+      if (st === todos) blockRows.add("todo:" + back.id);
+      if (st === goals) goalRows.add(back.id);
     }
+    if (blockRows.size || goalRows.size) deleted.items = deleted.items.filter((x) => !(x.store === "tsumi" && (blockRows.has(x.rid)
+      || [...goalRows].some((g) => x.rid === "goal:" + g || x.rid.startsWith(`goal:${g}:`)))));
     if (!n) { flash(keys.length > 1 ? "戻せる記録はありませんでした。" : "この記録は戻せませんでした。"); return; }
     deleted.saveLocal();
     act(() => { for (const st of touched) st.saveLocal(); renderAll(); });
@@ -9891,11 +9956,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // 完全に削除: what deleted records held goes from 最近削除した項目 and from the copies kept on this device too (a file
   // written out before still has it); their ids stay remembered, so nothing older brings them back
-  function purgeTrash(keys, withBlocks = false) {
+  function purgeTrash(keys, withBlocks = false, offerBlocks = false) {
     const ts = keys.map((k) => deleted.get(k)).filter((t) => t?.data);
     if (!ts.length) return;
     // their つみかさね blocks too, when asked: off the stairs for good, as the records are
-    const bs = withBlocks ? tsumiGoneOf(ts) : [];
+    const bs = withBlocks ? tsumiGoneOf(ts) : [], left = offerBlocks ? tsumiGoneOf(ts) : [];
     if (bs.length) tsumiDropMany(bs);
     // a ToDo's or a goal's blocks in つみかさね stay, without its words (tsumiForget), here and in the copies
     const forget = new Set(ts.filter((t) => t.store === "todos" || t.store === "goals").map((t) => `${t.store}/${t.rid}`)), mine = settings.get("tsumi");
@@ -9907,7 +9972,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     deleted.saveLocal();
     renderAll();
     scrubCopies(ts.map((t) => t.id), exact, forget);
-    flash((ts.length > 1 ? `${fmtN(ts.length)} 件を完全に削除しました` : "完全に削除しました") + (bs.length ? `。つみかさねのブロック ${fmtN(bs.length)} こも消しました` : ""));
+    const said = (ts.length > 1 ? `${fmtN(ts.length)} 件を完全に削除しました` : "完全に削除しました") + (bs.length ? `。つみかさねのブロック ${fmtN(bs.length)} こも消しました` : "");
+    // blocks of theirs left on the stairs: a press away from going too, as the box of すべて完全に削除 does it
+    if (!left.length) { flash(said); return; }
+    const part = (w) => el("span", { class: "phrase" }, w);
+    flash(el("span", {}, part(`${said}。`), part(`つみかさねのブロック ${fmtN(left.length)} こは、`), part("名前を消して残ります")), () => {
+      const all = tsumiBlocks(false), keys = new Set(left.map((b) => b.key)), now = all.filter((b) => b.gone && keys.has(b.key)), cost = dropCost(now, all);
+      if (!now.length) return;
+      act(() => tsumiDropMany(now));
+      flash(`つみかさねのブロック ${fmtN(now.length)} こも消しました${cost ? "。" + cost.replace(/。$/, "") : ""}`);
+    }, 8000, "ブロックも消す");
   }
   // a step that can't be taken back, asked first in an action sheet that says what it does (the user's call: two presses
   // of すべて完全に削除 lost all of it for good, from the copies too)
@@ -9990,7 +10064,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // there (the same day's 日記 written in Safari and in the home-screen app before either had gone up): the later one is
   // kept, and the other goes to 最近削除した項目, so neither is lost; つみかさね's keeping takes in both (joinTsumi)
   function applyRemote(docs) {
-    const touched = new Set();
+    const touched = new Set(), tsumiWas = settings.get("tsumi");
     let n = 0;
     syncFresh();
     syncApplying = true;
@@ -10026,6 +10100,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         touched.add(st); n++;
       }
       for (const st of touched) st.saveLocal();
+      if (touched.has(settings)) tsumiTrashFrom(tsumiWas, settings.get("tsumi"));
     } finally { syncApplying = false; }
     saveSyncState();
     if (n) { tsumiCounted = null; if (!journalDirty) loadJournalForm(); renderAll(); } // (a step they make was said where they were made)
