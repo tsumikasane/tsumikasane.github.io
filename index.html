@@ -8454,15 +8454,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     drawTsumi(now);
     requestAnimationFrame(tsumiFrame);
   }
-  // the colour of a mark on a block (today's dot, the outline of its day): white, or a dark one where that shows better, on
-  // a light colour (the user's call: white on dark mode's yellow, light blue and light green hardly showed)
-  function tsumiMarkColour(hex) {
-    const m = /^#([0-9a-f]{6})$/i.exec(hex || "");
-    if (!m) return "rgba(255, 255, 255, .92)";
-    const lin = (v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
-    const lum = (f) => [0.2126, 0.7152, 0.0722].reduce((sum, w, j) => sum + w * lin((parseInt(m[1].slice(2 * j, 2 * j + 2), 16) / 255) * f), 0);
-    const L = lum(1), D = lum(0.4); // the block, and 60% black over it
-    return 1.05 / (L + 0.05) >= (L + 0.05) / (D + 0.05) ? "rgba(255, 255, 255, .92)" : "rgba(0, 0, 0, .6)";
+  // a block, on the stairs and in their picture (the user's call: white, its kind's colour in its middle, where the block
+  // was its colour with a white dot in it for one stacked today): white, edged on a light ground (a small one there light
+  // grey instead, the edges being most of it); its middle a dot of its kind's colour, larger for one stacked today, a square
+  // on small blocks; a deleted one's faint, with lines across it in its colour. dim: a block of another kind than the one
+  // pressed, faint; sq(px, py, s, rr) makes a block's path
+  function paintTsumiBlock(x, sq, px, py, size, rad, colour, { gone = false, today = false, light = false, dim = 1 } = {}) {
+    x.globalAlpha = gone ? dim * 0.3 : dim;
+    x.fillStyle = light && size < 8 ? "#e5e5ea" : "#ffffff"; sq(px, py, size, rad); x.fill();
+    if (light && size >= 8) { x.strokeStyle = "#c6c6c8"; x.lineWidth = 1; sq(px + 0.5, py + 0.5, size - 1, Math.max(0, rad - 0.5)); x.stroke(); }
+    x.globalAlpha = dim;
+    if (gone) { if (size >= 5) goneMarks(x, px, py, size, rad, colour, sq); return; }
+    x.fillStyle = colour;
+    if (size >= 8) { x.beginPath(); x.arc(px + size / 2, py + size / 2, size * (today ? 0.36 : 0.24), 0, 2 * Math.PI); x.fill(); }
+    else { const d = Math.max(1, Math.round(size * (today ? 0.8 : 0.5))); x.fillRect(px + (size - d) / 2, py + (size - d) / 2, d, d); }
   }
   // the blocks stacked the same day as block i, oldest first: [first, last] (they are side by side, the blocks being in
   // the order they were stacked)
@@ -8498,8 +8503,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const xOf = (c) => ox + (c - c0) * pitch + gap / 2, yOf = (row) => gridH - (row - r0 + 1) * pitch + gap / 2;
     const sq = (px, py, s = size, rr = rad) => { x.beginPath(); if (rr && x.roundRect) x.roundRect(px, py, s, s, rr); else x.rect(px, py, s, s); };
     const lands = (i) => a.start + (i - a.from) * a.step; // when block i lands, while they drop in
-    const dayStart = Date.parse(todayKey + "T00:00:00"), dot = Math.max(1.5, size * 0.13), mark = {};
-    for (const key of Object.keys(TSUMI_KINDS)) mark[key] = tsumiMarkColour(colour[key]);
+    const dayStart = Date.parse(todayKey + "T00:00:00"), light = /^#f{3}(f{3})?$/i.test(tone("--surface", "#ffffff"));
     // the shown block's day (the user's call: what else went on that day didn't show): its other blocks outlined
     const si0 = tsumiAtGoal ? -1 : shownIndex(), [dayLo, dayHi] = si0 >= 0 && size >= 10 ? tsumiDayRun(si0) : [1, 0]; // none with the ★ pressed
     x.save(); x.beginPath(); x.rect(ox - 2, L.top, C * pitch + 6, gridH - L.top); x.clip();
@@ -8512,21 +8516,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         if (i >= n) break;
         let dy = 0;
         if (a && i >= a.from) { const p = (t - lands(i)) / 380; if (p <= 0) continue; if (p < 1) dy = -(1 - easeOut(p)) * (yOf(row) + pitch); }
-        // a deleted ToDo's or goal's block faint, with lines across it in its colour (the user's call: they looked like any other)
-        const dim = tsumiIn(tsumiShown[i]) ? 1 : 0.16, gone = tsumiShown[i].gone;
-        x.globalAlpha = gone ? dim * 0.3 : dim;
-        x.fillStyle = colour[tsumiShown[i].kind]; sq(xOf(c), yOf(row) + dy); x.fill();
-        if (gone && size >= 5) { x.globalAlpha = dim; goneMarks(x, xOf(c), yOf(row) + dy, size, rad, colour[tsumiShown[i].kind], sq); }
-        x.globalAlpha = dim;
-        if (i >= tsumiFresh && size >= 8) { x.strokeStyle = "rgba(255, 255, 255, .9)"; x.lineWidth = 2; sq(xOf(c) + 2, yOf(row) + 2, size - 4, Math.max(0, rad - 2)); x.stroke(); }
-        // one stacked today: a dot in its middle, a square one on small blocks, so 全体 shows them too (the user's call: they
-        // had none there)
-        if (tsumiShown[i].t >= dayStart) {
-          x.fillStyle = mark[tsumiShown[i].kind];
-          if (size >= 8) { x.beginPath(); x.arc(xOf(c) + size / 2, yOf(row) + dy + size / 2, dot, 0, 2 * Math.PI); x.fill(); }
-          else { const s = Math.max(1, Math.round(size * 0.5)); x.fillRect(xOf(c) + (size - s) / 2, yOf(row) + dy + (size - s) / 2, s, s); }
-        }
-        if (i >= dayLo && i <= dayHi && i !== si0) { x.strokeStyle = mark[tsumiShown[i].kind]; x.lineWidth = 2; sq(xOf(c) + 1.5, yOf(row) + dy + 1.5, size - 3, Math.max(0, rad - 1.5)); x.stroke(); }
+        // white with its kind's colour in its middle, larger for one stacked today, so 全体 shows them too (the user's call:
+        // they had none there); a deleted ToDo's or goal's faint, with lines across it in its colour (the user's call: they
+        // looked like any other). One stacked since the last look, and the others of the shown block's day, ringed in their
+        // colour inside
+        const b = tsumiShown[i], px = xOf(c), py = yOf(row) + dy, col = colour[b.kind];
+        paintTsumiBlock(x, sq, px, py, size, rad, col, { gone: b.gone, today: b.t >= dayStart, light, dim: tsumiIn(b) ? 1 : 0.16 });
+        if (i >= tsumiFresh && size >= 8) { x.strokeStyle = col; x.lineWidth = 2; sq(px + 2, py + 2, size - 4, Math.max(0, rad - 2)); x.stroke(); }
+        if (i >= dayLo && i <= dayHi && i !== si0) { x.strokeStyle = col; x.lineWidth = 2; sq(px + 1.5, py + 1.5, size - 3, Math.max(0, rad - 1.5)); x.stroke(); }
       }
     }
     x.globalAlpha = 1;
@@ -8583,9 +8580,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // 全体: a frame round what 大きく shows (the user's call: going back and forth lost the place)
     if (!near && L.big) {
       const N = tsumiLayout("near"), fc = clampTo(Math.round((tsumiAnchor || N.summit)[0]), 0, cols - N.C), fr = clampTo(Math.round((tsumiAnchor || N.summit)[1]), 0, cols - N.R);
-      x.strokeStyle = tone("--fg", "#000000"); x.globalAlpha = 0.6; x.lineWidth = 2; x.beginPath();
+      x.beginPath();
       if (x.roundRect) x.roundRect(ox + fc * pitch - 2, gridH - (fr + N.R) * pitch - 2, N.C * pitch + 4, N.R * pitch + 4, 4); else x.rect(ox + fc * pitch - 2, gridH - (fr + N.R) * pitch - 2, N.C * pitch + 4, N.R * pitch + 4);
-      x.stroke(); x.globalAlpha = 1;
+      // (over an edge in the card's colour, so it shows on the white blocks too)
+      x.strokeStyle = tone("--surface", "#ffffff"); x.globalAlpha = 0.9; x.lineWidth = 4; x.stroke();
+      x.strokeStyle = tone("--fg", "#000000"); x.globalAlpha = 0.6; x.lineWidth = 2; x.stroke(); x.globalAlpha = 1;
     }
     // where each month began (the user's call: which month a step was didn't show): its name just over the top of the column
     // it began in, the ★ for the step being built, set to its right edge (the slope above is empty), whole or not at all,
@@ -8639,9 +8638,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       x.strokeStyle = x.fillStyle = tone("--fg", "#000000");
       if (seen) {
         const px = xOf(c), py = yOf(row), m = Math.max(2, 5 - size / 4);
-        x.lineWidth = 2; x.beginPath();
+        x.beginPath();
         if (x.roundRect) x.roundRect(px - m, py - m, size + 2 * m, size + 2 * m, rad + m); else x.rect(px - m, py - m, size + 2 * m, size + 2 * m);
-        x.stroke();
+        // small, it runs over the blocks round it: over an edge in the card's colour, so it shows on white ones
+        if (size < 10) { x.strokeStyle = tone("--surface", "#ffffff"); x.lineWidth = 4; x.stroke(); x.strokeStyle = tone("--fg", "#000000"); }
+        x.lineWidth = 2; x.stroke();
       } else if (inCols && row < r0) {
         const cx = xOf(c) + size / 2;
         x.beginPath(); x.moveTo(cx - 5, gridH + 4); x.lineTo(cx + 5, gridH + 4); x.lineTo(cx, gridH + 10); x.closePath(); x.fill();
@@ -8716,6 +8717,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (!(t.i === g.si && (!goal || star))) {
         x.beginPath();
         if (x.roundRect) x.roundRect(px - m, py - m, size + 2 * m, size + 2 * m, rad + m); else x.rect(px - m, py - m, size + 2 * m, size + 2 * m);
+        // (as the shown block's ring, over an edge where it runs over white blocks)
+        if (size < 10) {
+          x.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--surface").trim() || "#ffffff"; x.globalAlpha = 0.9; x.lineWidth = 4; x.stroke();
+          x.strokeStyle = fg; x.globalAlpha = 0.45; x.lineWidth = 2;
+        }
         x.stroke();
       }
       const hb = tsumiShown[t.i];
@@ -9348,21 +9354,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // the stairs, from the ground up, as on the screen: the step being built with its places to come and the yellow goal
     const ox = PAD + (SIZE - AX - cols * pitch) / 2, xOf = (c) => ox + c * pitch + gap / 2, yOf = (row) => ground - (row + 1) * pitch + gap / 2;
     const sq = (px, py, s = size, rr = rad) => { x.beginPath(); if (rr && x.roundRect) x.roundRect(px, py, s, s, rr); else x.rect(px, py, s, s); };
-    blocks.forEach((b, i) => {
-      const c = tsumiCol(i), dim = tsumiIn(b) ? 1 : 0.16, px = xOf(c), py = yOf(i - (c * (c + 1)) / 2);
-      x.globalAlpha = b.gone ? dim * 0.3 : dim; x.fillStyle = TSUMI_LIGHT[b.kind]; sq(px, py); x.fill();
-      // a deleted one as on the screen: faint, with lines across it
-      if (b.gone && size >= 5) { x.globalAlpha = dim; goneMarks(x, px, py, size, rad, TSUMI_LIGHT[b.kind], sq); }
-    });
-    // and today's dots, as on the screen (the user's call: the picture had none)
+    // the blocks as on the screen: white, their colour in their middle, today's larger (the user's call: the picture had
+    // none of today's to see), a deleted one faint with lines across it
     const dayStart = Date.parse(todayKey + "T00:00:00");
-    // (a square one on small blocks, as on the screen: the user's call, the picture said 「きょう ＋2 こ」 with none to see)
     blocks.forEach((b, i) => {
-      if (b.t < dayStart) return;
       const c = tsumiCol(i), px = xOf(c), py = yOf(i - (c * (c + 1)) / 2);
-      x.globalAlpha = tsumiIn(b) ? 1 : 0.16; x.fillStyle = tsumiMarkColour(TSUMI_LIGHT[b.kind]);
-      if (size >= 8) { x.beginPath(); x.arc(px + size / 2, py + size / 2, Math.max(1.5, size * 0.13), 0, 2 * Math.PI); x.fill(); }
-      else { const s = Math.max(1, Math.round(size * 0.5)); x.fillRect(px + (size - s) / 2, py + (size - s) / 2, s, s); }
+      paintTsumiBlock(x, sq, px, py, size, rad, TSUMI_LIGHT[b.kind], { gone: b.gone, today: b.t >= dayStart, light: true, dim: tsumiIn(b) ? 1 : 0.16 });
     });
     x.globalAlpha = 1;
     x.strokeStyle = "#6c6c70"; x.lineWidth = 1; x.globalAlpha = 0.5;
