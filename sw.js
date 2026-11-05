@@ -3,7 +3,7 @@
 // (GitHub Pages lets a copy stand for 10 minutes, so the page is asked for with "no-cache": the server is checked every
 // time, and answers a cheap 304 when nothing changed); the manifest and icons are served from the cache once loaded.
 // Bump CACHE when the icons or the manifest change, so phones drop the old ones.
-const CACHE = "tsumikasane-v3"; // v3: the 「日々のマス」 icon
+const CACHE = "tsumikasane-v4"; // v4: the manifest's description as the app is now (v3: the 「日々のマス」 icon)
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png", "./icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (event) => {

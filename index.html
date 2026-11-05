@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>つみかさね</title>
-<meta name="description" content="ToDo・予定・日記・食事・運動・体重・家計簿・目標を、毎日ひとつの場所に記録するアプリ">
+<meta name="description" content="ToDo・予定・目標と、日記・ダイエット（からだ・食事・運動）・勉強・ルーティーン・家計簿の毎日の記録を、ひとつの場所でつみかさねていくアプリ">
 <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
@@ -311,11 +311,14 @@ section { display: flex; flex-direction: column; gap: var(--space-2); }
 /* date / month navigation: plain tint buttons, as in iOS */
 .datenav, .monthnav { display: flex; align-items: center; gap: 4px var(--space-1); flex-wrap: wrap; margin-inline-start: -8px; }
 .datenav .rel { padding-inline-start: 8px; font-size: var(--t-sub); font-weight: 600; color: var(--muted); }
+/* (Chrome sizes a date field with a max for a 4-digit year, closer to its icon than before: the room it had kept) */
+.datenav input[type="date"]::-webkit-calendar-picker-indicator { margin-inline-start: 1.1em; }
 /* the -8px above lines the buttons' text up with the title; these two can wrap to a row of their own, so they step back in */
 .datenav .chip-btn, .monthnav .chip-btn { margin-inline-start: 8px; }
 .monthnav .cur { min-width: 6.5em; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
 .navbtn { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0 8px; background: transparent; border: 0; color: var(--accent); cursor: pointer; line-height: 1.2; }
 .navbtn .icon { width: 18px; height: 18px; }
+.navbtn:disabled { color: var(--muted); opacity: .45; cursor: default; }
 /* the calendar's top: just the month's name (the user's call: no きょうへ either); the month turns with a sideways swipe on
    the calendar, and tapping the カレンダー tab again comes back to this month. The name itself opens a sheet to pick
    another month or come back to this one. The ‹ › buttons stay for a mouse (no swipe there), for keyboards (they show
@@ -390,6 +393,7 @@ form.add input.switch:checked::before { transform: translateX(20px); }
 .field-note { grid-column: -2 / -1; margin-top: -6px; }
 .field-note:empty { display: none; }
 .ffield > select { flex: 1 1 auto; min-width: 0; }
+.ffield > select.unit-pick { flex: none; width: auto; min-width: 4.5em; }
 form.add .actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-1) var(--space-2); }
 form.add .actions .link-btn { margin-inline-end: auto; }
 /* a label beside a field that grows (達成基準), or one with a button under it (期限), stays level with its first line */
@@ -846,6 +850,18 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
    share the screen's height instead (see the max-width: 767px block above). Either way a square keeps its height and
    shows the plans that fit (fitBars) */
 @media (min-width: 768px) { .cal-grid { grid-auto-rows: 108px; } }
+/* a wide screen that is low (an iPhone on its side): the sidebar narrow, the tabs alone with the icon over the name as on
+   the tab bar, so it shows whole (the user's call: it took a third of the width, its lower half out of sight); the record
+   pages open from きょう, as on a phone */
+@media (min-width: 768px) and (max-height: 500px) {
+  .app { grid-template-columns: calc(72px + max(12px, env(safe-area-inset-left, 0px))) minmax(0, 1fr); }
+  .side-in { padding: 8px 4px; }
+  .app-title { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .menu .sub { display: none; }
+  .menu button { flex-direction: column; justify-content: center; gap: 2px; min-height: 52px; padding: 4px 2px; font-size: 10px; font-weight: 600; text-align: center; }
+  .menu .mi { width: 26px; height: 26px; }
+  .pagebar { left: calc(72px + max(12px, env(safe-area-inset-left, 0px))); }
+}
 .cal-grid .cal-day { min-height: 0; overflow: hidden; }
 .cal-day { padding: 6px 0; display: flex; flex-direction: column; align-items: center; gap: 4px; background: transparent; border: 0; border-bottom: .5px solid var(--separator); border-radius: 0; color: var(--fg); cursor: pointer; font-variant-numeric: tabular-nums; }
 .cal-day:not(:nth-child(7n)) { border-inline-end: .5px solid var(--separator); }
@@ -945,6 +961,8 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 .label-chips span { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 999px; background: var(--fill); font-size: var(--t-sub); line-height: 1.2; white-space: nowrap; }
 .label-chips span::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--lc); }
 .label-chips .none span::before { display: none; }
+.label-chips .chip-add { display: inline-grid; place-items: center; min-width: 44px; min-height: 32px; padding: 0 10px; border: 1px dashed var(--line); border-radius: 999px; background: transparent; color: var(--accent); cursor: pointer; }
+.label-chips .chip-add .icon { width: 18px; height: 18px; }
 .label-chips input:checked + span { background: var(--lf); color: #ffffff; font-weight: 600; }
 .label-chips input:checked + span::before { background: #ffffff; }
 .label-chips input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
@@ -1074,6 +1092,8 @@ ul.list > li.btn-row { padding: 0; }
 .sum-since { margin: 0; font-size: var(--t-sub); font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* each half stays whole, so a narrow line breaks after から rather than inside a word */
 .sum-since span { display: inline-block; }
+.rec-page { margin: 2px 0 0; }
+.rec-page .link-btn { min-height: 44px; padding: 0; }
 .sum-card { padding: 12px var(--space-2) var(--space-2); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .sum-head { display: flex; align-items: center; gap: 6px; min-height: 28px; margin: 0; color: var(--sum-c); font-size: var(--t-sub); font-weight: 600; line-height: 1.2; }
 .sum-card .big { font-family: var(--font-round); font-size: var(--t-title1); line-height: 1.2; font-weight: 700; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
@@ -1180,6 +1200,11 @@ details.tsumi-more { margin-top: calc(-1 * var(--space-2)); } /* right under the
 .wo-menu .card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); }
 .wo-menu ul.list .chip { min-width: 4.6em; text-align: center; }  /* the names line up in a column */
 .wo-menu-sum { margin: 0; padding: 4px var(--space-2) 0; }
+.wo-menu-tip { margin: 0; padding: 2px var(--space-2) 0; }
+/* a ✓ on what the day has done of its menu, filled as a checked ToDo's */
+.wo-menu .wo-done { flex: none; display: grid; }
+.wo-menu .wo-done circle { fill: var(--f-workout); }
+.wo-menu .wo-done path { fill: #ffffff; }
 .wo-notes { padding: 0 var(--space-2) 4px; font-size: var(--t-sub); line-height: 1.5; }
 .wo-notes summary { display: flex; align-items: center; min-height: 44px; color: var(--accent); cursor: pointer; list-style: none; }
 .wo-notes summary::-webkit-details-marker { display: none; }
@@ -1421,11 +1446,22 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <button type="button" class="link-btn" id="nudgeLater">あとで</button>
           </div>
         </div>
+        <!-- 同期 stopped (the user's call: it showed only on 記録's 同期 row, so the devices drifted apart unseen): signed out
+             without ログアウト here, or failing for a day -->
+        <div class="card backup-nudge" id="syncNudge" hidden>
+          <strong>同期が止まっています</strong>
+          <span class="nudge-text" id="syncNudgeText"></span>
+          <div class="notice-actions">
+            <button type="button" class="btn sm" id="syncNudgeOpen">同期を開く</button>
+          </div>
+        </div>
         <!-- no records at all (a new phone, or all of them gone): the way back from a file written out before -->
         <div class="card backup-nudge" id="emptyHint" hidden>
           <strong>記録を戻すには</strong>
-          <span class="nudge-text">前に「記録を書き出す」で作ったファイルがあれば、読み込んで記録を戻せます。はじめて使うなら、このまま下から記録していけば大丈夫です。</span>
+          <span class="nudge-text"><span id="emptySyncText" hidden>同期を使っていたなら、ログインすると記録がそろいます。</span>前に「記録を書き出す」で作ったファイルがあれば、読み込んで記録を戻せます。はじめて使うなら、このまま下から記録していけば大丈夫です。</span>
           <div class="notice-actions">
+            <!-- (the user's call: a new phone, or Safari's records gone, came back by signing in, which it didn't say) -->
+            <button type="button" class="btn sm" id="emptySync" hidden>同期でログインする</button>
             <button type="button" class="btn sm" id="emptyImport">ファイルから読み込む</button>
           </div>
         </div>
@@ -1510,13 +1546,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </div>
         <p class="group-foot" id="storeNote"></p>
         <p class="group-foot usage-line" id="usageLine" hidden></p>
+        <p class="group-foot" id="appVersion" hidden></p>
         <input type="file" id="importFile" accept=".json,application/json" hidden>
       </section>
 
       <!-- 記録 › a record's entries, newest first by month, each opening in the sheet to put right: opened from its card on
            記録, sliding in from the right -->
       <section id="sec-reclist" hidden>
-        <div class="sec-head"><h2 id="recListTitle"></h2><p class="sum-since" id="recListNote"></p></div>
+        <div class="sec-head"><h2 id="recListTitle"></h2><p class="sum-since" id="recListNote"></p>
+          <!-- the page these are made on (the user's call: with its tile hidden on きょう, a phone had no way there) -->
+          <p class="rec-page"><button type="button" class="link-btn" id="recListPage"></button></p></div>
         <!-- the entries narrowed to the words typed (the user's call): 日記's words, 食事's food, 家計簿's 費目 and memo, and so
              on; 体重, numbers only, has no field -->
         <div class="rec-search" id="recSearchBox" hidden>
@@ -1622,8 +1661,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <div class="ffield"><span class="calc" id="wtBmr" hidden></span><span class="unit" id="wtBmrUnit" hidden>kcal</span><span class="muted small" id="wtBmrNote" hidden>体重を入れると出ます</span><button type="button" class="link-btn" id="wtBmrSet" aria-haspopup="dialog"><span class="phrase">身長・年齢・性別を</span><span class="phrase">入れる</span></button></div>
             <label class="flabel long" for="wtMaint"><span class="phrase">メンテナンス</span><span class="phrase">カロリー</span> <span class="opt">任意</span></label>
             <div class="ffield"><input type="number" id="wtMaint" step="1" min="1" max="9999" inputmode="numeric"><span class="unit">kcal</span></div>
+            <p class="field-note" id="wtMaintFillRow" hidden><button type="button" class="link-btn" id="wtMaintFill"></button></p>
             <label class="flabel" for="wtIntake"><span class="phrase">摂取</span><span class="phrase">カロリー</span> <span class="opt">任意</span></label>
             <div class="ffield"><input type="number" id="wtIntake" step="1" min="0" max="9999" inputmode="numeric"><span class="unit">kcal</span></div>
+            <p class="field-note" id="wtIntakeFillRow" hidden><button type="button" class="link-btn" id="wtIntakeFill"></button></p>
             <p class="field-note muted small" id="wtBalance"></p>
             <div class="actions">
               <button type="button" class="link-btn danger" id="wtDelete" hidden>この日の記録を削除</button>
@@ -1638,6 +1679,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
                 <button type="button" data-range="30" aria-pressed="true">1か月</button>
                 <button type="button" data-range="90" aria-pressed="false">3か月</button>
                 <button type="button" data-range="365" aria-pressed="false">1年</button>
+                <button type="button" data-range="0" aria-pressed="false">全部</button>
               </div>
             </div>
             <p class="chart-name" id="wtChartName" hidden>体重（kg）</p>
@@ -1670,8 +1712,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
                 <label><input type="radio" name="mealSlot" value="間食"><span>間食</span></label>
               </div>
             </div>
-            <label class="flabel" for="mealKcal">カロリー<span class="sr-only">（kcal）</span></label>
-            <div class="ffield"><input type="number" id="mealKcal" placeholder="任意" min="0" max="9999" inputmode="numeric"><span class="unit">kcal</span></div>
+            <label class="flabel" for="mealKcal">カロリー<span class="sr-only">（kcal）</span> <span class="opt">任意</span></label>
+            <div class="ffield"><input type="number" id="mealKcal" min="0" max="9999" inputmode="numeric"><span class="unit">kcal</span></div>
             <div class="actions"><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
           </form>
           <ul class="list card" id="mealList"></ul>
@@ -1688,7 +1730,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <select id="woType" class="full" aria-label="種目">
               <option value="ランニング">ランニング</option>
               <option value="ウォーキング">ウォーキング</option>
+              <option value="エアロバイク">エアロバイク</option>
               <option value="筋トレ">筋トレ</option>
+              <option value="その他">その他</option>
             </select>
             <div class="wo-group" id="woCardio">
               <label class="flabel" for="woDist">距離 <span class="opt">任意</span></label>
@@ -1703,8 +1747,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
               <div class="ffield"><input type="text" id="woExercise" list="woExerciseHints" maxlength="40" required><datalist id="woExerciseHints"></datalist></div>
               <label class="flabel" for="woWeight">重さ <span class="opt">任意</span></label>
               <div class="ffield"><input type="number" id="woWeight" min="0.1" max="999" step="any" inputmode="decimal"><span class="unit">kg</span></div>
-              <label class="flabel" for="woReps">回数</label>
-              <div class="ffield"><input type="number" id="woReps" min="1" max="999" inputmode="numeric" required><span class="unit">回</span></div>
+              <!-- 回 or 秒 (the user's call: the menu's プランク 30秒 could only go in as 30 回) -->
+              <label class="flabel" for="woReps" id="woRepsLabel">回数</label>
+              <div class="ffield"><input type="number" id="woReps" min="1" max="999" inputmode="numeric" required><select id="woPer" class="unit-pick" aria-label="回数の数え方"><option value="">回</option><option value="sec">秒</option></select></div>
               <label class="flabel" for="woSets">セット数</label>
               <div class="ffield"><input type="number" id="woSets" min="1" max="99" inputmode="numeric" required><span class="unit">セット</span></div>
             </div>
@@ -1754,16 +1799,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
       <!-- 家計簿 -->
       <section id="sec-money" style="--sec-c: var(--c-money)" hidden>
-        <div class="sec-head"><h2>家計簿</h2><div class="monthnav" id="monthNav"></div></div>
+        <div class="sec-head">
+          <div class="title-row"><h2>家計簿</h2><button type="button" class="icon-btn" id="moneySettings" aria-label="家計簿の設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button></div>
+          <div class="monthnav" id="monthNav"></div>
+        </div>
         <div class="card pad">
           <div class="money-sum" id="moneySum"></div>
           <div class="budget-line" id="budgetLine"></div>
-          <form class="inline" id="budgetForm" autocomplete="off">
-            <label for="budgetInput">月の予算</label>
-            <input type="number" id="budgetInput" min="0" max="99999999" step="1" placeholder="未設定" inputmode="numeric">
-            <span class="unit">円</span>
-            <button class="btn ghost sm" type="submit">保存</button>
-          </form>
         </div>
         <form class="add" id="exForm" autocomplete="off">
           <span class="flabel" id="exKindLabel">種類</span>
@@ -1967,7 +2009,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       <div class="sheet-view" id="tilesGroup" hidden>
         <h3 class="group-head">きょうのタイル</h3>
         <ul class="list card" id="tileList"></ul>
-        <p class="group-foot"><span class="phrase">チェックを付けたタイルが、きょうに出ます。</span><span class="phrase">≡&nbsp;を上下にドラッグすると、順番を変えられます。</span></p>
+        <p class="group-foot"><span class="phrase">チェックを付けたタイルが、きょうに出ます。</span><span class="phrase">≡&nbsp;を上下にドラッグすると、順番を変えられます。</span><span class="phrase">隠したタイルのページは、記録タブのそれぞれの一覧からも開けます。</span></p>
+      </div>
+      <div class="sheet-view" id="moneyGroup" hidden>
+        <h3 class="group-head">予算</h3>
+        <form class="add" id="budgetForm" autocomplete="off">
+          <label class="flabel" for="budgetInput">月の予算<span class="sr-only">（円）</span></label>
+          <div class="ffield"><input type="number" id="budgetInput" min="0" max="99999999" step="1" placeholder="未設定" inputmode="numeric"><span class="unit">円</span><button class="btn ghost sm" type="submit">保存</button></div>
+        </form>
+        <p class="group-foot"><span class="phrase">毎月の支出の予算です。</span><span class="phrase">家計簿のページに、残りと1日あたりに使える額が出ます。</span><span class="phrase">空にすると、予算なしになります。</span></p>
       </div>
       <div class="sheet-view" id="bodyGroup" hidden>
         <h3 class="group-head">目標</h3>
@@ -2208,11 +2258,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const addMonthsDay = (s, n) => { const ym = addMonths(s.slice(0, 7), n); return `${ym}-${pad(Math.min(Number(s.slice(8, 10)), daysInMonth(ym)))}`; };
   const fmtMonth = (ym) => { const [y, m] = ym.split("-").map(Number); return `${y}年${m}月`; };
   const daysInMonth = (ym) => { const [y, m] = ym.split("-").map(Number); return new Date(y, m, 0).getDate(); };
-  const fmtYen = (n) => (n < 0 ? "−" : "") + Math.abs(Math.round(n)).toLocaleString("ja-JP") + " 円";
+  const fmtYen = (n) => (n < 0 ? "−" : "") + fmtN(Math.abs(Math.round(n))) + " 円";
   // words looked for (記録's lists, ToDo): full- and half-width, upper and lower case, and hiragana and katakana count as
   // the same (かれー, カレー)
   const foldText = (t) => String(t || "").normalize("NFKC").toLowerCase().replace(/[\u3041-\u3096]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0x60));
   // a number keeps its unit on its line (63,800 円, −2.4 kg, 1 時間 45 分, 30 分): the space between them doesn't break
+  // numbers with their commas by one formatter made once (the user's call: toLocaleString made one each time, and the
+  // count behind きょう's つみかさね tile took most of a tap's time with three years of records)
+  const NUM = new Intl.NumberFormat("ja-JP"), fmtN = (n) => NUM.format(n);
   const keepUnits = (s) => s.replace(/(\d) (?=円|kcal|kg|km|分|時間|日|件|回|項目|セット|こ|段)/g, "$1\u00a0");
   const fmtKg = (n) => num(n).toFixed(1);
   const fmtFat = (n) => num(n).toFixed(1); // 体脂肪率, % to a tenth
@@ -2693,11 +2746,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const f = ev.target, max = lenOf(f);
     if (!max) return;
     const text = ev.clipboardData?.getData("text") || "", room = max - f.value.length + Math.abs((f.selectionEnd ?? 0) - (f.selectionStart ?? 0));
-    if (text.length > room) flash(`ここは ${max.toLocaleString("ja-JP")} 字までなので、あとの ${(text.length - room).toLocaleString("ja-JP")} 字は入りませんでした`);
+    if (text.length > room) flash(`ここは ${fmtN(max)} 字までなので、あとの ${fmtN((text.length - room))} 字は入りませんでした`);
   }, true);
   document.addEventListener("input", (ev) => {
     const f = ev.target, max = lenOf(f);
-    if (max && f.value.length >= max && ev.inputType?.startsWith("insert") && ev.inputType !== "insertFromPaste") flash(`ここは ${max.toLocaleString("ja-JP")} 字までです`);
+    if (max && f.value.length >= max && ev.inputType?.startsWith("insert") && ev.inputType !== "insertFromPaste") flash(`ここは ${fmtN(max)} 字までです`);
   }, true);
   // the keyboard up (iPhone) covers the foot of the screen, where messages show: how far up it reaches, from the visual
   // viewport, so a message can sit just above it (html.kb, --kb). A page zoomed in has no keyboard to keep clear of
@@ -2780,6 +2833,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   setChildren(menuEl, el("ul", {}, TABS.map((p) => el("li", {}, menuButton(p),
     p.key === "home" ? el("ul", { class: "sub" }, RECORDS.map((r) => el("li", {}, menuButton(r)))) : null))));
   function openTab(key) {
+    if (isRecord(key) && key !== tab) startAtToday(key); // the sidebar's (wide screens)
     // the record pages open from きょう (entries are made there; 記録 only sums up). On iPhone the きょう tab reopens the record
     // page left open there; pressed again from inside, it goes back to きょう
     if (key === "home" && !wideScreen.matches && lastRecord && tab !== "home" && !isRecord(tab)) key = lastRecord;
@@ -2848,6 +2902,24 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (key === "sync") draw(renderSync);
   }
   $("backBtn").addEventListener("click", () => { const up = parentOf(tab); if (up) showTab(up); });
+  // a swipe in from the screen's left edge, rightwards, goes back as on iPhone (the user's call: the home-screen app has no
+  // back gesture of its own, and the button at the top left was out of a thumb's reach). Not in Safari, whose own does it
+  if (matchMedia("(display-mode: standalone)").matches || navigator.standalone) {
+    let edge = null;
+    const canBack = () => !$("backBtn").hidden && getComputedStyle($("backBtn")).display !== "none" && !document.querySelector("dialog[open]");
+    addEventListener("touchstart", (ev) => {
+      const t = ev.touches[0];
+      edge = ev.touches.length === 1 && t.clientX < 24 && canBack() ? { x: t.clientX, y: t.clientY } : null;
+    }, { passive: true });
+    addEventListener("touchmove", (ev) => {
+      if (!edge) return;
+      const t = ev.touches[0], dx = t.clientX - edge.x, dy = Math.abs(t.clientY - edge.y);
+      if (dy > 30 && dy > dx) edge = null; // a scroll
+      else if (dx > 70 && dy < dx / 2) { edge = null; $("backBtn").click(); }
+    }, { passive: true });
+    addEventListener("touchend", () => { edge = null; }, { passive: true });
+    addEventListener("touchcancel", () => { edge = null; }, { passive: true });
+  }
 
   // the large title folds into the top bar once it has scrolled under it, as iOS navigation bars do
   const navbar = $("navbar"), navTitle = $("navTitle");
@@ -2871,6 +2943,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function setDietPart(part) {
     if (!isDietPart(part)) return;
     dietPart = part;
+    if (part === "meal") pickMealSlot();
     try { localStorage.setItem(DIET_KEY, part); } catch {}
     syncDietPart();
   }
@@ -2888,7 +2961,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- date navigation (shared by 日記・ダイエット・勉強・ルーティーン) ----------
   let lastNavDate = null;
   function setViewDate(s) {
-    if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s) || s === viewDate) return;
+    if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return;
+    // no day past today (the user's call: a record made there counted nowhere, not in 記録 nor つみかさね, till its day came)
+    if (s > todayKey) s = todayKey;
+    if (s === todayKey) pickMealSlot();
+    if (s === viewDate) { lastNavDate = null; renderDateNavs(); return; } // a picker set past today goes back to it
     flushJournal();
     viewDate = s;
     baseJournal();
@@ -2909,8 +2986,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       setChildren(nav,
         // the two steps and the date first, so on a phone they share one row and the extras wrap below
         el("button", { type: "button", class: "navbtn", onclick: () => setViewDate(addDays(viewDate, -1)) }, icon("prev"), "前日"),
-        el("input", { type: "date", value: viewDate, "aria-label": "日付を選ぶ", onchange: (e) => setViewDate(e.target.value) }),
-        el("button", { type: "button", class: "navbtn", onclick: () => setViewDate(addDays(viewDate, 1)) }, "翌日", icon("next")),
+        el("input", { type: "date", value: viewDate, max: todayKey, "aria-label": "日付を選ぶ", onchange: (e) => setViewDate(e.target.value) }),
+        el("button", { type: "button", class: "navbtn", disabled: viewDate >= todayKey, onclick: () => setViewDate(addDays(viewDate, 1)) }, "翌日", icon("next")),
         rel && !nav.closest("#sec-diet") ? el("span", { class: "rel" }, rel) : null, // not on ダイエット's, as からだ's had none (the user's call)
         viewDate !== todayKey ? el("button", { type: "button", class: "chip-btn", onclick: () => setViewDate(todayKey) }, "きょうへ") : null
       );
@@ -3277,7 +3354,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderTodoTrashRow() {
     const n = deleted.items.filter((t) => t.data && t.store === "todos").length;
     $("todoTrashCard").hidden = !n;
-    $("todoTrashCount").textContent = n ? n.toLocaleString("ja-JP") : "";
+    $("todoTrashCount").textContent = n ? fmtN(n) : "";
     $("todoTrash").setAttribute("aria-label", `最近削除したToDo、${n} 件`);
   }
   $("todoTrash").addEventListener("click", () => { trashOf = "todos"; trashBack = null; renderTrash(); showTab("trash"); });
@@ -3605,6 +3682,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- 日記 ----------
   const journalText = $("journalText"), journalState = $("journalState");
   let journalDirty = false, journalTimer = null, journalChain = Promise.resolve();
+  let journalShown = 30; // how many of これまでの記録 show: 30 more with each ほか N 件を見る
   journalText.addEventListener("input", markJournalDirty);
   journalText.addEventListener("blur", () => flushJournal());
   window.addEventListener("beforeunload", () => flushJournal());
@@ -3691,18 +3769,32 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("journalDelete").hidden = !journal.get(viewDate);
     $("journalRevert").hidden = !(journalBase && journalBase.date === viewDate && journalBase.text && (journal.get(viewDate)?.text || "") !== journalBase.text);
     const list = $("journalList");
-    const items = [...journal.items].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 30);
+    const all = [...journal.items].sort((a, b) => b.id.localeCompare(a.id)), items = all.slice(0, journalShown);
     list.replaceChildren();
     if (!items.length) { list.append(el("li", { class: "empty" }, "まだ記録がありません。上の欄に書くと、ここに並んでいきます。")); return; }
     for (const e of items) {
-      list.append(el("li", { class: "clickable" + (e.id === viewDate ? " current" : ""), onclick: () => setViewDate(e.id) },
+      list.append(el("li", { class: "clickable" + (e.id === viewDate ? " current" : ""), onclick: () => { setViewDate(e.id); window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" }); } },
         el("span", { class: "datecell" }, e.id === todayKey ? "きょう" : fmtShort(e.id)),
         el("span", { class: "body" }, el("span", { class: "text clamp" }, e.text || "（本文なし）"))
       ));
     }
+    if (all.length > items.length) list.append(el("li", { class: "more-done" }, el("button", { type: "button", class: "link-btn", onclick: () => { journalShown += 30; renderJournal(); } },
+      `ほか ${fmtN(all.length - items.length)} 件を見る`)));
   }
 
   // ---------- 食事 ----------
+  // the 区分 by the clock (the user's call: it always began at 朝食, so a dinner went in as 朝食 when it wasn't switched),
+  // picked as today's 食事 opens or the app comes back to it; one picked by hand stays for half an hour
+  const slotByClock = (d = new Date()) => { const h = d.getHours() + d.getMinutes() / 60; return h < 4 ? "間食" : h < 10.5 ? "朝食" : h < 15 ? "昼食" : h < 17 ? "間食" : "夕食"; };
+  let mealSlotHand = 0;
+  document.querySelectorAll('input[name="mealSlot"]').forEach((r) => r.addEventListener("change", () => { mealSlotHand = Date.now(); }));
+  function pickMealSlot() {
+    if (viewDate !== todayKey || Date.now() - mealSlotHand < 30 * 60e3) return;
+    const r = document.querySelector(`input[name="mealSlot"][value="${slotByClock()}"]`);
+    if (r) r.checked = true;
+  }
+  pickMealSlot();
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") pickMealSlot(); });
   $("mealForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
     const text = $("mealText").value.trim();
@@ -3737,15 +3829,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       list.append(el("li", {},
         el("span", { class: "chip", style: "--chip-c: var(--c-meal)" }, m.slot || "食事"),
         el("span", { class: "body" }, editLink("meal", m.id, m.text)),
-        typeof m.kcal === "number" ? el("span", { class: "num" }, `${m.kcal} kcal`) : null,
-        delButton(() => removeWithUndo(meals, m.id))
+        typeof m.kcal === "number" ? el("span", { class: "num" }, `${fmtN(m.kcal)} kcal`) : null,
+        delButton(() => removeWithUndo(meals, m.id), "削除", m.text)
       ));
     }
     const withK = items.filter((m) => typeof m.kcal === "number");
     const total = sum(withK, (m) => m.kcal);
-    $("mealTotal").textContent = items.length
-      ? `${items.length} 回・合計 ${total} kcal` + (withK.length < items.length ? `（kcal 未入力 ${items.length - withK.length} 件）` : "")
-      : "";
+    setChildren($("mealTotal"), items.length
+      ? dotParts([`${items.length} 回`, `合計 ${fmtN(total)} kcal` + (withK.length < items.length ? `（kcal 未入力 ${items.length - withK.length} 件）` : "")]) : null);
   }
 
   // ---------- 運動 ----------
@@ -3760,6 +3851,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   $("woType").addEventListener("change", syncWorkoutKind);
   syncWorkoutKind();
+  function setRepsUnit(per) { $("woPer").value = per; $("woRepsLabel").textContent = per === "sec" ? "秒数" : "回数"; }
+  $("woPer").addEventListener("change", () => setRepsUnit($("woPer").value));
   const WO_FIELDS = ["woDist", "woMin", "woKcal", "woExercise", "woWeight", "woReps", "woSets", "woNote"];
   $("workoutForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
@@ -3768,6 +3861,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const exercise = $("woExercise").value.trim(), reps = Math.round(n("woReps")), sets = Math.round(n("woSets"));
       if (!exercise || !(reps > 0) || !(sets > 0)) return;
       Object.assign(item, { exercise, reps, sets });
+      if ($("woPer").value === "sec") item.per = "sec";
       if (n("woWeight") > 0) item.kg = Math.round(n("woWeight") * 10) / 10;
     } else {
       const minutes = Math.round(n("woMin"));
@@ -3780,16 +3874,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (note) item.note = note;
     act(() => workouts.add(item));
     for (const id of WO_FIELDS) $(id).value = "";
+    setRepsUnit(""); // 回 again for the next move
     $(type === "筋トレ" ? "woExercise" : "woDist").focus(); // the kind stays picked for the next one
   });
   // what an entry says: 5.2 km・30 分・320 kcal, or ベンチプレス・60 kg × 10 回 × 3 セット; one from before the kinds, its minutes
   function workoutDetail(w) {
-    if (w.exercise) return keepUnits(`${w.exercise}・` + [num(w.kg) > 0 ? `${w.kg} kg` : null, `${num(w.reps)} 回`, `${num(w.sets)} セット`].filter(Boolean).join(" × "));
-    return keepUnits([num(w.km) > 0 ? `${w.km} km` : null, num(w.minutes) > 0 ? `${num(w.minutes)} 分` : null, num(w.kcal) > 0 ? `${w.kcal} kcal` : null].filter(Boolean).join("・"));
+    if (w.exercise) return keepUnits(`${w.exercise}・` + [num(w.kg) > 0 ? `${w.kg} kg` : null, `${num(w.reps)} ${w.per === "sec" ? "秒" : "回"}`, `${num(w.sets)} セット`].filter(Boolean).join(" × "));
+    return keepUnits([num(w.km) > 0 ? `${w.km} km` : null, num(w.minutes) > 0 ? `${num(w.minutes)} 分` : null, num(w.kcal) > 0 ? `${fmtN(w.kcal)} kcal` : null].filter(Boolean).join("・"));
   }
-  function weekMinutes() {
-    const start = addDays(todayKey, -6);
-    const inWeek = workouts.items.filter((w) => w.date >= start && w.date <= todayKey);
+  // the 7 days up to the day shown (the user's call: they were always today's, the day shown left out when it wasn't today)
+  const weekWord = (d) => (d === todayKey ? "この7日間" : `${fmtMD(addDays(d, -6))}〜${fmtMD(d)}`);
+  function weekMinutes(end = todayKey) {
+    const start = addDays(end, -6);
+    const inWeek = workouts.items.filter((w) => w.date >= start && w.date <= end);
     return { minutes: sum(inWeek, (w) => w.minutes), days: new Set(inWeek.map((w) => w.date)).size };
   }
   function renderWorkouts() {
@@ -3802,12 +3899,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       list.append(el("li", {},
         el("span", { class: "chip", style: "--chip-c: var(--c-workout)", title: w.type }, w.type),
         el("span", { class: "body" }, editLink("workout", w.id, workoutDetail(w) || w.type, `${w.type} ${workoutDetail(w)}`), w.note ? el("span", { class: "sub" }, w.note) : null),
-        delButton(() => removeWithUndo(workouts, w.id))
+        delButton(() => removeWithUndo(workouts, w.id), "削除", `${w.type} ${workoutDetail(w)}`.trim())
       ));
     }
-    const total = sum(items, (w) => w.minutes);
-    const wk = weekMinutes();
-    $("workoutTotal").textContent = (items.length ? `この日 ${total} 分（${items.length} 件）・` : "") + `この7日間 ${wk.minutes} 分、${wk.days} 日`;
+    // the day's time, 筋トレ's sets (the user's call: a day of 筋トレ alone said 「この日 0 分」) and 消費カロリー, then the week
+    const total = sum(items, (w) => w.minutes), sets = sum(items.filter((w) => w.exercise), (w) => w.sets), burnt = sum(items, (w) => w.kcal);
+    const day = [total ? durText(total) : null, sets ? `筋トレ ${sets} セット` : null, burnt ? `消費 ${fmtN(burnt)} kcal` : null].filter(Boolean);
+    if (day.length) { day[0] = "この日 " + day[0]; day[day.length - 1] += `（${items.length} 件）`; }
+    const wk = weekMinutes(viewDate);
+    setChildren($("workoutTotal"), dotParts([...day, `${weekWord(viewDate)} ${durText(wk.minutes)}、${wk.days} 日`]));
     renderWoMenu();
   }
 
@@ -3837,21 +3937,38 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     ["食事", ["週の合計が同じなので、", "2,500kcalのまま"]],
   ];
   let woNotesOpen = false; // メモ stays open while the day or the records change under it
+  // a row of the menu pressed: its kind and numbers in the form (回数 from 「12〜15回」 its first number, 秒 for 「30秒」;
+  // 「できる回数」 left to type), the form brought into view, and focus where something is still to type
+  function fillWorkout(f) {
+    $("woType").value = f.type; syncWorkoutKind();
+    let next = null;
+    if (f.type === "筋トレ") {
+      const n = parseInt(String(f.reps).match(/\d+/)?.[0] || "", 10);
+      $("woExercise").value = f.exercise; $("woSets").value = f.sets; $("woReps").value = n > 0 ? n : "";
+      setRepsUnit(/秒/.test(f.reps) ? "sec" : "");
+      if (!(n > 0)) next = $("woReps");
+    } else { $("woDist").value = f.km; next = $("woMin"); }
+    $("workoutForm").scrollIntoView({ block: "center", behavior: reduceMotion.matches ? "auto" : "smooth" });
+    next?.focus({ preventScroll: true });
+  }
   // the day's menu: ラン, then 筋トレ's moves (メイン in 運動's colour, 補助 in grey, as the sheet tells them apart), the
   // day's sets added up as the sheet does, and the sheet's notes behind メモ, with the week's totals; 変化走's way of
   // running under its line
   function renderWoMenu() {
-    const day = parseYmd(viewDate).getDay(), m = WO_MENU[day];
+    const day = parseYmd(viewDate).getDay(), m = WO_MENU[day], t = woTally(viewDate);
     const say = (parts) => parts.flatMap((p) => (p.startsWith(" ") ? [" ", el("span", { class: "phrase" }, p.slice(1))] : [el("span", { class: "phrase" }, p)]));
+    const done = (on) => (on ? el("span", { class: "wo-done", role: "img", "aria-label": "記録済み" }, checkMark()) : null);
     const chip = (word, c) => el("span", { class: "chip", style: `--chip-c: ${c}` }, word);
     setChildren($("woMenu"),
       el("div", { class: "card-head" }, el("span", {}, `${WD[day]}曜日のメニュー`), chip(m.theme, "var(--c-workout)")),
       el("ul", { class: "list" },
-        el("li", {}, chip("ラン", "var(--c-workout)"),
-          el("span", { class: "body" }, el("span", { class: "text" }, `${m.km} km`),
-            el("span", { class: "sub" }, m.run === "変化走" ? ["変化走：", ...say(WO_NOTES.find(([k]) => k === "変化走")[1])] : m.run))),
-        m.moves.map(([kind, name, sets, reps]) => el("li", {}, chip(kind, kind === "メイン" ? "var(--c-workout)" : "var(--muted)"),
-          el("span", { class: "body" }, el("span", { class: "text" }, name), el("span", { class: "sub" }, `${reps} × ${sets}セット`))))),
+        el("li", { class: t.ran ? "done" : null }, chip("ラン", "var(--c-workout)"),
+          el("span", { class: "body" }, el("button", { type: "button", class: "text row-link", "aria-label": `ラン ${m.km} km を下の欄に入れる`, onclick: () => fillWorkout({ type: "ランニング", km: m.km }) }, `${m.km} km`),
+            el("span", { class: "sub" }, m.run === "変化走" ? ["変化走：", ...say(WO_NOTES.find(([k]) => k === "変化走")[1])] : m.run)), done(t.ran)),
+        m.moves.map(([kind, name, sets, reps]) => el("li", { class: t.setsOf(name) >= sets ? "done" : null }, chip(kind, kind === "メイン" ? "var(--c-workout)" : "var(--muted)"),
+          el("span", { class: "body" }, el("button", { type: "button", class: "text row-link", "aria-label": `${name} ${reps} × ${sets}セットを下の欄に入れる`, onclick: () => fillWorkout({ type: "筋トレ", exercise: name, reps, sets }) }, name),
+            el("span", { class: "sub" }, `${reps} × ${sets}セット`)), done(t.setsOf(name) >= sets)))),
+      el("p", { class: "wo-menu-tip muted small" }, "押すと、下の欄に入ります。"),
       el("p", { class: "wo-menu-sum muted small" }, `1日の合計 ${sum(m.moves, (x) => x[2])} セット`),
       el("details", { class: "wo-notes", open: woNotesOpen, ontoggle: (ev) => { woNotesOpen = ev.currentTarget.open; } },
         el("summary", {}, el("span", { class: "more" }, "メモを見る"), el("span", { class: "less" }, "メモをとじる")),
@@ -3877,9 +3994,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     act(() => study.add(item));
     $("stMin").value = ""; $("stNote").value = ""; $("stMin").focus();
   });
-  function studyWeek() {
-    const start = addDays(todayKey, -6);
-    const inWeek = study.items.filter((x) => x.date >= start && x.date <= todayKey);
+  function studyWeek(end = todayKey) {
+    const start = addDays(end, -6);
+    const inWeek = study.items.filter((x) => x.date >= start && x.date <= end);
     return { minutes: sum(inWeek, (x) => x.minutes), days: new Set(inWeek.map((x) => x.date)).size };
   }
   function renderStudy() {
@@ -3895,11 +4012,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       list.append(el("li", { style: subjectStyle(sub) },
         el("span", { class: "chip", style: "--chip-c: var(--lc)" }, `${num(x.minutes)} 分`),
         el("span", { class: "body" }, editLink("study", x.id, sub ? sub.name : "科目なし", `${sub ? sub.name : "科目なし"} ${num(x.minutes)} 分`), x.note ? el("span", { class: "sub" }, x.note) : null),
-        delButton(() => removeWithUndo(study, x.id))
+        delButton(() => removeWithUndo(study, x.id), "削除", `${sub ? sub.name : "科目なし"} ${num(x.minutes)} 分`)
       ));
     }
-    const total = sum(items, (x) => x.minutes), wk = studyWeek();
-    $("studyTotal").textContent = (items.length ? `この日 ${total} 分（${items.length} 件）・` : "") + `この7日間 ${wk.minutes} 分、${wk.days} 日`;
+    const total = sum(items, (x) => x.minutes), wk = studyWeek(viewDate);
+    setChildren($("studyTotal"), dotParts([items.length ? `この日 ${durText(total)}（${items.length} 件）` : null, `${weekWord(viewDate)} ${durText(wk.minutes)}、${wk.days} 日`]));
   }
   $("studySettings").addEventListener("click", (ev) => openSettings(ev.detail === 0, "study"));
   $("subjectAdd").addEventListener("click", () => addTag(subjects, $("subjectList"), "新しい科目"));
@@ -3963,7 +4080,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("span", { class: "body" }, el("input", { type: "text", class: "rt-name", value: r.name, maxlength: 40, "aria-label": "項目の名前",
           onchange: (ev) => renameRoutine(r, ev.target), onkeydown: (ev) => { if (ev.key === "Enter" && !ev.isComposing) ev.target.blur(); } })),
         streak >= 2 ? el("span", { class: "num" }, `${streak}日連続`) : null,
-        delButton(() => removeWithUndo(routines, r.id))
+        delButton(() => removeWithUndo(routines, r.id), "削除", r.name)
       ));
     }
   }
@@ -4053,18 +4170,31 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // what the form shows as it is typed in: the day's 基礎代謝 from the weight in the field, and how 摂取カロリー stands to
   // メンテナンスカロリー
+  // what an empty 摂取カロリー or メンテナンスカロリー can take with a press: the day's 食事 kcal added up, the last day's
+  function calFills() {
+    const ks = meals.items.filter((x) => x.date === viewDate && typeof x.kcal === "number");
+    const maint = sortedWeights().filter((r) => r.id < viewDate && num(r.maint) > 0).pop()?.maint;
+    return { intake: ks.length ? sum(ks, (x) => x.kcal) : null, maint: maint || null };
+  }
   function syncWtCalc() {
     const kg = Number(wtInput.value), ready = profileReady(), bmr = ready && kg >= 20 && kg <= 300 ? bmrOf(kg) : null;
-    $("wtBmr").textContent = bmr ? bmr.toLocaleString("ja-JP") : "";
+    const fills = calFills();
+    $("wtIntakeFillRow").hidden = !(wtIntake.value === "" && fills.intake !== null);
+    setChildren($("wtIntakeFill"), el("span", { class: "phrase" }, "食事の合計"), " ", el("span", { class: "phrase" }, keepUnits(`${fmtN(fills.intake ?? 0)} kcal を入れる`)));
+    $("wtMaintFillRow").hidden = !(wtMaint.value === "" && fills.maint);
+    setChildren($("wtMaintFill"), el("span", { class: "phrase" }, "前の"), " ", el("span", { class: "phrase" }, keepUnits(`${fmtN(fills.maint || 0)} kcal を入れる`)));
+    $("wtBmr").textContent = bmr ? fmtN(bmr) : "";
     $("wtBmr").hidden = $("wtBmrUnit").hidden = !bmr;
     $("wtBmrNote").hidden = !ready || !!bmr;
     $("wtBmrSet").hidden = ready;
     const m = wtMaint.value, i = wtIntake.value, d = Math.round(Number(i)) - Math.round(Number(m));
     $("wtBalance").replaceChildren(...(m === "" || i === "" || !(Number(m) >= 1) || !(Number(i) >= 0) ? []
       : d === 0 ? ["メンテナンスカロリーと同じ"]
-      : [el("span", { class: "phrase" }, "メンテナンスカロリーより"), " ", el("span", { class: "phrase" }, `${Math.abs(d).toLocaleString("ja-JP")} kcal ${d < 0 ? "少ない" : "多い"}`)]));
+      : [el("span", { class: "phrase" }, "メンテナンスカロリーより"), " ", el("span", { class: "phrase" }, `${fmtN(Math.abs(d))} kcal ${d < 0 ? "少ない" : "多い"}`)]));
   }
   for (const x of [wtInput, wtMaint, wtIntake]) x.addEventListener("input", syncWtCalc);
+  $("wtIntakeFill").addEventListener("click", () => { const f = calFills(); if (f.intake !== null) { wtIntake.value = f.intake; syncWtCalc(); } });
+  $("wtMaintFill").addEventListener("click", () => { const f = calFills(); if (f.maint) { wtMaint.value = f.maint; syncWtCalc(); } });
   // without 身長・年齢・性別, a press opens the gear's settings at the first one missing
   $("wtBmrSet").addEventListener("click", (ev) => {
     const p = bodyProfile();
@@ -4077,7 +4207,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       renderWeight();
     });
   });
-  const rangeLabel = () => ({ 30: "1か月", 90: "3か月", 365: "1年" })[wtRange] || `${wtRange}日`;
+  const rangeLabel = () => ({ 0: "これまで", 30: "1か月", 90: "3か月", 365: "1年" })[wtRange] || `${wtRange}日`;
+  // the period's first day (全部: the first record's) and how many days it spans
+  const rangeStart = () => (wtRange ? addDays(todayKey, -(wtRange - 1)) : sortedWeights()[0]?.id || todayKey);
+  const rangeDays = () => daysBetween(rangeStart(), todayKey) + 1;
   $("wtSettings").addEventListener("click", (ev) => openSettings(ev.detail === 0, "weight"));
 
   function renderWeight() {
@@ -4107,7 +4240,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     stats.replaceChildren();
     if (all.length) {
       const last = all[all.length - 1];
-      const start = addDays(todayKey, -(wtRange - 1));
+      const start = rangeStart();
       const inRange = all.filter((r) => r.id >= start && r.id <= todayKey);
       const first = inRange[0];
       setChildren(stats,
@@ -4129,11 +4262,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const shown = rows.slice(0, 120);
     for (const r of shown) {
       const idx = all.indexOf(r); const p = idx > 0 ? all[idx - 1] : null;
-      list.append(el("li", { class: "clickable" + (r.id === viewDate ? " current" : ""), onclick: () => { closeSheet(); setDietPart("weight"); setViewDate(r.id); } },
+      list.append(el("li", { class: "clickable" + (r.id === viewDate ? " current" : ""), onclick: () => { closeSheet(); setDietPart("weight"); setViewDate(r.id); window.scrollTo(0, 0); } },
         el("span", { class: "datecell" }, r.id === todayKey ? "きょう" : fmtShort(r.id)),
         el("span", { class: "body" }, el("span", { class: "text" }, `${fmtKg(r.kg)} kg`), num(r.fat) > 0 ? el("span", { class: "sub" }, el("span", { class: "phrase" }, "体脂肪"), " ", el("span", { class: "phrase" }, `${fmtFat(r.fat)}%`)) : null),
         p ? el("span", { class: "num" }, `${signed(num(r.kg) - num(p.kg))} kg`) : null,
-        delButton(() => removeWithUndo(weights, r.id))
+        delButton(() => removeWithUndo(weights, r.id), "削除", `${fmtShort(r.id)}の ${fmtKg(r.kg)} kg`)
       ));
     }
     if (rows.length > shown.length) list.append(el("li", { class: "note" }, `ほか ${rows.length - shown.length} 件（記録タブで見られます）`));
@@ -4178,7 +4311,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       svg.setAttribute("width", W); svg.setAttribute("height", H);
       svg.replaceChildren();
       tip.hidden = true; c.hover = -1; c.overlay = null;
-      const start = addDays(todayKey, -(wtRange - 1));
+      const start = rangeStart(), spanDays = Math.max(2, rangeDays());
       const recs = sortedWeights().filter((r) => r.id >= start && r.id <= todayKey && val(r) > 0);
       const goal = target();
       c.pts = [];
@@ -4201,7 +4334,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const yLo = Math.floor((lo - span * 0.1) / step) * step;
       const yHi = Math.ceil((hi + span * 0.1) / step) * step;
       const y = (v) => padT + ((yHi - v) / (yHi - yLo)) * ph;
-      const x = (d) => padL + (daysBetween(start, d) / Math.max(1, wtRange - 1)) * pw;
+      const x = (d) => padL + (daysBetween(start, d) / (spanDays - 1)) * pw;
       const dec = step < 1 ? 1 : 0;
 
       // y grid + ticks
@@ -4213,14 +4346,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       }
       // x ticks
       let labelDates = [];
-      if (wtRange <= 30) { for (let i = wtRange - 1; i >= 0; i -= 7) labelDates.unshift(addDays(start, i)); }
-      else if (wtRange <= 90) { for (let i = wtRange - 1; i >= 0; i -= 15) labelDates.unshift(addDays(start, i)); }
-      else { for (let i = 0; i < wtRange; i++) { const d = addDays(start, i); if (d.endsWith("-01")) labelDates.push(d); } }
+      if (spanDays <= 31) { for (let i = spanDays - 1; i >= 0; i -= 7) labelDates.unshift(addDays(start, i)); }
+      else if (spanDays <= 92) { for (let i = spanDays - 1; i >= 0; i -= 15) labelDates.unshift(addDays(start, i)); }
+      else { for (let i = 0; i < spanDays; i++) { const d = addDays(start, i); if (spanDays <= 400 ? d.endsWith("-01") : /-(01|07)-01$/.test(d)) labelDates.push(d); } }
       const maxLabels = Math.max(2, Math.floor(pw / 44));
       if (labelDates.length > maxLabels) { const k = Math.ceil(labelDates.length / maxLabels); labelDates = labelDates.filter((_, i) => (labelDates.length - 1 - i) % k === 0); }
       for (const d of labelDates) {
         const xx = x(d);
-        svg.append(svgEl("text", { class: "axis-text", x: xx, y: H - 8, "text-anchor": xx < padL + 20 ? "start" : "middle" }, wtRange > 90 ? `${parseYmd(d).getMonth() + 1}月` : fmtMD(d)));
+        svg.append(svgEl("text", { class: "axis-text", x: xx, y: H - 8, "text-anchor": xx < padL + 20 ? "start" : "middle" }, spanDays > 92 ? (d.endsWith("-01-01") && spanDays > 400 ? `${d.slice(0, 4)}年` : `${parseYmd(d).getMonth() + 1}月`) : fmtMD(d)));
       }
       // marks
       const pts = recs.map((r) => ({ date: r.id, v: val(r), x: x(r.id), y: y(val(r)) }));
@@ -4340,24 +4473,37 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   });
   $("budgetForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
-    const raw = budgetInput.value;
-    if (raw === "" || Number(raw) <= 0) { if (settings.get("budget")) act(() => settings.remove("budget")); budgetInput.value = ""; return; }
-    act(() => settings.set("budget", { monthly: Math.round(Number(raw)), updatedAt: Date.now() }));
+    saveBudget();
     budgetInput.blur();
   });
+  // 保存, the return key or the sheet closing keeps it; emptied (or 0), no budget
+  function saveBudget() {
+    const raw = budgetInput.value;
+    if (raw === "" || Number(raw) <= 0) { if (settings.get("budget")) act(() => settings.remove("budget")); budgetInput.value = ""; return; }
+    const v = Math.round(Number(raw));
+    if (v !== monthlyBudget()) act(() => settings.set("budget", { monthly: v, updatedAt: Date.now() }));
+  }
+  $("moneySettings").addEventListener("click", (ev) => openSettings(ev.detail === 0, "money"));
   const monthlyBudget = () => num((settings.get("budget") || {}).monthly);
   function monthSummary(ym) {
     const items = expenses.items.filter((e) => monthOf(e.date) === ym);
     const outs = items.filter((e) => e.kind !== "in"), ins = items.filter((e) => e.kind === "in");
     return { items, outs, ins, out: sum(outs, (e) => e.amount), inn: sum(ins, (e) => e.amount) };
   }
+  // another month shown, the form's day goes with it (the user's call: one added while 3月 showed went to today): today in
+  // this month, the same date in another (its last day when it is shorter)
+  function setMoneyMonth(m) {
+    viewMonth = m;
+    if (monthOf(exDate.value) !== m) exDate.value = m === monthOf(todayKey) ? todayKey : `${m}-${pad(Math.min(parseYmd(todayKey).getDate(), daysInMonth(m)))}`;
+    renderMoney();
+  }
   function renderMoney() {
     const nav = $("monthNav");
     setChildren(nav,
-      el("button", { type: "button", class: "navbtn", onclick: () => { viewMonth = addMonths(viewMonth, -1); renderMoney(); } }, icon("prev"), "前月"),
+      el("button", { type: "button", class: "navbtn", onclick: () => setMoneyMonth(addMonths(viewMonth, -1)) }, icon("prev"), "前月"),
       el("span", { class: "cur" }, fmtMonth(viewMonth)),
-      el("button", { type: "button", class: "navbtn", onclick: () => { viewMonth = addMonths(viewMonth, 1); renderMoney(); } }, "翌月", icon("next")),
-      viewMonth !== monthOf(todayKey) ? el("button", { type: "button", class: "chip-btn", onclick: () => { viewMonth = monthOf(todayKey); renderMoney(); } }, "今月へ") : null
+      el("button", { type: "button", class: "navbtn", onclick: () => setMoneyMonth(addMonths(viewMonth, 1)) }, "翌月", icon("next")),
+      viewMonth !== monthOf(todayKey) ? el("button", { type: "button", class: "chip-btn", onclick: () => setMoneyMonth(monthOf(todayKey)) }, "今月へ") : null
     );
     const m = monthSummary(viewMonth);
     const net = m.inn - m.out;
@@ -4376,13 +4522,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const pct = Math.min(100, Math.round((m.out / budget) * 100));
       const isCur = viewMonth === monthOf(todayKey);
       const daysLeft = isCur ? daysInMonth(viewMonth) - parseYmd(todayKey).getDate() + 1 : 0;
-      let text = remaining >= 0 ? `予算 ${fmtYen(budget)} のうち残り ${fmtYen(remaining)}（${pct}% 使用）` : `予算 ${fmtYen(budget)} を ${fmtYen(-remaining)} 超えています`;
-      if (isCur && remaining > 0 && daysLeft > 0) text += `・月末まで1日あたり ${fmtYen(remaining / daysLeft)}`;
+      const ph = (...ws) => el("span", { class: "phrase" }, ws.map((w) => el("span", { class: "phrase" }, keepUnits(w))));
+      const said = remaining >= 0 ? ph(`予算 ${fmtYen(budget)} のうち`, `残り ${fmtYen(remaining)}（${pct}% 使用）`) : ph(`予算 ${fmtYen(budget)} を`, `${fmtYen(-remaining)} 超えています`);
+      const perDay = isCur && remaining > 0 && daysLeft > 0 ? ph(`月末まで1日あたり ${fmtYen(remaining / daysLeft)}`) : null;
       bl.append(
         el("div", { class: "bar-track" }, el("i", { class: remaining < 0 ? "over" : "", style: `width:${pct}%` })),
-        el("span", { class: "sub" + (remaining < 0 ? " warn" : "") }, text)
+        el("span", { class: "sub" + (remaining < 0 ? " warn" : "") }, el("span", { class: "due-line" }, el("span", { class: "due-parts" }, said, perDay)))
       );
-    }
+    } else bl.append(el("button", { type: "button", class: "link-btn", onclick: (ev) => openSettings(ev.detail === 0, "money", budgetInput) }, "月の予算を決める"));
     // category breakdown (expenses only)
     const byCat = new Map();
     for (const e of m.outs) { const c = expenseCat(e) || "未分類"; byCat.set(c, (byCat.get(c) || 0) + num(e.amount)); }
@@ -4418,7 +4565,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("span", { class: "chip", style: `--chip-c: ${isIn ? "var(--accent)" : "var(--c-money)"}`, title: expenseCat(e) || "" }, expenseCat(e) || (isIn ? "収入" : "支出")),
         el("span", { class: "body" }, editLink("money", e.id, e.memo || (isIn ? "収入" : "支出"), `${expenseCat(e) || (isIn ? "収入" : "支出")} ${fmtYen(e.amount)}`)),
         el("span", { class: "amount" + (isIn ? " in" : "") }, (isIn ? "+" : "") + fmtYen(e.amount)),
-        delButton(() => removeWithUndo(expenses, e.id))
+        delButton(() => removeWithUndo(expenses, e.id), "削除", `${expenseCat(e) || (isIn ? "収入" : "支出")} ${fmtYen(e.amount)}`)
       ));
     }
   }
@@ -4874,7 +5021,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("input", { type: "radio", name, value, checked: value === current, onchange: () => onPick(value) }),
       el("span", {}, text));
     return el("div", { class: "label-chips", role: "radiogroup", "aria-labelledby": labelledBy },
-      chip("", "なし", null), items.map((l) => chip(l.id, l.name, l)));
+      chip("", "なし", null), items.map((l) => chip(l.id, l.name, l)),
+      makeFirst ? el("button", { type: "button", class: "chip-add", "aria-label": "新しい" + makeText, onclick: makeFirst }, icon("plus", 18)) : null);
   }
   // the label editor is the calendar's settings, in this same sheet: the add form hands over to it
   function makeFirstLabel() { openSettings(false); addLabel(); }
@@ -4910,7 +5058,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // nothing of the plans that lost it); a label, its plans and its ToDos
     const usesOf = (l) => (store === labels ? [["予定", events.items.filter((e) => e.labelId === l.id).length], ["ToDo", todos.items.filter((t) => t.labelId === l.id).length]]
       : [["勉強の記録", study.items.filter((x) => x.subjectId === l.id).length]]).filter(([, n]) => n);
-    const usesText = (u) => u.map(([w, n]) => `${w} ${n.toLocaleString("ja-JP")} 件`).join("と"), usesWhat = (u) => u.map(([w]) => w).join("と");
+    const usesText = (u) => u.map(([w, n]) => `${w} ${fmtN(n)} 件`).join("と"), usesWhat = (u) => u.map(([w]) => w).join("と");
     // the calendar's labels: a ring that shows or hides their plans in place of the dot, and ラベルなし first
     const cal = store === labels, hidden = cal ? calHidden() : null, ringFocus = a?.dataset?.ring;
     const ring = (key, name, l) => el("button", { type: "button", class: "check show", role: "checkbox", "aria-checked": String(!hidden.has(key)), "data-ring": key || "none",
@@ -5146,7 +5294,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   let editingId = null, editingStart = null, editScope = "one", editBase = "", editDays = "", edLabelChoice = "", sheetByKey = false, sheetClosing = false, sheetAnims = [], closeTimer = null, drag = null, delTimer = null;
   let settingsFrom = null; // the settings showing: "gear" when opened from the month bar, "day" when from a day's sheet
   let sheetOpener = "day"; // what keyboard focus goes back to when the sheet closes: the day, the calendar's gear or ＋, 勉強's, きょう's or からだ's gear, ToDo's (or the top bar's) or 目標's ＋
-  let settingsScope = "calendar"; // whose settings: the calendar's labels, 勉強's subjects, きょう's tiles ("home") or ダイエット's goals, 身長・年齢・性別 and records ("weight")
+  let settingsScope = "calendar"; // whose settings: the calendar's labels, 勉強's subjects, きょう's tiles ("home"), ダイエット's goals, 身長・年齢・性別 and records ("weight") or 家計簿's budget ("money")
   let tileDrag = null; // きょう's tile whose row is being dragged by its grip in the settings
   let goalNew = false; // the sheet holds a new goal's form, opened from 目標's ＋
   let planNew = false; // the sheet holds a new plan's form, opened from the ＋ beside the calendar's gear
@@ -5181,7 +5329,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function syncSheetHead() {
     const mode = sheetMode(), adding = mode === "goal" || mode === "plan" || mode === "todo", changing = mode === "edit" || mode === "rec";
     for (const [m, id] of Object.entries(SHEET_VIEWS)) $(id).hidden = m !== mode;
-    $("labelsGroup").hidden = settingsScope !== "calendar"; $("subjectsGroup").hidden = settingsScope !== "study"; $("tilesGroup").hidden = settingsScope !== "home"; $("bodyGroup").hidden = settingsScope !== "weight";
+    $("labelsGroup").hidden = settingsScope !== "calendar"; $("subjectsGroup").hidden = settingsScope !== "study"; $("tilesGroup").hidden = settingsScope !== "home"; $("bodyGroup").hidden = settingsScope !== "weight"; $("moneyGroup").hidden = settingsScope !== "money";
     $("sheetDone").hidden = changing || adding; $("sheetSave").hidden = mode !== "edit"; $("recSave").hidden = mode !== "rec";
     $("goalSave").hidden = mode !== "goal"; $("planSave").hidden = mode !== "plan"; $("todoSave").hidden = mode !== "todo";
     $("sheetCancel").hidden = !(changing || adding || (mode === "chart" && (mPath.length || chartFromDay)) || (mode === "settings" && settingsFrom === "day") || (mode === "day" && dayFromFind));
@@ -5548,6 +5696,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!sheetEl.open || sheetClosing) return;
     commitChartText(); saveGoalEdit(); // what was typed last is saved now, not when the close event comes (it can come late)
     if (settingsFrom && settingsScope === "weight") { saveBodyTargets(); saveBodyProfile(); } // ダイエット's goals and 身長・年齢 too, as 完了 says
+    if (settingsFrom && settingsScope === "money") saveBudget(); // and 家計簿's budget
     if (todoNewIds.length) spotTodos(todoNewIds); // the ToDos added from it, lit in the list it uncovers
     if (instant === true || reduceMotion.matches) { sheetEl.close(); handOverFlash(); return; }
     sheetClosing = true;
@@ -5565,7 +5714,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     resetSheet();
     // keyboard users land back on what they opened it from: the day (the grid has been redrawn since), the gear, or an
     // entry's row on the page showing (記録's list and the record page can hold the same entry)
-    if (sheetByKey) ({ find: $("calFind"), month: $("calMonthBtn"), gear: $("calSettings"), plan: $("calAdd"), todo: $("todoAdd"), todonav: navbar.classList.contains("scrolled") ? $("navAdd") : $("todoAdd"), rec: $("sec-" + tab).querySelector(`[data-edit="${recReturnId}"]`), study: $("studySettings"), home: $("homeSettings"), weight: $("wtSettings"), tiletodo: $("homeTiles").querySelector(".td-add button"), goal: $("goalAdd"), chart: $("goalList").querySelector(`[data-goal="${chartReturnId}"]`) || $("goalAdd") }[sheetOpener] || $("calGrid").querySelector(".cal-day.sel"))?.focus();
+    if (sheetByKey) ({ find: $("calFind"), month: $("calMonthBtn"), gear: $("calSettings"), plan: $("calAdd"), todo: $("todoAdd"), todonav: navbar.classList.contains("scrolled") ? $("navAdd") : $("todoAdd"), rec: $("sec-" + tab).querySelector(`[data-edit="${recReturnId}"]`), study: $("studySettings"), home: $("homeSettings"), weight: $("wtSettings"), money: $("moneySettings"), tiletodo: $("homeTiles").querySelector(".td-add button"), goal: $("goalAdd"), chart: $("goalList").querySelector(`[data-goal="${chartReturnId}"]`) || $("goalAdd") }[sheetOpener] || $("calGrid").querySelector(".cal-day.sel"))?.focus();
   });
   // Esc: from an edit form (or settings or a chart reached from a day) back to the day's list, from a chart's cell back
   // out of it, otherwise out of the sheet
@@ -6373,7 +6522,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         options.map(([value, text]) => el("label", {}, el("input", { type: "radio", name, value, checked: value === current, onchange: onPick ? () => onPick(value) : null }), el("span", {}, text)))))];
   }
   const recNum = (id, value, attrs) => el("input", { type: "number", id, value: num(value) > 0 ? value : "", ...attrs });
-  const recDate = (value) => el("input", { type: "date", id: "reDate", value, required: true });
+  const recDate = (value, max = null) => el("input", { type: "date", id: "reDate", value, max, required: true });
   const recNote = (value) => el("input", { type: "text", id: "reNote", value: value || "", maxlength: 1000 });
   const recFixedDay = (day) => recRow("日付", el("output", { id: "reDay" }, fmtMDW(day))); // not to be changed (日記, 体重, ルーティーン)
   // a field that keeps the form from saving: focused, so it can be put right
@@ -6453,13 +6602,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       fields: (m) => [
         el("input", { type: "text", id: "reText", class: "full", list: "mealHints", value: m.text, placeholder: "食べたもの", "aria-label": "食べたもの", maxlength: 200, required: true }),
         recSeg("reSlot", "区分", SLOTS.map((s) => [s, s]), m.slot),
-        recRow("カロリー", el("input", { type: "number", id: "reKcal", value: typeof m.kcal === "number" ? m.kcal : "", placeholder: "任意", min: 0, max: 9999, inputmode: "numeric" }), { unit: "kcal" }),
-        recRow("日付", recDate(m.date)),
+        recRow("カロリー", el("input", { type: "number", id: "reKcal", value: typeof m.kcal === "number" ? m.kcal : "", min: 0, max: 9999, inputmode: "numeric" }), { unit: "kcal", opt: true }),
+        recRow("日付", recDate(m.date, todayKey)),
       ],
       read: (m) => {
         const text = $("reText").value.trim(), kcal = $("reKcal").value, date = recDay();
         if (!text) return recBad("reText");
-        if (!date) return recBad("reDate");
+        if (!date || date > todayKey) return recBad("reDate");
         // an entry from before the 区分 keeps having none until one is picked
         return { text, slot: checkedValue("reSlot") || m.slot, kcal: kcal === "" ? undefined : Math.max(0, Math.round(Number(kcal))), date };
       },
@@ -6477,7 +6626,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const strength = el("div", { class: "wo-group" },
           recRow("種目", el("input", { type: "text", id: "reExercise", list: "woExerciseHints", value: w.exercise || "", maxlength: 40, required: true })),
           recRow("重さ", recNum("reWeight", w.kg, { min: 0.1, max: 999, step: "any", inputmode: "decimal" }), { opt: true, unit: "kg" }),
-          recRow("回数", recNum("reReps", w.reps, { min: 1, max: 999, inputmode: "numeric", required: true }), { unit: "回" }),
+          recRow("回数", recNum("reReps", w.reps, { min: 1, max: 999, inputmode: "numeric", required: true }),
+            { after: el("select", { id: "rePer", class: "unit-pick", "aria-label": "回数の数え方" }, el("option", { value: "" }, "回"), el("option", { value: "sec", selected: w.per === "sec" }, "秒")) }),
           recRow("セット数", recNum("reSets", w.sets, { min: 1, max: 99, inputmode: "numeric", required: true }), { unit: "セット" }));
         // the fields for the kind picked, the others hidden and switched off as in the add form
         const sync = () => {
@@ -6489,7 +6639,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         };
         type.addEventListener("change", sync);
         sync();
-        return [type, cardio, strength, recRow("メモ", recNote(w.note), { opt: true }), recRow("日付", recDate(w.date))];
+        return [type, cardio, strength, recRow("メモ", recNote(w.note), { opt: true }), recRow("日付", recDate(w.date, todayKey))];
       },
       read: (w) => {
         const type = $("reType").value, n = (id) => Number($(id).value), date = recDay();
@@ -6499,13 +6649,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           if (!exercise) return recBad("reExercise");
           if (!(reps > 0)) return recBad("reReps");
           if (!(sets > 0)) return recBad("reSets");
-          patch = { exercise, reps, sets, kg: n("reWeight") > 0 ? Math.round(n("reWeight") * 10) / 10 : undefined, minutes: undefined, km: undefined, kcal: undefined };
+          patch = { exercise, reps, sets, per: $("rePer").value === "sec" ? "sec" : undefined, kg: n("reWeight") > 0 ? Math.round(n("reWeight") * 10) / 10 : undefined, minutes: undefined, km: undefined, kcal: undefined };
         } else {
           const minutes = Math.round(n("reMin"));
           if (!(minutes > 0)) return recBad("reMin");
-          patch = { minutes, km: n("reDist") > 0 ? Math.round(n("reDist") * 100) / 100 : undefined, kcal: n("reKcal") > 0 ? Math.round(n("reKcal")) : undefined, exercise: undefined, reps: undefined, sets: undefined, kg: undefined };
+          patch = { minutes, km: n("reDist") > 0 ? Math.round(n("reDist") * 100) / 100 : undefined, kcal: n("reKcal") > 0 ? Math.round(n("reKcal")) : undefined, exercise: undefined, reps: undefined, sets: undefined, per: undefined, kg: undefined };
         }
-        if (!date) return recBad("reDate");
+        if (!date || date > todayKey) return recBad("reDate");
         return { ...patch, type, note: $("reNote").value.trim() || undefined, date };
       },
     },
@@ -6519,13 +6669,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             el("div", { class: "ffield" }, tagPicker(subs, null, "", "reSubject", reSubject, (v) => { reSubject = v; }, "reSubjectLabel", subjectStyle))] : null,
           recRow("時間", recNum("reMin", x.minutes, { min: 1, max: 1440, inputmode: "numeric", required: true }), { unit: "分" }),
           recRow("メモ", recNote(x.note), { opt: true }),
-          recRow("日付", recDate(x.date)),
+          recRow("日付", recDate(x.date, todayKey)),
         ];
       },
       read: () => {
         const minutes = Math.round(Number($("reMin").value)), date = recDay();
         if (!(minutes > 0)) return recBad("reMin");
-        if (!date) return recBad("reDate");
+        if (!date || date > todayKey) return recBad("reDate");
         return { minutes, subjectId: reSubject && subjects.get(reSubject) ? reSubject : undefined, note: $("reNote").value.trim() || undefined, date };
       },
     },
@@ -6855,10 +7005,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a tile shows today, so the page it opens starts at today too: a record page left on another day comes back to today
   // and the calendar to this month, so today's entry can't slip into another day unnoticed
   function openFromHome(key, part = null) {
-    if (isRecord(key)) setViewDate(todayKey);
+    startAtToday(key);
     if (part) setDietPart(part); // ダイエット at the part pressed on its tile
-    if (key === "calendar") setCalDay(todayKey);
     showTab(key);
+  }
+  // (from the sidebar too, the user's call: a day left on 日記 carried on to ダイエット and 勉強); 家計簿 at this month
+  function startAtToday(key) {
+    if (isRecord(key)) setViewDate(todayKey);
+    if (key === "diet") pickMealSlot();
+    if (key === "money") { exDate.value = todayKey; setMoneyMonth(monthOf(todayKey)); }
+    if (key === "calendar") setCalDay(todayKey);
   }
   // きょう's tiles, in the order they first come in: each opens its page, in the page's colour. ダイエット, with its three,
   // ルーティーン, with its checklist, and 目標, with its longer line, take a row each; the others go two to a row on a phone
@@ -6894,6 +7050,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const saveHomePrefs = (patch) => act(() => settings.set("home", { ...homePrefs(), ...patch, updatedAt: Date.now() }));
   // half a row on a phone is narrow (きょう's tiles, 記録's cards), so a line of parts (合計 1150 kcal・朝食・昼食) breaks
   // between its parts rather than inside one, and a number keeps its unit on its line (keepUnits)
+  // a line of parts the ・ between them drops from where a line breaks (.due-parts), each part kept whole with its units
+  // (記録's cards, the record pages' foot lines; the user's call: 「150 日記録・」 ended a line)
+  function dotParts(parts) {
+    return el("span", { class: "due-line" }, el("span", { class: "due-parts" }, parts.filter(Boolean).map((p) => el("span", { class: "phrase part" }, keepUnits(p)))));
+  }
   const subParts = (sub) => (typeof sub !== "string" ? sub : sub.includes("・")
     ? sub.split("・").map((s, i, all) => el("span", { class: "part" }, keepUnits(s) + (i < all.length - 1 ? "・" : ""))) : keepUnits(sub));
   // a Health-style summary card: the coloured head with its chevron opens the page, and its hit area covers the card.
@@ -6917,12 +7078,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a day's menu (運動のメニュー) all done: its run as far as it says (one recorded without a distance counts), and every move
   // as many sets as it says, by the 種目's name recorded (the user's call: きょう's tile says only whether)
   function woMenuDone(day) {
+    const t = woTally(day);
+    return t.ran && t.m.moves.every(([, name, n]) => t.setsOf(name) >= n);
+  }
+  // what the day has done of its menu: the run (or エアロバイク for 30 minutes, as the menu's メモ has it), and each move's sets
+  function woTally(day) {
     const m = WO_MENU[parseYmd(day).getDay()], ws = workouts.items.filter((w) => w.date === day);
     const key = (words) => String(words || "").normalize("NFKC").replace(/\s+/g, "");
-    const runs = ws.filter((w) => w.type === "ランニング"), ran = runs.length > 0 && (sum(runs, (w) => num(w.km)) >= m.km || runs.some((w) => !(num(w.km) > 0)));
+    const runs = ws.filter((w) => w.type === "ランニング");
+    const ran = (runs.length > 0 && (sum(runs, (w) => num(w.km)) >= m.km || runs.some((w) => !(num(w.km) > 0)))) || ws.some((w) => w.type === "エアロバイク" && num(w.minutes) >= 30);
     const sets = new Map();
     for (const w of ws) if (w.exercise) sets.set(key(w.exercise), (sets.get(key(w.exercise)) || 0) + num(w.sets));
-    return ran && m.moves.every(([, name, n]) => (sets.get(key(name)) || 0) >= n);
+    return { m, ran, setsOf: (name) => sets.get(key(name)) || 0 };
   }
   // 日記 on きょう's tile (the user's call): a day written shows its words, up to three lines, the tile opening the page as
   // before; a day not written yet has a field to write the day's ひとこと in right there. It is saved as the 日記 page saves:
@@ -7015,7 +7182,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         rts.length ? null : "毎日やることを登録して、チェックしていきましょう。", routineTileList(rts, rtDone)),
       // this month's balance, 収入 less 支出, signed, and nothing under it (the user's call: the month's 支出 showed, with a line
       // of 支出・収入・きょう)
-      tile("money", (bal > 0 ? "+" : bal < 0 ? "−" : "") + Math.abs(bal).toLocaleString("ja-JP"), "円"),
+      tile("money", (bal > 0 ? "+" : bal < 0 ? "−" : "") + fmtN(Math.abs(bal)), "円"),
       // 目標: no counts, as on its page (the user's call); the goal due soonest and the days left to it
       tile("goal",
         !nearest ? (onHold ? "保留中" : goals.items.length ? "すべて達成" : "まだ") : left === null ? "期限なし" : left < 0 ? "期限切れ" : left === 0 ? "きょう" : String(left),
@@ -7029,7 +7196,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const hidden = homeHidden(), shown = homeTileOrder().filter((k) => !hidden.has(k)).map((k) => tiles.find((t) => t.dataset.tile === k));
     let alone = null;
     for (const t of shown) {
-      if (homeTile(t.dataset.tile).wide) { alone?.classList.add("wide"); alone = null; t.classList.add("wide"); }
+      if (homeTile(t.dataset.tile).wide || (t.dataset.tile === "todo" && top.length)) { alone?.classList.add("wide"); alone = null; t.classList.add("wide"); }
       else alone = alone ? null : t;
     }
     alone?.classList.add("wide");
@@ -7037,7 +7204,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const grid = $("homeTiles"), writing = grid.querySelector(':scope > [data-tile="journal"]');
     if (writing?.contains(document.activeElement)) {
       for (const t of shown) if (t.dataset.tile !== "journal") grid.querySelector(`:scope > [data-tile="${t.dataset.tile}"]`)?.replaceWith(t);
-    } else grid.replaceChildren(...(shown.length ? shown : [el("p", { class: "card tiles-none" }, "タイルをすべて隠しています。日付の右の歯車から、出すタイルを選べます。")]));
+    } else grid.replaceChildren(...(shown.length ? shown : [el("p", { class: "card tiles-none" }, "タイルをすべて隠しています。右上の歯車から、出すタイルを選べます。")]));
     if (focusRow.rt) $("homeTiles").querySelector(`[data-rt="${focusRow.rt}"]`)?.focus();
     if (focusRow.td) $("homeTiles").querySelector(`[data-td="${focusRow.td}"]`)?.focus();
   }
@@ -7149,7 +7316,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           icon(iconName, 18), el("span", { class: "lbl" }, title), el("span", { class: "chev" }, icon("next", 16)))
         : [icon(iconName, 18), el("span", {}, title)]),
       el("div", { class: "big" }, big, unit ? el("small", {}, unit) : null),
-      sub ? el("div", { class: "sub" }, subParts(sub)) : null,
+      sub ? el("div", { class: "sub" }, typeof sub === "string" && sub.includes("・") ? dotParts(sub.split("・")) : subParts(sub)) : null,
       extra);
   }
   // the three largest of a total, as a short list with a dot in each one's colour (where the study time or the money went)
@@ -7293,7 +7460,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const add = (key, kind, day, t, text, open, gone = false, rid = open && (open.goal || open.id)) => {
       if (!day || day > todayKey) return;
       if (mode === "tally") { tally.n++; tally.days.add(day); if (day === todayKey || t >= dayStart) tally.today++; tally.first = Math.min(tally.first, t || noonOf(day)); return; }
-      out.push({ key, kind, day, t: Math.max(t || noonOf(day), Date.parse(day + "T00:00:00")), text: say(text), open, gone, rid });
+      out.push({ key, kind, day, t: Math.max(t || noonOf(day), Date.parse(day + "T00:00:00")), text: say(typeof text === "function" ? text() : text), open, gone, rid });
     };
     const names = tsumiNames();
     // the blocks kept of a kind's records deleted, while no record of their id is here, and the ones folded
@@ -7316,14 +7483,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // no longer shows them); 「この記録を開く」 opens it to be read
     for (const j of journal.items) if (j.text?.trim()) add("journal:" + j.id, "journal", j.date || j.id, realTime(j.createdAt), "", { kind: "journal", id: j.id });
     // a 食事's kcal, a からだ's 摂取カロリー with them (the user's call: pressing their blocks didn't say)
-    for (const m of meals.items) add("meal:" + m.id, "meal", m.date, realTime(m.createdAt), [m.slot, m.text, typeof m.kcal === "number" ? `${m.kcal.toLocaleString("ja-JP")} kcal` : ""].filter(Boolean).join("・"), { kind: "meal", id: m.id });
-    for (const w of workouts.items) add("workout:" + w.id, "workout", w.date, realTime(w.createdAt), [w.type, workoutDetail(w)].filter(Boolean).join(" "), { kind: "workout", id: w.id });
-    for (const x of study.items) add("study:" + x.id, "study", x.date, realTime(x.createdAt), `${subjectOf(x)?.name || (x.subjectId && names["subject:" + x.subjectId]) || "科目なし"} ${num(x.minutes)} 分`, { kind: "study", id: x.id });
+    for (const m of meals.items) add("meal:" + m.id, "meal", m.date, realTime(m.createdAt), () => [m.slot, m.text, typeof m.kcal === "number" ? `${fmtN(m.kcal)} kcal` : ""].filter(Boolean).join("・"), { kind: "meal", id: m.id });
+    for (const w of workouts.items) add("workout:" + w.id, "workout", w.date, realTime(w.createdAt), () => [w.type, workoutDetail(w)].filter(Boolean).join(" "), { kind: "workout", id: w.id });
+    for (const x of study.items) add("study:" + x.id, "study", x.date, realTime(x.createdAt), () => `${subjectOf(x)?.name || (x.subjectId && names["subject:" + x.subjectId]) || "科目なし"} ${num(x.minutes)} 分`, { kind: "study", id: x.id });
     // each item keeps when it was checked (at), from now on; ones checked before that go at the day's noon, in their order
-    for (const x of routineDays.items) (x.done || []).forEach((id) => add(`routine:${x.id}:${id}`, "routine", x.date, realTime(x.at?.[id]), routines.get(id)?.name || names["routine:" + id] || "消した項目", { kind: "routine", id: x.id, item: id }));
-    for (const w of sortedWeights()) add("weight:" + w.id, "weight", w.id, realTime(w.createdAt), `${fmtKg(w.kg)} kg` + (num(w.fat) > 0 ? `・体脂肪率 ${fmtFat(w.fat)}%` : "") + (typeof w.intake === "number" ? `・摂取 ${w.intake.toLocaleString("ja-JP")} kcal` : ""), { kind: "weight", id: w.id });
+    for (const x of routineDays.items) (x.done || []).forEach((id) => add(`routine:${x.id}:${id}`, "routine", x.date, realTime(x.at?.[id]), () => routines.get(id)?.name || names["routine:" + id] || "消した項目", { kind: "routine", id: x.id, item: id }));
+    for (const w of sortedWeights()) add("weight:" + w.id, "weight", w.id, realTime(w.createdAt), () => `${fmtKg(w.kg)} kg` + (num(w.fat) > 0 ? `・体脂肪率 ${fmtFat(w.fat)}%` : "") + (typeof w.intake === "number" ? `・摂取 ${fmtN(w.intake)} kcal` : ""), { kind: "weight", id: w.id });
     // 収入 with +, 支出 with −, as きょう's 収支 has them (the user's call: the two read alike)
-    for (const e of expenses.items) add("money:" + e.id, "money", e.date, realTime(e.createdAt), `${expenseCat(e) || (e.kind === "in" ? "収入" : "支出")} ${e.kind === "in" ? "+" + fmtYen(num(e.amount)) : fmtYen(-num(e.amount))}`, { kind: "money", id: e.id });
+    for (const e of expenses.items) add("money:" + e.id, "money", e.date, realTime(e.createdAt), () => `${expenseCat(e) || (e.kind === "in" ? "収入" : "支出")} ${e.kind === "in" ? "+" + fmtYen(num(e.amount)) : fmtYen(-num(e.amount))}`, { kind: "money", id: e.id });
     // a goal with no time of its own (none is made so now) sits with the first record, so it doesn't move from day to day
     const first = mode === "tally" ? tally.first : out.reduce((m, x) => Math.min(m, x.t), Infinity), firstT = Number.isFinite(first) ? first : noonOf(todayKey);
     for (const g of goals.items) {
@@ -7334,11 +7501,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           if (!c) return;
           // the cell, then the goal's name, which is the one cut short when long (the user's call: which goal a cell was of
           // didn't show)
-          if (c.d) { const at = realTime(c.at) || made; add(`goal:${g.id}:${[...path, i].join(".")}`, "goal", ymd(new Date(at)), at, `「${oneLine(c.t)}」を達成（「${oneLine(g.title)}」のマス）`, { goal: g.id, path, spot: i }); }
+          if (c.d) { const at = realTime(c.at) || made; add(`goal:${g.id}:${[...path, i].join(".")}`, "goal", ymd(new Date(at)), at, () => `「${oneLine(c.t)}」を達成（「${oneLine(g.title)}」のマス）`, { goal: g.id, path, spot: i }); }
           walk(c.c, [...path, i]);
         });
       })(g.mandala, []);
-      if (g.done) { const at = realTime(g.doneAt) || made; add("goal:" + g.id, "goal", ymd(new Date(at)), at, `「${oneLine(g.title)}」を達成`, { goal: g.id }); }
+      if (g.done) { const at = realTime(g.doneAt) || made; add("goal:" + g.id, "goal", ymd(new Date(at)), at, () => `「${oneLine(g.title)}」を達成`, { goal: g.id }); }
     }
     keptOf("goal", new Set(goals.items.map((g) => g.id)));
     return mode === "tally" ? (tsumiTallied = tally) : out.sort((a, b) => a.t - b.t);
@@ -7530,7 +7697,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       let was = "";
       blocks.forEach((b, i) => { const mo = ymd(new Date(b.t)).slice(0, 7); if (mo !== was) tsumiMonths.push([i, mo]); was = mo; });
     }
-    $("tsumiCount").textContent = mine.length.toLocaleString("ja-JP");
+    $("tsumiCount").textContent = fmtN(mine.length);
     $("tsumiMoreStep").textContent = k + 1; // くわしく, as 大きく says it (the user's call: it said 「12段目」 by the 47段目)
     $("tsumiKind").hidden = !v;
     if (v) setChildren($("tsumiKind"), el("span", { class: "dot", style: `background: var(${v.c})` }), v.label);
@@ -7544,7 +7711,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // when something went on today for another day
     // (いちばん長い) when they are the most, else the most said apart
     const onToday = dayset.has(todayKey), most = (d) => (d >= longest ? "（いちばん長い）" : "");
-    const nf = (d) => d.toLocaleString("ja-JP");
+    const nf = (d) => fmtN(d);
     const endText = !onToday && run >= 1 ? `${today ? "きょうの分を" : "きょう"}積むと ${nf(run + 1)} 日つづけて${most(run + 1)}` : run >= 2 ? `${nf(run)} 日つづけて${most(run)}` : "";
     // after a break (none yesterday or today): the last days on end and when they stopped (the user's call: only the most
     // was said)
@@ -7575,7 +7742,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const onAgain = onToday && run === 1 && dayset.size > 1 ? part("きょうからまた 1 日目") : null;
     tsumiSaid = { today, week: week && week !== today ? `この7日で ＋${nf(week)}\u00a0こ` : "", vs: week && week !== today ? vs : "", run: onAgain ? "きょうからまた 1 日目" : picRun, most: onMost ? `いちばん長くつづけたのは ${nf(longest)} 日` : "" };
     setChildren($("tsumiSub"), el("span", { class: "due-parts" }, ...(!n ? [part("記録すると、ここにブロックが積みあがります")]
-      : v ? [onToday0, onWeek, onEnd, onPast, onAgain, onMost, part(`全部で ${n.toLocaleString("ja-JP")} こ`), part(`いま ${k} 段`)]
+      : v ? [onToday0, onWeek, onEnd, onPast, onAgain, onMost, part(`全部で ${fmtN(n)} こ`), part(`いま ${k} 段`)]
       : [part(`いま ${k} 段`), part(`つぎの段まで あと ${left} こ`), onToday0, onWeek, onEnd, onPast, onAgain, onMost])));
     // the stairs said for a screen reader with the count as it shows, the kind pressed, the days on end and the ★ after the
     // newest (the user's calls: the ★ couldn't be reached but by a finger; the kind pressed wasn't said)
@@ -8074,7 +8241,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const [lo, hi] = tsumiDayRun(i), col = tsumiCol(i), top = i - (col * (col + 1)) / 2 === col;
     const newest = i === n - 1 ? "いちばん新しいブロック" : tsumiOnly && i === lastOfKind(tsumiOnly) ? `いちばん新しい${v.label}` : null;
     // its place among them all, or, with its kind pressed, among that kind's, as the count over the stairs is then
-    const nth = tsumiOnly === b.kind ? `${v.label}の ${tsumiShown.slice(0, i + 1).filter((x) => x.kind === b.kind).length.toLocaleString("ja-JP")} こ目` : `${(i + 1).toLocaleString("ja-JP")} こ目`;
+    const nth = tsumiOnly === b.kind ? `${v.label}の ${fmtN(tsumiShown.slice(0, i + 1).filter((x) => x.kind === b.kind).length)} こ目` : `${fmtN((i + 1))} こ目`;
     // its day's first block (of the kind pressed) a press away, when this isn't it (the user's call: 「きょう ＋N こ」 could be
     // pressed, this couldn't)
     let dayFirst = lo;
@@ -8091,7 +8258,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const [s0, mo] = tsumiMonths[m], cnt = tsumiShown.slice(s0, tsumiMonths[m + 1]?.[0] ?? n).filter((x) => !tsumiOnly || x.kind === tsumiOnly).length;
         // this month's said as so far, the year left to the date before it (the user's calls: this month's read as done; the
         // year came twice); none when the day holds all the month has (the user's call: 1 was said three times over)
-        if (tsumiOnly || cnt !== hi - lo + 1) monthWords = `${Number(mo.slice(5))}月${tsumiOnly ? `の${TSUMI_KINDS[tsumiOnly].label}` : ""}は${mo === todayKey.slice(0, 7) ? "ここまで" : ""} ${cnt.toLocaleString("ja-JP")} こ`;
+        if (tsumiOnly || cnt !== hi - lo + 1) monthWords = `${Number(mo.slice(5))}月${tsumiOnly ? `の${TSUMI_KINDS[tsumiOnly].label}` : ""}は${mo === todayKey.slice(0, 7) ? "ここまで" : ""} ${fmtN(cnt)} こ`;
       }
       break;
     }
@@ -8135,7 +8302,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         if (tsumiOnly) tsumiFollow(shownIndex()); // its newest comes into view
         renderTsumi(); showTsumiStairs();
       } }, el("span", { class: "sw", style: `background: var(${v.c})` }), el("span", {}, v.label),
-      today.get(key) ? el("span", { class: "row-today" }, `きょう ＋${today.get(key)}`) : null, el("span", { class: "row-count" }, `${counts.get(key).toLocaleString("ja-JP")} こ`))));
+      today.get(key) ? el("span", { class: "row-today" }, `きょう ＋${today.get(key)}`) : null, el("span", { class: "row-count" }, `${fmtN(counts.get(key))} こ`))));
     setChildren(list, ...(rows.length ? rows : [el("li", { class: "empty" }, "まだ記録がありません。")]));
     if (focused) list.querySelector(`button[data-kind="${focused}"]`)?.focus();
   }
@@ -8150,7 +8317,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const goal = (Math.floor(k / 5) + 1) * 5, need = (goal * (goal + 1)) / 2 - n;
     // with when it may come, at the pace the ★ says it with (the user's call: it said only how many)
     const when = paceWhen(need);
-    const rows = [el("li", {}, el("span", { class: "body" }, el("span", { class: "text" }, `つぎは ${goal} 段`), when ? el("span", { class: "sub" }, when) : null), el("span", { class: "num" }, `あと ${need.toLocaleString("ja-JP")} こ`))];
+    const rows = [el("li", {}, el("span", { class: "body" }, el("span", { class: "text" }, `つぎは ${goal} 段`), when ? el("span", { class: "sub" }, when) : null), el("span", { class: "num" }, `あと ${fmtN(need)} こ`))];
     const steps = [];
     for (let st = Math.floor(k / 5) * 5; st >= 5; st -= 5) steps.push(st);
     const shown = tsumiAllSteps ? steps : steps.slice(0, 12);
@@ -8496,11 +8663,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const today = mine.filter((b) => b.t >= Date.parse(todayKey + "T00:00:00")).length, days = new Set(mine.map((b) => b.day)), run = runOf(days);
     // under the count, as the page says them: today's and the last 7 days (the 7 days before on a line of their own when
     // they don't fit), then the days on end and the most (the user's call: its 7 days and days on end weren't there)
-    const said = tsumiSaid || { today, week: "", vs: "", run: run >= 2 ? `${run.toLocaleString("ja-JP")} 日つづけて` : "", most: "" };
+    const said = tsumiSaid || { today, week: "", vs: "", run: run >= 2 ? `${fmtN(run)} 日つづけて` : "", most: "" };
     const mw = document.createElement("canvas").getContext("2d"), roomW = 480, extras = [];
     mw.font = `600 15px ${font}`;
     const fitsW = (w) => mw.measureText(w).width <= roomW;
-    const first2 = [said.today ? `きょう ＋${said.today.toLocaleString("ja-JP")} こ` : "", said.week].filter(Boolean).join("・");
+    const first2 = [said.today ? `きょう ＋${fmtN(said.today)} こ` : "", said.week].filter(Boolean).join("・");
     if (first2 && said.vs && fitsW(first2 + said.vs)) extras.push(first2 + said.vs);
     else extras.push(...[first2, said.vs].filter(Boolean));
     const last2 = [said.run, said.most].filter(Boolean);
@@ -8517,7 +8684,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     let lx = 0, lines = 1;
     for (const [key, v] of Object.entries(TSUMI_KINDS)) {
       if (!counts.get(key)) continue;
-      const w = 18 + m.measureText(`${v.label} ${counts.get(key).toLocaleString("ja-JP")}`).width;
+      const w = 18 + m.measureText(`${v.label} ${fmtN(counts.get(key))}`).width;
       if (lx && lx + w > SIZE) { lx = 0; lines++; }
       keys.push({ key, v, x: lx, line: lines - 1 }); lx += w + 18;
     }
@@ -8541,13 +8708,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       cx = PAD + 26 + x.measureText(v.label).width + 12;
     }
     x.fillStyle = "#000000"; x.font = `700 44px ${round}`;
-    const count = mine.length.toLocaleString("ja-JP"), cw = x.measureText(count).width;
+    const count = fmtN(mine.length), cw = x.measureText(count).width;
     x.fillText(count, cx, PAD + 62);
     x.fillStyle = "#6c6c70"; x.font = `600 17px ${font}`;
     x.fillText("こ", cx + cw + 6, PAD + 62);
     x.font = `600 15px ${font}`;
     // the steps as the page says them, without since when (the user's call: that was taken out of the page, as of 記録)
-    x.fillText(v ? `全部で ${n.toLocaleString("ja-JP")} こ・いま ${k} 段` : `いま ${k} 段・つぎの段まで あと ${k + 1 - r} こ`, PAD, PAD + 90, SIZE);
+    x.fillText(v ? `全部で ${fmtN(n)} こ・いま ${k} 段` : `いま ${k} 段・つぎの段まで あと ${k + 1 - r} こ`, PAD, PAD + 90, SIZE);
     extras.forEach((w, j) => x.fillText(w, PAD, PAD + 114 + j * 24, SIZE));
     // the stairs, from the ground up, as on the screen: the step being built with its places to come and the yellow goal
     const ox = PAD + (SIZE - AX - cols * pitch) / 2, xOf = (c) => ox + c * pitch + gap / 2, yOf = (row) => ground - (row + 1) * pitch + gap / 2;
@@ -8597,7 +8764,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const ly = ground + 28 + it.line * 26 + 8;
       x.fillStyle = TSUMI_LIGHT[it.key]; sq(PAD + it.x, ly - 6, 12, 3); x.fill();
       x.fillStyle = "#000000"; x.fillText(it.v.label, PAD + it.x + 18, ly);
-      x.fillStyle = "#6c6c70"; x.fillText(counts.get(it.key).toLocaleString("ja-JP"), PAD + it.x + 18 + x.measureText(it.v.label + " ").width, ly);
+      x.fillStyle = "#6c6c70"; x.fillText(fmtN(counts.get(it.key)), PAD + it.x + 18 + x.measureText(it.v.label + " ").width, ly);
     }
     x.globalAlpha = 1;
     await savePicture(canvas, `tsumikasane-stairs-${only ? only + "-" : ""}${todayKey}.png`, v ? `つみかさね（${v.label}）` : "つみかさね");
@@ -8620,7 +8787,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     tsumiCounted = { n, k, best: rise ? k : was.best, top: hit ? round : was.top };
     if (!rise && !hit) return;
     setTimeout(() => {
-      const say = `つみかさねが ${[hit ? `${round.toLocaleString("ja-JP")} こ` : "", rise ? `${k} 段` : ""].filter(Boolean).join("・")}になりました`;
+      const say = `つみかさねが ${[hit ? `${fmtN(round)} こ` : "", rise ? `${k} 段` : ""].filter(Boolean).join("・")}になりました`;
       if (flashed && Date.now() < flashed.until && typeof flashed.msg === "string") flash(`${flashed.msg.replace(/。$/, "")}。${say}`, flashed.undo); else flash(say);
     }, 150);
   }
@@ -8673,8 +8840,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren($("sumCards"),
       sumCard("var(--accent)", "records", "続けた日", String(rec.length), "日 記録した日", `いまの連続 ${streak} 日・いちばん長い連続 ${longest} 日`, "wide"),
       sumCard("var(--c-journal)", "journal", "日記", String(js.length), "日 書いた日", js.length ? null : "まだ書いていません", null, null, "journal"),
-      sumCard("var(--c-meal)", "meal", "食事", ms.length.toLocaleString("ja-JP"), "回",
-        `${new Set(ms.map((m) => m.date)).size} 日記録` + (kcalDays.size ? `・1日平均 ${Math.round(avgKcal).toLocaleString("ja-JP")} kcal` : ""), null, null, "meal"),
+      sumCard("var(--c-meal)", "meal", "食事", fmtN(ms.length), "回",
+        `${new Set(ms.map((m) => m.date)).size} 日記録` + (kcalDays.size ? `・1日平均 ${fmtN(Math.round(avgKcal))} kcal` : ""), null, null, "meal"),
       sumCard("var(--c-workout)", "workout", "運動", ...durBig(wMin),
         `${ws.length} 回・${new Set(ws.map((w) => w.date)).size} 日` + (wKm > 0 ? `・${Math.round(wKm * 10) / 10} km` : ""), null, null, "workout"),
       // 体重 beside 運動, so on a phone the four short cards make two rows
@@ -8684,9 +8851,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           : `${fmtMD(wLast.id)}の記録`, null, null, "weight"),
       sumCard("var(--c-study)", "study", "勉強", ...durBig(stMin), `${sts.length} 回・${new Set(sts.map((x) => x.date)).size} 日`, "list",
         topList(bySub, subColor, durText), "study"),
-      sumCard("var(--c-routine)", "routine", "ルーティーン", sum(rtDays, (x) => x.done.length).toLocaleString("ja-JP"), "回 できた",
+      sumCard("var(--c-routine)", "routine", "ルーティーン", fmtN(sum(rtDays, (x) => x.done.length)), "回 できた",
         rtDays.length ? `${rtDays.length} 日チェック` : "まだチェックしていません", "list", topList(byRoutine, () => "var(--c-routine)", (n) => `${n} 回`), "routine"),
-      sumCard("var(--c-money)", "money", "家計簿", Math.round(out).toLocaleString("ja-JP"), "円 支出", `収入 ${fmtYen(inn)}・収支 ${net > 0 ? "+" : ""}${fmtYen(net)}`, "list",
+      sumCard("var(--c-money)", "money", "家計簿", fmtN(Math.round(out)), "円 支出", `収入 ${fmtYen(inn)}・収支 ${net > 0 ? "+" : ""}${fmtYen(net)}`, "list",
         topList(byCat, () => "var(--c-money)", fmtYen), "money"));
   }
 
@@ -8708,9 +8875,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       rows: (xs) => xs.map((j) => recEntry("journal", j.id, `「${j.text.trim()}」を編集`, { words: j.text.trim(), text: true })) },
     // the day's total beside its date (the user's call): 食事's kcal, 運動's and 勉強's time, 家計簿's money out and in
     meal: { label: "食事", items: () => meals.items, find: "食べたものや区分で探す", text: (m) => [m.text, m.slot].join(" "),
-      total: (xs) => { const ks = xs.filter((m) => typeof m.kcal === "number"); return ks.length ? `合計 ${sum(ks, (m) => m.kcal).toLocaleString("ja-JP")} kcal` : null; },
+      total: (xs) => { const ks = xs.filter((m) => typeof m.kcal === "number"); return ks.length ? `合計 ${fmtN(sum(ks, (m) => m.kcal))} kcal` : null; },
       rows: (xs) => [...xs].sort((a, b) => SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot) || num(a.createdAt) - num(b.createdAt))
-        .map((m) => recEntry("meal", m.id, `「${m.text}」を編集`, { tag: m.slot || "食事", words: m.text, n: typeof m.kcal === "number" ? `${m.kcal} kcal` : null })) },
+        .map((m) => recEntry("meal", m.id, `「${m.text}」を編集`, { tag: m.slot || "食事", words: m.text, n: typeof m.kcal === "number" ? `${fmtN(m.kcal)} kcal` : null })) },
     workout: { label: "運動", items: () => workouts.items, find: "種目やメモで探す", text: (w) => [w.type, w.exercise, w.note].join(" "),
       total: (xs) => { const min = sum(xs, (w) => w.minutes); return min > 0 ? `合計 ${durText(min)}` : null; }, // 筋トレ has no time
       rows: (xs) => byCreated(xs).map((w) => recEntry("workout", w.id, `「${w.type} ${workoutDetail(w)}」を編集`, { tag: w.type, words: [workoutDetail(w), w.note].filter(Boolean).join("・") })) },
@@ -8731,7 +8898,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // each with its change from the one before (the user's call), as the 体重 page has it; the first has none
     weight: { label: "からだ", oneLine: true, items: () => sortedWeights().map((w, i, all) => ({ ...w, date: w.id, prev: all[i - 1] })),
       rows: (xs, day) => xs.map((w) => el("li", { class: "one" }, el("span", { class: "rec-date" }, day), el("span", { class: "rec-kg" },
-        recOpen("weight", w.id, `「${fmtKg(w.kg)} kg${num(w.fat) > 0 ? `・体脂肪率 ${fmtFat(w.fat)}%` : ""}」を編集`, `${fmtKg(w.kg)} kg` + (num(w.fat) > 0 ? `・${fmtFat(w.fat)}%` : "")),
+        recOpen("weight", w.id, `「${fmtKg(w.kg)} kg${num(w.fat) > 0 ? `・体脂肪率 ${fmtFat(w.fat)}%` : ""}${typeof w.intake === "number" ? `・摂取 ${fmtN(w.intake)} kcal` : ""}」を編集`,
+          keepUnits(`${fmtKg(w.kg)} kg` + (num(w.fat) > 0 ? `・${fmtFat(w.fat)}%` : "") + (typeof w.intake === "number" ? `・摂取 ${fmtN(w.intake)} kcal` : ""))),
         el("span", { class: "rec-num" }, w.prev ? `${signed(num(w.kg) - num(w.prev.kg))} kg` : "")))) },
     money: { label: "家計簿", items: () => expenses.items, find: "費目やメモで探す", text: (e) => [expenseCat(e) || (e.kind === "in" ? "収入" : "支出"), e.memo].join(" "),
       total: (xs) => {
@@ -8760,6 +8928,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const found = words.length ? all.filter((x) => { const t = foldText(spec.text(x)); return words.every((w) => t.includes(w)); }) : all;
     const byDay = groupBy(found, (x) => x.date), days = [...byDay.keys()].sort().reverse(), q = recQuery.trim();
     $("recListTitle").textContent = spec.label;
+    $("recListPage").textContent = isDietPart(recListKind) ? `ダイエットの${spec.label}を開く` : `${spec.label}のページを開く`;
     $("recListNote").textContent = !days.length ? "" : words.length ? `「${q}」の記録 ${found.length} 件・${days.length} 日分` : `${days.length} 日分・新しい順`;
     $("recSearchBox").hidden = !spec.text;
     $("recSearch").placeholder = spec.find || "";
@@ -8778,6 +8947,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     setChildren($("recList"), parts.length ? parts : el("div", { class: "card empty" }, words.length ? `「${q}」に合う記録はありません。` : "まだ記録がありません。「きょう」から記録すると、ここに並びます。"));
   }
+  $("recListPage").addEventListener("click", () => openFromHome(pageOf(recListKind), isDietPart(recListKind) ? recListKind : null));
   $("recSearch").addEventListener("input", (ev) => { recQuery = ev.target.value; renderRecList(); });
   // 検索 on the keyboard puts it away, the entries found staying
   $("recSearch").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing) ev.target.blur(); });
@@ -8887,17 +9057,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const at = new Date(payload.exportedAt);
     const when = isNaN(at) ? "" : (at.getFullYear() !== new Date().getFullYear() ? `${at.getFullYear()}年` : "") + fmtMDW(ymd(at)) + "に書き出した";
     importPending = payload.data;
-    $("importAskText").textContent = `${when}「${file.name}」から、` + (add ? `この端末にない記録を ${add.toLocaleString("ja-JP")} 件（${adds.map(([st, n]) => `${STORE_NAMES[st.name]} ${n.toLocaleString("ja-JP")}`).join("・")}）足します。` : "足す記録はありません。")
-      + (differ ? `この端末にもあって内容のちがう ${differ.toLocaleString("ja-JP")} 件は、下で選ばないかぎりこの端末のほうを残します。` : "いまある記録は変わりません。") + (odd ? `中身が読み取れない ${odd} 件は読み込みません。` : "");
+    $("importAskText").textContent = `${when}「${file.name}」から、` + (add ? `この端末にない記録を ${fmtN(add)} 件（${adds.map(([st, n]) => `${STORE_NAMES[st.name]} ${fmtN(n)}`).join("・")}）足します。` : "足す記録はありません。")
+      + (differ ? `この端末にもあって内容のちがう ${fmtN(differ)} 件は、下で選ばないかぎりこの端末のほうを残します。` : "いまある記録は変わりません。") + (odd ? `中身が読み取れない ${odd} 件は読み込みません。` : "");
     // the ones deleted can come back too, by choice, as from a copy (the user's call: a file couldn't bring them back)
     $("importAskDeadRow").hidden = !gone;
     $("importAskDead").checked = !add;
-    $("importAskDeadText").textContent = `消した ${gone.toLocaleString("ja-JP")} 件も戻す`;
+    $("importAskDeadText").textContent = `消した ${fmtN(gone)} 件も戻す`;
     // records changed here since: the file's own version, by choice, as from a copy (the user's call: a file could only
     // add what was missing)
     $("importAskDiffRow").hidden = !differ;
     $("importAskDiff").checked = false;
-    $("importAskDiffText").textContent = `内容のちがう ${differ.toLocaleString("ja-JP")} 件を、ファイルのときの内容にする（いまの内容は「最近削除した項目」に移します）`;
+    $("importAskDiffText").textContent = `内容のちがう ${fmtN(differ)} 件を、ファイルのときの内容にする（いまの内容は「最近削除した項目」に移します）`;
     $("importAsk").hidden = false;
     $("importGo").focus();
   }
@@ -8913,7 +9083,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const count = addedCount(added) + swapped.reduce((n, [, was]) => n + was.length, 0);
     hideImportAsk();
     saveCopy();
-    flash(count ? `${count.toLocaleString("ja-JP")} 件の記録を${swapped.length ? "読み込み" : "足し"}ました。` : "足す記録はありませんでした。",
+    flash(count ? `${fmtN(count)} 件の記録を${swapped.length ? "読み込み" : "足し"}ました。` : "足す記録はありませんでした。",
       count ? () => { unmerge(added); dropFromCopy(added); undoReplace(swapped); if (revived.length) deleted.putBack(revived); flash("読み込みを取り消しました。"); } : null, 10000);
     $("importBtn").focus();
   });
@@ -9220,7 +9390,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       $("restoreText").textContent = (now === 0
         ? `この端末の中に、${when} 時点の記録のコピー（${pick.count} 件）が残っています。`
         : lost
-          ? `${when} 時点のコピーにある${lost.map(([st, xs]) => `${STORE_NAMES[st.name]} ${xs.length.toLocaleString("ja-JP")} 件`).join("・")}が、いまは見当たりません。`
+          ? `${when} 時点のコピーにある${lost.map(([st, xs]) => `${STORE_NAMES[st.name]} ${fmtN(xs.length)} 件`).join("・")}が、いまは見当たりません。`
           : `${when} 時点のコピーには ${pick.count} 件ありますが、いまは ${now} 件です。`)
         + "戻すと、いまある記録はそのままで、コピーにある記録が足されます。";
     } catch {}
@@ -9232,7 +9402,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     restoreCandidate = null;
     $("restoreNote").hidden = true;
     saveCopy();
-    flash(`${count.toLocaleString("ja-JP")} 件の記録を戻しました。`, () => { unmerge(added); flash("取り消しました。"); checkRestore(); }, 10000);
+    flash(`${fmtN(count)} 件の記録を戻しました。`, () => { unmerge(added); flash("取り消しました。"); checkRestore(); }, 10000);
   });
   // このままでいい: the records gone from here go to 最近削除した項目 (from there they can still come back for 30 days), so no
   // copy brings the notice back for them; a copy from before deletions were remembered is set aside by its time instead
@@ -9273,11 +9443,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const b = settings.get("backup") || {};
     const last = num(b.lastExport);
     const days = last ? daysBetween(ymd(new Date(last)), todayKey) : null, added = last ? sinceExport(last) : 0;
-    const due = !last || days >= 7 || added >= BACKUP_AFTER, enough = recordCount(allData()) >= 10;
+    // while 同期 works (signed in, no trouble, gone through in the last 3 days), a month from the last file or from when it
+    // began here (the user's call: every week on each device, the records being in Firebase too)
+    const synced = syncReady() && !!syncUser && !!syncState.uid && !syncState.error && Date.now() - num(syncState.at) < 3 * 864e5;
+    const from = Math.max(last, num(syncState.since)), fromDays = from ? daysBetween(ymd(new Date(from)), todayKey) : null;
+    const due = synced ? fromDays === null || fromDays >= 30 : !last || days >= 7 || added >= BACKUP_AFTER, enough = recordCount(allData()) >= 10;
     // its words kept whole (keep-all), so it breaks neither as 10／月17日 nor as （12 日／前）
     $("backupLast").hidden = !canStoreLocal;
     $("backupLast").textContent = keepUnits(last
-      ? `最後に書き出した日：${fmtMDW(ymd(new Date(last)))}` + (days ? `（${days} 日前）` : "（きょう）") + (added ? `。そのあと記録が ${added.toLocaleString("ja-JP")} 件ふえています` : "")
+      ? `最後に書き出した日：${fmtMDW(ymd(new Date(last)))}` + (days ? `（${days} 日前）` : "（きょう）") + (added ? `。そのあと記録が ${fmtN(added)} 件ふえています` : "")
       : "まだ一度も書き出していません");
     $("backupLast").classList.toggle("due", due && enough);
     // short (the user's call): where the records are, that they can go, and what a written-out file is for
@@ -9291,7 +9465,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const snoozed = b.snoozeUntil && b.snoozeUntil > todayKey;
     $("backupNudge").hidden = !(canStoreLocal && due && !snoozed && enough);
     $("backupNudgeText").textContent = (!last ? "まだ一度も記録を書き出していません。"
-      : added ? `最後に書き出してから${days ? ` ${days} 日で、` : "、"}記録が ${added.toLocaleString("ja-JP")} 件ふえました。`
+      : added ? `最後に書き出してから${days ? ` ${days} 日で、` : "、"}記録が ${fmtN(added)} 件ふえました。`
       : `最後に書き出してから ${days} 日たちました。`)
       + "端末の空き容量が少ないときなどに記録が消えることがあるので、ときどき書き出しておくと安心です。";
   }
@@ -9301,6 +9475,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderEmptyHint() {
     const none = canStoreLocal && ALL_STORES.every((st) => !remembers(st) || !st.items.length);
     $("emptyHint").hidden = !(none && $("restoreNote").hidden);
+    $("emptySync").hidden = $("emptySyncText").hidden = !(syncReady() && !(syncUser && syncState.uid));
   }
   $("emptyImport").addEventListener("click", () => { showTab("records"); $("importFile").click(); });
   $("fullExport").addEventListener("click", () => exportRecords());
@@ -9321,7 +9496,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!canStoreLocal || !window.indexedDB) return;
     let days = [], firsts = new Set();
     try { const keys = await copyKeys(); days = keys.filter((k) => !isFirst(k)).sort().reverse(); firsts = new Set(keys.filter(isFirst).map((k) => k.slice(FIRST.length))); } catch {}
-    $("copiesNote").textContent = days.length ? `${(days.length + firsts.size).toLocaleString("ja-JP")} 個・新しい順` : "";
+    $("copiesNote").textContent = days.length ? `${fmtN((days.length + firsts.size))} 個・新しい順` : "";
     // a day with its first copy kept too shows both, its last first
     const row = (key, d, sub) => el("li", { class: "btn-row" }, el("button", { type: "button", class: "row-btn nav", "aria-label": `${fmtMDW(d)}（${sub}）のコピーを見る`, onclick: () => openCopy(key) },
       el("span", { class: "body" }, el("span", { class: "text" }, fmtMDW(d)), el("span", { class: "sub" }, sub)),
@@ -9339,17 +9514,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const plan = mergePlan(c.data), at = new Date(c.savedAt), when = `${fmtMDW(day)} ${at.getHours()}:${pad(at.getMinutes())}`;
     if (!plan.add && !plan.gone && !plan.differ) { flash("このコピーの記録は、すべてこの端末にあります。"); return; }
     copyPending = c;
-    $("copyAskText").textContent = `${when} 時点のコピー（${c.count.toLocaleString("ja-JP")} 件）から、`
-      + (plan.add ? `この端末にない記録を ${plan.add.toLocaleString("ja-JP")} 件（${plan.adds.map(([st, n]) => `${STORE_NAMES[st.name]} ${n.toLocaleString("ja-JP")}`).join("・")}）戻します。` : "この端末にない記録はありません。")
+    $("copyAskText").textContent = `${when} 時点のコピー（${fmtN(c.count)} 件）から、`
+      + (plan.add ? `この端末にない記録を ${fmtN(plan.add)} 件（${plan.adds.map(([st, n]) => `${STORE_NAMES[st.name]} ${fmtN(n)}`).join("・")}）戻します。` : "この端末にない記録はありません。")
       + (plan.differ ? "下で選ばないかぎり、いまある記録は変わりません。" : "いまある記録は変わりません。");
     $("copyAskDeadRow").hidden = !plan.gone;
     $("copyAskDead").checked = !plan.add;
-    $("copyAskDeadText").textContent = `この端末で消した ${plan.gone.toLocaleString("ja-JP")} 件も戻す`;
+    $("copyAskDeadText").textContent = `この端末で消した ${fmtN(plan.gone)} 件も戻す`;
     // records changed here since (a 日記 written over by mistake): the copy's own version, by choice (the user's call: a
     // copy could only add what was missing)
     $("copyAskDiffRow").hidden = !plan.differ;
     $("copyAskDiff").checked = false;
-    $("copyAskDiffText").textContent = `内容が変わった ${plan.differ.toLocaleString("ja-JP")} 件を、このコピーのときの内容に戻す（いまの内容は「最近削除した項目」に移します）`;
+    $("copyAskDiffText").textContent = `内容が変わった ${fmtN(plan.differ)} 件を、このコピーのときの内容に戻す（いまの内容は「最近削除した項目」に移します）`;
     $("copyAsk").hidden = false;
     $("copyAsk").scrollIntoView({ block: "nearest" });
     $("copyGo").focus();
@@ -9366,12 +9541,22 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     saveCopy();
     // taken back: what it added goes, what it changed is as it was, and the deleted ones it brought back are deleted
     // again, with no other deletion of those seconds touched
-    flash(count ? `${count.toLocaleString("ja-JP")} 件の記録を戻しました。` : "戻す記録はありませんでした。",
+    flash(count ? `${fmtN(count)} 件の記録を戻しました。` : "戻す記録はありませんでした。",
       count ? () => { unmerge(added); undoReplace(swapped); if (revived.length) deleted.putBack(revived); flash("取り消しました。"); checkRestore(); } : null, 10000);
   });
   $("copyCancel").addEventListener("click", () => { copyPending = null; $("copyAsk").hidden = true; });
   // drawn before the page slides in, so it arrives with its days
   $("copiesBtn").addEventListener("click", async () => { copyPending = null; $("copyAsk").hidden = true; await renderCopies(); showTab("copies"); });
+
+  // ---------- この画面の版 ----------
+  // (without the header, lastModified is the moment the page loaded)
+  (() => {
+    const t = Date.parse(document.lastModified);
+    if (!Number.isFinite(t) || Math.abs(Date.now() - t) < 5000) return;
+    const d = new Date(t);
+    $("appVersion").textContent = `アプリの版：${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${d.getHours()}:${pad(d.getMinutes())} 公開`;
+    $("appVersion").hidden = false;
+  })();
 
   // ---------- 保存できる量 ----------
   // how much the records take in the browser's storage, against the most a site may keep there (about 5 MB on an iPhone;
@@ -9457,7 +9642,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderTrash() {
     const items = trashShown(), what = trashOf === "todos" ? "最近削除したToDo" : "最近削除した項目";
     $("sec-trash").querySelector("h2").textContent = what;
-    $("trashNote").textContent = items.length ? `${items.length.toLocaleString("ja-JP")} 件・新しい順` : "";
+    $("trashNote").textContent = items.length ? `${fmtN(items.length)} 件・新しい順` : "";
     const whenOf = (t) => { const ago = daysBetween(ymd(new Date(t.at)), todayKey); return [ago <= 0 ? "きょう" : ago === 1 ? "きのう" : `${ago} 日前に`, Math.max(1, TRASH_DAYS - ago)]; };
     // the one opened from つみかさね's block: its group unfolded, its row lit and brought into sight (the user's call: which
     // one it was didn't show, and one deleted with others could be folded away)
@@ -9480,12 +9665,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (ts.length > 1) {
         const [when] = whenOf(ts[0]), kinds = [...new Set(ts.map((t) => STORE_NAMES[t.store] || ""))].join("・");
         rows.push(el("li", { class: "trash-group" },
-          el("span", { class: "body" }, el("span", { class: "text" }, `${kinds} ${ts.length.toLocaleString("ja-JP")} 件`), el("span", { class: "sub" }, `${when}まとめて削除`)),
+          el("span", { class: "body" }, el("span", { class: "text" }, `${kinds} ${fmtN(ts.length)} 件`), el("span", { class: "sub" }, `${when}まとめて削除`)),
           el("button", { type: "button", class: "link-btn", "aria-label": `${when}まとめて削除した ${ts.length} 件をまとめて戻す`, onclick: () => restoreManyFromTrash(ts.map((t) => t.id)) }, "まとめて戻す")));
       }
       const folded = ts.length > 3 && !trashOpen.has(at);
       for (const t of folded ? ts.slice(0, 2) : ts) rows.push(itemRow(t));
-      if (folded) rows.push(el("li", { class: "more-done" }, el("button", { type: "button", class: "link-btn", onclick: () => { trashOpen.add(at); renderTrash(); } }, `ほか ${(ts.length - 2).toLocaleString("ja-JP")} 件を見る`)));
+      if (folded) rows.push(el("li", { class: "more-done" }, el("button", { type: "button", class: "link-btn", onclick: () => { trashOpen.add(at); renderTrash(); } }, `ほか ${fmtN((ts.length - 2))} 件を見る`)));
     }
     setChildren($("trashList"), rows.length ? rows : el("li", { class: "empty" }, `${what}はありません。`));
     $("trashFoot").hidden = !items.length;
@@ -9493,7 +9678,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function renderTrashRow() {
     const n = trashItems().length;
-    $("trashCount").textContent = n ? n.toLocaleString("ja-JP") : "";
+    $("trashCount").textContent = n ? fmtN(n) : "";
     $("trashBtn").setAttribute("aria-label", n ? `最近削除した項目、${n} 件` : "最近削除した項目");
   }
   function restoreFromTrash(key) { restoreManyFromTrash([key]); }
@@ -9516,7 +9701,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!n) { flash(keys.length > 1 ? "戻せる記録はありませんでした。" : "この記録は戻せませんでした。"); return; }
     deleted.saveLocal();
     act(() => { for (const st of touched) st.saveLocal(); renderAll(); });
-    flash((n > 1 ? `${n.toLocaleString("ja-JP")} 件を戻しました` : `${kind}を戻しました`) + (swapped ? "。いまあったほうは「最近削除した項目」に移しました" : ""));
+    flash((n > 1 ? `${fmtN(n)} 件を戻しました` : `${kind}を戻しました`) + (swapped ? "。いまあったほうは「最近削除した項目」に移しました" : ""));
   }
   // 完全に削除: what deleted records held goes from 最近削除した項目 and from the copies kept on this device too (a file
   // written out before still has it); their ids stay remembered, so nothing older brings them back
@@ -9533,7 +9718,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     deleted.saveLocal();
     renderAll();
     scrubCopies(ts.map((t) => t.id), exact, forget);
-    flash(ts.length > 1 ? `${ts.length.toLocaleString("ja-JP")} 件を完全に削除しました` : "完全に削除しました");
+    flash(ts.length > 1 ? `${fmtN(ts.length)} 件を完全に削除しました` : "完全に削除しました");
   }
   // a step that can't be taken back, asked first in an action sheet that says what it does (the user's call: two presses
   // of すべて完全に削除 lost all of it for good, from the copies too)
@@ -9549,7 +9734,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("trashPurgeAll").addEventListener("click", () => {
     const ts = trashShown();
     if (!ts.length) return;
-    const n = ts.length.toLocaleString("ja-JP");
+    const n = fmtN(ts.length);
     askFirst(`${trashOf === "todos" ? "最近削除したToDo" : "最近削除した項目"}の ${n} 件を${ts.length > 1 ? "、すべて" : ""}完全に削除しますか？端末の中のコピーからも消えるので、もう戻せません。`, `${n} 件を完全に削除`, () => purgeTrash(ts.map((t) => t.id)));
   });
   // those records out of every copy, as records and as what deleted ones held (in turn after a copy being made)
@@ -9710,6 +9895,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       } finally {
         syncBusy = null;
         draw(renderSyncRow);
+        draw(renderBackup); // how often the reminder comes depends on it
         if (tab === "sync") draw(renderSync);
       }
     })();
@@ -9748,7 +9934,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       },
     };
   }
-  let syncStarting = false, syncBooted = false;
+  let syncStarting = false, syncBooted = false, syncAuthKnown = false;
   async function startSync() {
     if (!syncReady() || !canStoreLocal || remote || syncStarting || !syncBooted) return;
     syncStarting = true;
@@ -9758,6 +9944,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     remote.onAuth((u) => {
       syncUser = u;
       syncFresh();
+      // who was signed in here, kept till ログアウト (a sign-out from elsewhere is said on きょう), and since when
+      syncAuthKnown = true;
+      if (u) { syncState.email = u.email || syncState.email || "このアカウント"; if (!syncState.since || syncState.uid !== u.uid) syncState.since = Date.now(); saveSyncState(); }
       if (u && syncState.uid !== u.uid) {
         // signed in here for the first time: everything here goes up (changed when it says it was), and all of it comes down.
         // So does what was deleted here (when), so another device's copy of it goes too, unless changed there since; but not
@@ -9781,6 +9970,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("syncState").textContent = !remote && syncReady() && syncState.error === "offline" ? "オフライン" : !on ? "オフ" : syncState.error === "offline" ? "オフライン" : bad ? "うまくいっていません" : "オン";
     $("syncState").classList.toggle("warn", bad);
     $("syncBtn").setAttribute("aria-label", `同期、${$("syncState").textContent}`);
+    renderSyncNudge();
+  }
+  function renderSyncNudge() {
+    const on = !!(syncUser && syncState.uid), out = !!remote && syncAuthKnown && !on && !!syncState.email;
+    const failing = on && (syncState.error === "failed" || syncState.error === "denied") && Date.now() - num(syncState.at || syncState.since) > 864e5;
+    $("syncNudge").hidden = !(canStoreLocal && syncReady() && (out || failing));
+    if ($("syncNudge").hidden) return;
+    $("syncNudgeText").textContent = out
+      ? `${syncState.email} のログインが切れたので、この端末の記録はほかの端末とそろっていません。もう一度ログインしてください。`
+      : (syncState.at ? `最後にそろったのは ${fmtMDW(ymd(new Date(syncState.at)))}です。` : "")
+        + (syncState.error === "denied" ? "Firebase のルールで止められています。" : "インターネットにつながっているか確かめて、「いま同期する」を押してください。");
   }
   function renderSync() {
     const on = !!(syncUser && syncState.uid);
@@ -9791,7 +9991,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("syncWho").textContent = `${syncUser.email || ""} でログインしています。同じアカウントでログインしたほかの端末と、記録が自動でそろいます。`;
     const at = syncState.at ? new Date(syncState.at) : null, waiting = Object.keys(syncState.pending).length;
     $("syncLast").textContent = (at ? `最後に同期：${fmtMDW(ymd(at))} ${at.getHours()}:${pad(at.getMinutes())}` : "まだ同期していません")
-      + (waiting ? `・送るのを待っている記録 ${waiting.toLocaleString("ja-JP")} 件` : "")
+      + (waiting ? `・送るのを待っている記録 ${fmtN(waiting)} 件` : "")
       + (syncState.error === "denied" ? "・Firebase のルールで止められています" : "");
   }
   const SYNC_ERRORS = {
@@ -9835,11 +10035,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("syncForm").addEventListener("submit", (ev) => { ev.preventDefault(); syncAuth("in"); });
   $("syncNow").addEventListener("click", () => syncNow(true));
   armLink($("syncSignOut"), "ログアウト", "もう一度押すとログアウトします", async () => {
+    syncFresh(); syncState.email = ""; saveSyncState(); // signed out on purpose: nothing to say on きょう
     try { await remote?.signOut(); } catch {}
     flash("ログアウトしました。この端末の記録はそのままです。");
   });
   // drawn before the page slides in, so it arrives whole
-  $("syncBtn").addEventListener("click", () => { showSyncError(""); renderSync(); showTab("sync"); });
+  function openSync() { showSyncError(""); renderSync(); showTab("sync"); }
+  $("syncBtn").addEventListener("click", openSync);
+  $("syncNudgeOpen").addEventListener("click", openSync);
+  $("emptySync").addEventListener("click", openSync);
 
   // ---------- 書きかけ ----------
   // what was being typed into an add form and not yet added is kept as the app goes away, and put back when it opens
