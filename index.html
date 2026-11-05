@@ -1130,7 +1130,7 @@ ul.list > li.btn-row { padding: 0; }
 .tsumi-tip.none { min-height: 0; } /* no records yet: the way to record, not three empty lines */
 /* the block's record opened; on a wide page right under the words it opens (the user's call: on a PC it was at the card's
    far end) */
-.tsumi-acts { display: flex; justify-content: flex-end; }
+.tsumi-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; column-gap: var(--space-3); }
 @media (min-width: 768px) { .tsumi-acts { justify-content: flex-start; } }
 /* the words and the link as one: on a wide page the room for three lines is kept round both, so the link comes right under
    the words (the user's call: it floated a blank line under two) and nothing under them moves */
@@ -1834,7 +1834,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
                  lines kept round both, so nothing under them moves from block to block -->
             <div class="tsumi-said">
               <div class="tsumi-tip" id="tsumiTip" aria-live="polite"></div>
-              <div class="tsumi-acts"><button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button></div>
+              <div class="tsumi-acts"><button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button><button type="button" class="link-btn danger tsumi-open" id="tsumiDrop" hidden>このブロックを削除</button></div>
             </div>
           </div>
         </div>
@@ -7180,6 +7180,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // 200 (the user's call: the list only grew), so none moves
   const tsumiSet = () => settings.get("tsumi") || {};
   const tsumiKept = () => tsumiSet().kept || [];
+  // a block of a deleted record taken off the stairs by hand (tsumiDrop) is noted in dropped, its key with when, so a
+  // keeping from another device or a file read in doesn't bring it back (joinTsumi); a record deleted again after that is
+  // kept again, being kept later than it was dropped
+  const tsumiDropped = (set = tsumiSet()) => (set.dropped && typeof set.dropped === "object" ? set.dropped : {});
+  const keptKey = (x) => x.key || "todo:" + x.id;
+  const isDropped = (dropped, x) => keptKey(x) in dropped && num(dropped[keptKey(x)]) >= num(x.at);
   function tsumiKeep(store, ids) {
     const kind = store === "goals" ? "goal" : "todo", now = Date.now(), was = tsumiKept();
     const blocks = tsumiBlocks().filter((b) => b.kind === kind && !b.gone && ids.has(b.rid));
@@ -7220,19 +7226,57 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // phone had kept, when this one had kept some too): each block kept there and not here (by its key), the times folded
   // there and not here, and the names; this device's own where both have one. null when it adds nothing
   function joinTsumi(mine, theirs) {
-    const keyOf = (x) => x.key || "todo:" + x.id, have = new Set((mine.kept || []).map(keyOf));
+    const keyOf = keptKey, have = new Set((mine.kept || []).map(keyOf));
+    // the blocks taken off on either (the later time where both have one), and none of them kept from either
+    const dropped = { ...tsumiDropped(mine) };
+    let changed = false;
+    for (const [key, at] of Object.entries(tsumiDropped(theirs))) if (Number.isFinite(at) && !(num(dropped[key]) >= at)) { dropped[key] = at; changed = true; }
     const more = (Array.isArray(theirs.kept) ? theirs.kept : []).filter((x) => x && typeof x.id === "string" && isDay(x.day) && Number.isFinite(x.t)
-      && (x.kind === undefined || (x.kind === "goal" && typeof x.key === "string")) && !have.has(keyOf(x)) && have.add(keyOf(x)));
+      && (x.kind === undefined || (x.kind === "goal" && typeof x.key === "string")) && !have.has(keyOf(x)) && !isDropped(dropped, x) && have.add(keyOf(x)));
+    if (more.length) changed = true;
+    const kept = [...(mine.kept || []), ...more].filter((x) => !isDropped(dropped, x));
+    if (kept.length !== (mine.kept || []).length + more.length) changed = true;
     const folded = { ...(mine.folded || {}) };
-    let changed = more.length > 0;
     for (const [key, secs] of Object.entries(theirs.folded && typeof theirs.folded === "object" ? theirs.folded : {})) {
       if (!/^(todo|goal)\|\d{4}-\d{2}-\d{2}$/.test(key) || !Array.isArray(secs)) continue;
-      const had = new Set(folded[key] || []), add = secs.filter((v) => Number.isFinite(v) && !had.has(v) && had.add(v));
+      const had = new Set(folded[key] || []), add = secs.filter((v) => Number.isFinite(v) && !had.has(v) && !(`${key}|${v}` in dropped) && had.add(v));
       if (add.length) { folded[key] = [...(folded[key] || []), ...add]; changed = true; }
+    }
+    for (const [key, secs] of Object.entries(folded)) {
+      const left = secs.filter((v) => !(`${key}|${v}` in dropped));
+      if (left.length !== secs.length) { changed = true; if (left.length) folded[key] = left; else delete folded[key]; }
     }
     const names = { ...(theirs.names && typeof theirs.names === "object" ? theirs.names : {}), ...(mine.names || {}) };
     if (Object.keys(names).length !== Object.keys(mine.names || {}).length) changed = true;
-    return changed ? { ...mine, kept: [...(mine.kept || []), ...more], folded, names, updatedAt: Date.now() } : null;
+    return changed ? { ...mine, kept, folded, names, dropped, updatedAt: Date.now() } : null;
+  }
+  // a block of a deleted record (a ToDo done, a goal's check) taken off the stairs (the user's call: one deleted for good
+  // stayed, with no way to take it off): its keeping goes, and dropped notes it. Gives back what puts it back (元に戻す)
+  function tsumiDrop(b) {
+    const set = tsumiSet(), now = Date.now(), dropped = { ...tsumiDropped(set) }, folded = { ...(set.folded || {}) };
+    const m = /^(todo|goal):folded:(\d{4}-\d{2}-\d{2}):\d+$/.exec(b.key);
+    let kept = set.kept || [], gone = [], dkey, sec = null, fk = null;
+    if (m) {
+      fk = `${m[1]}|${m[2]}`; sec = Math.round((b.t - Date.parse(m[2] + "T00:00:00")) / 1000);
+      const secs = [...(folded[fk] || [])], i = secs.indexOf(sec);
+      if (i < 0) return null;
+      secs.splice(i, 1);
+      if (secs.length) folded[fk] = secs; else delete folded[fk];
+      dkey = `${fk}|${sec}`;
+    } else {
+      gone = kept.filter((x) => keptKey(x) === b.key);
+      if (!gone.length) return null;
+      kept = kept.filter((x) => keptKey(x) !== b.key);
+      dkey = b.key;
+    }
+    dropped[dkey] = now;
+    settings.set("tsumi", { ...set, kept, folded, dropped, updatedAt: now });
+    return () => {
+      const s2 = tsumiSet(), d2 = { ...tsumiDropped(s2) }, f2 = { ...(s2.folded || {}) };
+      delete d2[dkey];
+      if (fk) f2[fk] = [...(f2[fk] || []), sec];
+      settings.set("tsumi", { ...s2, kept: [...(s2.kept || []).filter((x) => keptKey(x) !== b.key), ...gone], folded: f2, dropped: d2, updatedAt: Date.now() });
+    };
   }
   // every record so far as a block, oldest first: a ToDo done, a day's 日記, a meal, a workout, a study, an item of a day's
   // ルーティーン, a day's からだ, a 家計簿 entry, an action checked in a goal's chart and a goal reached. Each holds what it
@@ -7253,11 +7297,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     };
     const names = tsumiNames();
     // the blocks kept of a kind's records deleted, while no record of their id is here, and the ones folded
+    const dropped = tsumiDropped();
     const keptOf = (kind, here) => {
-      for (const x of tsumiKept()) if ((x.kind || "todo") === kind && !here.has(x.id)) add(x.key || "todo:" + x.id, kind, x.day, x.t, x.text, null, true, x.id);
+      for (const x of tsumiKept()) if ((x.kind || "todo") === kind && !here.has(x.id) && !isDropped(dropped, x)) add(keptKey(x), kind, x.day, x.t, x.text, null, true, x.id);
       for (const [key, secs] of Object.entries(tsumiSet().folded || {})) {
         const [of, day] = key.split("|"), t0 = Date.parse(day + "T00:00:00");
-        if (of === kind) secs.forEach((sec, j) => add(`${kind}:folded:${day}:${j}`, kind, day, t0 + sec * 1000, "", null, true));
+        if (of === kind) secs.forEach((sec, j) => { if (!(`${key}|${sec}` in dropped)) add(`${kind}:folded:${day}:${j}`, kind, day, t0 + sec * 1000, "", null, true); });
       }
     };
     const here = new Set();
@@ -8059,6 +8104,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const bin = `${b.kind === "goal" ? "goals" : "todos"}/${b.rid}`, binned = b.gone && b.rid && deleted.get(bin)?.data;
     if (binned) { open.hidden = false; open.textContent = b.kind === "goal" ? "最近削除した項目で見る" : "最近削除したToDoで見る"; open.dataset.trash = b.kind === "goal" ? "all" : "todos"; open.dataset.mark = bin; }
     else if (b.open) { open.hidden = false; open.dataset.edit = b.open.id || b.open.goal; } // the sheet hands focus back to it
+    // a block whose ToDo or goal is deleted (in 最近削除した項目 still, or for good): このブロックを削除 takes it off the
+    // stairs, pressed twice; another block shown takes back the first press
+    const drop = $("tsumiDrop");
+    drop.hidden = !b.gone;
+    if (drop.dataset.key !== b.key) { drop.dataset.key = b.key; drop.classList.remove("armed"); drop.textContent = "このブロックを削除"; }
   }
   // the ★ pressed: the step it finishes, how many to go and, at the pace of the last 7 days, when (the user's call: it didn't
   // say when); ◀ goes back to the newest block (of the kind pressed)
@@ -8067,7 +8117,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("tsumiTip").classList.remove("none");
     setChildren($("tsumiTip"), el("span", { class: "what" }, el("span", { class: "dot", style: "background: #ffcc00" }), el("strong", {}, `${k + 1} 段目`), `まで、あと ${left} こ`),
       when ? el("span", { class: "when" }, when) : null);
-    $("tsumiOpen").hidden = true;
+    $("tsumiOpen").hidden = true; $("tsumiDrop").hidden = true;
     $("tsumiPrev").setAttribute("aria-disabled", String(!tsumiShown.some((b) => !tsumiOnly || b.kind === tsumiOnly)));
     $("tsumiNext").setAttribute("aria-disabled", "true"); $("tsumiNext").setAttribute("aria-label", "次のブロック");
   }
@@ -8411,6 +8461,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("tsumiViews").addEventListener("click", (ev) => {
     const b = ev.target.closest("button[data-view]");
     if (b) setTsumiView(b.dataset.view);
+  });
+  // このブロックを削除: the block shown, taken off; the one now in its place is shown (renderTsumi), and 元に戻す puts it back
+  armLink($("tsumiDrop"), "このブロックを削除", "もう一度押すと削除します", () => {
+    const b = tsumiShown[shownIndex()];
+    if (!b?.gone) return;
+    let undo = null;
+    act(() => { undo = tsumiDrop(b); });
+    if (undo) flash("つみかさねからブロックを1つ削除しました", () => act(undo));
   });
   $("tsumiOpen").addEventListener("click", (ev) => {
     const d = ev.currentTarget.dataset;
