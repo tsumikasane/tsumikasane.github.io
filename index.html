@@ -7932,8 +7932,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (k2 < k) said.push(`${fmtN(k)} 段が ${fmtN(k2)} 段になります`);
     return said.map((w) => w + "。").join("");
   }
-  // every record so far as a block, oldest first: a ToDo done, a day's 日記, a meal, a workout, a study, an item of a day's
-  // ルーティーン, a day's からだ, a 家計簿 entry, an action checked in a goal's chart and a goal reached. Each holds what it
+  // every record so far as a block, oldest first: a ToDo done, a day's 日記, a meal, a workout, a study, a day's ルーティーン
+  // (one, however many are checked), a day's からだ, a 家計簿 entry, an action checked in a goal's chart and a goal reached. Each holds what it
   // says (cut short) and how to open it; words: false leaves the words out. mode "tally" makes no blocks, only { n, today,
   // days }: how many, how many went on today, and the days they are of, without the sort and the dates worked out, and
   // kept till the next save (the user's call: every save counted them all, twice with きょう's tile)
@@ -7973,8 +7973,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const m of meals.items) add("meal:" + m.id, "meal", m.date, realTime(m.createdAt), () => [m.slot, m.text, typeof m.kcal === "number" ? `${fmtN(m.kcal)} kcal` : ""].filter(Boolean).join("・"), { kind: "meal", id: m.id });
     for (const w of workouts.items) add("workout:" + w.id, "workout", w.date, realTime(w.createdAt), () => [w.type, workoutDetail(w)].filter(Boolean).join(" "), { kind: "workout", id: w.id });
     for (const x of study.items) add("study:" + x.id, "study", x.date, realTime(x.createdAt), () => `${subjectOf(x)?.name || (x.subjectId && names["subject:" + x.subjectId]) || "科目なし"} ${num(x.minutes)} 分`, { kind: "study", id: x.id });
-    // each item keeps when it was checked (at), from now on; ones checked before that go at the day's noon, in their order
-    for (const x of routineDays.items) (x.done || []).forEach((id) => add(`routine:${x.id}:${id}`, "routine", x.date, realTime(x.at?.[id]), () => routines.get(id)?.name || names["routine:" + id] || "消した項目", { kind: "routine", id: x.id, item: id }));
+    // a day's ルーティーン is one block, every item checked that day in it, in the list's order (the user's call: each item
+    // checked was a block of its own), stacked when the first of them was checked; a day checked before those times were
+    // kept goes at its noon
+    let rtRank = null;
+    const rtOrder = (id) => (rtRank ??= new Map(sortedRoutines().map((r, i) => [r.id, i]))).get(id) ?? 1e9;
+    for (const x of routineDays.items) {
+      const ids = [...new Set(x.done || [])], ts = ids.map((id) => realTime(x.at?.[id])).filter(Boolean);
+      if (ids.length) add("routine:" + x.id, "routine", x.date, ts.length ? Math.min(...ts) : 0,
+        () => ids.sort((a, b) => rtOrder(a) - rtOrder(b)).map((id) => routines.get(id)?.name || names["routine:" + id] || "消した項目").join("・"), { kind: "routine", id: x.id, n: ids.length });
+    }
     for (const w of sortedWeights()) add("weight:" + w.id, "weight", w.id, realTime(w.createdAt), () => `${fmtKg(w.kg)} kg` + (num(w.fat) > 0 ? `・体脂肪率 ${fmtFat(w.fat)}%` : "") + (typeof w.intake === "number" ? `・摂取 ${fmtN(w.intake)} kcal` : ""), { kind: "weight", id: w.id });
     // 収入 with +, 支出 with −, as きょう's 収支 has them (the user's call: the two read alike)
     for (const e of expenses.items) add("money:" + e.id, "money", e.date, realTime(e.createdAt), () => `${expenseCat(e) || (e.kind === "in" ? "収入" : "支出")} ${e.kind === "in" ? "+" + fmtYen(num(e.amount)) : fmtYen(-num(e.amount))}`, { kind: "money", id: e.id });
@@ -8765,8 +8773,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // pressed, this couldn't)
     let dayFirst = lo;
     if (tsumiOnly) { dayFirst = -1; for (let j = lo; j <= hi && dayFirst < 0; j++) if (tsumiIn(tsumiShown[j])) dayFirst = j; }
-    // with a kind pressed, its own that day, as the month's count and the number are (the user's call: 「その日 12 こ」 had 2 of it)
-    const dayWords = tsumiOnly ? `その日${tsumiGoneOnly ? "" : "の" + onlyLabel()} ${tsumiShown.slice(lo, hi + 1).filter(tsumiIn).length} こ` : `その日 ${hi - lo + 1} こ`;
+    // with a kind pressed, its own that day, as the month's count and the number are (the user's call: 「その日 12 こ」 had 2 of it);
+    // ルーティーン's, a day's one block, the items in it (「1 こ」 read as one done)
+    const dayWords = tsumiOnly && !tsumiGoneOnly && b.kind === "routine" && b.open?.n ? `その日のルーティーン ${b.open.n} 項目`
+      : tsumiOnly ? `その日${tsumiGoneOnly ? "" : "の" + onlyLabel()} ${tsumiShown.slice(lo, hi + 1).filter(tsumiIn).length} こ` : `その日 ${hi - lo + 1} こ`;
     const dayPart = dayFirst >= 0 && dayFirst < i ? el("button", { type: "button", class: "phrase tsumi-today", onclick: () => showTsumiBlock(dayFirst) }, dayWords) : part(dayWords);
     // the first block of its month (of the kind pressed), as a month's name shows it: what that month holds (the user's
     // call: a month's name pressed didn't say)
