@@ -362,6 +362,39 @@ form.add > .full, form.add > .actions { grid-column: 1 / -1; }
 /* under a new ToDo's name holding a list pasted in: each line is a ToDo of its own, or 1件にまとめる runs them into one */
 .lines-note { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--space-2); margin: -4px 0 0; font-size: var(--t-foot); line-height: 1.4; color: var(--muted); }
 .lines-note .link-btn { min-height: 44px; font-size: inherit; }
+/* a plan's 終日予定, 開始 and 終了 (buildWhen), as the iPhone's カレンダー has them (the user's call): rows with lines between,
+   each day and time a grey capsule; the one pressed is in the tint and opens its month or its wheels under its row. An end
+   before its start is struck through, in red */
+.when { display: flex; flex-direction: column; }
+.when-row { display: flex; align-items: center; justify-content: space-between; column-gap: 12px; min-height: 52px; }
+.when > * + * { border-top: .5px solid var(--separator); }
+.when-pills { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; padding: 6px 0; }
+.when-pill { position: relative; min-height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--fill); color: var(--fg); font: inherit; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; }
+.when-pill::after { content: ""; position: absolute; inset: -4px 0; }  /* a 44px reach */
+.when-row > :first-child { flex: none; white-space: nowrap; }  /* 開始 never broken up to give the capsules room */
+@media (max-width: 359px) { .when-row { column-gap: 8px; } .when-pills { gap: 4px; } .when-pill { padding: 0 8px; font-size: 15px; } }  /* a small phone: both on one line */
+.when-pill[aria-expanded="true"] { color: var(--accent); }
+.when-pill.bad { color: var(--warn); text-decoration: line-through; }
+.when-pick { padding: 6px 0 10px; }
+/* the wheels: the hour and the minute (every 5), the one in the band picked; a flick turns them, as the iPhone's do */
+.wheel { position: relative; display: flex; justify-content: center; align-items: center; gap: 2px; }
+.wheel-band { position: absolute; left: 0; right: 0; top: 50%; height: 40px; margin-top: -20px; border-radius: 12px; background: var(--fill); pointer-events: none; }
+.wheel-col { position: relative; width: 4.2em; height: 200px; padding: 80px 0; overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: y mandatory; scrollbar-width: none; outline: none; touch-action: pan-y;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent); }
+.wheel-col::-webkit-scrollbar { display: none; }
+.wheel-col:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; border-radius: 12px; }
+.wheel-item { display: grid; place-items: center; height: 40px; scroll-snap-align: center; font-size: 22px; font-variant-numeric: tabular-nums; color: var(--muted); cursor: pointer; user-select: none; -webkit-user-select: none; }
+.wheel-item.on { color: var(--accent); font-weight: 600; }
+.wheel-sep { position: relative; font-size: 22px; font-weight: 600; color: var(--accent); }
+/* the month: its name between ‹ ›, the weekdays in the calendar's order, and its days; the day picked filled, today in the tint */
+.mc-head { display: flex; align-items: center; justify-content: space-between; padding: 0 0 4px; }
+.mc-title { font-weight: 600; font-variant-numeric: tabular-nums; }
+.mc-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 2px; text-align: center; }
+.mc-wd { padding: 2px 0 6px; font-size: var(--t-foot); font-weight: 600; color: var(--muted); }
+.mc-day { justify-self: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--fg); font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
+.mc-day.today { color: var(--accent); font-weight: 600; }
+.mc-day[aria-pressed="true"] { background: var(--accent-fill); color: var(--accent-ink); font-weight: 600; }
+.mc-day:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
 .flabel { min-width: 0; }
 .flabel .opt { margin-inline-start: 2px; font-size: var(--t-foot); color: var(--muted); }
 /* a long name (メンテナンスカロリー) breaks between its words, rather than taking the fields' room */
@@ -2042,16 +2075,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <button type="button" data-scope="all" aria-pressed="false">すべての回</button>
         </div>
         <input type="text" id="edTitle" class="full" aria-label="予定の内容" maxlength="100" required>
-        <label class="flabel" for="edDate" id="edDateLabel">日付</label>
-        <div class="ffield"><input type="date" id="edDate" required></div>
-        <label class="flabel" for="edEndDate">終わりの日 <span class="opt">任意</span></label>
-        <div class="ffield"><input type="date" id="edEndDate"></div>
-        <label class="flabel" for="edTime">時間 <span class="opt">任意</span></label>
-        <div class="ffield"><input type="time" id="edTime"><button type="button" class="link-btn" id="edTimeClear">終日にする</button></div>
-        <div class="form-rows" id="edEndTimeRow" hidden>
-          <label class="flabel" for="edEndTime">終わりの時間 <span class="opt">任意</span></label>
-          <div class="ffield"><input type="time" id="edEndTime"></div>
-        </div>
+        <!-- 終日予定, 開始 and 終了 as the iPhone's カレンダー has them (buildWhen), over the plan's own fields under them -->
+        <div class="full when" id="edWhen"></div>
+        <div hidden><input type="date" id="edDate" required><input type="date" id="edEndDate"><input type="time" id="edTime"><input type="time" id="edEndTime"></div>
         <div class="form-rows" id="edRepeatRows">
           <label class="flabel" for="edRepeat">繰り返し</label>
           <div class="ffield"><select id="edRepeat"></select></div>
@@ -2169,18 +2195,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     <div class="sheet-view" id="planView" hidden>
       <form class="add" id="planForm" autocomplete="off">
         <input type="text" id="planTitle" class="full" placeholder="新しい予定" aria-label="予定の内容" maxlength="100" required>
-        <label class="flabel" for="planDate">日付</label>
-        <div class="ffield"><input type="date" id="planDate" required></div>
-        <!-- a plan over several days, an end time, and a repeat (the user's call): the end time once there is a start,
-             the repeat's end once it repeats -->
-        <label class="flabel" for="planEndDate">終わりの日 <span class="opt">任意</span></label>
-        <div class="ffield"><input type="date" id="planEndDate"></div>
-        <label class="flabel" for="planTime">時間 <span class="opt">任意</span></label>
-        <div class="ffield"><input type="time" id="planTime"></div>
-        <div class="form-rows" id="planEndTimeRow" hidden>
-          <label class="flabel" for="planEndTime">終わりの時間 <span class="opt">任意</span></label>
-          <div class="ffield"><input type="time" id="planEndTime"></div>
-        </div>
+        <!-- 終日予定, 開始 and 終了 as the iPhone's カレンダー has them (buildWhen), over the plan's own fields under them: its
+             first and last days and its start and end times (the user's call). The repeat's end once it repeats -->
+        <div class="full when" id="planWhen"></div>
+        <div hidden><input type="date" id="planDate" required><input type="date" id="planEndDate"><input type="time" id="planTime"><input type="time" id="planEndTime"></div>
         <label class="flabel" for="planRepeat">繰り返し</label>
         <div class="ffield"><select id="planRepeat"></select></div>
         <div class="form-rows" id="planUntilRow" hidden>
@@ -5501,28 +5519,27 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function setCalDay(d) { calDay = d; calMonth = monthOf(d); renderCalendar(); }
 
   // a new plan from the ＋ beside the gear (openNewPlan): any day, 追加 grey until it has its text and a day
-  const syncPlanSave = () => { $("planSave").disabled = !$("planTitle").value.trim() || !$("planDate").value; };
+  const syncPlanSave = () => { $("planSave").disabled = !$("planTitle").value.trim() || !$("planDate").value || whenBad("plan"); };
   for (const id of ["planTitle", "planDate"]) for (const type of ["input", "change"]) $(id).addEventListener(type, syncPlanSave);
   // a form's first day and start time as last set, so a run keeps its length as its first day moves and the end time
   // keeps its distance from the start (the user's call: an hour after it at first)
   const lastDate = {}, lastTime = {};
   const remember = (f) => { lastDate[f] = $(f + "Date").value; lastTime[f] = $(f + "Time").value; };
-  function clearPlanForm() { $("planForm").reset(); syncPlanSave(); syncPlanRows("plan"); remember("plan"); }
+  function clearPlanForm() { $("planForm").reset(); whenOpen.plan = null; whenKeep.plan = null; syncPlanSave(); syncPlanRows("plan"); remember("plan"); }
   for (const id of ["planRepeat", "edRepeat"]) setChildren($(id), REPEATS.map(([k, name]) => el("option", { value: k }, name)));
   setChildren($("todoRepeat"), todoRepeatOptions());
-  // a plan form's rows that come and go (f: "plan" for a new one, "ed" for a change): the end time once there is a start
-  // time, the repeat's end once it repeats. No end may come before its start (min), so 追加 and 保存 wait until it's right
+  // a plan form's rows that come and go (f: "plan" for a new one, "ed" for a change): the repeat's end once it repeats;
+  // and its 開始 and 終了 drawn again (syncWhen), where an end before its start holds back 追加 and 保存 (whenBad)
   function syncPlanRows(f) {
-    const date = $(f + "Date").value, endDate = $(f + "EndDate").value, time = $(f + "Time").value, rep = $(f + "Repeat").value;
-    $(f + "EndTimeRow").hidden = !time; $(f + "EndTime").disabled = !time;
+    const date = $(f + "Date").value, time = $(f + "Time").value, rep = $(f + "Repeat").value;
+    $(f + "EndTime").disabled = !time;
     if (!time) $(f + "EndTime").value = "";
-    $(f + "EndDate").min = date;
-    $(f + "EndTime").min = time && !(endDate > date) ? time : ""; // over several days the end can be any time
     $(f + "UntilRow").hidden = !rep; $(f + "Until").disabled = !rep;
     if (!rep) $(f + "Until").value = "";
     $(f + "Until").min = date;
     // the menu's words follow the day: 毎週（月曜日）, 毎月（第2月曜日）
     for (const o of $(f + "Repeat").options) o.textContent = repeatName(o.value, date, true);
+    syncWhen(f);
   }
   for (const f of ["plan", "ed"]) for (const id of ["Date", "EndDate", "Time", "Repeat"]) for (const type of ["input", "change"]) $(f + id).addEventListener(type, () => syncPlanRows(f));
   const minOf = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
@@ -5534,16 +5551,173 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       lastDate[f] = d;
       if (d && was && end.value > was) { end.value = addDays(end.value, daysBetween(was, d)); syncPlanRows(f); }
     });
-    // the start time set or moved: on one day, the end an hour after it, or as long after it as it was (to 23:59 at most)
+    // the start time set or moved: on one day, the end an hour after it, or as long after it as it was (to 23:59 at most);
+    // an end at the start (none of its own) stays at it
     $(f + "Time").addEventListener("change", () => {
       const t = $(f + "Time").value, end = $(f + "EndTime"), was = lastTime[f];
       lastTime[f] = t;
       if (!t || $(f + "EndDate").value > $(f + "Date").value) return;
-      const len = end.value && was && minOf(end.value) > minOf(was) ? minOf(end.value) - minOf(was) : 60;
+      const len = end.value && was && minOf(end.value) >= minOf(was) ? minOf(end.value) - minOf(was) : 60;
       end.value = atMin(Math.min(minOf(t) + len, 23 * 60 + 59));
       syncPlanRows(f);
     });
   }
+  // ---------- a plan's 開始 and 終了, as the iPhone's カレンダー has them (the user's call) ----------
+  // 終日予定 with its switch, then 開始 and 終了, each its day and its time as grey capsules. One pressed is in the tint and
+  // opens under its row the month, to pick its day, or the wheels for the hour and the minute (every 5, and its own
+  // minute where it has one between); pressed again, or another pressed, it closes. They write to the form's own fields
+  // (Date, EndDate, Time, EndTime), so all that follows from those stays as it was: the end moves with the start, a run
+  // keeps its length. The last day is the first's unless it says otherwise (EndDate empty), the end time the start's when
+  // it has none of its own (saved as none). An end before its start is struck through in red, and holds back 追加 and 保存
+  const whenOpen = { plan: null, ed: null }, whenKeep = { plan: null, ed: null }, whenMonth = { plan: null, ed: null };
+  const WHEN_NAMES = { Date: "開始日", Time: "開始時刻", EndDate: "終了日", EndTime: "終了時刻" };
+  function whenBad(f) {
+    const d = $(f + "Date").value, ed = $(f + "EndDate").value || d, t = $(f + "Time").value, et = $(f + "EndTime").value;
+    return ed < d || (ed === d && !!t && !!et && et < t);
+  }
+  // a new plan starts at the next full hour, as the iPhone's does (9:37 → 10:00), and ends an hour after
+  const nextHour = () => `${pad(Math.min(new Date().getHours() + 1, 23))}:00`;
+  function freshPlanTimes() {
+    $("planTime").value = nextHour(); $("planEndTime").value = atMin(Math.min(minOf($("planTime").value) + 60, 23 * 60 + 59));
+  }
+  // a field written by a picker, as typing would (the form counts as changed)
+  function putWhen(f, key, v) {
+    const x = $(f + key);
+    if (x.value === v) return;
+    x.value = v;
+    for (const type of ["input", "change"]) x.dispatchEvent(new Event(type, { bubbles: true }));
+  }
+  function buildWhen(f) {
+    const pill = (key) => el("button", { type: "button", class: "when-pill", "data-key": key, "aria-expanded": "false", onclick: () => {
+      whenOpen[f] = whenOpen[f] === key ? null : key; whenMonth[f] = null; syncWhen(f);
+      $(f + "When").querySelector(".when-pick:not([hidden])")?.scrollIntoView({ block: "nearest", behavior: reduceMotion.matches ? "auto" : "smooth" });
+    } });
+    const allDay = el("input", { type: "checkbox", id: f + "AllDay", class: "switch", role: "switch", "aria-labelledby": f + "AllDayLabel" });
+    allDay.addEventListener("change", () => setAllDay(f, allDay.checked));
+    $(f + "When").replaceChildren(
+      el("div", { class: "when-row" }, el("span", { id: f + "AllDayLabel" }, "終日予定"), allDay),
+      el("div", { class: "when-row" }, el("span", {}, "開始"), el("span", { class: "when-pills" }, pill("Date"), pill("Time"))),
+      el("div", { class: "when-pick", "data-at": "start", hidden: true }),
+      el("div", { class: "when-row" }, el("span", {}, "終了"), el("span", { class: "when-pills" }, pill("EndDate"), pill("EndTime"))),
+      el("div", { class: "when-pick", "data-at": "end", hidden: true }));
+    for (const k of ["Date", "EndDate", "Time", "EndTime"]) for (const type of ["input", "change"]) $(f + k).addEventListener(type, () => syncWhen(f));
+  }
+  // 終日予定 on: no times (the ones it had kept, for turning it off again); off: those, or the next full hour and an hour on
+  function setAllDay(f, on) {
+    const t = $(f + "Time"), et = $(f + "EndTime");
+    if (on) { if (t.value) whenKeep[f] = { time: t.value, end: et.value }; putWhen(f, "Time", ""); }
+    else { const k = whenKeep[f]; putWhen(f, "Time", k?.time || nextHour()); if (k?.end) putWhen(f, "EndTime", k.end); }
+    syncWhen(f);
+  }
+  function syncWhen(f) {
+    const box = $(f + "When");
+    if (!box?.firstChild) return;
+    const d = $(f + "Date").value, ed = $(f + "EndDate").value || d, t = $(f + "Time").value, et = $(f + "EndTime").value || t, bad = whenBad(f);
+    $(f + "AllDay").checked = !t;
+    if (!t && /Time$/.test(whenOpen[f] || "")) whenOpen[f] = null;
+    const words = { Date: d ? fmtDayLong(d) : "", Time: t, EndDate: ed ? fmtDayLong(ed) : "", EndTime: et };
+    for (const b of box.querySelectorAll(".when-pill")) {
+      const k = b.dataset.key, off = bad && k.startsWith("End");
+      b.hidden = k.endsWith("Time") && !t;
+      b.textContent = words[k];
+      b.classList.toggle("bad", off);
+      b.setAttribute("aria-expanded", String(whenOpen[f] === k));
+      b.setAttribute("aria-label", `${WHEN_NAMES[k]}、${words[k]}${off ? "、開始より前です" : ""}`);
+    }
+    // the open one's month or wheels, under its row
+    for (const p of box.querySelectorAll(".when-pick")) {
+      const k = whenOpen[f], here = !!k && (p.dataset.at === "end") === k.startsWith("End");
+      if (!here) { if (!p.hidden) { p.hidden = true; p.replaceChildren(); delete p.dataset.key; } continue; }
+      p.hidden = false;
+      if (k.endsWith("Date")) drawMonth(f, p, k);
+      else if (p.dataset.key !== k) drawWheels(f, p, k); // drawn as it opens; it moves itself after
+      p.dataset.key = k;
+    }
+    if (f === "plan") syncPlanSave(); else $("sheetSave").disabled = bad;
+  }
+  // the month of the day in the capsule pressed: its days in the calendar's week order, the one picked filled; ‹ › turn
+  // it, the arrow keys go from day to day. A day pressed is that day (for 終了, the first day itself is no last day of its own)
+  function drawMonth(f, p, k) {
+    const value = $(f + k).value || $(f + "Date").value || todayKey, ym = whenMonth[f] || value.slice(0, 7);
+    whenMonth[f] = ym;
+    const ws = weekStart(), lead = (parseYmd(ym + "-01").getDay() - ws + 7) % 7, n = daysInMonth(ym), [y, m] = ym.split("-").map(Number);
+    const had = p.contains(document.activeElement) ? document.activeElement : null, hadNav = had?.dataset.nav, hadDay = had?.dataset.day;
+    const turn = (by) => { whenMonth[f] = addMonths(ym, by); syncWhen(f); };
+    const pick = (day) => { putWhen(f, k, k === "EndDate" && day === $(f + "Date").value ? "" : day); if (k === "EndDate" && !$(f + k).value) syncWhen(f); p.querySelector(`[data-day="${day}"]`)?.focus(); };
+    const days = [];
+    for (let i = 0; i < lead; i++) days.push(el("span", { "aria-hidden": "true" }));
+    for (let i = 1; i <= n; i++) {
+      const day = `${ym}-${pad(i)}`;
+      days.push(el("button", { type: "button", class: "mc-day" + (day === todayKey ? " today" : ""), "data-day": day, "aria-pressed": String(day === value),
+        "aria-label": fmtDayLong(day) + (day === todayKey ? "、きょう" : ""), tabindex: day === value || (!value.startsWith(ym) && i === 1) ? 0 : -1, onclick: () => pick(day) }, String(i)));
+    }
+    const grid = el("div", { class: "mc-grid" }, [0, 1, 2, 3, 4, 5, 6].map((i) => el("span", { class: "mc-wd", "aria-hidden": "true" }, WD[(i + ws) % 7])), days);
+    grid.addEventListener("keydown", (ev) => {
+      const by = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[ev.key], from = ev.target.dataset?.day;
+      if (!by || !from) return;
+      ev.preventDefault();
+      const to = addDays(from, by);
+      if (monthOf(to) !== ym) { whenMonth[f] = monthOf(to); syncWhen(f); }
+      p.querySelector(`[data-day="${to}"]`)?.focus();
+    });
+    p.replaceChildren(el("div", { role: "group", "aria-label": `${WHEN_NAMES[k]}を選ぶ` },
+      el("div", { class: "mc-head" },
+        el("button", { type: "button", class: "navbtn", "data-nav": "prev", "aria-label": "前の月", onclick: () => turn(-1) }, icon("prev", 18)),
+        el("span", { class: "mc-title", "aria-live": "polite" }, `${y}年${m}月`),
+        el("button", { type: "button", class: "navbtn", "data-nav": "next", "aria-label": "次の月", onclick: () => turn(1) }, icon("next", 18))),
+      grid));
+    if (hadNav) p.querySelector(`[data-nav="${hadNav}"]`)?.focus();
+    else if (hadDay) p.querySelector(`[data-day="${hadDay}"]`)?.focus();
+  }
+  // the wheels of the time in the capsule pressed: the hours, and the minutes every 5 (with its own between them), each
+  // going round as the iPhone's do (55 over 00, 23 over 0): the list five times over, the middle one read out, and put
+  // back on it once a turn comes to rest. A flick turns one and it stops on the row in the band, which is the time; a row
+  // pressed turns to it, the arrow keys a row at a time. Each a list for screen readers, the row picked read as chosen
+  const ROW_H = 40, LAPS = 5;
+  function drawWheels(f, p, k) {
+    const v = $(f + k).value || $(f + "Time").value || nextHour(), [h0, m0] = v.split(":").map(Number);
+    const mins = [...new Set([...Array.from({ length: 12 }, (_, i) => i * 5), m0])].sort((a, b) => a - b);
+    const lists = [Array.from({ length: 24 }, (_, i) => i), mins], at = [h0, mins.indexOf(m0)];
+    const write = () => putWhen(f, k, `${pad(lists[0][at[0]])}:${pad(lists[1][at[1]])}`);
+    const cols = lists.map((items, c) => {
+      const len = items.length, mid = 2 * len, of = (i) => ((i % len) + len) % len;
+      const col = el("div", { class: "wheel-col", role: "listbox", tabindex: 0, "aria-label": `${WHEN_NAMES[k]}の${c ? "分" : "時"}` });
+      let pos = -1, chosen = null, rest = null;
+      const turnTo = (i, smooth) => col.scrollTo({ top: i * ROW_H, behavior: smooth && !reduceMotion.matches ? "smooth" : "auto" });
+      const take = (i) => { if (of(i) !== at[c]) { at[c] = of(i); write(); } };
+      const light = (i) => {
+        if (i === pos) return;
+        col.children[pos]?.classList.remove("on"); col.children[i]?.classList.add("on"); pos = i;
+        const row = col.children[mid + of(i)];
+        if (chosen !== row) { chosen?.setAttribute("aria-selected", "false"); row.setAttribute("aria-selected", "true"); chosen = row; col.setAttribute("aria-activedescendant", row.id); }
+      };
+      // back onto the middle lap, where it can go as far either way
+      const recentre = () => { if (pos < mid || pos >= mid + len) { const i = mid + of(pos); col.scrollTop = i * ROW_H; light(i); } };
+      for (let lap = 0; lap < LAPS; lap++) items.forEach((x, j) => {
+        const i = lap * len + j;
+        col.append(el("div", { class: "wheel-item", ...(lap === 2 ? { role: "option", id: `${f}${k}${c}-${x}`, "aria-selected": "false" } : { "aria-hidden": "true" }),
+          onclick: () => { turnTo(i, true); light(i); take(i); } }, c ? pad(x) : String(x)));
+      });
+      col.addEventListener("scroll", () => {
+        const i = clampTo(Math.round(col.scrollTop / ROW_H), 0, len * LAPS - 1);
+        light(i);
+        clearTimeout(rest); rest = setTimeout(() => { take(i); recentre(); }, 120); // once it comes to rest
+      }, { passive: true });
+      col.addEventListener("keydown", (ev) => {
+        const by = { ArrowUp: -1, ArrowDown: 1, PageUp: -5, PageDown: 5 }[ev.key];
+        if (by === undefined && ev.key !== "Home" && ev.key !== "End") return;
+        ev.preventDefault();
+        const i = ev.key === "Home" ? mid : ev.key === "End" ? mid + len - 1 : pos + by;
+        turnTo(i, false); light(i); take(i); recentre();
+      });
+      col.place = () => { const i = mid + at[c]; turnTo(i, false); light(i); };
+      return col;
+    });
+    p.replaceChildren(el("div", { class: "wheel", role: "group", "aria-label": WHEN_NAMES[k] },
+      el("div", { class: "wheel-band" }), cols[0], el("span", { class: "wheel-sep", "aria-hidden": "true" }, ":"), cols[1]));
+    for (const col of cols) col.place(); // laid out by now (the box is shown), so each stops on its row
+  }
+  buildWhen("plan"); buildWhen("ed");
   // what a form adds to a plan: its last day, its end time and its repeat, each only when it says something
   function planExtras(f, date, time) {
     const x = {}, endDate = $(f + "EndDate").value, endTime = $(f + "EndTime").value, rep = $(f + "Repeat").value, until = $(f + "Until").value;
@@ -5560,7 +5734,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("planForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
     const title = $("planTitle").value.trim(), date = $("planDate").value, time = $("planTime").value, copied = planCopy, fromTodo = planFromTodo && !planFromDay;
-    if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(date) || whenBad("plan")) return;
     const item = { date, title, createdAt: Date.now(), ...planExtras("plan", date, time) };
     if (time) item.time = time;
     if (planLabelChoice && labels.get(planLabelChoice)) item.labelId = planLabelChoice;
@@ -5762,8 +5936,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // 予定を追加 under a day's list: the new plan's form in the same sheet, on that day; a text typed before stays
   function openPlanFromDay() {
-    if (!$("planTitle").value.trim()) clearPlanForm();
-    $("planDate").value = calDay; syncPlanRows("plan"); remember("plan");
+    if (!$("planTitle").value.trim()) { clearPlanForm(); freshPlanTimes(); }
+    $("planDate").value = calDay; whenOpen.plan = null; syncPlanRows("plan"); remember("plan");
     planNew = true; planFromDay = true; renderPlanLabels(); syncSheetHead(); syncPlanSave();
     sheetEl.scrollTop = 0;
     $("planTitle").focus();
@@ -5858,7 +6032,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const start = editingStart || e.date, extra = extraDays(e);
     clearPlanForm();
     $("planTitle").value = e.title; $("planDate").value = start; $("planEndDate").value = extra ? addDays(start, extra) : "";
-    $("planTime").value = e.time || ""; $("planEndTime").value = e.time && e.endTime ? e.endTime : ""; $("planMemo").value = e.memo || "";
+    $("planTime").value = e.time || ""; $("planEndTime").value = e.time ? e.endTime || e.time : ""; $("planMemo").value = e.memo || "";
     planLabelChoice = labelOf(e) ? e.labelId : "";
     editingId = null; planNew = true; planFromDay = true; planCopy = true;
     disarmDelete(); renderPlanLabels(); syncPlanRows("plan"); remember("plan"); syncPlanSave(); syncSheetHead();
@@ -6044,7 +6218,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function openNewPlan(byKey) {
     if (sheetEl.open) return;
     resetSheet();
-    if (!$("planTitle").value.trim()) { clearPlanForm(); $("planDate").value = planDay(); syncPlanRows("plan"); remember("plan"); }
+    if (!$("planTitle").value.trim()) { clearPlanForm(); $("planDate").value = planDay(); freshPlanTimes(); syncPlanRows("plan"); remember("plan"); }
+    whenOpen.plan = null; syncWhen("plan");
     planNew = true; renderPlanLabels(); syncSheetHead(); syncPlanSave();
     presentSheet(byKey, "plan", $("planTitle"));
   }
@@ -6792,8 +6967,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     editingId = id; editingStart = start || e.date; editScope = "one";
     delete $("evEdit").dataset.typed;
     $("edTitle").value = e.title;
-    $("edTime").value = e.time || ""; $("edEndTime").value = e.endTime || "";
-    $("edTimeClear").hidden = !e.time;
+    $("edTime").value = e.time || ""; $("edEndTime").value = e.time ? e.endTime || e.time : ""; // no end time: its start's
+    whenOpen.ed = null; whenKeep.ed = null; whenMonth.ed = null;
     $("edRepeat").value = e.repeat || ""; $("edUntil").value = e.repeatUntil || ""; $("edMemo").value = e.memo || "";
     $("edScope").hidden = !e.repeat;
     fillEditDays();
@@ -6812,8 +6987,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const whole = !e.repeat || editScope !== "one", start = !e.repeat || editScope === "all" ? e.date : editingStart, extra = extraDays(e);
     $("edDate").value = start;
     $("edEndDate").value = extra ? addDays(start, extra) : "";
-    $("edDateLabel").textContent = e.repeat && whole ? "開始日" : "日付";
-    $("edRepeatRows").hidden = !whole;
+    $("edRepeatRows").hidden = !whole; whenOpen.ed = null;
     for (const b of $("edScope").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.scope === editScope));
     disarmDelete(); // its words follow the choice
     syncPlanRows("ed");
@@ -6839,7 +7013,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!e) { showDayView(); return; }
     const title = $("edTitle").value.trim(), date = $("edDate").value, time = $("edTime").value;
     if (!title) { $("edTitle").value = ""; $("edTitle").focus(); return; }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { $("edDate").focus(); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || whenBad("ed")) return;
     // nothing changed: back to the list, the plan as it was (a repeating one isn't split for nothing)
     if (editFields() === editBase && date + "\n" + $("edEndDate").value === editDays) { showDayView(); return; }
     const labelId = edLabelChoice && labels.get(edLabelChoice) ? edLabelChoice : undefined;
@@ -6879,13 +7053,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     act(() => events.update(e.id, fields));
     saved(moved ? `${fmtMDW(date)}に移しました` : "予定を保存しました");
     noteHidden(labelId);
-  });
-  for (const type of ["input", "change"]) $("edTime").addEventListener(type, () => { $("edTimeClear").hidden = !$("edTime").value; });
-  $("edTimeClear").addEventListener("click", (ev) => {
-    $("edTime").value = "";
-    $("edTimeClear").hidden = true;
-    syncPlanRows("ed"); remember("ed");
-    if (ev.detail === 0) $("edTime").focus(); // pressed from the keyboard: keep focus in the form
   });
   // opening another event starts the delete over, so one press can never delete the wrong event
   function disarmDelete() { clearTimeout(delTimer); edDelete.classList.remove("armed"); edDelete.textContent = deleteWords(); }
