@@ -2103,13 +2103,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <ul class="list" id="labelList"></ul>
           <div class="label-tools"><button type="button" class="link-btn" id="labelAdd"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>ラベルを追加</button></div>
         </div>
-        <p class="group-foot"><span class="phrase">予定に付けて色分けできます。</span><span class="phrase">ToDoのラベルは、ToDoの歯車から作れます。</span><span class="phrase">丸を押すと、その予定をカレンダーで隠せます。</span><span class="phrase">ラベルを消すと、付いていた予定は「ラベルなし」になります。</span></p>
-        <!-- every plan as a file for the iPhone's カレンダー (the user's call) -->
-        <h3 class="group-head">iPhoneのカレンダーへ</h3>
-        <ul class="list card">
-          <li class="btn-row"><button type="button" class="row-btn" id="icsExport"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-export"/></svg>予定を書き出す</button></li>
-        </ul>
-        <p class="group-foot"><span class="phrase">iPhoneの「カレンダー」に取り込めるファイル（.ics）を作ります。</span><span class="phrase">保存して「ファイル」アプリで開くと、追加できます。</span></p>
+        <!-- (no words under the labels and no iPhoneのカレンダーへ with 予定を書き出す: taken out, the user's call) -->
       </div>
       <!-- ToDo's own labels (the user's call: they were the calendar's), from ToDo's gear -->
       <div class="sheet-view" id="todoLabelsGroup" hidden>
@@ -9792,60 +9786,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setTimeout(() => URL.revokeObjectURL(a.href), 10000);
     return "saved";
   }
-  // 予定を書き出す: every plan in an iCalendar file (.ics) the iPhone's カレンダー takes in (the user's call): repeats as RRULE,
-  // turns taken out as EXDATE, the memo as its description and the label as its category. Times carry no zone, so they
-  // stay the clock times they were written in; a plan with a start time and no end lasts an hour there
-  function icsOf() {
-    const esc = (t) => String(t).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
-    const day = (d) => d.replace(/-/g, ""), at = (d, t) => `${day(d)}T${t.replace(":", "")}00`;
-    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
-    const RULES = { daily: "FREQ=DAILY", weekdays: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", weekly: "FREQ=WEEKLY", biweekly: "FREQ=WEEKLY;INTERVAL=2", monthly: "FREQ=MONTHLY", yearly: "FREQ=YEARLY" };
-    const DAYS = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
-    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//tsumikasane//calendar//JA", "CALSCALE:GREGORIAN", "X-WR-CALNAME:つみかさね"];
-    for (const e of events.items) {
-      if (!e.date || !e.title || (e.repeat && !turnStarts(e, e.date, addDays(e.date, 3660)).length)) continue; // a repeat with every turn taken out has nothing left
-      // a 平日 repeat begins on its first weekday, as the calendar here shows it
-      let first = e.date;
-      if (e.repeat === "weekdays") while ([0, 6].includes(parseYmd(first).getDay())) first = addDays(first, 1);
-      const last = addDays(first, extraDays(e));
-      lines.push("BEGIN:VEVENT", `UID:${e.id}@tsumikasane`, `DTSTAMP:${stamp}`, `SUMMARY:${esc(e.title)}`);
-      if (e.time) {
-        lines.push(`DTSTART:${at(first, e.time)}`);
-        if (e.endTime && (last > first || e.endTime > e.time)) lines.push(`DTEND:${at(last, e.endTime)}`);
-        else lines.push(last > first ? `DTEND:${at(addDays(last, 1), "00:00")}` : "DURATION:PT1H");
-      } else lines.push(`DTSTART;VALUE=DATE:${day(first)}`, `DTEND;VALUE=DATE:${day(addDays(last, 1))}`);
-      const rule = e.repeat === "monthlyNth" ? `FREQ=MONTHLY;BYDAY=${nthOf(e.date)}${DAYS[parseYmd(e.date).getDay()]}` : RULES[e.repeat];
-      if (rule) {
-        lines.push(`RRULE:${rule}${e.repeatUntil ? ";UNTIL=" + day(e.repeatUntil) + (e.time ? "T235959" : "") : ""}`);
-        for (const d of e.skip || []) lines.push(e.time ? `EXDATE:${at(d, e.time)}` : `EXDATE;VALUE=DATE:${day(d)}`);
-      }
-      if (e.memo) lines.push(`DESCRIPTION:${esc(e.memo)}`);
-      if (labelOf(e)) lines.push(`CATEGORIES:${esc(labelOf(e).name)}`);
-      lines.push("END:VEVENT");
-    }
-    lines.push("END:VCALENDAR");
-    return lines.map(foldIcs).join("\r\n") + "\r\n";
-  }
-  // a line over 75 bytes goes on in lines that start with a space (RFC 5545), never splitting a character
-  function foldIcs(line) {
-    const enc = new TextEncoder();
-    if (enc.encode(line).length <= 75) return line;
-    const out = [];
-    let cur = "", n = 0;
-    for (const ch of line) {
-      const b = enc.encode(ch).length;
-      if (n + b > (out.length ? 74 : 75)) { out.push(cur); cur = ""; n = 0; }
-      cur += ch; n += b;
-    }
-    out.push(cur);
-    return out.join("\r\n ");
-  }
-  async function exportIcs() {
-    if (!events.items.length) { flash("書き出す予定がありません。"); return; }
-    const name = `tsumikasane-calendar-${todayKey}.ics`, how = await handOut(new Blob([icsOf()], { type: "text/calendar" }), name);
-    if (how) flash(how === "shared" ? "予定を書き出しました。" : `「${name}」を書き出しました。`);
-  }
-  $("icsExport").addEventListener("click", exportIcs);
+  // (no 予定を書き出す: the iPhone calendar's file went with its row in the calendar's 設定, the user's call)
   function noteExport() { act(() => settings.set("backup", { ...(settings.get("backup") || {}), lastExport: Date.now() })); }
   // a file chosen is only looked at first (the user's call): the card under the buttons says when it was written out and
   // how many records it adds, and nothing changes until 読み込む
