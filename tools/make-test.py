@@ -9,7 +9,8 @@ https://tsumikasane.github.io/test/, as a version of its own that keeps away fro
   copied in, to try things on them as they are
 - it doesn't sync (no Firebase), so nothing goes from it to the other devices
 - its worker and its copies for offline use are its own (tsumikasane-test-v…), and the app's worker leaves its pages alone
-- its name says so: テスト版 on its title, on the home screen and on a small label at the top
+- its name says so: テスト版 on its title, on the home screen and on a small label at the top; that label pressed starts
+  it over from the app's records as they are now (clearing the site's data would clear the app's records too)
 
 Run from anywhere: python3 tools/make-test.py [path of the index.html to try; the app's own by default]. Each change is
 looked for once and only once, so a version that would share the app's records is never made: the script stops instead.
@@ -65,13 +66,21 @@ COPY_IN = r'''const LS_PREFIX = "tsumikasane-test:";
       for (const name of bigs) localStorage.setItem(LS_PREFIX + "big:" + name, "1");
       location.reload();
     })().catch(() => {});
-  })();'''
+  })();
+  // the label pressed: the test version's records thrown away and copied in again from the app's as they are now
+  document.getElementById("testRibbon")?.addEventListener("click", () => {
+    if (!confirm("テスト版の記録をすべて消して、本番の記録をもう一度コピーしますか？（本番の記録は変わりません）")) return;
+    try { for (const k of Object.keys(localStorage)) if (k.startsWith(LS_PREFIX)) localStorage.removeItem(k); } catch {}
+    const gone = (name) => new Promise((resolve) => { const r = indexedDB.deleteDatabase(name); r.onsuccess = r.onerror = r.onblocked = () => resolve(); });
+    Promise.all([gone("tsumikasane-test-records"), gone("tsumikasane-test-copies")]).then(() => location.reload());
+  });'''
 
 RIBBON_CSS = """<style>
 /* テスト版: a small label at the top, under the clock, so it is never taken for the app itself */
 .test-ribbon { position: fixed; top: max(4px, env(safe-area-inset-top, 0px)); left: 50%; z-index: 100; transform: translateX(-50%);
-  padding: 1px 10px; border-radius: 999px; background: #ff9f0a; color: #000; font: 700 11px/1.5 -apple-system, system-ui, sans-serif;
-  letter-spacing: .04em; pointer-events: none; }
+  padding: 1px 10px; border: 0; border-radius: 999px; background: #ff9f0a; color: #000; font: 700 11px/1.5 -apple-system, system-ui, sans-serif;
+  letter-spacing: .04em; cursor: pointer; }
+.test-ribbon::after { content: ""; position: absolute; inset: -10px -6px; }  /* a finger's reach */
 </style>
 </head>"""
 
@@ -82,7 +91,7 @@ def main():
     page = swap(page, "<title>つみかさね</title>", "<title>つみかさね（テスト版）</title>", "the title")
     page = swap(page, '<meta name="apple-mobile-web-app-title" content="つみかさね">', '<meta name="apple-mobile-web-app-title" content="テスト版">', "the home screen name")
     page = swap(page, "</head>", RIBBON_CSS, "</head>")
-    page = swap(page, r"(?m)^<body>$", '<body>\n<div class="test-ribbon" aria-hidden="true">テスト版</div>', "the <body> tag", regex=True)
+    page = swap(page, r"(?m)^<body>$", '<body>\n<button type="button" class="test-ribbon" id="testRibbon" aria-label="テスト版。押すと、テスト版の記録を本番の記録からコピーし直します">テスト版</button>', "the <body> tag", regex=True)
     page = swap(page, 'const LS_PREFIX = "tsumikasane:";', COPY_IN, "the records' names (LS_PREFIX)")
     page = swap(page, 'const BIG_DB = "tsumikasane-records";', 'const BIG_DB = "tsumikasane-test-records";', "the bigger storage (BIG_DB)")
     page = swap(page, 'const SNAP_DB = "tsumikasane-copies"', 'const SNAP_DB = "tsumikasane-test-copies"', "the copies' storage (SNAP_DB)")
