@@ -60,3 +60,30 @@ self.addEventListener("fetch", (event) => {
     }))
   );
 });
+
+// a plan's 通知アラーム, sent at its time by the notification server (push/worker.js): shown as it says (iPhone asks that
+// each one shows), and a later one of the same plan's turn in place of the one before. Pressed, it opens the app at the
+// plan's day: the app open already is brought up and told which (this version's own windows only: the production
+// worker's scope takes in the test version's pages too)
+self.addEventListener("push", (event) => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch {}
+  const tag = typeof d.tag === "string" && d.tag ? d.tag : undefined;
+  event.waitUntil(self.registration.showNotification(typeof d.title === "string" && d.title ? d.title : "つみかさね", {
+    body: typeof d.body === "string" ? d.body : "",
+    tag, renotify: !!tag,
+    icon: new URL("icons/icon-192.png", self.registration.scope).href,
+    data: { url: typeof d.url === "string" && d.url ? d.url : "./" },
+  }));
+});
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url || "./", self.registration.scope).href, scope = new URL(self.registration.scope).pathname;
+  const own = (c) => { const p = new URL(c.url).pathname; return p.startsWith(scope) && !p.startsWith(TEST); };
+  event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+    const win = wins.find(own);
+    if (!win) return self.clients.openWindow(url);
+    win.postMessage({ kind: "open", url });
+    return win.focus?.();
+  }));
+});
