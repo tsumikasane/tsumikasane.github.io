@@ -1031,6 +1031,16 @@ ul.list > li.wo-edit-note { display: grid; grid-template-columns: minmax(0, 1fr)
 /* now: a red line across today's column with a dot at its start, as iOS has it */
 .tg-now { position: absolute; left: 0; right: 0; z-index: 1; height: 0; border-top: 2px solid var(--warn); pointer-events: none; }
 .tg-now::before { content: ""; position: absolute; left: -4px; top: -5px; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+/* a plan's メモ in its form: a field of its first three lines (メモ greyed while empty), a press opening its own page; there,
+   the form's other fields and the cards under it out of sight, and the memo as big as the sheet leaves above the keyboard */
+.memo-btn { display: block; width: 100%; min-height: 44px; padding: 11px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; color: var(--fg); text-align: left; line-height: 1.3; cursor: pointer; }
+.memo-btn .memo-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; }
+.memo-btn .memo-text.none { color: var(--muted); }
+.memo-btn:active { background: var(--fill-press); }
+form.add .memo-area { display: none; }
+.sheet-view.memo-open > :not(form), .sheet-view.memo-open form.add > :not(.memo-area) { display: none !important; }
+.sheet-view.memo-open form.add .memo-area { display: block; width: 100%; min-height: 200px; height: var(--memo-h, 60vh); padding: 4px 2px; border: 0; border-radius: 0; background: transparent; font-size: var(--t-body); line-height: 1.6; resize: none; }
+.sheet-view.memo-open form.add .memo-area:focus-visible { outline: none !important; }
 /* a day's sheet: a sideways swipe goes to the day before or after (the script); its ‹ › are for a mouse, a keyboard or
    VoiceOver, and out of sight on touch screens unless focused */
 #dayView { touch-action: pan-y; }
@@ -2137,6 +2147,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     <button type="submit" class="sheet-btn end" id="planSave" form="planForm" hidden disabled>追加</button>
     <button type="submit" class="sheet-btn end" id="recSave" form="recForm" hidden>保存</button>
     <button type="submit" class="sheet-btn end" id="todoSave" form="todoForm" hidden disabled>追加</button>
+    <button type="button" class="sheet-btn end" id="memoDone" hidden>完了</button>
   </div>
   <div class="sheet-body">
     <!-- a day's plans first (the user's call), and under them a way to add one on that day, in the new plan's form -->
@@ -2176,7 +2187,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- 場所 and URL over メモ (the user's call: as the iPhone's カレンダー has them); a URL there is a press from 開く -->
         <input type="text" id="edPlace" class="full" placeholder="場所" aria-label="場所" maxlength="200">
         <div class="full ffield"><input type="text" id="edUrl" placeholder="URL" aria-label="URL" maxlength="1000" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false"><a class="link-btn" id="edUrlOpen" target="_blank" rel="noopener noreferrer" hidden>開く</a></div>
-        <input type="text" id="edMemo" class="full" placeholder="メモ" aria-label="メモ" maxlength="1000">
+        <!-- メモ: its first lines here, a press opening its own page to write it large (the user's call: as a calendar app
+             they showed has it); the field itself is there only (openMemo) -->
+        <button type="button" class="full memo-btn" id="edMemoBtn" aria-label="メモ"><span class="memo-text none" id="edMemoText">メモ</span></button>
+        <textarea id="edMemo" class="full memo-area" aria-label="メモ" maxlength="5000"></textarea>
       </form>
       <div class="card"><button type="button" class="link-btn sheet-row" id="edCopy">この予定を複製</button></div>
       <div class="card"><button type="button" class="link-btn danger sheet-del" id="edDelete">この予定を削除</button></div>
@@ -2330,7 +2344,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="ffield" id="planLabels"></div>
         <input type="text" id="planPlace" class="full" placeholder="場所" aria-label="場所" maxlength="200">
         <div class="full ffield"><input type="text" id="planUrl" placeholder="URL" aria-label="URL" maxlength="1000" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false"><a class="link-btn" id="planUrlOpen" target="_blank" rel="noopener noreferrer" hidden>開く</a></div>
-        <input type="text" id="planMemo" class="full" placeholder="メモ" aria-label="メモ" maxlength="1000">
+        <!-- メモ: its first lines here, a press opening its own page to write it large (the user's call: as a calendar app
+             they showed has it); the field itself is there only (openMemo) -->
+        <button type="button" class="full memo-btn" id="planMemoBtn" aria-label="メモ"><span class="memo-text none" id="planMemoText">メモ</span></button>
+        <textarea id="planMemo" class="full memo-area" aria-label="メモ" maxlength="5000"></textarea>
       </form>
     </div>
     <!-- 予定, from the magnifier on the month bar: a field to look for plans by their name or memo; empty, the next
@@ -5749,6 +5766,50 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("todoLabelAdd").addEventListener("click", () => addTodoLabel());
   function setCalDay(d) { calDay = d; calMonth = monthOf(d); renderCalendar(); }
 
+  // ---------- メモ（予定のメモを大きく書くページ） ----------
+  // a plan's メモ written on a page of its own (the user's call, after a calendar app they showed): from its row in either
+  // plan form, the form's other fields out of sight and the memo across the sheet down to the keyboard, its text as it
+  // was with the caret at its end; 完了 (or Esc) goes back to the form, its row showing the memo's first lines. It stays a
+  // field of the form all the while, so 追加 and 保存, drafts and the question before leaving changes all take it in
+  let memoFor = null; // "plan" (a new one) or "ed" (one being changed) while its page shows
+  const memoView = (f) => $(f === "plan" ? "planView" : "editView");
+  function syncMemoRow(f) {
+    const v = $(f + "Memo").value.trim(), t = $(f + "MemoText");
+    t.textContent = v || "メモ"; t.classList.toggle("none", !v);
+    $(f + "MemoBtn").setAttribute("aria-label", v ? `メモ、${v.slice(0, 200)}` : "メモ");
+  }
+  function openMemo(f) {
+    memoFor = f;
+    memoView(f).classList.add("memo-open");
+    syncSheetHead();
+    sheetEl.scrollTop = 0;
+    const ta = $(f + "Memo");
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    fitMemo();
+  }
+  function memoBack() {
+    const f = memoFor;
+    if (!f) return;
+    memoFor = null;
+    memoView(f).classList.remove("memo-open");
+    syncMemoRow(f); syncSheetHead();
+    $(f + "MemoBtn").focus();
+  }
+  // as tall as what the keyboard leaves of the screen (the visual viewport shrinks as it comes up)
+  function fitMemo() {
+    if (!memoFor) return;
+    const ta = $(memoFor + "Memo"), vv = window.visualViewport, bottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+    ta.style.setProperty("--memo-h", Math.max(200, Math.floor(bottom - ta.getBoundingClientRect().top - 16)) + "px");
+  }
+  window.visualViewport?.addEventListener("resize", fitMemo);
+  window.addEventListener("resize", fitMemo);
+  for (const f of ["plan", "ed"]) {
+    $(f + "MemoBtn").addEventListener("click", () => openMemo(f));
+    for (const type of ["input", "change"]) $(f + "Memo").addEventListener(type, () => { if (memoFor !== f) syncMemoRow(f); }); // (a draft put back)
+  }
+  $("memoDone").addEventListener("click", memoBack);
+
   // a new plan from the ＋ beside the gear (openNewPlan): any day, 追加 grey until it has its text and a day
   const syncPlanSave = () => { $("planSave").disabled = !$("planTitle").value.trim() || !$("planDate").value || whenBad("plan"); };
   for (const id of ["planTitle", "planDate"]) for (const type of ["input", "change"]) $(id).addEventListener(type, syncPlanSave);
@@ -5756,7 +5817,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // keeps its distance from the start (the user's call: an hour after it at first)
   const lastDate = {}, lastTime = {};
   const remember = (f) => { lastDate[f] = $(f + "Date").value; lastTime[f] = $(f + "Time").value; };
-  function clearPlanForm() { $("planForm").reset(); whenOpen.plan = null; whenKeep.plan = null; syncPlanSave(); syncPlanRows("plan"); syncUrlOpen("plan"); remember("plan"); }
+  function clearPlanForm() { $("planForm").reset(); whenOpen.plan = null; whenKeep.plan = null; syncPlanSave(); syncPlanRows("plan"); syncUrlOpen("plan"); syncMemoRow("plan"); remember("plan"); }
   for (const id of ["planRepeat", "edRepeat"]) setChildren($(id), REPEATS.map(([k, name]) => el("option", { value: k }, name)));
   setChildren($("todoRepeat"), todoRepeatOptions());
   // a plan form's rows that come and go (f: "plan" for a new one, "ed" for a change): the repeat's end once it repeats;
@@ -6170,6 +6231,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const rel = mode === "day" ? relLabel(calDay) : "";
     $("sheetTitle").textContent = mode === "find" ? "予定" : mode === "month" ? "月を選ぶ" : mode === "goal" ? "新しい目標" : mode === "plan" ? (planCopy ? "予定を複製" : "新しい予定") : mode === "todo" ? "新しいToDo" : mode === "chart" ? chartTitle()
       : mode === "settings" ? (settingsScope === "woMenu" ? "運動のメニュー" : settingsScope === "job" ? "バイトの設定" : "設定") : mode === "rec" ? REC_EDIT[recEdit.kind].title : mode === "edit" ? "予定を編集" : (rel ? rel + "・" : "") + fmtMDW(calDay) + (holidayName(calDay) ? "・" + holidayName(calDay) : "");
+    // a plan's メモ on its own page: 完了 alone on the bar, back to the form
+    $("memoDone").hidden = !memoFor;
+    if (memoFor) { for (const id of ["sheetCancel", "sheetDone", "sheetSave", "planSave"]) $(id).hidden = true; $("sheetTitle").textContent = "メモ"; }
   }
   // a closed sheet's starting state: no animation or drag left over, the day's list showing
   function resetSheet() {
@@ -6180,7 +6244,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     sheetEl.style.transform = "";
     commitChartText(); // a cell's unsaved text goes in before the chart lets go
     dropKeptDue();
-    gridEdit = false; editingId = null; settingsFrom = null; goalNew = false; planNew = false; planFromDay = false; planCopy = false; planFromTodo = false; monthPick = false; findOpen = false; dayFromFind = false; todoNew = false; todoAdded = false; todoNewIds = []; todoFromDay = false; recEdit = null; recShown = null; recFromDay = false; mandalaGoal = null; mPath = []; mEditGoal = null; chartFromDay = false; mOverview = false; mWholeFrom = []; mSwap = null; menuFor = null; $("mMenu").hidden = true;
+    gridEdit = false; memoFor = null; $("planView").classList.remove("memo-open"); $("editView").classList.remove("memo-open"); editingId = null; settingsFrom = null; goalNew = false; planNew = false; planFromDay = false; planCopy = false; planFromTodo = false; monthPick = false; findOpen = false; dayFromFind = false; todoNew = false; todoAdded = false; todoNewIds = []; todoFromDay = false; recEdit = null; recShown = null; recFromDay = false; mandalaGoal = null; mPath = []; mEditGoal = null; chartFromDay = false; mOverview = false; mWholeFrom = []; mSwap = null; menuFor = null; $("mMenu").hidden = true;
     disarmDelete(); disarmGoalDelete(); disarmRecDelete(); syncSheetHead();
   }
   // a grey day of the month before or after opens its sheet too, without turning the month (the user's call)
@@ -6271,7 +6335,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const fromDay = recFromDay;
     clearPlanForm();
     $("planTitle").value = t.text.slice(0, 100); $("planDate").value = !t.done && t.due >= todayKey ? t.due : todayKey;
-    $("planMemo").value = (t.memo || "").replace(/\s*\n\s*/g, " "); // one line there
+    $("planMemo").value = t.memo || ""; syncMemoRow("plan");
     // (its label the calendar's of the same id or name, as theirs are apart now: none when the calendar has no such)
     const tl = todoLabelOf(t), pl = tl && (labels.get(tl.id) || labels.items.find((l) => l.name === tl.name));
     planLabelChoice = pl ? pl.id : "";
@@ -6291,7 +6355,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     clearPlanForm();
     $("planTitle").value = e.title; $("planDate").value = start; $("planEndDate").value = extra ? addDays(start, extra) : "";
     $("planTime").value = e.time || ""; $("planEndTime").value = e.time ? e.endTime || e.time : ""; $("planMemo").value = e.memo || "";
-    $("planPlace").value = e.place || ""; $("planUrl").value = e.url || ""; syncUrlOpen("plan");
+    $("planPlace").value = e.place || ""; $("planUrl").value = e.url || ""; syncUrlOpen("plan"); syncMemoRow("plan");
     planLabelChoice = labelOf(e) ? e.labelId : "";
     editingId = null; planNew = true; planFromDay = true; planCopy = true;
     disarmDelete(); renderPlanLabels(); syncPlanRows("plan"); remember("plan"); syncPlanSave(); syncSheetHead();
@@ -6569,6 +6633,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     ev.preventDefault();
     if (menuFor !== null) { closeMenu(); return; } // a menu open goes first, then a cell picked up
     if (mSwap !== null) { endSwap(); return; }
+    if (memoFor) { memoBack(); return; } // a plan's メモ: back to its form
     leaveRec(() => { if (mandalaGoal && (mPath.length || chartFromDay)) chartBack(); else if (editingId || settingsFrom === "day") showDayView(); else if (planFromDay) backToDay(); else if (todoFromDay) backFromTodo(); else if (recFromDay) backFromRec(); else if (dayFromFind) backToFind(); else closeSheet(); });
   });
   // a tap on the dimmed page above the sheet puts it away
@@ -7232,7 +7297,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("edTime").value = e.time || ""; $("edEndTime").value = e.time ? e.endTime || e.time : ""; // no end time: its start's
     whenOpen.ed = null; whenKeep.ed = null; whenMonth.ed = null;
     $("edRepeat").value = e.repeat || ""; $("edUntil").value = e.repeatUntil || ""; $("edMemo").value = e.memo || "";
-    $("edPlace").value = e.place || ""; $("edUrl").value = e.url || ""; syncUrlOpen("ed");
+    $("edPlace").value = e.place || ""; $("edUrl").value = e.url || ""; syncUrlOpen("ed"); syncMemoRow("ed");
     $("edScope").hidden = !e.repeat;
     fillEditDays();
     edLabelChoice = labelOf(e) ? e.labelId : "";
@@ -8057,7 +8122,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("span", { class: "body" }, el("span", { class: "text" }, e.title), sub ? el("span", { class: "sub" + (l ? " ev-label" : "") }, sub) : null,
           // its place on a line of its own with a pin (the user's call: a plan's 場所 as the iPhone's カレンダー has it)
           e.place ? el("span", { class: "sub ev-place" }, icon("place", 14), el("span", {}, e.place)) : null,
-          e.memo ? el("span", { class: "sub ev-memo" }, e.memo) : null),
+          e.memo ? el("span", { class: "sub ev-memo clamp" }, e.memo) : null),
         el("span", { class: "chev" }, icon("next", 16))));
   }
 
