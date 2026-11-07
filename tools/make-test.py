@@ -7,7 +7,8 @@ https://tsumikasane.github.io/test/, as a version of its own that keeps away fro
 - its records are kept under their own names (tsumikasane-test:…, and IndexedDB's tsumikasane-test-records and
   tsumikasane-test-copies), so nothing done in it touches the app's; the first time it opens, the app's records are
   copied in, to try things on them as they are
-- it doesn't sync (no Firebase), so nothing goes from it to the other devices
+- it doesn't sync (no Firebase), so nothing goes from it to the other devices; its notifications are its own (it turns them
+  on for itself, under its own id at the notification server, and sends only to itself)
 - its worker and its copies for offline use are its own (tsumikasane-test-v…), and the app's worker leaves its pages alone
 - its name says so: テスト版 on its title, on the home screen and on a small label at the top; that label pressed starts
   it over from the app's records as they are now (clearing the site's data would clear the app's records too)
@@ -44,6 +45,7 @@ COPY_IN = r'''const LS_PREFIX = "tsumikasane-test:";
     for (const k of keys) {
       if (!k.startsWith(MAIN)) continue;
       const rest = k.slice(MAIN.length);
+      if (rest === "push") continue; // the app's own notifications (this device's id at the server): the test version has its own
       if (rest.startsWith("big:")) { bigs.push(rest.slice(4)); continue; }
       try { localStorage.setItem(LS_PREFIX + rest, localStorage.getItem(k)); } catch {}
     }
@@ -67,9 +69,17 @@ COPY_IN = r'''const LS_PREFIX = "tsumikasane-test:";
       location.reload();
     })().catch(() => {});
   })();
-  // the label pressed: the test version's records thrown away and copied in again from the app's as they are now
-  document.getElementById("testRibbon")?.addEventListener("click", () => {
+  // the label pressed: the test version's records thrown away and copied in again from the app's as they are now; its
+  // notifications turned off first (at the server too), so the ones it had set don't keep coming
+  document.getElementById("testRibbon")?.addEventListener("click", async () => {
     if (!confirm("テスト版の記録をすべて消して、本番の記録をもう一度コピーしますか？（本番の記録は変わりません）")) return;
+    const soon = (p) => Promise.race([p, new Promise((resolve) => setTimeout(resolve, 5000))]).catch(() => {});
+    let mine = null;
+    try { mine = JSON.parse(localStorage.getItem(LS_PREFIX + "push") || "null"); } catch {}
+    let server = "";
+    try { server = PUSH_SERVER; } catch {} // (not there should the page have stopped short of it: the rest still goes)
+    if (mine?.id && server) await soon(fetch(server + "/d/" + mine.id, { method: "DELETE" }));
+    if (mine?.endpoint && navigator.serviceWorker) await soon(navigator.serviceWorker.ready.then((r) => r.pushManager.getSubscription()).then((s) => s?.unsubscribe()));
     try { for (const k of Object.keys(localStorage)) if (k.startsWith(LS_PREFIX)) localStorage.removeItem(k); } catch {}
     const gone = (name) => new Promise((resolve) => { const r = indexedDB.deleteDatabase(name); r.onsuccess = r.onerror = r.onblocked = () => resolve(); });
     Promise.all([gone("tsumikasane-test-records"), gone("tsumikasane-test-copies")]).then(() => location.reload());
