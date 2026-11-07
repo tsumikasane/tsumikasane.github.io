@@ -256,6 +256,8 @@ html[data-tab="todo"] .navbar.scrolled .nav-add { visibility: visible; opacity: 
    on up under the clock, and a tap up there reaches it */
 html[data-tab="home"] .navbar.scrolled { background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
 html[data-tab="home"] .navbar { pointer-events: none; }
+/* ランレベル has no large title (its badge is its picture): its name is in the top bar from the start, as in iOS's plain bars */
+html[data-tab="runlevel"] .navtitle { opacity: 1; }
 /* the calendar has no large title, so it has no top bar either: the month line sits right at the top */
 html[data-tab="calendar"] .navbar { display: none; }
 html[data-tab="calendar"] .wrap { padding-top: max(var(--space-1), env(safe-area-inset-top, 0px)); }
@@ -1008,6 +1010,31 @@ ul.list > li.wo-edit-note { display: grid; grid-template-columns: minmax(0, 1fr)
 #todoList > li { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 #todoList > li a[href] { -webkit-touch-callout: default; }
 #todoList > li.held { background: var(--fill-press); }
+/* ランレベル (the user's call): the distance run so far as a level, each its colour on a pennant with a runner; the ones not
+   reached yet faded. Its card on 運動, and its own page */
+.rl-badge { display: inline-flex; flex: none; }
+.rl-badge.ahead { opacity: .42; }
+.rl-card { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px var(--space-2); border: 0; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.rl-card-body { display: flex; flex: 1 1 auto; flex-direction: column; gap: 6px; min-width: 0; }
+.rl-card-title { font-size: var(--t-sub); font-weight: 600; color: var(--muted); }
+.rl-card-title strong { margin-inline-start: 6px; font-size: var(--t-body); color: var(--fg); }
+.rl-card-sub { font-size: var(--t-foot); color: var(--muted); }
+.rl-card .chev { flex: none; color: var(--muted); }
+.rl-track { position: relative; height: 6px; border-radius: 3px; background: var(--fill-press); overflow: hidden; }
+.rl-fill { position: absolute; inset: 0 auto 0 0; border-radius: inherit; }
+.rl-hero { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 28px var(--space-3) 24px; text-align: center; }
+.rl-goal { position: relative; width: min(100%, 340px); padding-top: 22px; }
+.rl-goal .rl-track { height: 8px; border-radius: 4px; }
+.rl-goal .rl-next { position: absolute; top: 0; right: -4px; }
+.rl-said { font-size: var(--t-body); }
+.rl-total { margin-top: -8px; font-size: var(--t-foot); color: var(--muted); }
+.rl-levels li { gap: 18px; padding-block: 12px; }
+.rl-levels .body { display: flex; flex-direction: column; gap: 2px; }
+.rl-name { font-size: var(--t-body); }
+.rl-range { font-size: var(--t-sub); color: var(--muted); font-variant-numeric: tabular-nums; }
+.rl-levels li.ahead .rl-name { color: var(--muted); }
+.rl-levels li.ahead .rl-range { opacity: .7; }
+.rl-now { margin-inline-start: 6px; font-size: var(--t-foot); font-weight: 600; color: var(--accent); }
 /* the words looked for, lit where they are in the names and memos found (lightWords), as iOS lights what it finds */
 ::highlight(todo-hit) { background-color: rgba(255, 204, 0, .42); color: var(--fg); }
 /* one reached from the keyboard: the memo shows whole while it has the focus, or its two lines would be scrolled to it,
@@ -1780,6 +1807,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </div>
         <div class="diet-part" id="part-workout" style="--sec-c: var(--c-workout)" hidden>
           <h3 class="sr-only">運動</h3>
+          <!-- ランレベル: the distance run so far as a level, each with its colour and badge (the user's call: as a running app
+               has them), a press away from all of them -->
+          <button type="button" class="card rl-card" id="runLevelCard"></button>
           <!-- the day's menu, by its weekday, from the user's weekly training sheet (the user's call: 週間トレーニングメニュー,
                as the sheet has it): ラン, then 筋トレ's moves, the day's sets added up, and the sheet's notes under メモ -->
           <div class="card wo-menu" id="woMenu"></div>
@@ -1819,6 +1849,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <ul class="list card" id="workoutList"></ul>
           <div class="muted small" id="workoutTotal"></div>
         </div>
+      </section>
+
+      <!-- ランレベル, from its card on 運動: the level reached, how far to the next and every level, the ones ahead faded.
+           Its name is in the top bar, as the badge under it is its picture -->
+      <section id="sec-runlevel" style="--sec-c: var(--c-workout)" hidden>
+        <div class="sec-head"><h2 class="sr-only">ランレベル</h2></div>
+        <div class="card rl-hero" id="runLevelHero"></div>
+        <ul class="list card rl-levels" id="runLevelList"></ul>
+        <p class="group-foot"><span class="phrase">ランニングの記録の距離を、</span><span class="phrase">これまでの分すべて足したものです。</span><span class="phrase">距離を入れていない記録は数えません。</span></p>
       </section>
 
       <!-- 勉強: time by subject, entered after studying (the user's call: no timer). The subjects are the user's own, each with
@@ -2465,7 +2504,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const PAGES = [...TABS, ...RECORDS];
   const isRecord = (key) => RECORDS.some((r) => r.key === key);
   // a page a level down, under a tab, outside the menu: a record's entries under 記録
-  const SUBPAGES = [{ key: "reclist", parent: "records" }, { key: "trash", parent: "records" }, { key: "copies", parent: "records" }, { key: "sync", parent: "records" }];
+  const SUBPAGES = [{ key: "reclist", parent: "records" }, { key: "trash", parent: "records" }, { key: "copies", parent: "records" }, { key: "sync", parent: "records" }, { key: "runlevel", parent: "diet" }];
   // the page a page sits under: きょう for the record pages, 記録 for a record's entries
   const parentOf = (key) => (isRecord(key) ? "home" : key === "trash" && (trashBack || trashOf === "todos") ? trashBack || "todo" : SUBPAGES.find((p) => p.key === key)?.parent || null);
   const SLOTS = ["朝食", "昼食", "夕食", "間食"];
@@ -2996,11 +3035,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const p of [...PAGES, ...SUBPAGES]) $("sec-" + p.key).hidden = p.key !== key;
     // a tab stays lit on the pages under it (きょう on its record pages, 記録 on a record's entries); aria-current says
     // the same to screen readers
-    const parent = parentOf(key);
+    const parent = parentOf(key), under = key === "runlevel" ? [parent, parentOf(parent)] : [parent]; // ランレベル: as ダイエット is
     menuEl.querySelectorAll("button[data-tab]").forEach((b) => {
       // a record's entries have no item of their own in the sidebar, so 記録 stands lit for them there
-      const k = b.dataset.tab, within = k === parent;
-      b.classList.toggle("on", k === key || (within && !isRecord(key)));
+      const k = b.dataset.tab, within = under.includes(k);
+      b.classList.toggle("on", k === key || (within && !isRecord(key) && key !== "runlevel"));
       b.classList.toggle("in", within);
       if (k === key) b.setAttribute("aria-current", "page");
       else if (within) b.setAttribute("aria-current", "true");
@@ -3012,6 +3051,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     window.scrollTo(0, 0);
     watchTitle();
     if (key === "diet") syncDietPart(); // its part, and からだ's chart at the width it now has
+    if (key === "runlevel") draw(renderRunLevel);
     if (key === "records") { draw(renderSummary); draw(renderUsage); }
     // つみかさね opened: the newest, and what came since; back from 最近削除した項目 opened from a block there: as it was, the
     // kind pressed, the block shown, 大きく's place and the page's (the user's call: they were all gone)
@@ -3986,7 +4026,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     const note = $("woNote").value.trim();
     if (note) item.note = note;
+    const lv = runLevelOf(runKm());
     act(() => workouts.add(item));
+    // a run that takes the distance to the next ランレベル says so (the user's call: the levels, as a running app has them)
+    if (runLevelOf(runKm()) > lv) flash(`ランレベルが${RUN_LEVELS[runLevelOf(runKm())].name}になりました`);
     for (const id of WO_FIELDS) $(id).value = "";
     setRepsUnit(""); // 回 again for the next move
     $(type === "筋トレ" ? "woExercise" : "woDist").focus(); // the kind stays picked for the next one
@@ -4003,6 +4046,60 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const inWeek = workouts.items.filter((w) => w.date >= start && w.date <= end);
     return { minutes: sum(inWeek, (w) => w.minutes), days: new Set(inWeek.map((w) => w.date)).size };
   }
+  // ---------- ランレベル: the distance run so far, as levels (the user's call: as a running app has them) ----------
+  // every ランニング's 距離 added up, all of them so far; one without a 距離 doesn't count. Each level from its first km,
+  // its colour on a pennant of our own with a runner on it, and its range as said under its name
+  const RUN_LEVELS = [
+    { name: "イエロー", from: 0, color: "#f8d84a", range: "0〜49.99 km" },
+    { name: "オレンジ", from: 50, color: "#f6a04d", range: "50.00〜249.9 km" },
+    { name: "グリーン", from: 250, color: "#5bd38c", range: "250.0〜999.9 km" },
+    { name: "ブルー", from: 1000, color: "#62c6f5", range: "1,000〜2,499 km" },
+    { name: "パープル", from: 2500, color: "#ad8ef3", range: "2,500〜4,999 km" },
+    { name: "ブラック", from: 5000, color: "#3a3a3c", ink: "#ffffff", bar: "var(--fg)", range: "5,000〜14,999 km" },
+    { name: "ボルト", from: 15000, color: "#d6f53f", range: "15,000 km〜" },
+  ];
+  const runKm = () => Math.round(sum(workouts.items.filter((w) => w.type === "ランニング"), (w) => w.km) * 100) / 100;
+  const runLevelOf = (km) => RUN_LEVELS.reduce((at, l, i) => (km >= l.from ? i : at), 0);
+  const kmText = (n) => `${n.toLocaleString("ja-JP", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km`;
+  // a level's badge: the pennant in its colour, a line inside it and a runner, both in its ink; one not reached yet faded
+  function runBadge(i, size, ahead = false) {
+    const l = RUN_LEVELS[i], ink = l.ink || "#1c1c1e";
+    const svg = svgEl("svg", { viewBox: "0 0 60 70", width: size, height: Math.round((size * 70) / 60), "aria-hidden": "true", focusable: "false" });
+    svg.append(svgEl("path", { d: "M3 3h54v49L30 67 3 52Z", fill: l.color }),
+      svgEl("path", { d: "M9.5 9.5h41v39.2L30 59.8 9.5 48.7Z", fill: "none", stroke: ink, "stroke-width": 2.6, "stroke-linejoin": "round" }));
+    const man = svgEl("g", { transform: "translate(14 13.5) scale(1.32)", fill: "none", stroke: ink, "stroke-width": 2.3, "stroke-linecap": "round", "stroke-linejoin": "round" });
+    man.append(svgEl("circle", { cx: 14.6, cy: 4.1, r: 2.1, fill: ink, stroke: "none" }),
+      ...["M13.2 7.4 11 13", "M13.2 7.8l3 2.1 2.6-1.3", "M13 7.8l-3 1.5-2.5 2", "M11 13l3.9 2.7-.7 5", "M11 13l-2.5 3.3-3.5.6"].map((d) => svgEl("path", { d })));
+    svg.append(man);
+    return el("span", { class: "rl-badge" + (ahead ? " ahead" : "") }, svg);
+  }
+  // the bar to the next level, in this one's colour (full at the last)
+  function runTrack(i, km) {
+    const l = RUN_LEVELS[i], next = RUN_LEVELS[i + 1], part = next ? clampTo((km - l.from) / (next.from - l.from), 0, 1) : 1;
+    return el("div", { class: "rl-track", "aria-hidden": "true" }, el("span", { class: "rl-fill", style: `width: ${(part * 100).toFixed(1)}%; background: ${l.bar || l.color}` }));
+  }
+  const runToGo = (i, km) => (RUN_LEVELS[i + 1] ? `あと ${kmText(RUN_LEVELS[i + 1].from - km)} で${RUN_LEVELS[i + 1].name} レベル` : `いちばん上の${RUN_LEVELS[i].name} レベルです`);
+  // the card on 運動, and the page when it shows: the badge, the bar with the next level's badge at its end, what is left
+  // to run, the distance so far, and every level, the one reached with いまのレベル, those ahead faded
+  function renderRunLevel() {
+    const km = runKm(), i = runLevelOf(km), l = RUN_LEVELS[i];
+    setChildren($("runLevelCard"), runBadge(i, 40),
+      el("span", { class: "rl-card-body" }, el("span", { class: "rl-card-title" }, "ランレベル", el("strong", {}, l.name)), runTrack(i, km),
+        el("span", { class: "rl-card-sub" }, runToGo(i, km))),
+      el("span", { class: "chev" }, icon("next", 16)));
+    if (tab !== "runlevel") return;
+    const next = RUN_LEVELS[i + 1];
+    setChildren($("runLevelHero"),
+      el("span", { role: "img", "aria-label": `いまは${l.name} レベル` }, runBadge(i, 120)),
+      el("div", { class: "rl-goal" }, next ? el("span", { class: "rl-next" }, runBadge(i + 1, 18)) : null, runTrack(i, km)),
+      el("p", { class: "rl-said" }, runToGo(i, km)),
+      el("p", { class: "rl-total" }, `走った距離 ${kmText(km)}`));
+    setChildren($("runLevelList"), RUN_LEVELS.map((x, j) => el("li", { class: j > i ? "ahead" : null, "aria-current": j === i ? "true" : null },
+      runBadge(j, 48, j > i),
+      el("span", { class: "body" }, el("span", { class: "rl-name" }, x.name, j === i ? el("span", { class: "rl-now" }, "いまのレベル") : null),
+        el("span", { class: "rl-range" }, keepUnits(x.range))))));
+  }
+  $("runLevelCard").addEventListener("click", () => { renderRunLevel(); showTab("runlevel"); });
   function renderWorkouts() {
     fillHints("woExerciseHints", workouts.items, (w) => w.exercise);
     const items = workouts.items.filter((w) => w.date === viewDate).sort((a, b) => num(a.createdAt) - num(b.createdAt));
@@ -10937,7 +11034,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- boot ----------
   function renderAll() {
     tsumiTallied = null; tsumiStale = true; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)
-    for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderTrashRow, renderCopyRow, renderSyncRow, renderEmptyHint, renderSummary, renderTsumi, noteTsumiStep, paintChart]) draw(fn);
+    for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderRunLevel, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderTrashRow, renderCopyRow, renderSyncRow, renderEmptyHint, renderSummary, renderTsumi, noteTsumiStep, paintChart]) draw(fn);
     if (tab === "reclist") draw(renderRecList);
     if (tab === "trash") draw(renderTrash);
     if (tab === "copies") draw(renderCopies);
@@ -10958,7 +11055,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     let initial = (location.hash || "").slice(1);
     if (isDietPart(initial)) { setDietPart(initial); initial = "diet"; } // 食事's, 運動's and からだ's own pages, from before ダイエット
     // straight there: no slide in from きょう as the app opens (a record's entries open at 記録, which record being unknown)
-    draw(() => setTab(["reclist", "trash", "copies", "sync"].includes(initial) ? "records" : PAGES.some((p) => p.key === initial) ? initial : "home"));
+    draw(() => setTab(["reclist", "trash", "copies", "sync"].includes(initial) ? "records" : PAGES.some((p) => p.key === initial) || initial === "runlevel" ? initial : "home"));
     draw(loadJournalForm);
     renderAll();
     draw(() => restoreDraft(!initial || initial === "home"));
