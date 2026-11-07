@@ -13,7 +13,8 @@ https://tsumikasane.github.io/test/, as a version of its own that keeps away fro
 - its name says so: テスト版 on its title, on the home screen and on a small label at the top; that label pressed starts
   it over from the app's records as they are now (clearing the site's data would clear the app's records too)
 
-Run from anywhere: python3 tools/make-test.py [path of the index.html to try; the app's own by default]. Each change is
+Run from anywhere: python3 tools/make-test.py [path of the index.html to try; the app's own by default; a sw.js beside it
+is taken with it, else the app's]. Each change is
 looked for once and only once, so a version that would share the app's records is never made: the script stops instead.
 """
 import json
@@ -107,7 +108,7 @@ def main():
     page = swap(page, 'const SNAP_DB = "tsumikasane-copies"', 'const SNAP_DB = "tsumikasane-test-copies"', "the copies' storage (SNAP_DB)")
     page = swap(page, r"const FIREBASE_CONFIG = \{.*?\n  \};", "const FIREBASE_CONFIG = null; // the test version doesn't sync: its records stay on this device", "the sync's config (FIREBASE_CONFIG)", regex=True)
 
-    worker = (TOP / "sw.js").read_text(encoding="utf-8")
+    worker = (src.with_name("sw.js") if src.with_name("sw.js").exists() else TOP / "sw.js").read_text(encoding="utf-8")
     worker = swap(worker, r'const CACHE = "tsumikasane-v(\d+)";', r'const CACHE = "tsumikasane-test-v\1";', "the worker's CACHE", regex=True)
 
     manifest = json.loads((TOP / "manifest.webmanifest").read_text(encoding="utf-8"))
