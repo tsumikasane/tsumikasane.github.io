@@ -604,8 +604,8 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 /* ToDo as the app the user showed (the user's call): the labels as tabs, rounded, side by side (sideways scrolling when
    they don't fit), each with how many are still to do in it; the one showing filled in its label's colour (すべて in
    ToDo's). 編集 and その他 under them at the right, quiet. The list from one edge of the screen to the other on iPhone,
-   each row still to do in its label's light colour, its 期限 after a calendar's mark, the lines between the rows from
-   the names on, and × on the done ones only */
+   each row in its label's light colour (a done one too, the user's call), its 期限 after a calendar's mark, the lines
+   between the rows from the names on, and × on the done ones only */
 .td-tabs { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding: 4px 2px 6px; }
 .td-tabs::-webkit-scrollbar { display: none; }
 .td-tab { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; border: .5px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--fg); font-size: var(--t-body); line-height: 1.2; white-space: nowrap; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, .06); }
@@ -626,7 +626,7 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 #todoList > li.tinted:has(.row-link:active) { background: color-mix(in srgb, var(--lv) 26%, var(--surface)); }
 @media (hover: hover) { #todoList > li.tinted:has(.row-link:hover) { background: color-mix(in srgb, var(--lv) 20%, var(--surface)); } }
 /* (the grey and red lines under a name a little nearer the text's colour there, so they still read 4.5:1 on the tint) */
-#todoList > li.tinted .sub { color: color-mix(in srgb, var(--muted) 72%, var(--fg)); }
+#todoList > li.tinted .sub, #todoList > li.tinted .done-day, #todoList > li.tinted .done-label { color: color-mix(in srgb, var(--muted) 72%, var(--fg)); }
 #todoList > li.tinted .sub.warn { color: color-mix(in srgb, var(--warn) 85%, var(--fg)); }
 #todoList > li + li::before { left: calc(var(--space-2) + 24px + 12px); }
 .td-cal { display: inline-flex; align-items: center; margin-inline-end: 4px; vertical-align: -2px; }
@@ -647,8 +647,15 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
    screen); the check stays at the start either way */
 /* a done one keeps to one line (the user's call: a name of a dozen letters put its day on a line of its own): a long
    name is cut short with …, its day stays whole at the end. Its whole name is in the sheet it opens */
-#todoList > li > .body:has(> .done-day) { flex-direction: row; align-items: baseline; column-gap: 12px; }
-#todoList > li > .body:has(> .done-day) > .row-link { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#todoList > li > .body:has(> .done-day, > .done-label) { flex-direction: row; align-items: baseline; column-gap: 12px; }
+#todoList > li > .body:has(> .done-day, > .done-label) > .row-link { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* (its label after the name, small, whole up to 40% of the line, the name giving way to it; on a narrow page (a small
+   iPhone, large text) its colour's dot alone, so the name keeps its room, the label's name still read out) */
+.done-label { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--t-sub); }
+@container (max-width: 20em) {
+  .done-label-name { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .done-label .td-dot { margin-inline-end: 0; }
+}
 .done-day { flex: none; margin-inline-start: auto; color: var(--muted); font-size: var(--t-sub); font-variant-numeric: tabular-nums; }
 /* 重要's mark after the name, on the page and on its day */
 .todo-flag { display: inline-block; margin-inline-start: 6px; color: var(--flag); vertical-align: -1px; }
@@ -3635,7 +3642,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // a ToDo checked off stays where it was, done (the user's call: it went down to 完了; a mistaken tap shows, and is
   // undone right there). For a moment it keeps the look it had (its 期限, its repeat's mark, 重要), so its row keeps its
-  // height, then it is drawn as a done one in the same place, its name alone. Those checked one after
+  // height, then it is drawn as a done one in the same place, its name and its label, in its label's colour still. Those
+  // checked one after
   // another wait together and change together, a moment after the last (the user's call: one going while the next was
   // being tapped moved the rows under the finger), and a repeat's next turn shows only then. On きょう's tile, which
   // has only those to do, it fades out then and the next comes up. Unchecked, it is one to do again, where it was
@@ -3875,16 +3883,21 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       // user's call: VoiceOver read every one as just 完了にする and 削除). A repeat's row in 完了: its check takes the last
       // turn back, and × deletes every turn it stands for. In 完了 a row is one line (the user's call: two each took half of
       // すべて), the day it was done small at its end (きょう, きのう, 10/27（火）), a repeat's how many times before it
-      // One done today, in its place (kept): its name alone, the day it was done being today
+      // One done today, in its place (kept): its name and its label, the day it was done being today. A done one keeps
+      // its label and its label's colour (the user's call: they went as it was checked): in its place under its name, as
+      // before; in 完了 on its one line, after the name
       const turns = group.get(t) || [t], n = turns.length, filed = todoPlaced(t).done, kept = filed && section !== "完了";
       // (under 完了 and きょう the day it was done is said once, in its heading, not on the row)
       const when = kept ? "" : doneDay(t) ? (todoFilter === "all" ? relLabel(doneDay(t)) || fmtDay(doneDay(t)) : "") : t.due ? `期限 ${fmtDay(t.due)}` : "";
       const lab = todoLabelOf(t), due = filed ? null : dueText(todoPlaced(t), section);
       if (due && t.due) due.querySelector(".due-parts > .phrase:not(.td-label)")?.prepend(el("span", { class: "td-cal", "aria-hidden": "true" }, icon("calendar", 14)));
-      const row = el("li", { class: (t.done ? "done" : "") + (kept ? " kept" : "") + (lab && !filed ? " tinted" : ""), style: lab && !filed ? labelStyle(lab) : null },
+      const tag = !filed || !lab ? null : kept ? labelPart(t)
+        : el("span", { class: "phrase td-label done-label", style: labelStyle(lab) }, el("span", { class: "td-dot", "aria-hidden": "true" }), el("span", { class: "done-label-name" }, lab.name));
+      const row = el("li", { class: (t.done ? "done" : "") + (kept ? " kept" : "") + (lab ? " tinted" : ""), style: lab ? labelStyle(lab) : null },
         el("button", { type: "button", class: "check", "data-check": t.id, "aria-label": `「${t.text}」を${t.done ? "未完了に戻す" : "完了にする"}`, onclick: () => toggleTodo(t) }, checkMark()),
         el("span", { class: "body" }, flagged(todoPlaced(t), editLink("todo", t.id, t.text)),
-          filed ? (when || n > 1 ? el("span", { class: "done-day" }, keepUnits([n > 1 ? `${n} 回` : "", when].filter(Boolean).join("・"))) : null)
+          filed ? (kept ? tag && el("span", { class: "sub due" }, el("span", { class: "due-parts" }, tag))
+            : [tag, when || n > 1 ? el("span", { class: "done-day" }, keepUnits([n > 1 ? `${n} 回` : "", when].filter(Boolean).join("・"))) : null])
             : [due, t.memo ? el("span", { class: "sub ev-memo" + (words.length ? "" : " clamp") }, linkedText(t.memo)) : null]),
         !filed ? null : n > 1 ? delButton(() => removeWithUndo(todos, turns.map((x) => x.id), `「${t.text}」の完了を ${n} 件削除しました`), "削除", `${t.text}（完了 ${n} 件）`)
           : delButton(() => removeWithUndo(todos, t.id), "削除", t.text),
@@ -8306,7 +8319,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       list.append(el("li", { class: t.done ? "done" : "" },
         el("button", { type: "button", class: "check", "aria-label": `「${t.text}」を${t.done ? "未完了に戻す" : "完了にする"}`, onclick: () => act(() => setTodoDone(t, !t.done)) }, checkMark()),
         el("span", { class: "body" }, flagged(t, el("button", { type: "button", class: "text row-link", "aria-label": `「${t.text}」を編集`, onclick: () => openTodoFromDay(t.id) }, t.text)),
-          late ? (t.done ? el("span", { class: "sub" }, `ToDo の期限 ${fmtDay(t.due)}`) : untilText(t.due, rep, labelPart(t)))
+          late ? (t.done ? el("span", { class: "sub due" }, el("span", { class: "due-parts" }, labelPart(t), el("span", { class: "phrase" }, `ToDo の期限 ${fmtDay(t.due)}`))) : untilText(t.due, rep, labelPart(t)))
             : el("span", { class: "sub due" }, el("span", { class: "due-parts" }, labelPart(t), el("span", { class: "phrase" }, "ToDo の期限"), rep)),
           !t.done && t.memo ? el("span", { class: "sub ev-memo td-memo clamp" }, linkedText(t.memo)) : null)
       ));
