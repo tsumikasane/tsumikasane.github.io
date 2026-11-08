@@ -32,6 +32,7 @@
   --fill-press: rgba(118, 118, 128, .2);  /* a row while it is pressed */
   --fg: #000000;            /* label */
   --muted: #6c6c70;         /* secondary text: systemGray (Increase Contrast), 4.5:1 on cards and on the background */
+  --done-fg: #8e8e93;       /* a done ToDo's name and the line through it: systemGray, a little lighter than the above (the user's call) */
   --line: #86868b;          /* edges of fields and rings, 3:1 on cards and on the background */
   --separator: #c6c6c8;     /* opaqueSeparator between rows */
   --accent: #007d2e;        /* tint: systemGreen, deepened */
@@ -100,7 +101,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, .18); --fill-press: rgba(118, 118, 128, .32);
-    --fg: #ffffff; --muted: #98989f; --line: #8e8e93; --separator: #38383a;
+    --fg: #ffffff; --muted: #98989f; --done-fg: #6e6e73; --line: #8e8e93; --separator: #38383a;
     --accent: #30d158; --accent-fill: #1e7d34; --accent-ink: #ffffff; --warn: #ff6165; --warn-fill: #d70015;
     --thumb: #636366; --glass: rgba(30, 30, 32, .78); --glass-solid: #1c1c1e; --glass-edge: rgba(255, 255, 255, .12); --pill: rgba(255, 255, 255, .14);
     --shadow: 0 6px 24px rgba(0, 0, 0, .5); --toast-bg: rgba(58, 58, 60, .96);
@@ -112,7 +113,7 @@
 }
 :root[data-theme="dark"] {
   --bg: #000000; --surface: #1c1c1e; --fill: rgba(118, 118, 128, .18); --fill-press: rgba(118, 118, 128, .32);
-  --fg: #ffffff; --muted: #98989f; --line: #8e8e93; --separator: #38383a;
+  --fg: #ffffff; --muted: #98989f; --done-fg: #6e6e73; --line: #8e8e93; --separator: #38383a;
   --accent: #30d158; --accent-fill: #1e7d34; --accent-ink: #ffffff; --warn: #ff6165; --warn-fill: #d70015;
   --thumb: #636366; --glass: rgba(30, 30, 32, .78); --glass-solid: #1c1c1e; --glass-edge: rgba(255, 255, 255, .12); --pill: rgba(255, 255, 255, .14);
   --shadow: 0 6px 24px rgba(0, 0, 0, .5); --toast-bg: rgba(58, 58, 60, .96);
@@ -123,12 +124,12 @@
 }
 /* Increase Contrast: stronger text, edges and separators, outlined cards, solid bars (HIG asks for these variants) */
 @media (prefers-contrast: more) {
-  :root { --muted: #3c3c43; --line: #6c6c70; --separator: #8e8e93; --glass: var(--glass-solid); }
+  :root { --muted: #3c3c43; --done-fg: #6c6c70; --line: #6c6c70; --separator: #8e8e93; --glass: var(--glass-solid); }
   .card, form.add, .notice, .side-in { outline: 1px solid var(--line); outline-offset: -1px; }
 }
 @media (prefers-contrast: more) and (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --muted: #c7c7cc; --line: #aeaeb2; --accent: #4ad968;
+    --muted: #c7c7cc; --done-fg: #aeaeb2; --line: #aeaeb2; --accent: #4ad968;
     --c-todo: #5cb8ff; --c-cal: #ea8dff; --c-journal: #dba679; --c-meal: #ffa056; --c-workout: #6dd9ff; --c-study: #ff8aa9; --c-weight: #a7aaff; --c-money: #fedf43; --c-goal: #54dfcb; --c-routine: #b5e46a;
   }
 }
@@ -586,9 +587,9 @@ ul.list > li > .check, ul.list > li > .del { z-index: 1; }
 li.done .check circle { fill: var(--f-todo); stroke: var(--f-todo); }
 li.done .check path { fill: #ffffff; }
 li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
-/* a ToDo done: a red line through its name as soon as it is checked, on its page and on きょう's tile (the user's call; it
-   had none before) */
-#todoList li.done .text, .td-tile li.done .rt-label { text-decoration-line: line-through; text-decoration-color: var(--warn); text-decoration-thickness: 2px; }
+/* a ToDo done: a line through its name as soon as it is checked, on its page and on きょう's tile (the user's call; it
+   had none before), the name and the line one grey, lighter than the rest (the user's call: the line was red) */
+#todoList li.done .text, .td-tile li.done .rt-label { color: var(--done-fg); text-decoration-line: line-through; text-decoration-color: currentColor; text-decoration-thickness: 2px; }
 /* a ToDo just added, lit for a moment in the list as the sheet goes down (spotTodos), and scrolled into sight clear of
    the bars over the list and the message above them */
 #todoList > li { scroll-margin: calc(44px + env(safe-area-inset-top, 0px) + 8px) 0 calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + var(--space-1) + 64px); }
@@ -631,14 +632,16 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 .td-cal { display: inline-flex; align-items: center; margin-inline-end: 4px; vertical-align: -2px; }
 .td-cal .icon { width: 14px; height: 14px; }
 /* a ToDo's ○ and × level with its first line, as high as a line of body text (the user's call: with a memo or a long
-   name the ○ sat lower down, at the middle of the row) */
+   name the ○ sat lower down, at the middle of the row). The × reaches as far above that line as below it, into the
+   row's own margins, so a row with one adds nothing to its height: a done one kept among those to do is as tall as they
+   are (the user's call: it stays in its place, as in a ToDo app they showed) */
 #todoList > li:has(> .check) { align-items: flex-start; }
 #todoList > li > .check { margin-block-start: calc((var(--t-body) * 1.41 - 24px) / 2); }
-#todoList > li > .del { margin-block: calc((var(--t-body) * 1.41 - 44px) / 2) 0; }
+#todoList > li > .del { margin-block: calc((var(--t-body) * 1.41 - 44px) / 2); }
 /* × pressed once: its 削除する (この回を削除) shows over the row's end rather than widening the button, so the name doesn't
    wrap and the rows below don't move (the user's call: they went down a line and back up). The words come from
    data-armed; the button keeps its 44px, and the words it holds take no room */
-#todoList > li > .del.armed { width: 44px; min-width: 44px; height: 44px; margin-block: calc((var(--t-body) * 1.41 - 44px) / 2) 0; padding: 0; background: transparent; font-size: 0; overflow: visible; }
+#todoList > li > .del.armed { width: 44px; min-width: 44px; height: 44px; margin-block: calc((var(--t-body) * 1.41 - 44px) / 2); padding: 0; background: transparent; font-size: 0; overflow: visible; }
 #todoList > li > .del.armed::before { content: attr(data-armed); position: absolute; inset-inline-end: 0; top: 6px; display: inline-flex; align-items: center; height: 32px; padding: 0 14px; border-radius: 999px; background: var(--warn-fill); color: #ffffff; font-size: var(--t-foot); font-weight: 600; line-height: 1; white-space: nowrap; box-shadow: 0 0 0 4px var(--surface); }
 /* 完了's day at the end of the name's line, or beneath it at the right when the two don't fit (a long name, a narrow
    screen); the check stays at the start either way */
@@ -677,6 +680,7 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 .td-tile li.td-add { display: flex; align-items: center; min-height: 40px; pointer-events: none; }  /* the rest of its row opens ToDo, as the tile does */
 .td-tile li.td-add .link-btn { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; font-size: var(--t-sub); pointer-events: auto; }
 .td-tile li.done .check circle { fill: var(--f-todo); stroke: var(--f-todo); }
+.rt-tile.td-tile li.done .rt-label { color: var(--done-fg); }  /* (over ルーティーン's grey for a done one) */
 /* 運動: the fields for the kind picked sit in the form's grid as if loose; the other kind's are hidden (and switched off) */
 .wo-group, .form-rows { display: contents; }
 .wo-group[hidden], .form-rows[hidden] { display: none; }
@@ -3611,12 +3615,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the order to do them in, on this page and on きょう's tile (the user's call: the page as the tile has it): by section
   // (期限切れ, きょう, あした, これから, 期限なし), each with its 重要 ones first (the user's call), then the 期限 soonest,
   // then the oldest. あした is a section of its own (the user's call: in これから, a 重要 one months off came before it).
-  // Done ones go after the rest, the last done first (the user's call); those done before the day was kept, after them
+  // One done today keeps its place among them, where it was as it was checked (the user's call: it went down to 完了, as
+  // a ToDo app they showed keeps it); those done before today go after the rest, in 完了, the last done first (the user's
+  // call), and those done before the day was kept, after them
   const TODO_SECTIONS = ["期限切れ", "きょう", "あした", "これから", "期限なし", "完了"];
   const TODO_TOMORROW = addDays(todayKey, 1);
-  const todoSection = (t) => (t.done ? "完了" : !t.due ? "期限なし" : t.due < todayKey ? "期限切れ" : t.due === todayKey ? "きょう" : t.due === TODO_TOMORROW ? "あした" : "これから");
+  const todoSection = (t) => (t.done && doneDay(t) !== todayKey ? "完了" : !t.due ? "期限なし" : t.due < todayKey ? "期限切れ" : t.due === todayKey ? "きょう" : t.due === TODO_TOMORROW ? "あした" : "これから");
   const todoOrder = (a, b) => TODO_SECTIONS.indexOf(todoSection(a)) - TODO_SECTIONS.indexOf(todoSection(b))
-    || (a.done ? num(b.doneAt) - num(a.doneAt) : Number(!!b.flag) - Number(!!a.flag) || (a.due || "9999").localeCompare(b.due || "9999"))
+    || (todoSection(a) === "完了" ? num(b.doneAt) - num(a.doneAt) : Number(!!b.flag) - Number(!!a.flag) || (a.due || "9999").localeCompare(b.due || "9999"))
     || num(a.createdAt) - num(b.createdAt);
   // a ToDo's name as a button, with 重要's mark after it while it is still to do, and said in its name (the user's call)
   function flagged(t, button) {
@@ -3627,12 +3633,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     button.setAttribute("aria-label", button.getAttribute("aria-label") + "（重要）");
     return button;
   }
-  // a ToDo checked off stays where it was for a moment, done, then fades and goes down to 完了 (the user's call: a
-  // mistaken tap shows, and is undone right there). It is saved as done at once, so きょう's tile and the calendar have it;
-  // only this list holds it in its old place. Unchecked, it goes straight back among the rest. Those checked one after
-  // another wait together and go down together, a moment after the last (the user's call: one going while the next was
-  // being tapped moved the rows under the finger); while they wait, each keeps the look it had (its 期限, its repeat's
-  // mark, 重要), so its row keeps its height, and a repeat's next turn shows only once they have gone
+  // a ToDo checked off stays where it was, done (the user's call: it went down to 完了; a mistaken tap shows, and is
+  // undone right there). For a moment it keeps the look it had (its 期限, its repeat's mark, 重要), so its row keeps its
+  // height, then it is drawn as a done one in the same place, its name alone. Those checked one after
+  // another wait together and change together, a moment after the last (the user's call: one going while the next was
+  // being tapped moved the rows under the finger), and a repeat's next turn shows only then. On きょう's tile, which
+  // has only those to do, it fades out then and the next comes up. Unchecked, it is one to do again, where it was
   const TODO_SETTLE = 1500;
   const TODO_DONE_SHOWN = 10; // 完了 under すべて: the last ten done, the rest under 完了
   const todoSettling = new Set(); // the ToDos checked off, waiting in their places
@@ -3709,9 +3715,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return same ? undefined : base;
   }
   function settleTodos() {
-    // their rows on the page and on きょう's tile, wherever they were checked
+    // their rows on きょう's tile, wherever they were checked (on the page they stay)
     const ids = [...todoSettling];
-    const rows = ids.flatMap((id) => [...document.querySelectorAll(`#todoList [data-check="${id}"], #homeTiles [data-td="${id}"]`)].map((b) => b.closest("li")));
+    const rows = ids.flatMap((id) => [...document.querySelectorAll(`#homeTiles [data-td="${id}"]`)].map((b) => b.closest("li")));
     const move = () => { for (const id of ids) todoSettling.delete(id); renderTodos(); renderHome(); };
     if (!rows.length || reduceMotion.matches) { move(); return; }
     for (const row of rows) row.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: "ease-in", fill: "forwards" });
@@ -3821,7 +3827,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     // in sections, each under its name with its count (the user's call): 期限切れ, きょう, あした, これから, 期限なし, then
     // 完了, which is the order todoOrder already gives (under きょう, its 完了 is きょう完了). The 完了 choice goes by the day
-    // each was done instead, newest first as they come (the user's call: the same day was said on row after row)
+    // each was done instead, newest first as they come (the user's call: the same day was said on row after row). One
+    // done today is in its place in the others (todoSection)
     const headOf = (t) => (todoFilter === "done" ? doneDay(t) || "-" : todoSection(todoPlaced(t)));
     const headName = (h) => (todoFilter === "done" ? (h === "-" ? "日付なし" : relLabel(h) || fmtDayLong(h)) : todoFilter === "today" && h === "完了" ? "きょう完了" : h);
     // the turns of one repeat, done, are one row in 完了 (the user's call: each turn done left a row more there): the last
@@ -3830,41 +3837,51 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const seriesOf = (t) => { let k = t; for (let i = 0; k.next && i < 10000; i++) { const n = byId.get(k.next); if (!n) return k.next; k = n; } return k.id; };
     const rowFor = new Map(), group = new Map(); // a repeat → the row standing for it; that row → the ToDos it stands for
     for (const t of shown) {
-      if (!todoPlaced(t).done) continue;
+      if (headOf(t) !== "完了") continue;
       const k = seriesOf(t), row = rowFor.get(k);
       if (row) group.get(row).push(t); else { rowFor.set(k, t); group.set(t, [t]); }
     }
-    // each heading counts its ToDos, a repeat's turns folded into one row counted with it
-    const counts = new Map();
-    for (const t of shown) if (!todoPlaced(t).done || group.has(t)) counts.set(headOf(t), (counts.get(headOf(t)) || 0) + (group.get(t)?.length || 1));
+    // each heading counts its ToDos, a repeat's turns folded into one row counted with it: in 完了 those done, elsewhere
+    // those still to do, and how many there were done today, which keep their places there
+    const counts = new Map(), doneHere = new Map();
+    for (const t of shown) {
+      const h = headOf(t);
+      if (h === "完了") { if (group.has(t)) counts.set(h, (counts.get(h) || 0) + group.get(t).length); }
+      else if (todoPlaced(t).done) doneHere.set(h, (doneHere.get(h) || 0) + 1);
+      else counts.set(h, (counts.get(h) || 0) + 1);
+    }
     // under すべて, 完了 shows the last ten done (the user's call) and its count; the rest are a press away, under 完了
     const more = !words.length && !todoDoneAll ? [...group.keys()].slice(TODO_DONE_SHOWN) : [], cut = new Set(more);
     // きょう with nothing left to do: said, over what was done
     if (todoFilter === "today" && !words.length && !shown.some((t) => !todoPlaced(t).done)) list.append(el("li", { class: "empty" }, "きょうの分はすべて完了しました"));
     let section = null;
     for (const t of shown) {
-      if (cut.has(t) || (todoPlaced(t).done && !group.has(t))) continue;
+      if (cut.has(t) || (headOf(t) === "完了" && !group.has(t))) continue;
       if (headOf(t) !== section) {
         section = headOf(t);
         // every heading its name at the start and its count at the end (the user's call: 期限切れ had its count by its name);
         // 期限切れ's きょうに移す comes right after the name. VoiceOver takes it as a heading under ToDo's, read with its
-        // count (期限切れ、2 件), so the rotor goes from one to the next (the user's call: it read as a row like the rest)
-        const count = `${counts.get(section)} 件`, name = headName(section);
-        list.append(el("li", { class: "dayhead" + (section === "期限切れ" ? " warn" : "") },
+        // count (期限切れ、2 件), so the rotor goes from one to the next (the user's call: it read as a row like the rest).
+        // With ones done today in it, how many are left (残り 1 件), or すべて完了; 期限切れ with none left to do is no
+        // longer red, and has nothing to move
+        const left = counts.get(section) || 0, had = doneHere.get(section) || 0, name = headName(section);
+        const count = !had ? `${left} 件` : left ? `残り ${left} 件` : "すべて完了", late = section === "期限切れ" && left > 0;
+        list.append(el("li", { class: "dayhead" + (late ? " warn" : "") },
           el("span", { role: "heading", "aria-level": 3, "aria-label": `${name}、${count}` }, name),
-          section === "期限切れ" ? el("button", { type: "button", class: "link-btn dayhead-btn", "aria-label": "期限切れのToDoをすべてきょうに移す", onclick: overdueToToday }, "きょうに移す") : null,
+          late ? el("button", { type: "button", class: "link-btn dayhead-btn", "aria-label": "期限切れのToDoをすべてきょうに移す", onclick: overdueToToday }, "きょうに移す") : null,
           el("span", { class: "dayhead-count", "aria-hidden": "true" }, count)));
       }
       // its memo under the 期限, two lines at most; the check and × say which ToDo they are for, as on きょう's tile (the
       // user's call: VoiceOver read every one as just 完了にする and 削除). A repeat's row in 完了: its check takes the last
       // turn back, and × deletes every turn it stands for. In 完了 a row is one line (the user's call: two each took half of
       // すべて), the day it was done small at its end (きょう, きのう, 10/27（火）), a repeat's how many times before it
-      const turns = group.get(t) || [t], n = turns.length, filed = todoPlaced(t).done;
+      // One done today, in its place (kept): its name alone, the day it was done being today
+      const turns = group.get(t) || [t], n = turns.length, filed = todoPlaced(t).done, kept = filed && section !== "完了";
       // (under 完了 and きょう the day it was done is said once, in its heading, not on the row)
-      const when = doneDay(t) ? (todoFilter === "all" ? relLabel(doneDay(t)) || fmtDay(doneDay(t)) : "") : t.due ? `期限 ${fmtDay(t.due)}` : "";
+      const when = kept ? "" : doneDay(t) ? (todoFilter === "all" ? relLabel(doneDay(t)) || fmtDay(doneDay(t)) : "") : t.due ? `期限 ${fmtDay(t.due)}` : "";
       const lab = todoLabelOf(t), due = filed ? null : dueText(todoPlaced(t), section);
       if (due && t.due) due.querySelector(".due-parts > .phrase:not(.td-label)")?.prepend(el("span", { class: "td-cal", "aria-hidden": "true" }, icon("calendar", 14)));
-      const row = el("li", { class: (t.done ? "done" : "") + (lab && !filed ? " tinted" : ""), style: lab && !filed ? labelStyle(lab) : null },
+      const row = el("li", { class: (t.done ? "done" : "") + (kept ? " kept" : "") + (lab && !filed ? " tinted" : ""), style: lab && !filed ? labelStyle(lab) : null },
         el("button", { type: "button", class: "check", "data-check": t.id, "aria-label": `「${t.text}」を${t.done ? "未完了に戻す" : "完了にする"}`, onclick: () => toggleTodo(t) }, checkMark()),
         el("span", { class: "body" }, flagged(todoPlaced(t), editLink("todo", t.id, t.text)),
           filed ? (when || n > 1 ? el("span", { class: "done-day" }, keepUnits([n > 1 ? `${n} 回` : "", when].filter(Boolean).join("・"))) : null)
@@ -4098,7 +4115,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function showAllDone(byKey) {
     todoDoneAll = true;
     renderTodos();
-    if (byKey) $("todoList").querySelectorAll("li.done")[TODO_DONE_SHOWN]?.querySelector("button")?.focus();
+    if (byKey) $("todoList").querySelectorAll("li.done:not(.kept)")[TODO_DONE_SHOWN]?.querySelector("button")?.focus(); // (those in 完了)
   }
 
   // ---------- 日記 ----------
@@ -8281,8 +8298,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const keptNote = kept ? el("li", { class: "empty" }, `隠しているラベルの予定が ${kept} 件あります。`) : null;
     if (!evs.length && !dueCount) { list.append(keptNote || el("li", { class: "empty" }, "この日の予定はありません。")); return; }
     for (const t of evs) list.append(planRow(t, () => editEvent(t.e.id, t.start), "を編集"));
-    // in the order ToDo's page has them (期限切れ first, each part's 重要 ones first, the done after), each with its repeat
-    // and its memo as there (the user's call: a day's ToDo said only 「ToDo の期限」)
+    // in the order ToDo's page has them (期限切れ first, each part's 重要 ones first, one done today in its place, those
+    // done before after), each with its repeat and its memo as there (the user's call: a day's ToDo said only 「ToDo の期限」)
     for (const t of [...lateTodos, ...todosDue].sort(todoOrder)) {
       // one past its 期限 says by how long, in red as on ToDo's page (done today, the day it was due)
       const late = t.due < calDay, rep = t.done ? null : repMark(t);
