@@ -1012,6 +1012,8 @@ ul.list > li.wo-edit-note { display: grid; grid-template-columns: minmax(0, 1fr)
 .cal-runs .run.plain { border-inline-start-color: transparent; }
 .cal-runs .run.from { margin-inline-start: 0; border-start-start-radius: 0; border-end-start-radius: 0; border-inline-start-color: transparent; }
 .cal-runs .run.on { margin-inline-end: 0; border-start-end-radius: 0; border-end-end-radius: 0; }
+/* 週's 7日・5日・3日, under the month bar, across the page as iOS puts a segmented control under its bar */
+.cal-days { align-self: stretch; max-width: none; margin-top: 4px; }
 /* 週 and 日: the hours down the side, the days across. Like the month, it never moves up and down (the user's call): the
    whole day's 24 hours share what the days' names and the 終日 row leave, down to the bar, each hour the same height. On
    iPhone it runs from one edge of the screen to the other, as the month does; on wide screens it is as tall as the window
@@ -1707,6 +1709,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <button type="button" class="icon-btn" id="calFind" aria-label="予定を探す" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></button>
             <button type="button" class="icon-btn" id="calSettings" aria-label="設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button>
             <button type="button" class="icon-btn" id="calAdd" aria-label="予定を追加" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg></button>
+          </div>
+          <!-- 週: how many days it shows (the user's call, after a calendar app they showed; taken out, then wanted back): the
+               week, or five or three from the day picked -->
+          <div class="seg cal-days" role="group" aria-label="週の表示の日数" id="calDays" hidden>
+            <button type="button" data-days="7" aria-pressed="true">7日</button>
+            <button type="button" data-days="5" aria-pressed="false">5日</button>
+            <button type="button" data-days="3" aria-pressed="false">3日</button>
           </div>
         </div>
         <div class="card cal">
@@ -6173,7 +6182,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const turn = () => {
       if (calView === "month") calMonth = addMonths(calMonth, step);
       else {
-        calDay = addDays(calDay, step * (calView === "day" ? 1 : 7));
+        const by = calView === "day" ? 1 : weekDays;
+        calDay = addDays(calDay, step * by);
+        if (calView === "week" && weekDays !== 7 && viewFirst) viewFirst = addDays(viewFirst, step * by);
         calMonth = monthOf(calDay);
       }
       renderCalendar();
@@ -7858,17 +7869,25 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function holidayName(d) { return holidaysOf(Number(d.slice(0, 4))).get(d) || ""; }
   // ---------- 月・週・日 ----------
-  // 月・週・日 (the user's call, after a calendar app they showed): which the calendar shows, kept on this device. 週 is the
-  // week, seven days (the user's call: its 7日・5日・3日 taken out)
+  // 月・週・日 (the user's call, after a calendar app they showed): which the calendar shows, and how many days 週 has (7, 5
+  // or 3: the user's call, taken out and then wanted back), kept on this device. 5日 and 3日 start from the day picked, and
+  // stay put while it moves within them (viewFirst)
   const CAL_VIEW_KEY = LS_PREFIX + "calView";
-  let calView = "month";
-  try { const v = JSON.parse(localStorage.getItem(CAL_VIEW_KEY) || "null"); if (["month", "week", "day"].includes(v?.view)) calView = v.view; } catch {}
-  const saveCalView = () => { try { localStorage.setItem(CAL_VIEW_KEY, JSON.stringify({ view: calView })); } catch {} };
-  // the days 週 or 日 shows: 日 the day picked; 週 its week, from the week's first day as the month has them
+  let calView = "month", weekDays = 7, viewFirst = null;
+  try { const v = JSON.parse(localStorage.getItem(CAL_VIEW_KEY) || "null"); if (["month", "week", "day"].includes(v?.view)) calView = v.view; if ([7, 5, 3].includes(v?.days)) weekDays = v.days; } catch {}
+  const saveCalView = () => { try { localStorage.setItem(CAL_VIEW_KEY, JSON.stringify({ view: calView, days: weekDays })); } catch {} };
+  // the days 週 or 日 shows: 日 the day picked; 7日 its week, from the week's first day as the month has them; 5日 and 3日
+  // from the day picked, staying put while it moves within them (a plan pressed in them opens on its day, the days left as
+  // they were)
   function viewDays() {
     if (calView === "day") return [calDay];
-    const first = addDays(calDay, -((parseYmd(calDay).getDay() - weekStart() + 7) % 7));
-    return Array.from({ length: 7 }, (_, i) => addDays(first, i));
+    let first;
+    if (weekDays === 7) first = addDays(calDay, -((parseYmd(calDay).getDay() - weekStart() + 7) % 7));
+    else {
+      if (!viewFirst || calDay < viewFirst || calDay > addDays(viewFirst, weekDays - 1)) viewFirst = calDay;
+      first = viewFirst;
+    }
+    return Array.from({ length: weekDays }, (_, i) => addDays(first, i));
   }
   // the bar on top: the month (2026年11月, or 2026年11月〜12月 for days in two), or in 日 the day (2026年11月13日（金）)
   function calTitle() {
@@ -7878,12 +7897,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (a === b) return fmtMonth(a);
     return a.slice(0, 4) === b.slice(0, 4) ? `${fmtMonth(a)}〜${Number(b.slice(5))}月` : `${fmtMonth(a)}〜${fmtMonth(b)}`;
   }
-  // which is pressed at the foot, the card showing, and what ‹ › say
+  // which is pressed at the foot, 週's days, the card showing, and what ‹ › say
   function syncCalView() {
     for (const b of $("calViews").children) b.setAttribute("aria-pressed", String(b.dataset.view === calView));
+    for (const b of $("calDays").children) b.setAttribute("aria-pressed", String(Number(b.dataset.days) === weekDays));
+    $("calDays").hidden = calView !== "week";
     document.querySelector("#sec-calendar .cal").hidden = calView !== "month";
     $("calTime").hidden = calView === "month";
-    const unit = calView === "month" ? "月" : calView === "day" ? "日" : "週";
+    const unit = calView === "month" ? "月" : calView === "day" ? "日" : weekDays === 7 ? "週" : weekDays + "日";
     $("calPrev").setAttribute("aria-label", "前の" + unit); $("calNext").setAttribute("aria-label", "次の" + unit);
   }
   // a view picked: 週 and 日 from the day picked in the month on show (else today, if it is that month, else its 1st), or
@@ -7896,6 +7917,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     renderCalendar();
   }
   $("calViews").addEventListener("click", (ev) => { const b = ev.target.closest("button[data-view]"); if (b && b.dataset.view !== calView) setCalView(b.dataset.view); });
+  $("calDays").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button[data-days]");
+    if (!b || Number(b.dataset.days) === weekDays) return;
+    weekDays = Number(b.dataset.days); viewFirst = null;
+    saveCalView(); renderCalendar();
+  });
   const nowMinutes = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
   // plans at the same time side by side: each takes the first column free at its start, and the ones overlapping one
   // another share the width by as many columns as they needed
@@ -7981,8 +8008,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           return el("button", { type: "button", class: "tg-ev" + (l ? "" : " plain") + (x.end - x.s <= 45 ? " short" : ""),
             style: `top: ${x.s / 14.4}%; height: ${(Math.min(x.end, 1440) - x.s) / 14.4}%; left: ${(x.c / x.n) * 100}%; width: ${100 / x.n}%; --bc: ${labelHue(l)}`,
             "data-ev": e.id + "|" + x.t.start, "aria-label": `「${e.title}」を編集（${when}${l ? "・" + l.name : ""}${e.place ? "・場所 " + e.place : ""}）`, onclick: (ev) => editFromGrid(e.id, x.t.start, d, ev.detail === 0) },
-            // (a short one in 週's narrow columns: its name alone, its place showing its time)
-            el("span", { class: "t" }, e.title), n > 1 && x.end - x.s <= 45 ? null : el("span", { class: "tm" }, n > 1 ? e.time : when));
+            // (a short one in 7日 and 5日's narrow columns: its name alone, its place showing its time)
+            el("span", { class: "t" }, e.title), n >= 5 && x.end - x.s <= 45 ? null : el("span", { class: "tm" }, n >= 5 ? e.time : when));
         }),
         d === todayKey ? el("div", { class: "tg-now", style: `top: ${nowMinutes() / 14.4}%` }) : null);
     });
