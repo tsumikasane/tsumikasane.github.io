@@ -1169,13 +1169,13 @@ form.add .memo-area { display: none; }
 /* event labels: the user's own categories. Wherever a label is picked or listed its name sits next to the colour, so colour
    is never the only cue (HIG); the month grid writes each plan's title in it and has no legend (the user's call). In the
    forms they are one-tap chips; a chosen chip fills with its colour and white text. */
-#edLabelLabel, #planLabelLabel, #stSubjectLabel, #reSubjectLabel { align-self: start; margin-top: 4px; }  /* the chips can wrap, so the label stays with their first row */
+#edLabelLabel, #planLabelLabel, #stSubjectLabel, #reSubjectLabel, #todoListLabel, #todoLabelLabel, #reListLabel, #reLabelLabel { align-self: start; margin-top: 4px; }  /* the chips can wrap, so the label stays with their first row (a ToDo's リスト and ラベル, one over the other, each by its own) */
 .label-chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .label-chips label { position: relative; display: grid; cursor: pointer; }
 .label-chips input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .label-chips span { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 999px; background: var(--fill); font-size: var(--t-sub); line-height: 1.2; white-space: nowrap; }
 .label-chips span::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--lc); }
-.label-chips .none span::before { display: none; }
+.label-chips .none span::before, .label-chips.lists span::before { display: none; }
 .label-chips .chip-add { display: inline-grid; place-items: center; min-width: 44px; min-height: 32px; padding: 0 10px; border: 1px dashed var(--line); border-radius: 999px; background: transparent; color: var(--accent); cursor: pointer; }
 .label-chips .chip-add .icon { width: 18px; height: 18px; }
 .label-chips input:checked + span { background: var(--lf); color: #ffffff; font-weight: 600; }
@@ -1754,12 +1754,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <input type="search" id="todoSearch" autocomplete="off" enterkeyhint="search" placeholder="名前やメモで探す" aria-label="ToDoを名前やメモで探す">
           <button type="button" class="rec-search-clear" id="todoSearchClear" aria-label="探す言葉を消す" hidden><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
         </div>
-        <!-- the labels as tabs over the list (the user's call: as a ToDo app they showed): すべて, then each label with how
-             many are still to do there, the one pressed showing only its own; ＋ makes a new label (renderTodoTabs) -->
-        <div class="td-tabs" role="group" aria-label="ラベルで分ける" id="todoTabs"></div>
-        <!-- 編集: the labels' settings (the gear that was by ＋); その他: 最近削除したToDo, and deleting the done ones -->
+        <!-- the lists as tabs over the list (the user's call: as a ToDo app they showed), made apart from the labels (the
+             user's call: each label made a tab): すべて, then each list with how many are still to do there, the one pressed
+             showing only its own; ＋ makes a new list (renderTodoTabs) -->
+        <div class="td-tabs" role="group" aria-label="リストで分ける" id="todoTabs"></div>
+        <!-- 編集: the lists' and labels' settings (the gear that was by ＋); その他: 最近削除したToDo, and deleting the done ones -->
         <div class="td-tools">
-          <button type="button" class="td-tool" id="todoSettings" aria-haspopup="dialog" aria-label="ラベルを編集"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>編集</button>
+          <button type="button" class="td-tool" id="todoSettings" aria-haspopup="dialog" aria-label="リストとラベルを編集"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>編集</button>
           <button type="button" class="td-tool" id="todoMore" aria-haspopup="dialog"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-more"/></svg>その他</button>
         </div>
         <ul class="list card" id="todoList"></ul>
@@ -2262,8 +2263,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </div>
         <!-- (no words under the labels and no iPhoneのカレンダーへ with 予定を書き出す: taken out, the user's call) -->
       </div>
-      <!-- ToDo's own labels (the user's call: they were the calendar's), from ToDo's gear -->
+      <!-- ToDo's lists, the tabs over its list (the user's call: apart from the labels), and its own labels (the user's call:
+           they were the calendar's), from ToDo's 編集 -->
       <div class="sheet-view" id="todoLabelsGroup" hidden>
+        <h3 class="group-head">リスト</h3>
+        <div class="card">
+          <ul class="list" id="todoListRows"></ul>
+          <div class="label-tools"><button type="button" class="link-btn" id="todoListAdd"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>リストを追加</button></div>
+        </div>
+        <p class="group-foot"><span class="phrase">ToDoページの上に並ぶタブです。</span><span class="phrase">ラベルとは別に作れます。</span><span class="phrase">リストを消すと、入っていたToDoは「すべて」にだけ出ます。</span></p>
         <h3 class="group-head">ラベル</h3>
         <div class="card">
           <ul class="list" id="todoLabelList"></ul>
@@ -2434,6 +2442,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </div>
         <label class="flabel" for="todoFlag">重要</label>
         <div class="ffield"><input type="checkbox" id="todoFlag" class="switch" role="switch"></div>
+        <span class="flabel" id="todoListLabel">リスト</span>
+        <div class="ffield" id="todoListPick"></div>
         <span class="flabel" id="todoLabelLabel">ラベル</span>
         <div class="ffield" id="todoLabels"></div>
         <textarea id="todoMemo" class="full grow memo" rows="1" placeholder="メモ" aria-label="メモ" maxlength="1000"></textarea>
@@ -2871,15 +2881,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const events = new Store("events");
   const labels = new Store("labels"); // the user's categories for events
   const todoLabels = new Store("todoLabels"); // the user's categories for ToDos, apart from the calendar's (the user's call)
+  const todoLists = new Store("todoLists"); // the tabs over ToDo's list, {name, createdAt}, apart from its labels (the user's call)
   const study = new Store("study"); // time studied: {date, minutes, subjectId?, note?}
   const subjects = new Store("subjects"); // the user's subjects for study, with a colour each, like the labels
   const routines = new Store("routines"); // the user's own things to do every day: {name, createdAt}
   const routineDays = new Store("routineDays"); // one entry a day, id = the date: {date, done: [routine ids]}
   const shifts = new Store("shifts"); // 家計簿's バイト: a shift worked, {date, start, end (HH:MM, the next day's when not later), rest (分), jobId}
   const deleted = new Store("deleted"); // the records deleted here: {id: "store/id", store, rid, at}
-  const ALL_STORES = [todos, journal, meals, workouts, weights, expenses, goals, settings, events, labels, todoLabels, study, subjects, routines, routineDays, shifts, deleted];
+  const ALL_STORES = [todos, journal, meals, workouts, weights, expenses, goals, settings, events, labels, todoLabels, todoLists, study, subjects, routines, routineDays, shifts, deleted];
   // the names the notices use for each kind of record
-  const STORE_NAMES = { todos: "ToDo", journal: "日記", meals: "食事", workouts: "運動", weights: "からだ", expenses: "家計簿", goals: "目標", events: "予定", labels: "予定のラベル", todoLabels: "ToDoのラベル", study: "勉強", subjects: "勉強の科目", routines: "ルーティーン", routineDays: "ルーティーンのチェック", shifts: "バイト", tsumi: "つみかさねのブロック" };
+  const STORE_NAMES = { todos: "ToDo", journal: "日記", meals: "食事", workouts: "運動", weights: "からだ", expenses: "家計簿", goals: "目標", events: "予定", labels: "予定のラベル", todoLabels: "ToDoのラベル", todoLists: "ToDoのリスト", study: "勉強", subjects: "勉強の科目", routines: "ルーティーン", routineDays: "ルーティーンのチェック", shifts: "バイト", tsumi: "つみかさねのブロック" };
 
   // ---------- 消した記録 ----------
   // each record deleted here is remembered (its kind, id and when, and for 30 days what it held, for 最近削除した項目), so a
@@ -2951,7 +2962,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // a deletion with 元に戻す in its message for the seconds it shows (the user's call, as plans have it): the records come
   // back as they were, with their ids, so nothing pointing at them needs putting right
-  const DELETED_WORDS = { todos: "ToDoを削除しました", journal: "日記を削除しました", meals: "食事の記録を削除しました", workouts: "運動の記録を削除しました", weights: "からだの記録を削除しました", expenses: "家計簿の記録を削除しました", goals: "目標を削除しました", labels: "ラベルを削除しました", todoLabels: "ラベルを削除しました", study: "勉強の記録を削除しました", subjects: "科目を削除しました", routines: "ルーティーンの項目を削除しました", routineDays: "ルーティーンのチェックを削除しました", shifts: "勤務を削除しました" };
+  const DELETED_WORDS = { todos: "ToDoを削除しました", journal: "日記を削除しました", meals: "食事の記録を削除しました", workouts: "運動の記録を削除しました", weights: "からだの記録を削除しました", expenses: "家計簿の記録を削除しました", goals: "目標を削除しました", labels: "ラベルを削除しました", todoLabels: "ラベルを削除しました", todoLists: "リストを削除しました", study: "勉強の記録を削除しました", subjects: "科目を削除しました", routines: "ルーティーンの項目を削除しました", routineDays: "ルーティーンのチェックを削除しました", shifts: "勤務を削除しました" };
   function removeWithUndo(st, ids, msg = DELETED_WORDS[st.name]) {
     const list = [].concat(ids), before = list.map((id) => st.get(id)).filter(Boolean).map((x) => JSON.parse(JSON.stringify(x)));
     if (!before.length) return;
@@ -3414,9 +3425,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("todoRepeat").closest(".form-rows").append(todoDaysEl);
   const syncTodoDue = wireTodoDue($("todoDue"), $("todoQuick"), $("todoDueClear"), $("todoRepeat"), null, todoDaysEl, $("todoUntil"));
   $("todoMemo").addEventListener("input", () => growField($("todoMemo"))); // the memo grows too, keeping its line breaks
-  // the label picked in the new ToDo's form: kept for the next one added from it, as its 期限 is, and gone as it is cleared
-  let todoLabelChoice = "";
-  function clearTodoForm() { $("todoForm").reset(); todoLabelChoice = ""; renderTodoLabels(); syncTodoDue(); syncTodoSave(); growField($("todoText")); growField($("todoMemo")); }
+  // the label and the list picked in the new ToDo's form: kept for the next one added from it, as its 期限 is, and gone as
+  // it is cleared. A fresh form starts in the list whose tab is showing (openNewTodo)
+  let todoLabelChoice = "", todoListChoice = "";
+  function clearTodoForm() { $("todoForm").reset(); todoLabelChoice = ""; todoListChoice = ""; renderTodoLabels(); syncTodoDue(); syncTodoSave(); growField($("todoText")); growField($("todoMemo")); }
   $("todoAdd").addEventListener("click", (ev) => openNewTodo(ev.detail === 0));
   $("navAdd").addEventListener("click", (ev) => openNewTodo(ev.detail === 0, "todonav")); // the same, in the top bar
   $("todoForm").addEventListener("submit", (ev) => {
@@ -3427,13 +3439,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!lines.length) return;
     const due = $("todoDue").value || "", repeat = due && $("todoRepeat").value, memo = $("todoMemo").value.trim(), flag = $("todoFlag").checked;
     const labelId = todoLabelChoice && todoLabels.get(todoLabelChoice) ? todoLabelChoice : "";
+    const listId = todoListChoice && todoLists.get(todoListChoice) ? todoListChoice : "";
+    // one going in another list than the tab showing would leave the page without a trace: the message says where it went
+    // (on ToDo's page only: added from きょう's tile or a day, no tab is showing)
+    const away = tab === "todo" && !!todoTab && listId !== todoTab, where = away && listId ? `「${clip(todoLists.get(listId).name, 20)}」に` : "";
     const repeatDays = repeat === "weekly" ? keptDays(pickedDays(todoDaysEl), due) : undefined;
     const until = $("todoUntil").value, repeatUntil = repeat && until && until >= due ? until : undefined;
     if (todoQuery) { todoQuery = ""; $("todoSearch").value = ""; } // nor would it if it lacked the words looked for
     act(async () => {
-      const now = Date.now(), ids = await todos.addMany(lines.map((text, i) => ({ text, done: false, due, ...(repeat ? { repeat } : {}), ...(repeatDays ? { repeatDays } : {}), ...(repeatUntil ? { repeatUntil } : {}), ...(memo ? { memo } : {}), ...(flag ? { flag: true } : {}), ...(labelId ? { labelId } : {}), createdAt: now + i })));
+      const now = Date.now(), ids = await todos.addMany(lines.map((text, i) => ({ text, done: false, due, ...(repeat ? { repeat } : {}), ...(repeatDays ? { repeatDays } : {}), ...(repeatUntil ? { repeatUntil } : {}), ...(memo ? { memo } : {}), ...(flag ? { flag: true } : {}), ...(labelId ? { labelId } : {}), ...(listId ? { listId } : {}), createdAt: now + i })));
       todoNewIds.push(...ids); // lit in the list as the sheet goes down
-      flash((ids.length > 1 ? `ToDoを ${ids.length} 件追加しました` : `「${clip(lines[0], 40)}」を追加しました`) + (cut ? `（長い名前は ${TODO_NAME} 字までにしました）` : ""), () => takeBack(todos, ids));
+      flash((ids.length > 1 ? `${where}ToDoを ${ids.length} 件追加しました` : `「${clip(lines[0], 40)}」を${where}追加しました`) + (away && !listId ? "（リストなしなので「すべて」に出ます）" : "") + (cut ? `（長い名前は ${TODO_NAME} 字までにしました）` : ""), () => takeBack(todos, ids));
     });
     // the sheet stays, empty, with the typing ready for the next one (the user's call: it had to be opened again for each);
     // the bar's キャンセル becomes 閉じる. The next one keeps this one's 期限 (the user's call: several for one day were each
@@ -3444,7 +3460,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (next) { $("todoDue").value = next; syncTodoDue(); }
     todoAdded = true; syncSheetHead();
     $("todoText").focus();
-    todoLabelChoice = labelId; renderTodoLabels(); // (once focus has left a chip, which keeps its group from being drawn again)
+    todoLabelChoice = labelId; todoListChoice = listId; renderTodoLabels(); // (once focus has left a chip, which keeps its group from being drawn again)
   });
   // 完了 shows its last ten, the rest a press away (the user's call: those were under 完了 in the bar taken out)
   let todoDoneAll = false;
@@ -3586,7 +3602,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       // the days its turns were done go on with the repeat (history, oldest first), so これまで stays when the done ones are
       // deleted (the user's call: 完了したものを削除 took it with them)
       const history = due ? [...turnsBefore(t), ymd(new Date())] : null;
-      const next = due ? await todos.add({ text: t.text, done: false, due, repeat: t.repeat, ...(t.repeatDays ? { repeatDays: t.repeatDays } : {}), ...(t.repeatUntil ? { repeatUntil: t.repeatUntil } : {}), ...(from ? { repeatFrom: from } : {}), ...(t.memo ? { memo: t.memo } : {}), ...(t.flag ? { flag: true } : {}), ...(t.labelId ? { labelId: t.labelId } : {}), ...(history ? { history } : {}), createdAt: Date.now() }) : null;
+      const next = due ? await todos.add({ text: t.text, done: false, due, repeat: t.repeat, ...(t.repeatDays ? { repeatDays: t.repeatDays } : {}), ...(t.repeatUntil ? { repeatUntil: t.repeatUntil } : {}), ...(from ? { repeatFrom: from } : {}), ...(t.memo ? { memo: t.memo } : {}), ...(t.flag ? { flag: true } : {}), ...(t.labelId ? { labelId: t.labelId } : {}), ...(t.listId ? { listId: t.listId } : {}), ...(history ? { history } : {}), createdAt: Date.now() }) : null;
       await todos.update(t.id, { done: true, doneAt: Date.now(), ...(next ? { repeat: undefined, repeatDays: undefined, repeatUntil: undefined, next } : {}) });
       // and says when that is (the user's call: it just went, its next turn far down the list), with 元に戻す; its last turn
       // (いつまで reached) says the repeat ends with it
@@ -3599,7 +3615,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (back) takeBack(todos, [next.id]);
     // what was written on the turn that goes (a memo, 重要, a new name) comes back with the repeat (the user's call: a memo
     // written there was lost with it)
-    await todos.update(t.id, { done: false, doneAt: undefined, next: undefined, ...(back ? { repeat: next.repeat, repeatDays: next.repeatDays, repeatUntil: next.repeatUntil, text: next.text, memo: next.memo, flag: next.flag, labelId: next.labelId } : {}) });
+    await todos.update(t.id, { done: false, doneAt: undefined, next: undefined, ...(back ? { repeat: next.repeat, repeatDays: next.repeatDays, repeatUntil: next.repeatUntil, text: next.text, memo: next.memo, flag: next.flag, labelId: next.labelId, listId: next.listId } : {}) });
   }
   // a repeating ToDo's turn deleted alone (× on its row, or この回を削除 in its sheet): it goes on to its next turn, as if
   // this one were done but with nothing kept as done (the user's call: × on 毎週's ゴミ出し took the repeat with it);
@@ -3669,14 +3685,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // 最近削除したToDo (from その他): how many there are, and the page itself
   const todoTrashN = () => deleted.items.filter((t) => t.data && t.store === "todos").length;
   function openTodoTrash() { trashOf = "todos"; trashBack = null; renderTrash(); showTab("trash"); }
-  // ---------- ToDo's labels as tabs, 編集 and その他 (the user's call: as a ToDo app they showed) ----------
-  // over the list: すべて, then each label in the settings' order, each with how many are still to do there; one pressed
-  // shows only its ToDos (kept on this device: the same tab as the page opens again), ＋ makes a new label, and a label
-  // deleted gives すべて back. 編集 is the labels' settings (todoSettings, the gear that was by ＋); その他 what acts on
-  // the list: 最近削除したToDo, and the done ones of the tab showing deleted (with 元に戻す, in place of a second press)
+  // ---------- ToDo's lists as tabs, 編集 and その他 (the user's call: as a ToDo app they showed) ----------
+  // over the list: すべて, then each list in the settings' order, each with how many are still to do there; one pressed
+  // shows only its ToDos (kept on this device: the same tab as the page opens again), ＋ makes a new list, and a list
+  // deleted gives すべて back. The lists are ToDo's own, apart from its labels (the user's call: each label made a tab,
+  // and each tab a label). 編集 is the lists' and labels' settings (todoSettings, the gear that was by ＋); その他 what
+  // acts on the list: 最近削除したToDo, and the done ones of the tab showing deleted (with 元に戻す, in place of a second
+  // press)
   const TODO_TAB_KEY = LS_PREFIX + "todoTab";
   let todoTab = (() => { try { return localStorage.getItem(TODO_TAB_KEY) || ""; } catch { return ""; } })();
-  const inTodoTab = (t) => !todoTab || todoLabelOf(t)?.id === todoTab;
+  const inTodoTab = (t) => !todoTab || todoListOf(t)?.id === todoTab;
   function setTodoTab(id) {
     todoTab = id;
     try { localStorage.setItem(TODO_TAB_KEY, id); } catch {}
@@ -3684,17 +3702,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("todoTabs").querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
   function renderTodoTabs() {
-    if (todoTab && !todoLabelOf({ labelId: todoTab })) todoTab = "";
+    if (todoTab && !todoLists.get(todoTab)) todoTab = "";
     const open = todos.items.filter((t) => !t.done);
-    const tab = (id, name, n, l = null) => el("button", { type: "button", class: "td-tab", style: l ? labelStyle(l) : null, "aria-pressed": String(todoTab === id),
+    const tab = (id, name, n) => el("button", { type: "button", class: "td-tab", "aria-pressed": String(todoTab === id),
       "aria-label": `${name}、${n} 件`, onclick: () => { if (todoTab !== id) setTodoTab(id); } }, el("span", { class: "td-tab-name" }, name), el("span", { class: "td-tab-n" }, String(n)));
     setChildren($("todoTabs"), tab("", "すべて", open.length),
-      sortedTodoLabels().map((l) => tab(l.id, l.name, open.filter((t) => todoLabelOf(t)?.id === l.id).length, l)),
-      el("button", { type: "button", class: "td-tab add", "aria-label": "ラベルを追加", "aria-haspopup": "dialog", onclick: (ev) => { openSettings(ev.detail === 0, "todo"); addTodoLabel(); } }, icon("plus", 20)));
+      sortedTodoLists().map((l) => tab(l.id, l.name, open.filter((t) => t.listId === l.id).length)),
+      el("button", { type: "button", class: "td-tab add", "aria-label": "リストを追加", "aria-haspopup": "dialog", onclick: (ev) => { openSettings(ev.detail === 0, "todo"); addTodoList(); } }, icon("plus", 20)));
   }
   $("todoMore").addEventListener("click", () => {
     if (todoMenu.open || sheetEl.open) return;
-    const done = todos.items.filter((t) => t.done && inTodoTab(t)), gone = todoTrashN(), name = todoTab ? todoLabelOf({ labelId: todoTab })?.name : "";
+    const done = todos.items.filter((t) => t.done && inTodoTab(t)), gone = todoTrashN(), name = todoTab ? todoLists.get(todoTab)?.name : "";
     const item = (text, go, danger = false) => el("button", { type: "button", class: "ask-btn" + (danger ? " danger" : ""), onclick: (ev) => {
       if (!todoMenuDown && ev.detail !== 0) return;
       todoMenu.close(); go();
@@ -3738,7 +3756,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       list.append(el("li", { class: "empty", tabindex: -1 }, words.length
         ? `「${todoQuery.trim()}」に合うToDoはありません。`
         : items.length ? "すべて完了しました"
-        : todoTab ? [el("span", { class: "phrase" }, `「${todoLabelOf({ labelId: todoTab })?.name || ""}」のToDoは`), el("span", { class: "phrase" }, "まだありません。")]
+        : todoTab ? [el("span", { class: "phrase" }, `「${todoLists.get(todoTab)?.name || ""}」のToDoは`), el("span", { class: "phrase" }, "まだありません。")]
         : [el("span", { class: "phrase" }, "まだ何もありません。"), el("span", { class: "phrase" }, "右上の＋から追加できます。")]));
       if (focused) list.lastChild.focus(); // the last one gone: what the list says now
       lightWords(list, []);
@@ -5688,6 +5706,25 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ToDos' own (the user's call: they were the calendar's), the same names and colours, made from ToDo's gear
   const sortedTodoLabels = () => [...todoLabels.items].sort((a, b) => num(a.createdAt) - num(b.createdAt));
   const todoLabelOf = (t) => (t && t.labelId && todoLabels.get(t.labelId)) || null;
+  // and its lists, the tabs over its list (the user's call: apart from the labels), in the order they were made
+  const sortedTodoLists = () => [...todoLists.items].sort((a, b) => num(a.createdAt) - num(b.createdAt));
+  const todoListOf = (t) => (t && t.listId && todoLists.get(t.listId)) || null;
+  // the tabs were the labels until the lists came apart from them (the user's call): once, each label is copied to a
+  // list under the same id, in the same order, and each ToDo with a label goes in that list, so the tabs stay as they
+  // were until changed; then lists and labels each go their own way. A setting says it was done, which the other devices
+  // take as done; one doing it at the same moment makes the very same lists and ToDos, so the two don't clash. Not while
+  // a kind of record is still to be read in (the bigger storage): it is left for the next time the app opens
+  function splitTodoLists() {
+    if (settings.get("todoListSplit") || ![todos, todoLabels, todoLists, settings, deleted].every((st) => st.loaded)) return;
+    const at = Date.now();
+    const add = sortedTodoLabels().filter((l) => !todoLists.get(l.id) && !deleted.get(delKey(todoLists, l.id))).map((l) => ({ id: l.id, name: l.name, createdAt: num(l.createdAt) }));
+    if (add.length) { todoLists.items.push(...add); syncNote(todoLists, add.map((l) => l.id)); todoLists.saveLocal(); }
+    const moved = todos.items.filter((t) => t.labelId && t.listId === undefined && todoLists.get(t.labelId));
+    for (const t of moved) t.listId = t.labelId;
+    if (moved.length) { syncNote(todos, moved.map((t) => t.id)); todos.saveLocal(); }
+    settings.items.push({ id: "todoListSplit", at, updatedAt: at });
+    syncNote(settings, ["todoListSplit"]); settings.saveLocal();
+  }
   // ToDos' labels apart from the calendar's (the user's call): those ToDos had are copied to theirs under the same ids, so
   // the ToDos keep them, and one no plan has leaves the calendar's, quietly, as nothing went; once, a setting saying so,
   // which the other devices take as done. Later, a ToDo with a label only the calendar's has (from a file or copy read in,
@@ -5746,6 +5783,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function todoLabelPicker(name, current, onPick, labelledBy) {
     return tagPicker(sortedTodoLabels(), makeFirstTodoLabel, "ラベルを作る", name, current, onPick, labelledBy);
   }
+  // a list's chips have no colour (they are tabs, not labels) and fill with ToDo's own when picked
+  function todoListPicker(name, current, onPick, labelledBy) {
+    const p = tagPicker(sortedTodoLists(), makeFirstTodoList, "リストを作る", name, current, onPick, labelledBy, () => "--lf:var(--f-todo)");
+    p.classList.add("lists");
+    return p;
+  }
   function tagPicker(items, makeFirst, makeText, name, current, onPick, labelledBy, styleOf = labelStyle) {
     if (!items.length) return el("button", { type: "button", class: "link-btn", onclick: makeFirst }, makeText);
     const chip = (value, text, l) => el("label", { class: value ? "" : "none", style: styleOf(l) },
@@ -5759,11 +5802,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function makeFirstLabel() { openSettings(false); addLabel(); }
   // ToDo's are ToDo's settings (its gear), in the same sheet likewise
   function makeFirstTodoLabel() { openSettings(false, "todo"); addTodoLabel(); }
+  function makeFirstTodoList() { openSettings(false, "todo"); addTodoList(); }
   function renderLabels() {
     renderPlanLabels();
     renderTodoLabels();
     renderLabelEditor();
     renderTodoLabelEditor();
+    renderTagEditor(todoLists, $("todoListRows"), "リスト");
   }
   // the same chips in a ToDo's forms (the user's call: ToDos couldn't be sorted as plans are), of ToDo's own labels (the
   // user's call: they were the calendar's): the new one's, and while one is open, its edit form's, keeping what is picked
@@ -5773,6 +5818,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!$("todoLabels").contains(document.activeElement)) setChildren($("todoLabels"), todoLabelPicker("todoLabel", todoLabelChoice, (v) => { todoLabelChoice = v; }, "todoLabelLabel"));
     const re = recEdit?.kind === "todo" && $("reLabels"), picked = checkedValue("reLabel");
     if (re && !re.contains(document.activeElement)) setChildren(re, todoLabelPicker("reLabel", todoLabels.get(picked) ? picked : "", () => {}, "reLabelLabel"));
+    // its list's chips likewise, over them
+    if (todoListChoice && !todoLists.get(todoListChoice)) todoListChoice = "";
+    if (!$("todoListPick").contains(document.activeElement)) setChildren($("todoListPick"), todoListPicker("todoInList", todoListChoice, (v) => { todoListChoice = v; }, "todoListLabel"));
+    const rl = recEdit?.kind === "todo" && $("reLists"), inList = checkedValue("reList");
+    if (rl && !rl.contains(document.activeElement)) setChildren(rl, todoListPicker("reList", todoLists.get(inList) ? inList : "", () => {}, "reListLabel"));
   }
   // left alone while a chip there has focus; it is drawn again as the form opens
   function renderPlanLabels() {
@@ -5782,8 +5832,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function renderLabelEditor() { renderTagEditor(labels, $("labelList"), "ラベル"); }
   function renderTodoLabelEditor() { renderTagEditor(todoLabels, $("todoLabelList"), "ラベル"); }
-  // the editor for the user's own categories (calendar labels, study subjects): a name and a colour per row and a
-  // two-press delete. A field in use is never swapped out; the list catches up once focus leaves it
+  // the editor for the user's own categories (calendar labels, study subjects, ToDo's labels and lists): a name and a
+  // colour per row and a two-press delete; ToDo's lists have no colour, being tabs. A field in use is never swapped out;
+  // the list catches up once focus leaves it
   function renderTagEditor(store, list, what) {
     const a = document.activeElement;
     if (list.contains(a) && a.matches("input, select")) { list.dataset.stale = "1"; return; }
@@ -5794,21 +5845,22 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // nothing of the plans that lost it); the calendar's label its plans, ToDo's its ToDos
     const usesOf = (l) => (store === labels ? [["予定", events.items.filter((e) => e.labelId === l.id).length]]
       : store === todoLabels ? [["ToDo", todos.items.filter((t) => t.labelId === l.id).length]]
+      : store === todoLists ? [["ToDo", todos.items.filter((t) => t.listId === l.id).length]]
       : [["勉強の記録", study.items.filter((x) => x.subjectId === l.id).length]]).filter(([, n]) => n);
     const usesText = (u) => u.map(([w, n]) => `${w} ${fmtN(n)} 件`).join("と"), usesWhat = (u) => u.map(([w]) => w).join("と");
     // the calendar's labels: a ring that shows or hides their plans in place of the dot, and ラベルなし first
-    const cal = store === labels, hidden = cal ? calHidden() : null, ringFocus = a?.dataset?.ring;
+    const cal = store === labels, plain = store === todoLists, hidden = cal ? calHidden() : null, ringFocus = a?.dataset?.ring;
     const ring = (key, name, l) => el("button", { type: "button", class: "check show", role: "checkbox", "aria-checked": String(!hidden.has(key)), "data-ring": key || "none",
       "aria-label": `「${name}」の予定をカレンダーに出す`, style: labelStyle(l), onclick: () => toggleCalLabel(key) }, checkMark());
     setChildren(list, cal ? el("li", { class: "label-row none-row", style: labelStyle(null) }, ring("", "ラベルなし", null), el("span", { class: "lname" }, "ラベルなし")) : null,
-      items.map((l) => el("li", { class: "label-row", "data-id": l.id, style: labelStyle(l) },
-      cal ? ring(l.id, l.name, l) : el("span", { class: "dot", "aria-hidden": "true" }),
+      items.map((l) => el("li", { class: "label-row", "data-id": l.id, style: plain ? null : labelStyle(l) },
+      cal ? ring(l.id, l.name, l) : plain ? null : el("span", { class: "dot", "aria-hidden": "true" }),
       el("input", { type: "text", value: l.name, maxlength: 20, "aria-label": `「${l.name}」の名前`, onchange: (ev) => {
         const v = ev.target.value.trim();
         if (!v) { ev.target.value = l.name; return; }
         if (v !== l.name) act(() => store.update(l.id, { name: v }));
       } }),
-      el("select", { "aria-label": `「${l.name}」の色`, onchange: (ev) => {
+      plain ? null : el("select", { "aria-label": `「${l.name}」の色`, onchange: (ev) => {
         ev.target.closest("li").style.cssText = labelStyle({ color: ev.target.value });
         act(() => store.update(l.id, { color: ev.target.value }));
       } }, LABEL_COLORS.map(([k, name]) => el("option", { value: k, selected: k === colorKey(l.color) }, name))),
@@ -5816,17 +5868,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         () => { const u = usesOf(l); if (u.length) flash(`「${l.name}」は${usesText(u)}で使っています。もう一度押すと削除し、その${usesWhat(u)}は${what}なしになります`); }))));
     if (ringFocus) list.querySelector(`[data-ring="${ringFocus}"]`)?.focus(); // pressed from the keyboard: still on it
   }
-  for (const [store, id, what] of [[labels, "labelList", "ラベル"], [todoLabels, "todoLabelList", "ラベル"], [subjects, "subjectList", "科目"]]) {
+  for (const [store, id, what] of [[labels, "labelList", "ラベル"], [todoLabels, "todoLabelList", "ラベル"], [todoLists, "todoListRows", "リスト"], [subjects, "subjectList", "科目"]]) {
     $(id).addEventListener("focusout", (ev) => {
       if ($(id).dataset.stale && !$(id).contains(ev.relatedTarget)) renderTagEditor(store, $(id), what);
     });
   }
-  // a new one gets the first colour not in use yet, and its name is ready to type over
+  // a new one gets the first colour not in use yet (a list none), and its name is ready to type over
   async function addTag(store, list, name) {
     const used = new Set(store.items.map((l) => l.color));
-    const color = (LABEL_COLORS.find(([k]) => !used.has(k)) || LABEL_COLORS[0])[0];
+    const color = store === todoLists ? null : (LABEL_COLORS.find(([k]) => !used.has(k)) || LABEL_COLORS[0])[0];
     let id = null;
-    await act(async () => { id = await store.add({ name, color, createdAt: Date.now() }); });
+    await act(async () => { id = await store.add({ name, ...(color ? { color } : {}), createdAt: Date.now() }); });
     const input = id && list.querySelector(`li[data-id="${id}"] input`);
     if (input) { input.focus(); input.select(); }
   }
@@ -5834,6 +5886,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("labelAdd").addEventListener("click", () => addLabel());
   function addTodoLabel() { return addTag(todoLabels, $("todoLabelList"), "新しいラベル"); }
   $("todoLabelAdd").addEventListener("click", () => addTodoLabel());
+  function addTodoList() { return addTag(todoLists, $("todoListRows"), "新しいリスト"); }
+  $("todoListAdd").addEventListener("click", () => addTodoList());
   function setCalDay(d) { calDay = d; calMonth = monthOf(d); renderCalendar(); }
 
   // ---------- メモ（予定のメモを大きく書くページ） ----------
@@ -6366,13 +6420,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // leaving a new ToDo begun from a day, or after one was added: the 期限 put in for it (the day's, or the last one's) goes
   // too, unless something typed goes with it, so ToDo's own ＋ doesn't open on that day later
   function dropKeptDue() { if ((todoFromDay || todoAdded) && !$("todoText").value.trim()) clearTodoForm(); }
-  // a ToDo's name, 期限 (none for one done), 重要, label and memo in the new ToDo's form, to change and add; a copy doesn't
-  // repeat, as a plan's copy doesn't
+  // a ToDo's name, 期限 (none for one done), 重要, list, label and memo in the new ToDo's form, to change and add; a copy
+  // doesn't repeat, as a plan's copy doesn't
   function fillTodoCopy(t) {
     clearTodoForm();
     $("todoText").value = t.text; $("todoMemo").value = t.memo || ""; $("todoFlag").checked = !!t.flag;
     if (t.due && !t.done) $("todoDue").value = t.due;
-    todoLabelChoice = todoLabelOf(t) ? t.labelId : ""; renderTodoLabels();
+    todoLabelChoice = todoLabelOf(t) ? t.labelId : ""; todoListChoice = todoListOf(t) ? t.listId : ""; renderTodoLabels();
     syncTodoDue(); syncTodoSave();
   }
   // このToDoを複製: that form in the same sheet (the user's call: plans had この予定を複製); from a row's menu, it opens
@@ -6631,10 +6685,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     planNew = true; renderPlanLabels(); syncSheetHead(); syncPlanSave();
     presentSheet(byKey, "plan", $("planTitle"));
   }
-  // a new ToDo: its text ready to type in; what was typed stays if the sheet is pulled away, as for a plan
+  // a new ToDo: its text ready to type in; what was typed stays if the sheet is pulled away, as for a plan. One begun
+  // afresh from ToDo's page goes in the list whose tab is showing, as it would show there; from elsewhere (きょう's tile)
+  // in none
   function openNewTodo(byKey, opener = "todo") {
     if (sheetEl.open) return;
     resetSheet();
+    if (!$("todoText").value.trim()) todoListChoice = (opener === "todo" || opener === "todonav") && todoTab && todoLists.get(todoTab) ? todoTab : "";
     todoNew = true; renderTodoLabels(); syncSheetHead(); syncTodoSave(); syncTodoDue();
     presentSheet(byKey, opener, $("todoText"));
     growField($("todoText")); growField($("todoMemo")); // what was kept from before, at its height now it shows
@@ -7547,8 +7604,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         memo.addEventListener("input", () => growField(memo)); // keeping its line breaks
         requestAnimationFrame(() => { growField(text); growField(memo); });
         const flag = el("input", { type: "checkbox", id: "reFlag", class: "switch", role: "switch", checked: !!t.flag });
-        // its label, as the ＋ sheet has it
-        const labelRow = [el("span", { class: "flabel", id: "reLabelLabel" }, "ラベル"), el("div", { class: "ffield", id: "reLabels" }, todoLabelPicker("reLabel", todoLabelOf(t) ? t.labelId : "", () => {}, "reLabelLabel"))];
+        // its list and its label, as the ＋ sheet has them
+        const labelRow = [el("span", { class: "flabel", id: "reListLabel" }, "リスト"), el("div", { class: "ffield", id: "reLists" }, todoListPicker("reList", todoListOf(t) ? t.listId : "", () => {}, "reListLabel")),
+          el("span", { class: "flabel", id: "reLabelLabel" }, "ラベル"), el("div", { class: "ffield", id: "reLabels" }, todoLabelPicker("reLabel", todoLabelOf(t) ? t.labelId : "", () => {}, "reLabelLabel"))];
         // the days its repeat's turns were done, newest first, when it has any (the user's call: its row in 完了 said only how
         // many and the last day); one done alone has its day under 完了 already
         // A day with two turns done is said once, with how many (the user's call: 11/1 came twice)
@@ -7578,7 +7636,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         return [text, recRow("期限", due, { opt: true, after: [quick, clear], below: true }), repeatRow, untilRow, turnsRow, recRow("重要", flag), labelRow, madeRow, memo];
       },
       // a 期限 changed here is the repeat's new day; left as it was, the day its turns count from stays too. A done one's
-      // sheet has no repeat or 重要 to read: they stay as they were. A label deleted since stays on it, so the label's
+      // sheet has no repeat or 重要 to read: they stay as they were. A label or list deleted since stays on it, so its
       // 元に戻す brings it back here too
       read: (t) => {
         const text = $("reText").value.trim(), due = $("reDue").value || "", memo = $("reMemo").value.trim();
@@ -7587,7 +7645,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const repeatDays = $("reDays") ? (repeat === "weekly" ? keptDays(pickedDays($("reDays")), repeatFrom || due) : undefined) : t.repeatDays;
         const until = $("reUntil") ? $("reUntil").value : "", repeatUntil = $("reUntil") ? (repeat && until && until >= due ? until : undefined) : t.repeatUntil;
         return text ? { text, due, repeat, repeatFrom, repeatDays, repeatUntil, memo: memo || undefined,
-          flag: $("reFlag") ? $("reFlag").checked || undefined : t.flag, labelId: checkedValue("reLabel") || (todoLabelOf(t) ? undefined : t.labelId) } : recBad("reText");
+          flag: $("reFlag") ? $("reFlag").checked || undefined : t.flag, labelId: checkedValue("reLabel") || (todoLabelOf(t) ? undefined : t.labelId),
+          listId: checkedValue("reList") || (todoListOf(t) ? undefined : t.listId) } : recBad("reText");
       },
     },
     meal: {
@@ -10401,7 +10460,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // a ToDo's repeats are the calendar's and those counted from the day done (完了から1週間後…), which didn't pass, so such a
     // ToDo couldn't come back from 最近削除した項目, a file or a copy
     if (s === todos) return typeof x.text === "string" && (!x.repeat || REPEATS.some(([k]) => k === x.repeat) || !!afterDone(x.repeat)) && (!x.repeatUntil || isDay(x.repeatUntil));
-    if (s === labels || s === todoLabels || s === subjects || s === routines) return typeof x.name === "string";
+    if (s === labels || s === todoLabels || s === todoLists || s === subjects || s === routines) return typeof x.name === "string";
     if (s === shifts) return /^\d{2}:\d{2}$/.test(x.start || "") && /^\d{2}:\d{2}$/.test(x.end || "");
     if (s === deleted) return typeof x.store === "string" && typeof x.rid === "string" && x.id === `${x.store}/${x.rid}`;
     return true;
@@ -11505,6 +11564,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     pruneTrash();
     tidyStorage();
     splitTodoLabels();
+    splitTodoLists();
     showMode();
     checkRestore().then(() => saveCopy());
     askPersist();
