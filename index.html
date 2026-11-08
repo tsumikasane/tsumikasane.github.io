@@ -71,6 +71,9 @@
   --lc-blue: #1e6ef4; --lc-purple: #b02fc2; --lc-pink: #e7124d; --lc-brown: #956d51; --lc-gray: #6c6c70;
   --lf-red: #e9152d; --lf-orange: #c55300; --lf-yellow: #a16a00; --lf-green: #008932; --lf-cyan: #007eae;
   --lf-blue: #1e6ef4; --lf-purple: #b02fc2; --lf-pink: #e7124d; --lf-brown: #956d51; --lf-gray: #6c6c70;
+  /* each label's hue at its brightest, for the light tint behind a ToDo of that label (ToDo's page) */
+  --lv-red: #ff4245; --lv-orange: #ff9230; --lv-yellow: #ffd600; --lv-green: #30d158; --lv-cyan: #3cd3fe;
+  --lv-blue: #0091ff; --lv-purple: #db34f2; --lv-pink: #ff375f; --lv-brown: #b78a66; --lv-gray: #8e8e93;
   --font-body: -apple-system, BlinkMacSystemFont, system-ui, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Segoe UI", "Yu Gothic UI", "Meiryo", sans-serif;
   /* SF Pro Rounded for the big numbers, as Health and Fitness use; other systems fall back to their own font */
   --font-round: ui-rounded, -apple-system, BlinkMacSystemFont, system-ui, "Hiragino Sans", "Segoe UI", "Yu Gothic UI", "Meiryo", sans-serif;
@@ -591,6 +594,36 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 #trashList > li.marked:first-child { border-radius: var(--radius) var(--radius) 0 0; }
 #trashList > li.marked:last-child { border-radius: 0 0 var(--radius) var(--radius); }
 #trashList > li.marked:only-child { border-radius: var(--radius); }
+/* ToDo as the app the user showed (the user's call): the labels as tabs, rounded, side by side (sideways scrolling when
+   they don't fit), each with how many are still to do in it; the one showing filled in its label's colour (すべて in
+   ToDo's). 編集 and その他 under them at the right, quiet. The list from one edge of the screen to the other on iPhone,
+   each row still to do in its label's light colour, its 期限 after a calendar's mark, the lines between the rows from
+   the names on, and × on the done ones only */
+.td-tabs { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding: 4px 2px 6px; }
+.td-tabs::-webkit-scrollbar { display: none; }
+.td-tab { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; border: .5px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--fg); font-size: var(--t-body); line-height: 1.2; white-space: nowrap; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, .06); }
+.td-tab .td-tab-n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.td-tab[aria-pressed="true"] { background: var(--lf, var(--f-todo)); border-color: transparent; color: #ffffff; font-weight: 600; box-shadow: 0 2px 8px color-mix(in srgb, var(--lf, var(--f-todo)) 35%, transparent); }
+.td-tab[aria-pressed="true"] .td-tab-n { color: rgba(255, 255, 255, .85); }
+.td-tab.add { width: 52px; padding: 0; justify-content: center; }
+.td-tools { display: flex; justify-content: flex-end; gap: 0 18px; margin-block: -12px -6px; }
+.td-tool { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 4px; background: transparent; border: 0; color: var(--muted); font-size: var(--t-sub); cursor: pointer; }
+.td-tool .icon { width: 20px; height: 20px; }
+@media (max-width: 767px) {
+  /* (the tabs scroll from the screen's edge, as the list runs to it) */
+  .td-tabs { margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))) calc(-1 * max(16px, env(safe-area-inset-right, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+  #todoList { margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))) calc(-1 * max(16px, env(safe-area-inset-right, 0px))); padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px); border-radius: 0; }
+  #todoList > li:first-child, #todoList > li:last-child { border-radius: 0; }
+}
+#todoList > li.tinted { background: color-mix(in srgb, var(--lv) 14%, var(--surface)); }
+#todoList > li.tinted:has(.row-link:active) { background: color-mix(in srgb, var(--lv) 26%, var(--surface)); }
+@media (hover: hover) { #todoList > li.tinted:has(.row-link:hover) { background: color-mix(in srgb, var(--lv) 20%, var(--surface)); } }
+/* (the grey and red lines under a name a little nearer the text's colour there, so they still read 4.5:1 on the tint) */
+#todoList > li.tinted .sub { color: color-mix(in srgb, var(--muted) 72%, var(--fg)); }
+#todoList > li.tinted .sub.warn { color: color-mix(in srgb, var(--warn) 85%, var(--fg)); }
+#todoList > li + li::before { left: calc(var(--space-2) + 24px + 12px); }
+.td-cal { display: inline-flex; align-items: center; margin-inline-end: 4px; vertical-align: -2px; }
+.td-cal .icon { width: 14px; height: 14px; }
 /* a ToDo's ○ and × level with its first line, as high as a line of body text (the user's call: with a memo or a long
    name the ○ sat lower down, at the middle of the row) */
 #todoList > li:has(> .check) { align-items: flex-start; }
@@ -1547,6 +1580,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M9.25 3.75h5.5M4.75 6.5h14.5m-12.75 0 .85 12.65a1.5 1.5 0 0 0 1.5 1.35h6.3a1.5 1.5 0 0 0 1.5-1.35l.85-12.65M10 10.25v6.25m4-6.25v6.25" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-copies" viewBox="0 0 24 24"><path d="M9 8.75h9.25a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9.75a1 1 0 0 1 1-1Zm7-3v-.75a1 1 0 0 0-1-1H5.75a1 1 0 0 0-1 1v9.25a1 1 0 0 0 1 1h1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-sync" viewBox="0 0 24 24"><path d="M19.25 9.5A7.25 7.25 0 0 0 5.6 7.6M4.75 14.5a7.25 7.25 0 0 0 13.65 1.9M5.25 4.25v3.5h3.5m10 12v-3.5h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9.5 6.5h10m-10 5.5h10m-10 5.5h10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="5" cy="6.5" r="1.1"/><circle cx="5" cy="12" r="1.1"/><circle cx="5" cy="17.5" r="1.1"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="16" cy="12" r="1.2"/></symbol>
   <symbol id="i-cal-month" viewBox="0 0 24 24"><path d="M5.75 4.75h12.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2V6.75a2 2 0 0 1 2-2Zm-2 5h16.5m-16.5 4.75h16.5M9.25 4.75v14.5m5.5-14.5v14.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
   <symbol id="i-cal-week" viewBox="0 0 24 24"><path d="M5.75 4.75h12.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2V6.75a2 2 0 0 1 2-2Zm2.38 0v14.5M12 4.75v14.5m3.88-14.5v14.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
   <symbol id="i-cal-day" viewBox="0 0 24 24"><path d="M5.75 4.75h12.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2V6.75a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><rect x="10.5" y="7.75" width="3" height="8.5" rx="1"/></symbol>
@@ -1693,7 +1728,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- a new ToDo is made in the sheet the ＋ opens (the user's call: no form on the page, so the list has the room),
              as on 目標 -->
         <div class="sec-head">
-          <div class="title-row"><h2><span class="page-mark" role="img" aria-label="ToDo"><svg class="icon" width="40" height="40" aria-hidden="true" focusable="false"><use href="#i-todo"/></svg></span></h2><button type="button" class="icon-btn" id="todoSettings" aria-label="設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button><button type="button" class="icon-btn" id="todoAdd" aria-label="ToDoを追加" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg></button></div>
+          <div class="title-row"><h2><span class="page-mark" role="img" aria-label="ToDo"><svg class="icon" width="40" height="40" aria-hidden="true" focusable="false"><use href="#i-todo"/></svg></span></h2><button type="button" class="icon-btn" id="todoAdd" aria-label="ToDoを追加" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg></button></div>
         </div>
         <!-- the list narrowed to the words typed (the user's call), in a ToDo's name or memo, as 記録's lists have it -->
         <div class="rec-search" id="todoSearchBox">
@@ -1701,13 +1736,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <input type="search" id="todoSearch" autocomplete="off" enterkeyhint="search" placeholder="名前やメモで探す" aria-label="ToDoを名前やメモで探す">
           <button type="button" class="rec-search-clear" id="todoSearchClear" aria-label="探す言葉を消す" hidden><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
         </div>
+        <!-- the labels as tabs over the list (the user's call: as a ToDo app they showed): すべて, then each label with how
+             many are still to do there, the one pressed showing only its own; ＋ makes a new label (renderTodoTabs) -->
+        <div class="td-tabs" role="group" aria-label="ラベルで分ける" id="todoTabs"></div>
+        <!-- 編集: the labels' settings (the gear that was by ＋); その他: 最近削除したToDo, and deleting the done ones -->
+        <div class="td-tools">
+          <button type="button" class="td-tool" id="todoSettings" aria-haspopup="dialog" aria-label="ラベルを編集"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>編集</button>
+          <button type="button" class="td-tool" id="todoMore" aria-haspopup="dialog"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-more"/></svg>その他</button>
+        </div>
         <ul class="list card" id="todoList"></ul>
         <!-- on a touch screen, until a row has been swiped: that they can be (the user's call: nothing said so) -->
         <p class="group-foot swipe-hint" id="todoSwipeHint" hidden><span class="phrase">行を左にスワイプすると、</span><span class="phrase">期限を「きょう」「あした」「来週」に移せます。</span></p>
-        <!-- it acts on the list, so it sits right under it -->
-        <div class="list-foot" id="todoFoot"><button type="button" class="link-btn danger" id="clearDone">完了したものを削除</button></div>
-        <!-- the ToDos deleted, kept 30 days in 最近削除した項目: a way there from here too (the user's call: it was only on 記録) -->
-        <ul class="list card" id="todoTrashCard" hidden><li class="btn-row"><button type="button" class="row-btn nav" id="todoTrash"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-trash"/></svg><span>最近削除したToDo</span><span class="row-count" id="todoTrashCount"></span><span class="chev"><svg class="icon" width="16" height="16" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></span></button></li></ul>
       </section>
 
       <!-- 記録: これまでの積み重ね, everything recorded so far (the user's call: no weeks, months or years, and entries are made
@@ -3397,12 +3436,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   let todoDoneAll = false;
   // all of them at once (one save, one redraw), with 元に戻す. It says how many (the user's call: under すべて only ten
   // rows show, a repeat's turns are one row, and it takes them all)
-  const doneCount = () => todos.items.filter((x) => x.done).length;
-  const clearDoneLabel = () => `完了した ${doneCount()} 件を削除`;
-  armLink($("clearDone"), clearDoneLabel, () => `もう一度押すと ${doneCount()} 件を削除します`, () => {
-    const done = todos.items.filter((x) => x.done);
-    removeWithUndo(todos, done.map((x) => x.id), `完了したToDoを ${done.length} 件削除しました`);
-  });
   // a 期限 by the days left, for ToDo and 目標 alike (the user's call: short, and the two written the same way): past it in
   // red, きょう and あした by name, later ones with the date too. The parts are kept whole, so a narrow row breaks the line
   // between them, not inside a word; the ・ between them is dropped where it breaks (.due-parts), so no line ends or starts
@@ -3619,14 +3652,46 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // ToDo's tab says how many are 期限切れ or due きょう (the user's call: from another page they went unseen), done ones
   // not counted; read out with the tab's name
-  // the row to 最近削除したToDo at the page's foot, while there are some, with how many
-  function renderTodoTrashRow() {
-    const n = deleted.items.filter((t) => t.data && t.store === "todos").length;
-    $("todoTrashCard").hidden = !n;
-    $("todoTrashCount").textContent = n ? fmtN(n) : "";
-    $("todoTrash").setAttribute("aria-label", `最近削除したToDo、${n} 件`);
+  // 最近削除したToDo (from その他): how many there are, and the page itself
+  const todoTrashN = () => deleted.items.filter((t) => t.data && t.store === "todos").length;
+  function openTodoTrash() { trashOf = "todos"; trashBack = null; renderTrash(); showTab("trash"); }
+  // ---------- ToDo's labels as tabs, 編集 and その他 (the user's call: as a ToDo app they showed) ----------
+  // over the list: すべて, then each label in the settings' order, each with how many are still to do there; one pressed
+  // shows only its ToDos (kept on this device: the same tab as the page opens again), ＋ makes a new label, and a label
+  // deleted gives すべて back. 編集 is the labels' settings (todoSettings, the gear that was by ＋); その他 what acts on
+  // the list: 最近削除したToDo, and the done ones of the tab showing deleted (with 元に戻す, in place of a second press)
+  const TODO_TAB_KEY = LS_PREFIX + "todoTab";
+  let todoTab = (() => { try { return localStorage.getItem(TODO_TAB_KEY) || ""; } catch { return ""; } })();
+  const inTodoTab = (t) => !todoTab || todoLabelOf(t)?.id === todoTab;
+  function setTodoTab(id) {
+    todoTab = id;
+    try { localStorage.setItem(TODO_TAB_KEY, id); } catch {}
+    renderTodos();
+    $("todoTabs").querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
-  $("todoTrash").addEventListener("click", () => { trashOf = "todos"; trashBack = null; renderTrash(); showTab("trash"); });
+  function renderTodoTabs() {
+    if (todoTab && !todoLabelOf({ labelId: todoTab })) todoTab = "";
+    const open = todos.items.filter((t) => !t.done);
+    const tab = (id, name, n, l = null) => el("button", { type: "button", class: "td-tab", style: l ? labelStyle(l) : null, "aria-pressed": String(todoTab === id),
+      "aria-label": `${name}、${n} 件`, onclick: () => { if (todoTab !== id) setTodoTab(id); } }, el("span", { class: "td-tab-name" }, name), el("span", { class: "td-tab-n" }, String(n)));
+    setChildren($("todoTabs"), tab("", "すべて", open.length),
+      sortedTodoLabels().map((l) => tab(l.id, l.name, open.filter((t) => todoLabelOf(t)?.id === l.id).length, l)),
+      el("button", { type: "button", class: "td-tab add", "aria-label": "ラベルを追加", "aria-haspopup": "dialog", onclick: (ev) => { openSettings(ev.detail === 0, "todo"); addTodoLabel(); } }, icon("plus", 20)));
+  }
+  $("todoMore").addEventListener("click", () => {
+    if (todoMenu.open || sheetEl.open) return;
+    const done = todos.items.filter((t) => t.done && inTodoTab(t)), gone = todoTrashN(), name = todoTab ? todoLabelOf({ labelId: todoTab })?.name : "";
+    const item = (text, go, danger = false) => el("button", { type: "button", class: "ask-btn" + (danger ? " danger" : ""), onclick: (ev) => {
+      if (!todoMenuDown && ev.detail !== 0) return;
+      todoMenu.close(); go();
+    } }, text);
+    setChildren($("todoMenuGroup"), el("p", { class: "ask-msg", id: "todoMenuMsg" }, name ? `ToDo（${name}）` : "ToDo"),
+      item(gone ? `最近削除したToDo（${gone} 件）` : "最近削除したToDo", openTodoTrash),
+      done.length ? item(`完了した ${done.length} 件を削除`, () => removeWithUndo(todos, done.map((t) => t.id), `完了したToDoを ${done.length} 件削除しました`), true) : null);
+    todoMenuDown = false;
+    todoMenu.showModal();
+    $("todoMenuNo").focus();
+  });
   function renderTodoBadge() {
     const n = todos.items.filter((t) => !t.done && t.due && t.due <= todayKey).length, mi = menuEl.querySelector('button[data-tab="todo"] .mi');
     if (!mi) return;
@@ -3637,23 +3702,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     mi.parentElement.append(el("span", { class: "sr-only badge-sr" }, `、期限切れときょう ${n} 件`));
   }
   function renderTodos() {
-    renderTodoBadge(); renderTodoTrashRow();
+    renderTodoBadge(); renderTodoTabs();
     const held = todoHeldBack();
     // with words to look for, only those holding all of them (in the name, the memo or the label's name), every one of
     // them (no ten-row cut in 完了), and no button to delete all done, which would take more than are showing
     const words = foldText(todoQuery).split(/\s+/).filter(Boolean), hits = (t) => { const x = foldText(`${t.text} ${t.memo || ""} ${todoLabelOf(t)?.name || ""}`); return words.every((w) => x.includes(w)); };
     $("todoSearchClear").hidden = !todoQuery;
-    const items = [...todos.items].filter((t) => !held.has(t.id) && (!words.length || hits(t))).sort((a, b) => todoOrder(todoPlaced(a), todoPlaced(b)));
+    const items = [...todos.items].filter((t) => !held.has(t.id) && inTodoTab(t) && (!words.length || hits(t))).sort((a, b) => todoOrder(todoPlaced(a), todoPlaced(b)));
     // under きょう: what is to do by today, and under a heading of its own what was done today (the user's call: once checked
     // a ToDo went, so the day's progress didn't show and a mistaken tap was hard to take back)
     const shown = items.filter((t) => {
       const p = todoPlaced(t);
       return todoFilter === "all" || (todoFilter === "done" ? p.done : todoFilter === "today" ? (!p.done && !!p.due && p.due <= todayKey) || (p.done && doneDay(p) === todayKey) : !p.done);
     });
-    // only while there is something done to clear, and not under きょう, where none shows
-    $("todoFoot").hidden = words.length > 0 || todoFilter === "today" || !todos.items.some((t) => t.done);
     $("todoSwipeHint").hidden = !matchMedia("(pointer: coarse)").matches || swipedOnce() || !shown.some((t) => !todoPlaced(t).done);
-    if (!$("clearDone").classList.contains("armed")) $("clearDone").textContent = clearDoneLabel();
     const list = $("todoList");
     const focused = listFocus(list); // keyboard focus in the list, put back once it is drawn again (refocus)
     rowOpen = null; rowSwipe = null; // its rows are new: none swiped open
@@ -3662,6 +3724,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       list.append(el("li", { class: "empty", tabindex: -1 }, words.length
         ? `「${todoQuery.trim()}」に合うToDoはありません。`
         : items.length ? "すべて完了しました"
+        : todoTab ? [el("span", { class: "phrase" }, `「${todoLabelOf({ labelId: todoTab })?.name || ""}」のToDoは`), el("span", { class: "phrase" }, "まだありません。")]
         : [el("span", { class: "phrase" }, "まだ何もありません。"), el("span", { class: "phrase" }, "右上の＋から追加できます。")]));
       if (focused) list.lastChild.focus(); // the last one gone: what the list says now
       lightWords(list, []);
@@ -3710,13 +3773,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const turns = group.get(t) || [t], n = turns.length, filed = todoPlaced(t).done;
       // (under 完了 and きょう the day it was done is said once, in its heading, not on the row)
       const when = doneDay(t) ? (todoFilter === "all" ? relLabel(doneDay(t)) || fmtDay(doneDay(t)) : "") : t.due ? `期限 ${fmtDay(t.due)}` : "";
-      const row = el("li", { class: t.done ? "done" : "" },
+      const lab = todoLabelOf(t), due = filed ? null : dueText(todoPlaced(t), section);
+      if (due && t.due) due.querySelector(".due-parts > .phrase:not(.td-label)")?.prepend(el("span", { class: "td-cal", "aria-hidden": "true" }, icon("calendar", 14)));
+      const row = el("li", { class: (t.done ? "done" : "") + (lab && !filed ? " tinted" : ""), style: lab && !filed ? labelStyle(lab) : null },
         el("button", { type: "button", class: "check", "data-check": t.id, "aria-label": `「${t.text}」を${t.done ? "未完了に戻す" : "完了にする"}`, onclick: () => toggleTodo(t) }, checkMark()),
         el("span", { class: "body" }, flagged(todoPlaced(t), editLink("todo", t.id, t.text)),
           filed ? (when || n > 1 ? el("span", { class: "done-day" }, keepUnits([n > 1 ? `${n} 回` : "", when].filter(Boolean).join("・"))) : null)
-            : [dueText(todoPlaced(t), section), t.memo ? el("span", { class: "sub ev-memo" + (words.length ? "" : " clamp") }, linkedText(t.memo)) : null]),
-        n > 1 ? delButton(() => removeWithUndo(todos, turns.map((x) => x.id), `「${t.text}」の完了を ${n} 件削除しました`), "削除", `${t.text}（完了 ${n} 件）`)
-          : t.repeat && t.due && !t.done && nextDue(t) ? delButton(() => skipTurn(t), "削除", `${t.text}（この回）`, "この回を削除")
+            : [due, t.memo ? el("span", { class: "sub ev-memo" + (words.length ? "" : " clamp") }, linkedText(t.memo)) : null]),
+        !filed ? null : n > 1 ? delButton(() => removeWithUndo(todos, turns.map((x) => x.id), `「${t.text}」の完了を ${n} 件削除しました`), "削除", `${t.text}（完了 ${n} 件）`)
           : delButton(() => removeWithUndo(todos, t.id), "削除", t.text),
         // behind it, for a swipe (todoSwipe): out of reach (inert) until the row is open. The day it is due on already is
         // left out (the user's call: あした on one due tomorrow moved nothing and said it had)
@@ -5638,7 +5702,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // events without a label are gray (the user's call: in the calendar's own purple they passed for a purple label)
   const labelHue = (l) => (l ? `var(--lc-${colorKey(l.color)})` : "var(--lc-gray)");
-  const labelStyle = (l) => (l ? `--lc:var(--lc-${colorKey(l.color)});--lf:var(--lf-${colorKey(l.color)})` : "--lc:var(--lc-gray);--lf:var(--lf-gray)");
+  const labelStyle = (l) => (l ? `--lc:var(--lc-${colorKey(l.color)});--lf:var(--lf-${colorKey(l.color)});--lv:var(--lv-${colorKey(l.color)})` : "--lc:var(--lc-gray);--lf:var(--lf-gray);--lv:var(--lv-gray)");
   let planLabelChoice = ""; // the label picked in the new plan's form; it stays picked for the next plan
   // the labels whose plans the calendar leaves out (the user's call: shown or hidden from the label's ring in the
   // settings); "" stands for ラベルなし. 予定 and きょう still show every plan
