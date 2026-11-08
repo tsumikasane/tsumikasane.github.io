@@ -449,6 +449,23 @@ form.add input.switch:checked::before { transform: translateX(20px); }
 .field-note:empty { display: none; }
 .ffield > select { flex: 1 1 auto; min-width: 0; }
 .ffield > select.unit-pick { flex: none; width: auto; min-width: 4.5em; }
+/* a plan's 通知アラーム in its form: the choices in words, as a field that opens their page (なし greyed, as iOS has it) */
+.pick-btn { flex: 1 1 auto; display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 44px; padding: 0 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; color: var(--fg); text-align: left; line-height: 1.3; cursor: pointer; }
+.pick-btn > span { flex: 1 1 auto; min-width: 0; padding: 10px 0; }
+.pick-btn > span.none { color: var(--muted); }
+.pick-btn .nowrap { white-space: nowrap; }
+.pick-btn > .icon { flex: none; color: var(--muted); }
+.pick-btn:active { background: var(--fill-press); }
+.pick-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+/* its page: a row for each, the chosen ones with a check at the end; once three are chosen, the others greyed */
+.alarm-lead { margin: 0; }
+#alarmList .row-btn { color: var(--fg); }
+#alarmList .row-btn > .icon { margin-inline-start: auto; color: var(--accent); visibility: hidden; }
+#alarmList .row-btn[aria-pressed="true"] > .icon { visibility: visible; }
+#alarmList .row-btn.dim { color: var(--muted); }
+/* what this device needs for them to come: a line, and a button when one press does it */
+.alarm-state { display: flex; flex-direction: column; gap: 4px; padding: 12px var(--space-2); line-height: 1.45; }
+.alarm-state .row-btn { padding-inline: 0; min-height: 40px; }
 form.add .actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-1) var(--space-2); }
 form.add .actions .link-btn { margin-inline-end: auto; }
 /* a label beside a field that grows (達成基準), or one with a button under it (期限), stays level with its first line */
@@ -1603,9 +1620,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   <symbol id="i-sync" viewBox="0 0 24 24"><path d="M19.25 9.5A7.25 7.25 0 0 0 5.6 7.6M4.75 14.5a7.25 7.25 0 0 0 13.65 1.9M5.25 4.25v3.5h3.5m10 12v-3.5h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M9.5 6.5h10m-10 5.5h10m-10 5.5h10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="5" cy="6.5" r="1.1"/><circle cx="5" cy="12" r="1.1"/><circle cx="5" cy="17.5" r="1.1"/></symbol>
   <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="16" cy="12" r="1.2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.75 12.75 4.5 4.5 10-10.5" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-cal-month" viewBox="0 0 24 24"><path d="M5.75 4.75h12.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2V6.75a2 2 0 0 1 2-2Zm-2 5h16.5m-16.5 4.75h16.5M9.25 4.75v14.5m5.5-14.5v14.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
   <symbol id="i-cal-week" viewBox="0 0 24 24"><path d="M5.75 4.75h12.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2V6.75a2 2 0 0 1 2-2Zm2.38 0v14.5M12 4.75v14.5m3.88-14.5v14.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
   <symbol id="i-cal-day" viewBox="0 0 24 24"><path d="M5.75 4.75h12.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2V6.75a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><rect x="10.5" y="7.75" width="3" height="8.5" rx="1"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M12 3.25a5.75 5.75 0 0 0-5.75 5.75v3.6l-1.6 2.9a.9.9 0 0 0 .79 1.33h13.12a.9.9 0 0 0 .79-1.33l-1.6-2.9V9A5.75 5.75 0 0 0 12 3.25Zm-2.4 15.5a2.5 2.5 0 0 0 4.8 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
 <div class="status-cover" aria-hidden="true"></div>
@@ -2244,6 +2263,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <div class="ffield"><input type="date" id="edUntil"></div>
           </div>
         </div>
+        <span class="flabel" id="edAlarmLabel">通知アラーム</span>
+        <div class="ffield"><button type="button" class="pick-btn" id="edAlarmBtn" aria-labelledby="edAlarmLabel edAlarmText"><span id="edAlarmText" class="none">なし</span><svg class="icon" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button><input type="hidden" id="edAlarms"></div>
         <span class="flabel" id="edLabelLabel">ラベル</span>
         <div class="ffield" id="edLabels"></div>
         <!-- 場所 and URL over メモ (the user's call: as the iPhone's カレンダー has them); a URL there is a press from 開く -->
@@ -2267,6 +2288,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <button type="button" data-ws="0" aria-pressed="true">日曜</button>
           <button type="button" data-ws="1" aria-pressed="false">月曜</button>
         </div>
+        <!-- 通知: whether this device gets the plans' 通知アラーム, a test one, and turning them off (renderPushStates) -->
+        <h3 class="group-head">通知</h3>
+        <ul class="list card" id="pushRows" hidden></ul>
+        <p class="group-foot" id="pushFoot"></p>
         <h3 class="group-head">ラベル</h3>
         <div class="card">
           <ul class="list" id="labelList"></ul>
@@ -2409,6 +2434,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <label class="flabel" for="planUntil">いつまで <span class="opt">任意</span></label>
           <div class="ffield"><input type="date" id="planUntil"></div>
         </div>
+        <!-- 通知アラーム (the user's call: as the iPhone's カレンダー has them): its choices in words, a press opening their page -->
+        <span class="flabel" id="planAlarmLabel">通知アラーム</span>
+        <div class="ffield"><button type="button" class="pick-btn" id="planAlarmBtn" aria-labelledby="planAlarmLabel planAlarmText"><span id="planAlarmText" class="none">なし</span><svg class="icon" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button><input type="hidden" id="planAlarms"></div>
         <span class="flabel" id="planLabelLabel">ラベル</span>
         <div class="ffield" id="planLabels"></div>
         <input type="text" id="planPlace" class="full" placeholder="場所" aria-label="場所" maxlength="200">
@@ -2418,6 +2446,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <button type="button" class="full memo-btn" id="planMemoBtn" aria-label="メモ"><span class="memo-text none" id="planMemoText">メモ</span></button>
         <textarea id="planMemo" class="full memo-area" aria-label="メモ" maxlength="5000"></textarea>
       </form>
+    </div>
+    <!-- a plan's 通知アラーム, from its row in either plan form (the user's call: as the iPhone's カレンダー has them): up to three,
+         each pressed on or off; 戻る goes back to the form. Over them, what this device needs for them to come (alarmState) -->
+    <div class="sheet-view" id="alarmView" hidden>
+      <p class="group-foot alarm-lead" id="alarmLead">通知は最大3つまで設定可能です。</p>
+      <div class="card alarm-state" id="alarmState" hidden></div>
+      <ul class="list card" id="alarmList" role="group" aria-labelledby="alarmLead"></ul>
+      <p class="group-foot" id="alarmAllDay" hidden>終日の予定は、その日の 9:00 を予定時間として通知します。</p>
     </div>
     <!-- 予定, from the magnifier on the month bar: a field to look for plans by their name or memo; empty, the next
          three months of plans by day. A plan opens its day (戻る comes back here) -->
@@ -5920,6 +5956,303 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("todoListAdd").addEventListener("click", () => addTodoList());
   function setCalDay(d) { calDay = d; calMonth = monthOf(d); renderCalendar(); }
 
+  // ---------- 通知アラーム（予定の通知） ----------
+  // a plan's 通知アラーム (the user's call: as the iPhone's カレンダー has them): up to three, each a time before the plan
+  // starts, kept in minutes (alarms: [60, 1440]); an all-day plan starts at 9:00 on its day for them, as on the iPhone. The
+  // home-screen app can't wake itself at a time, so the notification server (push/worker.js, on Cloudflare) sends them:
+  // this device's push subscription and the times of its next alarms go there, and come back through the service worker
+  // (sw.js) as notifications. Before the server is set up (PUSH_SERVER), they can be chosen but don't come yet
+  const PUSH_SERVER = window.__pushServer || "";
+  const ALARM_MINS = [0, 1, 3, 5, 10, 15, 20, 30, 45, 60, 120, 180, 240, 300, 360, 720, 1440, 2880, 4320, 5760, 7200, 8640, 10080, 20160];
+  const MAX_ALARMS = 3, ALL_DAY_AT = "09:00";
+  const alarmName = (m) => (m === 0 ? "予定時間" : m < 60 ? `${m}分前` : m < 1440 ? `${m / 60}時間前` : m < 10080 ? `${m / 1440}日前` : `${m / 10080}週間前`);
+  const cleanAlarms = (list) => [...new Set((Array.isArray(list) ? list : []).map(Number).filter((m) => ALARM_MINS.includes(m)))].sort((a, b) => a - b).slice(0, MAX_ALARMS);
+  const alarmsOf = (e) => cleanAlarms(e?.alarms);
+  // a form's choice in its hidden field (planAlarms, edAlarms), as "60,1440": a draft keeps it with the rest of the form
+  const formAlarms = (f) => cleanAlarms($(f + "Alarms").value.split(",").filter(Boolean));
+  function setFormAlarms(f, list) { $(f + "Alarms").value = cleanAlarms(list).join(","); syncAlarmRow(f); }
+  // (each one whole on its line: 1時間前、1日前、 then 3日前, never 3日 and 前)
+  function syncAlarmRow(f) {
+    const list = formAlarms(f), t = $(f + "AlarmText");
+    setChildren(t, list.length ? list.flatMap((m, i) => [i ? "、" : null, el("span", { class: "nowrap" }, alarmName(m))]).filter(Boolean) : ["なし"]);
+    t.classList.toggle("none", !list.length);
+  }
+  for (const f of ["plan", "ed"]) {
+    for (const type of ["input", "change"]) $(f + "Alarms").addEventListener(type, () => syncAlarmRow(f)); // a draft put back
+    $(f + "AlarmBtn").addEventListener("click", () => openAlarms(f));
+  }
+  // their page, over the form: each pressed on or off, three at most (the others greyed once three are on). The first one
+  // chosen on a device they don't come to yet asks, in that press, to let them come (pushEnable)
+  function openAlarms(f) {
+    alarmFor = f;
+    setChildren($("alarmList"), ALARM_MINS.map((m) => el("li", { class: "btn-row" },
+      el("button", { type: "button", class: "row-btn", "data-min": m, "aria-pressed": "false" }, el("span", {}, alarmName(m)), icon("check", 20)))));
+    syncAlarmList();
+    $("alarmAllDay").hidden = !!$(f + "Time").value;
+    renderPushStates(); pushWarm();
+    syncSheetHead();
+    sheetEl.scrollTop = 0;
+    $("sheetTitle").focus();
+  }
+  function syncAlarmList() {
+    const list = formAlarms(alarmFor), full = list.length >= MAX_ALARMS;
+    for (const b of $("alarmList").querySelectorAll("button[data-min]")) {
+      const on = list.includes(Number(b.dataset.min));
+      b.setAttribute("aria-pressed", String(on)); b.classList.toggle("dim", full && !on);
+    }
+  }
+  function alarmBack() {
+    const f = alarmFor;
+    alarmFor = null;
+    syncSheetHead();
+    if (f) $(f + "AlarmBtn").focus();
+  }
+  $("alarmList").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button[data-min]"), f = alarmFor;
+    if (!b || !f) return;
+    const m = Number(b.dataset.min), list = formAlarms(f);
+    if (list.includes(m)) setFormAlarms(f, list.filter((x) => x !== m));
+    else if (list.length >= MAX_ALARMS) { flash("通知は最大3つまでです。ほかの通知を外してから選んでください。"); return; }
+    else { setFormAlarms(f, [...list, m]); if (pushState() === "off") pushEnable(); }
+    $(f === "plan" ? "planForm" : "evEdit").dataset.typed = "1";
+    syncAlarmList();
+  });
+
+  // ---------- 通知を受け取る（この端末） ----------
+  // this device's own, kept here and not synced (PUSH_KEY): its id at the server (a random one, kept like a password), the
+  // push subscription's endpoint and the server key it was made with, once on; the server's key (serverKey); and when its
+  // alarms last went to each device (sent). The other devices signed in to the same account that get them each have a
+  // synced setting (push:{id}), so a plan added on one comes to all of them, the app on each not needing to be opened
+  const PUSH_KEY = LS_PREFIX + "push";
+  const pushLocal = () => { try { const v = JSON.parse(localStorage.getItem(PUSH_KEY) || "null"); return v && typeof v === "object" ? v : {}; } catch { return {}; } };
+  const savePushLocal = (v) => { try { localStorage.setItem(PUSH_KEY, JSON.stringify(v)); } catch {} };
+  const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const onIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const deviceName = () => { const u = navigator.userAgent; return /iPhone/.test(u) ? "iPhone" : /iPad/.test(u) || onIOS ? "iPad" : /Android/.test(u) ? "Android" : /Mac/.test(u) ? "Mac" : /Windows/.test(u) ? "Windows" : "この端末"; };
+  const b64uBytes = (s) => { const t = s.replace(/-/g, "+").replace(/_/g, "/"); return Uint8Array.from(atob(t + "=".repeat((4 - (t.length % 4)) % 4)), (c) => c.charCodeAt(0)); };
+  const bytesB64u = (b) => btoa(String.fromCharCode(...b)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  // "unsupported" (Safari in a tab on iPhone: only the home-screen app gets them), "unset" (no server yet), "denied" (not
+  // allowed in the phone's settings), "off" (not asked for here yet) or "on"
+  function pushState() {
+    if (!pushSupported()) return "unsupported";
+    if (!PUSH_SERVER) return "unset";
+    if (Notification.permission === "denied") return "denied";
+    return pushLocal().endpoint ? "on" : "off";
+  }
+  async function pushCall(method, path, body) {
+    const res = await fetch(PUSH_SERVER + path, { method, headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
+    if (!res.ok) throw new Error("push server " + res.status);
+    return res.json();
+  }
+  // the service worker, ready (a page it can't run on doesn't wait for it for ever)
+  const swReady = () => Promise.race([navigator.serviceWorker.ready, new Promise((_, no) => setTimeout(() => no(new Error("no service worker")), 10000))]);
+  // the server's key, kept once known (fetched ahead as the page of 通知アラーム opens, so the press that turns them on
+  // asks straight away: iPhone asks only in a press)
+  async function pushServerKey() {
+    const kept = pushLocal().serverKey;
+    if (kept) return kept;
+    const { key } = await pushCall("GET", "/key");
+    if (!/^[\w-]{80,100}$/.test(key || "")) throw new Error("bad key");
+    savePushLocal({ ...pushLocal(), serverKey: key });
+    return key;
+  }
+  function pushWarm() { if (pushSupported() && PUSH_SERVER && !pushLocal().serverKey) pushServerKey().catch(() => {}); }
+  // turned on here, from a press: the phone asks whether they may come, this device subscribes with the server's key, and
+  // the server gets the subscription with the times of the next alarms
+  let pushBusy = false;
+  async function pushEnable() {
+    if (pushBusy || !pushSupported() || !PUSH_SERVER) return false;
+    pushBusy = true;
+    try {
+      const perm = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission;
+      if (perm !== "granted") { if (perm === "denied") flash(pushWords("denied")); return false; }
+      const reg = await swReady(), key = await pushServerKey(), was = pushLocal();
+      let sub = await reg.pushManager.getSubscription();
+      if (sub && was.key && was.key !== key) { await sub.unsubscribe(); sub = null; } // made with a key the server no longer has
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(key) });
+      const id = was.id || bytesB64u(crypto.getRandomValues(new Uint8Array(16)));
+      const r = await pushCall("PUT", "/d/" + id, { sub: sub.toJSON(), alarms: alarmTimes() });
+      if (!r.ok || !r.sub) throw new Error("not kept");
+      savePushLocal({ ...pushLocal(), id, endpoint: sub.endpoint, key, keyAt: Date.now(), sent: { [id]: { sig: pushSig(), at: Date.now() } } });
+      act(() => settings.set("push:" + id, { name: deviceName(), at: Date.now() }));
+      flash("この端末に通知が届くようにしました。");
+      return true;
+    } catch (e) {
+      console.error(e);
+      flash("通知をオンにできませんでした。インターネットにつながっているか確かめて、もう一度ためしてください。");
+      return false;
+    } finally { pushBusy = false; renderPushStates(); }
+  }
+  // this device's let go of here only (the server's copy goes with DELETE, or when the push service says it is gone)
+  function pushForgetHere() {
+    const l = pushLocal();
+    savePushLocal({ serverKey: l.serverKey });
+    if (l.id && settings.get("push:" + l.id)) act(() => settings.remove("push:" + l.id));
+  }
+  async function pushDisable() {
+    if (pushBusy) return;
+    pushBusy = true;
+    const l = pushLocal();
+    try {
+      if (l.id) await pushCall("DELETE", "/d/" + l.id).catch(() => {});
+      const sub = await (await swReady()).pushManager.getSubscription();
+      await sub?.unsubscribe();
+    } catch {}
+    pushForgetHere();
+    pushBusy = false;
+    renderPushStates();
+    flash("この端末の通知をオフにしました。");
+  }
+  // テスト通知: one sent now, with what the push service said
+  async function pushTest() {
+    const l = pushLocal();
+    if (!l.id || pushBusy) return;
+    try {
+      const r = await pushCall("POST", `/d/${l.id}/test`, {});
+      if (r.ok) flash(onIOS ? "テスト通知を送りました。届かないときは、iPhoneの「設定」→「通知」で、つみかさねの通知を確かめてください。" : "テスト通知を送りました。");
+      else if (r.gone || !r.sub) { pushForgetHere(); renderPushStates(); flash("この端末の通知が止まっていました。もう一度オンにしてください。"); }
+      else flash(`テスト通知を送れませんでした（${r.status || "通信"}）。少しあとで、もう一度ためしてください。`);
+    } catch { flash("通知のサーバーにつながりませんでした。インターネットにつながっているか確かめてください。"); }
+  }
+  // the times of the next alarms, for the next 40 days (the server holds them; sent again as the days go by): each turn of a
+  // plan with 通知アラーム, its time less each one's minutes. What a notification says: the plan's name, then when it is
+  // (きょう 18:00〜19:00) and its place; pressed, the app opens at its day
+  const PUSH_AHEAD = 40;
+  function alarmTimes(now = Date.now()) {
+    const out = [], to = addDays(todayKey, PUSH_AHEAD + 15); // a 2週間前 of a plan 54 days on comes within the 40
+    for (const e of events.items) {
+      const mins = alarmsOf(e);
+      if (!mins.length || typeof e.title !== "string") continue;
+      const [h, mi] = (e.time || ALL_DAY_AT).split(":").map(Number);
+      for (const start of turnStarts(e, todayKey, to)) {
+        const d = parseYmd(start), base = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, mi).getTime();
+        for (const m of mins) {
+          const at = base - m * 60e3;
+          if (at > now + 5000 && at <= now + PUSH_AHEAD * 864e5) out.push({ at, title: e.title.slice(0, 100), body: alarmBody(e, start, at), tag: `${e.id}:${start}`, url: `./#calendar:${start}` });
+        }
+      }
+    }
+    return out.sort((a, b) => a.at - b.at).slice(0, 400);
+  }
+  function alarmBody(e, start, at) {
+    const day = ymd(new Date(at)), extra = extraDays(e);
+    const name = (d) => (d === day ? "きょう" : d === addDays(day, 1) ? "あした" : fmtMDW(d));
+    let when = name(start) + (e.time ? " " + e.time : extra ? "" : " 終日");
+    if (extra) when += `から ${name(addDays(start, extra))}${e.time && e.endTime ? " " + e.endTime : ""}まで`;
+    else if (e.time && e.endTime && e.endTime !== e.time) when += "〜" + e.endTime;
+    return [when, e.place].filter(Boolean).join("\n").slice(0, 300);
+  }
+  // what the alarms are made from, short: when it changes (or the day turns, or half a day has gone by) they go again
+  function pushSig() {
+    const parts = [todayKey];
+    for (const e of events.items) { const a = alarmsOf(e); if (a.length) parts.push([e.id, e.title, e.date, e.endDate, e.time, e.endTime, e.repeat, e.repeatUntil, e.skip, a, e.place]); }
+    const t = JSON.stringify(parts);
+    let h = 2166136261;
+    for (let i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 16777619);
+    return (h >>> 0).toString(36) + "." + t.length.toString(36);
+  }
+  // the alarms to the server, a moment after anything changed: for this device, and for this account's other devices that
+  // get them (only while signed in to 同期: a copy of the records elsewhere, as the test version's, never sends to them).
+  // A device the push service no longer knows is let go of
+  let pushTimer = null, pushRunning = false, pushAgain = false, pushReady = Promise.resolve();
+  function pushSoon(wait = 2000) { if (!PUSH_SERVER) return; clearTimeout(pushTimer); pushTimer = setTimeout(() => pushSend().catch(() => {}), wait); }
+  async function pushSend() {
+    if (pushRunning) { pushAgain = true; return; }
+    pushRunning = true;
+    try {
+      await pushReady;
+      if (navigator.onLine === false) return;
+      const local = pushLocal(), mine = local.endpoint && local.id ? local.id : null;
+      const others = syncUser && syncState.uid ? settings.items.filter((x) => typeof x.id === "string" && x.id.startsWith("push:") && x.id !== "push:" + mine).map((x) => x.id.slice(5)) : [];
+      const targets = [...(mine ? [mine] : []), ...others], sent = { ...(local.sent || {}) };
+      if (!targets.length) return; // notifications not on here, nor on another device of the account
+      for (const id of Object.keys(sent)) if (!targets.includes(id)) delete sent[id];
+      const sig = pushSig(), now = Date.now();
+      const due = targets.filter((id) => sent[id]?.sig !== sig || now - num(sent[id]?.at) > 12 * 36e5);
+      if (!due.length) { if (Object.keys(sent).length !== Object.keys(local.sent || {}).length) savePushLocal({ ...pushLocal(), sent }); return; }
+      const alarms = alarmTimes(now);
+      for (const id of due) {
+        let r;
+        try { r = await pushCall("PUT", "/d/" + id, { alarms }); } catch { continue; } // offline, or the server away: next time
+        if (id === mine) {
+          if (r.gone) { pushForgetHere(); renderPushStates(); continue; } // turned off in the phone's settings, or the app added again
+          if (!r.sub) {
+            // the server no longer has this device's subscription: sent again with them
+            const sub = await (await swReady()).pushManager.getSubscription().catch(() => null);
+            if (!sub) { pushForgetHere(); renderPushStates(); continue; }
+            try { r = await pushCall("PUT", "/d/" + id, { sub: sub.toJSON(), alarms }); } catch { continue; }
+          }
+          if (!settings.get("push:" + id)) act(() => settings.set("push:" + id, { name: deviceName(), at: Date.now() }));
+        } else if (r.gone || !r.sub) { act(() => settings.remove("push:" + id)); delete sent[id]; continue; }
+        sent[id] = { sig, at: Date.now() };
+      }
+      savePushLocal({ ...pushLocal(), sent });
+    } finally {
+      pushRunning = false;
+      if (pushAgain) { pushAgain = false; pushSoon(500); }
+    }
+  }
+  // as the app opens: this device's subscription as it is now. Gone (turned off in the phone's settings; or a copy of
+  // another's records, as the test version's first one, which has none of its own) it is let go of here; made anew by the
+  // browser, the server gets the new one. Once a day the server's key is checked, and the subscription made anew with a
+  // new one
+  async function pushCheck() {
+    const l = pushLocal();
+    if (!l.endpoint || !l.id) return;
+    if (!pushSupported() || !PUSH_SERVER || Notification.permission !== "granted") { pushForgetHere(); return; }
+    const reg = await swReady();
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) { pushForgetHere(); return; }
+    if (Date.now() - num(l.keyAt) > 864e5) {
+      let key = null;
+      try { key = (await pushCall("GET", "/key")).key; } catch {}
+      if (key && key !== l.key) {
+        try { await sub.unsubscribe(); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(key) }); }
+        catch { pushForgetHere(); return; }
+        Object.assign(l, { key, serverKey: key, endpoint: "" });
+      }
+      if (key) l.keyAt = Date.now();
+    }
+    if (sub.endpoint !== l.endpoint) {
+      const r = await pushCall("PUT", "/d/" + l.id, { sub: sub.toJSON(), alarms: alarmTimes() });
+      if (r.ok && r.sub) Object.assign(l, { endpoint: sub.endpoint, sent: { ...(l.sent || {}), [l.id]: { sig: pushSig(), at: Date.now() } } });
+    }
+    savePushLocal(l);
+  }
+  // what is needed for them to come, in words: on the page of 通知アラーム (with a button when a press does it), and
+  // under 通知 in the calendar's settings with its buttons
+  function pushWords(st) {
+    if (st === "unsupported") return onIOS && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone)
+      ? "通知は、ホーム画面に追加したつみかさねに届きます。Safariの共有ボタンから「ホーム画面に追加」して、そちらで設定してください。"
+      : "このブラウザでは通知を受け取れません。";
+    if (st === "unset") return "通知を送る準備をしています。選んだ通知アラームは予定に残り、準備ができると届くようになります。";
+    if (st === "denied") return onIOS ? "通知が許可されていません。iPhoneの「設定」→「通知」→「つみかさね」で「通知を許可」をオンにしてください。" : "通知が許可されていません。ブラウザの設定で、このサイトの通知を許可してください。";
+    if (st === "off") return "通知アラームを届けるには、この端末で通知を受け取れるようにしてください。";
+    return "予定の通知アラームが、この端末に届きます。";
+  }
+  const pushRow = (id, name, text, fn) => el("li", { class: "btn-row" }, el("button", { type: "button", class: "row-btn", id, onclick: fn }, icon(name, 22), text));
+  function renderPushStates() {
+    const st = pushState(), card = $("alarmState");
+    card.hidden = st === "on";
+    setChildren(card, st === "on" ? [] : [el("span", {}, pushWords(st)), st === "off" ? el("button", { type: "button", class: "row-btn", onclick: () => pushEnable() }, icon("bell", 22), "この端末で通知を受け取る") : null]);
+    const rows = st === "on" ? [pushRow("pushTest", "bell", "テスト通知を送る", pushTest), pushRow("pushOff", "close", "この端末の通知をオフにする", pushDisable)]
+      : st === "off" ? [pushRow("pushOn", "bell", "この端末で通知を受け取る", () => pushEnable())] : [];
+    setChildren($("pushRows"), rows);
+    $("pushRows").hidden = !rows.length;
+    $("pushFoot").textContent = st === "off" ? "オンにすると、予定の通知アラームがこの端末に届きます。" : pushWords(st);
+  }
+  // a notification pressed: the app at the plan's day (#calendar:2026-11-13), its plans in the sheet
+  function openLink(url) {
+    const d = /#calendar:(\d{4}-\d{2}-\d{2})$/.exec(String(url || ""))?.[1];
+    if (!d || !isDay(d)) return false;
+    if (tab !== "calendar") setTab("calendar");
+    setCalDay(d);
+    if (!sheetEl.open) openDay(d, false);
+    return true;
+  }
+  navigator.serviceWorker?.addEventListener("message", (ev) => { if (ev.data?.kind === "open") openLink(ev.data.url); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") pushSoon(); });
+
   // ---------- メモ（予定のメモを大きく書くページ） ----------
   // a plan's メモ written on a page of its own (the user's call, after a calendar app they showed): from its row in either
   // plan form, the form's other fields out of sight and the memo across the sheet down to the keyboard, its text as it
@@ -5971,7 +6304,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // keeps its distance from the start (the user's call: an hour after it at first)
   const lastDate = {}, lastTime = {};
   const remember = (f) => { lastDate[f] = $(f + "Date").value; lastTime[f] = $(f + "Time").value; };
-  function clearPlanForm() { $("planForm").reset(); whenOpen.plan = null; whenKeep.plan = null; syncPlanSave(); syncPlanRows("plan"); syncUrlOpen("plan"); syncMemoRow("plan"); remember("plan"); }
+  function clearPlanForm() { $("planForm").reset(); setFormAlarms("plan", []); whenOpen.plan = null; whenKeep.plan = null; syncPlanSave(); syncPlanRows("plan"); syncUrlOpen("plan"); syncMemoRow("plan"); remember("plan"); }
   for (const id of ["planRepeat", "edRepeat"]) setChildren($(id), REPEATS.map(([k, name]) => el("option", { value: k }, name)));
   setChildren($("todoRepeat"), todoRepeatOptions());
   // a plan form's rows that come and go (f: "plan" for a new one, "ed" for a change): the repeat's end once it repeats;
@@ -6180,6 +6513,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (memo) x.memo = memo;
     if (place) x.place = place;
     if (url) x.url = url;
+    const alarms = formAlarms(f);
+    if (alarms.length) x.alarms = alarms;
     return x;
   }
   // a plan's URL opened from 開く beside it, once it reads as one: with its https:// or without (example.com/…)
@@ -6359,6 +6694,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   let findPages = 1; // how many three months これからの予定 shows (もっと見る adds three more)
   let monthPick = false; // the sheet holds the month picker, opened from the month's name
   let todoNew = false; // the sheet holds a new ToDo's form, opened from the ＋ beside ToDo's title
+  let alarmFor = null; // the sheet holds a plan's 通知アラーム, over its form: "plan" (a new one) or "ed" (one being changed)
   let todoAdded = false; // a ToDo has been added from it since it opened, so its キャンセル reads 閉じる
   let todoNewIds = []; // and which, to be lit in the list as the sheet goes down
   let recEdit = null, recReturnId = null; // the entry being changed in the sheet ({ kind, id }), and its row for focus after
@@ -6376,8 +6712,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // what the sheet holds, one view at a time: a new goal, a goal's chart, the settings, a new plan, an entry of a record
   // page, an event's edit form, or (by default) a day's plans. The settings come before a new plan, which can lead to
   // them to make its first label
-  const SHEET_VIEWS = { find: "findView", month: "monthView", goal: "goalView", chart: "mandalaView", settings: "settingsView", plan: "planView", todo: "todoView", rec: "recView", edit: "editView", day: "dayView" };
-  const sheetMode = () => (findOpen ? "find" : monthPick ? "month" : goalNew ? "goal" : mandalaGoal ? "chart" : settingsFrom ? "settings" : planNew ? "plan" : todoNew ? "todo" : recEdit ? "rec" : editingId ? "edit" : "day");
+  const SHEET_VIEWS = { alarm: "alarmView", find: "findView", month: "monthView", goal: "goalView", chart: "mandalaView", settings: "settingsView", plan: "planView", todo: "todoView", rec: "recView", edit: "editView", day: "dayView" };
+  const sheetMode = () => (alarmFor ? "alarm" : findOpen ? "find" : monthPick ? "month" : goalNew ? "goal" : mandalaGoal ? "chart" : settingsFrom ? "settings" : planNew ? "plan" : todoNew ? "todo" : recEdit ? "rec" : editingId ? "edit" : "day");
+  // the form under a plan's 通知アラーム: what is kept and asked about as for the form itself (drafts, changes not saved)
+  const formMode = () => { const m = sheetMode(); return m === "alarm" ? (alarmFor === "ed" ? "edit" : "plan") : m; };
   // the bar on top: 完了 over the day's list, the settings and a chart; キャンセル and 保存 over an event's or an entry's edit form, as iOS edit sheets have, and キャンセル and 追加 over a new goal or plan; 戻る over the settings when a day's
   // sheet led to them, and over a chart's cell to go back out of it
   function syncSheetHead() {
@@ -6385,12 +6723,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const [m, id] of Object.entries(SHEET_VIEWS)) $(id).hidden = m !== mode;
     sheetEl.classList.toggle("compact", mode === "month");
     $("labelsGroup").hidden = settingsScope !== "calendar"; $("todoLabelsGroup").hidden = settingsScope !== "todo"; $("subjectsGroup").hidden = settingsScope !== "study"; $("tilesGroup").hidden = settingsScope !== "home"; $("bodyGroup").hidden = settingsScope !== "weight"; $("moneyGroup").hidden = settingsScope !== "money"; $("woMenuGroup").hidden = settingsScope !== "woMenu"; $("jobGroup").hidden = settingsScope !== "job"; $("backupGroup").hidden = settingsScope !== "records";
-    $("sheetDone").hidden = changing || adding; $("sheetSave").hidden = mode !== "edit"; $("recSave").hidden = mode !== "rec";
+    $("sheetDone").hidden = changing || adding || mode === "alarm"; $("sheetSave").hidden = mode !== "edit"; $("recSave").hidden = mode !== "rec";
     $("goalSave").hidden = mode !== "goal"; $("planSave").hidden = mode !== "plan"; $("todoSave").hidden = mode !== "todo";
-    $("sheetCancel").hidden = !(changing || adding || mode === "month" || (mode === "chart" && (mPath.length || chartFromDay)) || (mode === "settings" && settingsFrom === "day") || (mode === "day" && dayFromFind));
+    $("sheetCancel").hidden = !(changing || adding || mode === "month" || mode === "alarm" || (mode === "chart" && (mPath.length || chartFromDay)) || (mode === "settings" && settingsFrom === "day") || (mode === "day" && dayFromFind));
     $("sheetCancel").textContent = mode === "todo" && todoAdded ? "閉じる" : changing || adding || mode === "month" ? "キャンセル" : "戻る";
     const rel = mode === "day" ? relLabel(calDay) : "";
-    $("sheetTitle").textContent = mode === "find" ? "予定" : mode === "month" ? "月を選ぶ" : mode === "goal" ? "新しい目標" : mode === "plan" ? (planCopy ? "予定を複製" : "新しい予定") : mode === "todo" ? "新しいToDo" : mode === "chart" ? chartTitle()
+    $("sheetTitle").textContent = mode === "alarm" ? "通知アラーム" : mode === "find" ? "予定" : mode === "month" ? "月を選ぶ" : mode === "goal" ? "新しい目標" : mode === "plan" ? (planCopy ? "予定を複製" : "新しい予定") : mode === "todo" ? "新しいToDo" : mode === "chart" ? chartTitle()
       : mode === "settings" ? (settingsScope === "woMenu" ? "運動のメニュー" : settingsScope === "job" ? "バイトの設定" : "設定") : mode === "rec" ? REC_EDIT[recEdit.kind].title : mode === "edit" ? "予定を編集" : (rel ? rel + "・" : "") + fmtMDW(calDay) + (holidayName(calDay) ? "・" + holidayName(calDay) : "");
     // a plan's メモ on its own page: 完了 alone on the bar, back to the form
     $("memoDone").hidden = !memoFor;
@@ -6405,7 +6743,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     sheetEl.style.transform = "";
     commitChartText(); // a cell's unsaved text goes in before the chart lets go
     dropKeptDue();
-    gridEdit = false; memoFor = null; $("planView").classList.remove("memo-open"); $("editView").classList.remove("memo-open"); editingId = null; settingsFrom = null; goalNew = false; planNew = false; planFromDay = false; planCopy = false; planFromTodo = false; monthPick = false; findOpen = false; dayFromFind = false; todoNew = false; todoAdded = false; todoNewIds = []; todoFromDay = false; recEdit = null; recShown = null; recFromDay = false; mandalaGoal = null; mPath = []; mEditGoal = null; chartFromDay = false; mOverview = false; mWholeFrom = []; mSwap = null; menuFor = null; $("mMenu").hidden = true;
+    alarmFor = null; gridEdit = false; memoFor = null; $("planView").classList.remove("memo-open"); $("editView").classList.remove("memo-open"); editingId = null; settingsFrom = null; goalNew = false; planNew = false; planFromDay = false; planCopy = false; planFromTodo = false; monthPick = false; findOpen = false; dayFromFind = false; todoNew = false; todoAdded = false; todoNewIds = []; todoFromDay = false; recEdit = null; recShown = null; recFromDay = false; mandalaGoal = null; mPath = []; mEditGoal = null; chartFromDay = false; mOverview = false; mWholeFrom = []; mSwap = null; menuFor = null; $("mMenu").hidden = true;
     disarmDelete(); disarmGoalDelete(); disarmRecDelete(); syncSheetHead();
   }
   // a grey day of the month before or after opens its sheet too, without turning the month (the user's call)
@@ -6516,7 +6854,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     clearPlanForm();
     $("planTitle").value = e.title; $("planDate").value = start; $("planEndDate").value = extra ? addDays(start, extra) : "";
     $("planTime").value = e.time || ""; $("planEndTime").value = e.time ? e.endTime || e.time : ""; $("planMemo").value = e.memo || "";
-    $("planPlace").value = e.place || ""; $("planUrl").value = e.url || ""; syncUrlOpen("plan"); syncMemoRow("plan");
+    $("planPlace").value = e.place || ""; $("planUrl").value = e.url || ""; syncUrlOpen("plan"); syncMemoRow("plan"); setFormAlarms("plan", alarmsOf(e));
     planLabelChoice = labelOf(e) ? e.labelId : "";
     editingId = null; planNew = true; planFromDay = true; planCopy = true;
     disarmDelete(); renderPlanLabels(); syncPlanRows("plan"); remember("plan"); syncPlanSave(); syncSheetHead();
@@ -6805,6 +7143,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (menuFor !== null) { closeMenu(); return; } // a menu open goes first, then a cell picked up
     if (mSwap !== null) { endSwap(); return; }
     if (memoFor) { memoBack(); return; } // a plan's メモ: back to its form
+    if (alarmFor) { alarmBack(); return; } // a plan's 通知アラーム: back to its form
     leaveRec(() => { if (mandalaGoal && (mPath.length || chartFromDay)) chartBack(); else if (editingId || settingsFrom === "day") showDayView(); else if (planFromDay) backToDay(); else if (todoFromDay) backFromTodo(); else if (recFromDay) backFromRec(); else if (dayFromFind) backToFind(); else closeSheet(); });
   });
   // a tap on the dimmed page above the sheet puts it away
@@ -6819,6 +7158,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("sheetCancel").addEventListener("click", () => {
     const mode = sheetMode();
     if (mode === "month") { closeSheet(); return; } // the calendar as it was
+    if (mode === "alarm") { alarmBack(); return; }
     if (mode === "goal") { clearGoalForm(); closeSheet(); } else if (mode === "plan") { clearPlanForm(); if (planFromDay) backToDay(); else closeSheet(); }
     else if (mode === "todo") { if (!todoAdded) clearTodoForm(); if (todoFromDay) backFromTodo(); else closeSheet(); } // 閉じる keeps what was typed, as a pull down does
     else if (mode === "rec") leaveRec(() => { if (recFromDay) backFromRec(); else closeSheet(); }); else if (mode === "chart") chartBack(); else if (mode === "edit") leaveRec(showDayView); else if (mode === "day" && dayFromFind) backToFind(); else showDayView();
@@ -7459,7 +7799,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // it is taken out of the plan and kept as a plan of its own), that turn and the ones after it (この回以降: the plan
   // ends the day before and a new one carries on, so the turns past stay as they were) or every turn (すべての回, the
   // plan itself). 保存 with nothing changed only goes back to the list
-  const editFields = () => [$("edTitle").value.trim(), $("edTime").value, $("edEndTime").value, $("edRepeat").value, $("edUntil").value, edLabelChoice, $("edMemo").value.trim(), $("edPlace").value.trim(), $("edUrl").value.trim()].join("\n");
+  const editFields = () => [$("edTitle").value.trim(), $("edTime").value, $("edEndTime").value, $("edRepeat").value, $("edUntil").value, edLabelChoice, $("edMemo").value.trim(), $("edPlace").value.trim(), $("edUrl").value.trim(), $("edAlarms").value].join("\n");
   function editEvent(id, start) {
     const e = events.get(id);
     if (!e) return;
@@ -7469,7 +7809,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("edTime").value = e.time || ""; $("edEndTime").value = e.time ? e.endTime || e.time : ""; // no end time: its start's
     whenOpen.ed = null; whenKeep.ed = null; whenMonth.ed = null;
     $("edRepeat").value = e.repeat || ""; $("edUntil").value = e.repeatUntil || ""; $("edMemo").value = e.memo || "";
-    $("edPlace").value = e.place || ""; $("edUrl").value = e.url || ""; syncUrlOpen("ed"); syncMemoRow("ed");
+    $("edPlace").value = e.place || ""; $("edUrl").value = e.url || ""; syncUrlOpen("ed"); syncMemoRow("ed"); setFormAlarms("ed", alarmsOf(e));
     $("edScope").hidden = !e.repeat;
     fillEditDays();
     edLabelChoice = labelOf(e) ? e.labelId : "";
@@ -7503,7 +7843,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   });
   function showDayView() {
     if (gridEdit) { gridEdit = false; closeSheet(); return; } // (opened from a plan pressed in 週 or 日: back there)
-    editingId = null; settingsFrom = null;
+    alarmFor = null; editingId = null; settingsFrom = null;
     disarmDelete();
     syncSheetHead();
     $("sheetTitle").focus();
@@ -7524,7 +7864,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // added meanwhile went with it)
     const before = JSON.parse(JSON.stringify(e)), made = [];
     const saved = (msg) => flash(msg, () => act(async () => { if (made.length) takeBack(events, made); await events.set(before.id, before); flash("元に戻しました"); }));
-    const fields = { title, date, time: time || undefined, labelId, endDate: undefined, endTime: undefined, memo: undefined, place: undefined, url: undefined, ...rest };
+    const fields = { title, date, time: time || undefined, labelId, endDate: undefined, endTime: undefined, memo: undefined, place: undefined, url: undefined, alarms: undefined, ...rest };
     if (e.repeat && editScope === "one") {
       // this turn alone: taken out of the plan, and kept as a plan of its own with what the form says
       const skip = [...new Set([...(e.skip || []), editingStart])], moved = date !== editingStart;
@@ -7892,7 +8232,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function formState(f) { return JSON.stringify(fieldsOf(f).map((x) => (x.type === "radio" || x.type === "checkbox" ? x.checked : x.value))); }
   // an entry's edit form changed, or a plan's (its words or its days; the user's call: a plan's changes went without a word)
   const recChanged = () => (sheetMode() === "rec" && recShown !== null && formState($("recForm")) !== recShown)
-    || (sheetMode() === "edit" && !!editingId && (editFields() !== editBase || $("edDate").value + "\n" + $("edEndDate").value !== editDays));
+    || (formMode() === "edit" && !!editingId && (editFields() !== editBase || $("edDate").value + "\n" + $("edEndDate").value !== editDays));
   function leaveRec(go) {
     if (!recChanged()) { go(); return; }
     discardGo = go;
@@ -11504,7 +11844,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return out;
   }
   function keepDraft() {
-    const forms = {}, mode = sheetEl.open && !sheetClosing ? sheetMode() : null;
+    const forms = {}, mode = sheetEl.open && !sheetClosing ? formMode() : null;
     for (const id of Object.keys(DRAFT_FORMS)) { const d = draftOf($(id)); if (d) forms[id] = d; }
     let edit = null;
     if (mode === "edit" && editingId) { const f = draftOf($("evEdit")); if (f) edit = { form: "evEdit", id: editingId, start: editingStart, scope: editScope, fields: f }; }
@@ -11585,7 +11925,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- boot ----------
   function renderAll() {
     tsumiTallied = null; tsumiStale = true; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)
-    for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderRunLevel, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderTrashRow, renderCopyRow, renderSyncRow, renderEmptyHint, renderSummary, renderTsumi, noteTsumiStep, paintChart]) draw(fn);
+    for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderRunLevel, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderTrashRow, renderCopyRow, renderSyncRow, renderEmptyHint, renderSummary, renderTsumi, noteTsumiStep, paintChart, renderPushStates]) draw(fn);
+    pushSoon(); // the plans' 通知アラーム to the server, should they have changed
     if (tab === "reclist") draw(renderRecList);
     if (tab === "trash") draw(renderTrash);
     if (tab === "copies") draw(renderCopies);
@@ -11595,6 +11936,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the safeguards first, so a page that can't be drawn doesn't keep them from running; a kind of record moved to the
   // bigger storage is read in before all of it
   function boot() {
+    pushReady = pushCheck().catch(() => {}).then(() => draw(renderPushStates)); // before the alarms go anywhere
     pruneTrash();
     tidyStorage();
     splitTodoLabels();
@@ -11605,11 +11947,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // started afresh at midnight (turnDay): said so
     try { if (sessionStorage.getItem(DAY_TURNED)) { sessionStorage.removeItem(DAY_TURNED); setTimeout(() => flash("日付が変わったので、きょうの日付にしました"), 300); } } catch {}
     let initial = (location.hash || "").slice(1);
+    const linkDay = /^calendar:\d{4}-\d{2}-\d{2}$/.test(initial) ? initial : null; // a notification pressed: its plan's day
+    if (linkDay) initial = "calendar";
     if (isDietPart(initial)) { setDietPart(initial); initial = "diet"; } // 食事's, 運動's and からだ's own pages, from before ダイエット
     // straight there: no slide in from きょう as the app opens (a record's entries open at 記録, which record being unknown)
     draw(() => setTab(["reclist", "trash", "copies", "sync"].includes(initial) ? "records" : PAGES.some((p) => p.key === initial) || initial === "runlevel" ? initial : "home"));
     draw(loadJournalForm);
     renderAll();
+    // a notification pressed: its day first; a form being typed in is filled again under it (one being changed opens over it)
+    if (linkDay) draw(() => openLink("#" + linkDay));
     draw(() => restoreDraft(!initial || initial === "home"));
     syncBooted = true;
     startSync();

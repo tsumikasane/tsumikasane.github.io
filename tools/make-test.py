@@ -9,6 +9,8 @@ https://tsumikasane-test.github.io/ (the orange icon), from the repo tsumikasane
 - sync one way only, 本番 → テスト (the user's call, 2026-11-08): signed in with the same account it gets the real
   records, but nothing is ever sent from it (its push does nothing and no write to Firestore is left in it), so whatever
   is tried in it never reaches the real records; 新しく登録する isn't offered there
+- its 通知アラーム (when the app has them) go to its own device only: the real devices' ids that come down with the real
+  records are left alone, so its plans never ring on them
 - its name says so: テスト版 on its title and on the home screen, an orange mark at the top of every page, an orange icon
   (tools/test-icons)
 
@@ -84,6 +86,11 @@ page = swap(page, '''      async push(docs) {
           await batch.commit();
         }
       },''', '''      async push(docs) {}, // テスト版: 本番 → テスト only, so nothing written here ever goes up to the real records''', "sync's push")
+# 通知アラーム: its alarms go to its own device only; the real devices' ids come down with the real records, and the
+# test version's plans (tried changes and all) must never reach them
+if "async function pushSend()" in page:
+    page = swap(page, '''      const others = syncUser && syncState.uid ? settings.items.filter((x) => typeof x.id === "string" && x.id.startsWith("push:") && x.id !== "push:" + mine).map((x) => x.id.slice(5)) : [];''',
+                '''      const others = []; // テスト版: its alarms go to its own device only, never to the real devices whose ids came down with the real records''', "the alarms' other devices")
 for write in ("writeBatch", "setDoc", "updateDoc", "deleteDoc", "addDoc", ".commit(", "batch.set", "batch.delete"):
     if write in page:
         sys.exit(f"make-test: the page still writes to Firestore ({write}); the test version wasn't made")
