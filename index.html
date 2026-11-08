@@ -979,12 +979,11 @@ ul.list > li.wo-edit-note { display: grid; grid-template-columns: minmax(0, 1fr)
 .cal-runs .run.plain { border-inline-start-color: transparent; }
 .cal-runs .run.from { margin-inline-start: 0; border-start-start-radius: 0; border-end-start-radius: 0; border-inline-start-color: transparent; }
 .cal-runs .run.on { margin-inline-end: 0; border-start-end-radius: 0; border-end-end-radius: 0; }
-/* 週's 7日・5日・3日, under the month bar, across the page as iOS puts a segmented control under its bar */
-.cal-days { align-self: stretch; max-width: none; margin-top: 4px; }
-/* 週 and 日: the hours down the side (--hour each), the days across; the days' names and the 終日 row stay put while the
-   hours scroll under them. On iPhone it runs from one edge of the screen to the other and down to the bar, as the month
-   does; on wide screens it is as tall as the window leaves */
-.tg { display: flex; flex-direction: column; min-height: 0; overflow: hidden; touch-action: pan-y pinch-zoom; --hour: 48px; --gut: 36px; }
+/* 週 and 日: the hours down the side, the days across. Like the month, it never moves up and down (the user's call): the
+   whole day's 24 hours share what the days' names and the 終日 row leave, down to the bar, each hour the same height. On
+   iPhone it runs from one edge of the screen to the other, as the month does; on wide screens it is as tall as the window
+   leaves */
+.tg { display: flex; flex-direction: column; min-height: 0; overflow: hidden; touch-action: pan-y pinch-zoom; --gut: 36px; }
 @media (max-width: 767px) {
   .tg {
     margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))) calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
@@ -1012,13 +1011,14 @@ ul.list > li.wo-edit-note { display: grid; grid-template-columns: minmax(0, 1fr)
 .tg-bar.on { margin-inline-end: 0; border-start-end-radius: 0; border-end-end-radius: 0; }
 .tg-bar.hol { background: transparent; border-inline-start: 0; color: var(--warn); cursor: default; }
 .tg-more { min-width: 0; margin: 0 2px; padding: 0; background: transparent; border: 0; color: var(--muted); font-size: calc(1rem - 5px); line-height: 1.3; text-align: start; cursor: pointer; }
-/* (its own scroller: sideways moves left to the script there too, for the swipe) */
-.tg-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y pinch-zoom; }
-.tg-body { position: relative; height: calc(24 * var(--hour)); }
+.tg-fit { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.tg-body { position: relative; flex: 1 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr); }
 .tg-hours { position: relative; }
+/* (hours too low for a number each, on a small phone: every other one) */
+.tg-hours.tight span:nth-child(odd) { display: none; }
 .tg-hours span { position: absolute; right: 6px; transform: translateY(-50%); font-size: 11px; line-height: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* a day's column: a line at each hour; a press on an empty hour starts a plan there */
-.tg-col { position: relative; min-width: 0; border-inline-start: .5px solid var(--separator); background-image: repeating-linear-gradient(to bottom, var(--separator) 0 .5px, transparent .5px var(--hour)); cursor: pointer; }
+.tg-col { position: relative; min-width: 0; border-inline-start: .5px solid var(--separator); background-image: linear-gradient(to bottom, var(--separator) .5px, transparent .5px); background-size: 100% calc(100% / 24); cursor: pointer; }
 .tg-col.today { background-color: color-mix(in srgb, var(--accent) 4%, var(--surface)); }
 /* a plan with a time, from its start to its end, in its label's colour; two at once share the width */
 .tg-ev { position: absolute; display: flex; flex-direction: column; align-items: stretch; min-height: 14px; margin: 0; padding: 1px 3px; overflow: hidden; border: 0; border-radius: 4px; border-inline-start: 3px solid var(--bc); background: color-mix(in srgb, var(--bc) 24%, var(--surface)); box-shadow: 0 0 0 1px var(--surface); color: var(--fg); font: inherit; text-align: start; cursor: pointer; }
@@ -1673,13 +1673,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <button type="button" class="icon-btn" id="calSettings" aria-label="設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button>
             <button type="button" class="icon-btn" id="calAdd" aria-label="予定を追加" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg></button>
           </div>
-          <!-- 週: how many days it shows (the user's call, after a calendar app they showed): the week, or five or three from
-               the day picked -->
-          <div class="seg cal-days" role="group" aria-label="週の表示の日数" id="calDays" hidden>
-            <button type="button" data-days="7" aria-pressed="true">7日</button>
-            <button type="button" data-days="5" aria-pressed="false">5日</button>
-            <button type="button" data-days="3" aria-pressed="false">3日</button>
-          </div>
         </div>
         <div class="card cal">
           <div class="cal-week" id="calWeek" aria-hidden="true"><span class="sun">日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="sat">土</span></div>
@@ -1687,11 +1680,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </div>
         <!-- 週 and 日 (the user's call, after a calendar app they showed): the days side by side over the hours, each plan with
              a time a block from its start to its end; the plans without one, those over several days, holidays and the
-             deadlines in the 終日 row above; the hours scroll under the days' names (renderTimeGrid) -->
+             deadlines in the 終日 row above; the whole day's hours fit under them, nothing scrolling (renderTimeGrid) -->
         <div class="card tg" id="calTime" hidden>
           <div class="tg-head" id="tgHead"></div>
           <div class="tg-allday" id="tgAllDay"></div>
-          <div class="tg-scroll" id="tgScroll"><div class="tg-body" id="tgBody"></div></div>
+          <div class="tg-fit"><div class="tg-body" id="tgBody"></div></div>
         </div>
       </section>
 
@@ -3161,7 +3154,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     watchTitle();
     if (key === "diet") syncDietPart(); // its part, and からだ's chart at the width it now has
     if (key === "runlevel") draw(renderRunLevel);
-    if (key === "calendar") draw(() => scrollHours()); // 週 and 日: the hours at now (or the first plan), once laid out
     if (key === "records") { draw(renderSummary); draw(renderUsage); }
     // つみかさね opened: the newest, and what came since; back from 最近削除した項目 opened from a block there: as it was, the
     // kind pressed, the block shown, 大きく's place and the page's (the user's call: they were all gone)
@@ -6117,9 +6109,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const turn = () => {
       if (calView === "month") calMonth = addMonths(calMonth, step);
       else {
-        const by = calView === "day" ? 1 : weekDays;
-        calDay = addDays(calDay, step * by);
-        if (calView === "week" && weekDays !== 7 && viewFirst) viewFirst = addDays(viewFirst, step * by);
+        calDay = addDays(calDay, step * (calView === "day" ? 1 : 7));
         calMonth = monthOf(calDay);
       }
       renderCalendar();
@@ -7804,24 +7794,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function holidayName(d) { return holidaysOf(Number(d.slice(0, 4))).get(d) || ""; }
   // ---------- 月・週・日 ----------
-  // 月・週・日 (the user's call, after a calendar app they showed): which the calendar shows, and how many days 週 has (7, 5
-  // or 3), kept on this device. 5日 and 3日 start from the day picked, and stay put while it moves within them (viewFirst)
+  // 月・週・日 (the user's call, after a calendar app they showed): which the calendar shows, kept on this device. 週 is the
+  // week, seven days (the user's call: its 7日・5日・3日 taken out)
   const CAL_VIEW_KEY = LS_PREFIX + "calView";
-  let calView = "month", weekDays = 7, viewFirst = null;
-  try { const v = JSON.parse(localStorage.getItem(CAL_VIEW_KEY) || "null"); if (["month", "week", "day"].includes(v?.view)) calView = v.view; if ([7, 5, 3].includes(v?.days)) weekDays = v.days; } catch {}
-  const saveCalView = () => { try { localStorage.setItem(CAL_VIEW_KEY, JSON.stringify({ view: calView, days: weekDays })); } catch {} };
-  // the days 週 or 日 shows: 日 the day picked; 7日 its week, from the week's first day as the month has them; 5日 and 3日
-  // from the day picked, staying put while it moves within them (a plan pressed in them opens on its day, the days left as
-  // they were)
+  let calView = "month";
+  try { const v = JSON.parse(localStorage.getItem(CAL_VIEW_KEY) || "null"); if (["month", "week", "day"].includes(v?.view)) calView = v.view; } catch {}
+  const saveCalView = () => { try { localStorage.setItem(CAL_VIEW_KEY, JSON.stringify({ view: calView })); } catch {} };
+  // the days 週 or 日 shows: 日 the day picked; 週 its week, from the week's first day as the month has them
   function viewDays() {
     if (calView === "day") return [calDay];
-    let first;
-    if (weekDays === 7) first = addDays(calDay, -((parseYmd(calDay).getDay() - weekStart() + 7) % 7));
-    else {
-      if (!viewFirst || calDay < viewFirst || calDay > addDays(viewFirst, weekDays - 1)) viewFirst = calDay;
-      first = viewFirst;
-    }
-    return Array.from({ length: weekDays }, (_, i) => addDays(first, i));
+    const first = addDays(calDay, -((parseYmd(calDay).getDay() - weekStart() + 7) % 7));
+    return Array.from({ length: 7 }, (_, i) => addDays(first, i));
   }
   // the bar on top: the month (2026年11月, or 2026年11月〜12月 for days in two), or in 日 the day (2026年11月13日（金）)
   function calTitle() {
@@ -7831,14 +7814,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (a === b) return fmtMonth(a);
     return a.slice(0, 4) === b.slice(0, 4) ? `${fmtMonth(a)}〜${Number(b.slice(5))}月` : `${fmtMonth(a)}〜${fmtMonth(b)}`;
   }
-  // which is pressed at the foot, 週's days, the card showing, and what ‹ › say
+  // which is pressed at the foot, the card showing, and what ‹ › say
   function syncCalView() {
     for (const b of $("calViews").children) b.setAttribute("aria-pressed", String(b.dataset.view === calView));
-    for (const b of $("calDays").children) b.setAttribute("aria-pressed", String(Number(b.dataset.days) === weekDays));
-    $("calDays").hidden = calView !== "week";
     document.querySelector("#sec-calendar .cal").hidden = calView !== "month";
     $("calTime").hidden = calView === "month";
-    const unit = calView === "month" ? "月" : calView === "day" ? "日" : weekDays === 7 ? "週" : weekDays + "日";
+    const unit = calView === "month" ? "月" : calView === "day" ? "日" : "週";
     $("calPrev").setAttribute("aria-label", "前の" + unit); $("calNext").setAttribute("aria-label", "次の" + unit);
   }
   // a view picked: 週 and 日 from the day picked in the month on show (else today, if it is that month, else its 1st), or
@@ -7846,17 +7827,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function setCalView(v, day = null) {
     if (calView === "month" && v !== "month" && !day) calDay = planDay();
     if (day) calDay = day;
-    calView = v; calMonth = monthOf(calDay); tgShown = "";
+    calView = v; calMonth = monthOf(calDay);
     saveCalView();
     renderCalendar();
   }
   $("calViews").addEventListener("click", (ev) => { const b = ev.target.closest("button[data-view]"); if (b && b.dataset.view !== calView) setCalView(b.dataset.view); });
-  $("calDays").addEventListener("click", (ev) => {
-    const b = ev.target.closest("button[data-days]");
-    if (!b || Number(b.dataset.days) === weekDays) return;
-    weekDays = Number(b.dataset.days); viewFirst = null; tgShown = "";
-    saveCalView(); renderCalendar();
-  });
   const nowMinutes = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
   // plans at the same time side by side: each takes the first column free at its start, and the ones overlapping one
   // another share the width by as many columns as they needed
@@ -7875,7 +7850,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // 週 and 日: the days' names (none in 日, the bar on top says it), the 終日 row, and the hours. A plan with a time on one
   // day is a block from its start to its end (one without an end half an hour tall); the others, holidays and the
   // deadlines (ToDo's and 目標's, outlined as in the month) go in 終日, a run across its days in a lane as in the month
-  let tgShown = ""; // the days the hours were last scrolled for: other days scroll them again, a redraw doesn't
   function renderTimeGrid(todoBy, goalBy, hidden) {
     const days = viewDays(), n = days.length, first = days[0], last = days[n - 1];
     $("calTime").style.setProperty("--cols", n);
@@ -7943,24 +7917,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           return el("button", { type: "button", class: "tg-ev" + (l ? "" : " plain") + (x.end - x.s <= 45 ? " short" : ""),
             style: `top: ${x.s / 14.4}%; height: ${(Math.min(x.end, 1440) - x.s) / 14.4}%; left: ${(x.c / x.n) * 100}%; width: ${100 / x.n}%; --bc: ${labelHue(l)}`,
             "data-ev": e.id + "|" + x.t.start, "aria-label": `「${e.title}」を編集（${when}${l ? "・" + l.name : ""}${e.place ? "・場所 " + e.place : ""}）`, onclick: (ev) => editFromGrid(e.id, x.t.start, d, ev.detail === 0) },
-            el("span", { class: "t" }, e.title), el("span", { class: "tm" }, n >= 5 ? e.time : when));
+            // (a short one in 週's narrow columns: its name alone, its place showing its time)
+            el("span", { class: "t" }, e.title), n > 1 && x.end - x.s <= 45 ? null : el("span", { class: "tm" }, n > 1 ? e.time : when));
         }),
         d === todayKey ? el("div", { class: "tg-now", style: `top: ${nowMinutes() / 14.4}%` }) : null);
     });
-    setChildren($("tgBody"), el("div", { class: "tg-hours", "aria-hidden": "true" }, Array.from({ length: 23 }, (_, i) => el("span", { style: `top: ${((i + 1) / 24) * 100}%` }, String(i + 1)))), cols);
-    scrollHours(turnsBy);
+    setChildren($("tgBody"), el("div", { class: "tg-hours" + (hoursTight() ? " tight" : ""), "aria-hidden": "true" }, Array.from({ length: 23 }, (_, i) => el("span", { style: `top: ${((i + 1) / 24) * 100}%` }, String(i + 1)))), cols);
   }
-  // new days on show: the hours scrolled to now (today among them), else to the first plan with a time, else to 8:00
-  function scrollHours(turnsBy = null) {
-    if (calView === "month") return;
-    const days = viewDays(), key = calView + "|" + days[0] + "|" + days.length, body = $("tgBody");
-    if (tgShown === key || !body.offsetHeight) return; // (not laid out yet: when the calendar shows)
-    tgShown = key;
-    const by = turnsBy || turnsByDay(days[0], days[days.length - 1]), hidden = calHidden();
-    const starts = days.flatMap((d) => (by.get(d) || []).filter((t) => t.days === 1 && t.e.time && onCalendar(t.e, hidden)).map((t) => minOf(t.e.time)));
-    const at = days.includes(todayKey) ? nowMinutes() - 90 : starts.length ? Math.min(...starts) - 30 : 8 * 60;
-    $("tgScroll").scrollTop = (Math.max(0, at) / 1440) * body.offsetHeight;
-  }
+  // the hours' numbers every other hour when an hour is lower than one fits in (a small phone), every hour otherwise;
+  // again as the size changes (the phone turned, the calendar coming on screen)
+  const hoursTight = () => { const h = $("tgBody").offsetHeight; return h > 0 && h / 24 < 18; };
+  if ("ResizeObserver" in window) new ResizeObserver(() => $("tgBody").querySelector(".tg-hours")?.classList.toggle("tight", hoursTight())).observe($("tgBody"));
   // now's line moves on with the minutes
   setInterval(() => { const line = document.querySelector("#tgBody .tg-now"); if (line) line.style.top = nowMinutes() / 14.4 + "%"; }, 60000);
   // a press on an empty hour: a new plan there (on that day, from that hour, for an hour)
