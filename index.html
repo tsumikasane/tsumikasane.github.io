@@ -1226,6 +1226,9 @@ dialog.sheet {
   overflow: hidden auto; overscroll-behavior: contain;
 }
 dialog.sheet::backdrop { background: rgba(0, 0, 0, .32); animation: sheet-fade .32s; }
+/* the month picker: only as tall as its wheels, at the foot, the calendar showing above it (the user's call: as the
+   calendar app they showed) */
+dialog.sheet.compact { height: auto; }
 @keyframes sheet-fade { from { opacity: 0; } }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.sheet, .ask) { --bg: #1c1c1e; --surface: #2c2c2e; } }
 :root[data-theme="dark"] :is(.sheet, .ask) { --bg: #1c1c1e; --surface: #2c2c2e; }
@@ -1264,14 +1267,12 @@ dialog.ask::backdrop { background: rgba(0, 0, 0, .2); }
 .sheet-btn:disabled { color: var(--muted); opacity: .6; cursor: default; }  /* 追加 before the new goal has a name */
 .sheet-body { padding: 4px var(--space-2) max(var(--space-3), env(safe-area-inset-bottom, 0px)); container-type: inline-size; }
 .sheet-view { display: flex; flex-direction: column; gap: var(--space-2); }
-/* the month picker: the year between ‹ ›, its twelve months (this month in the tint, the one on show filled), and a
-   way back to this month */
-.mp-year { display: flex; align-items: center; justify-content: center; gap: var(--space-1); }
-.mp-year .cur { min-width: 6em; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
-.mp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-1); padding: var(--space-2); }
-.mp-grid button { min-height: 44px; padding: 0 4px; border: 0; border-radius: 12px; background: var(--fill); color: var(--fg); font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
-.mp-grid button.now { color: var(--accent); font-weight: 700; }
-.mp-grid button[aria-current="true"] { background: var(--accent-fill); color: var(--accent-ink); font-weight: 600; }
+/* the month picker: the year and the month on wheels side by side, as the iPhone's date picker has them (the user's
+   call), the ones in the band picked; and a way back to this month */
+.mp-wheels { padding: 12px var(--space-2); }
+.mp-wheels .wheel { gap: 8px; }
+.mp-wheels .wheel-col { width: 5.6em; }
+.mp-wheels .wheel-col.months { width: 4.2em; }
 .sheet-del, .sheet-row { display: block; width: 100%; min-height: 50px; padding: 0 var(--space-2); text-align: center; }
 .sheet-del:not([hidden]) + .sheet-del, .sheet-row:not([hidden]) + .sheet-row { border-top: .5px solid var(--separator); }  /* two in one card */
 .row-btn > .chip { min-width: 4.6em; text-align: center; }  /* the times line up in a column */
@@ -1288,6 +1289,7 @@ dialog.ask::backdrop { background: rgba(0, 0, 0, .2); }
 }
 @media (min-width: 768px) {
   dialog.sheet { inset: 0; width: min(520px, calc(100vw - 64px)); height: min(700px, calc(100dvh - 64px)); margin: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
+  dialog.sheet.compact { height: fit-content; }
   .sheet-head { min-height: 52px; padding-top: 6px; }
   .sheet-head::before { display: none; }
 }
@@ -2408,14 +2410,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       </div>
       <div class="find-groups" id="findList"></div>
     </div>
-    <!-- another month, from the month's name on the calendar: the year with ‹ ›, its months, and back to this month -->
+    <!-- another month, from the month's name on the calendar: the year and the month on wheels (the user's call: as a
+         calendar app they showed), 完了 on the bar going there and キャンセル leaving it as it was; and back to this month -->
     <div class="sheet-view" id="monthView" hidden>
-      <div class="mp-year">
-        <button type="button" class="navbtn" id="mpPrev" aria-label="前の年"><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-prev"/></svg></button>
-        <span class="cur" id="mpYear" aria-live="polite"></span>
-        <button type="button" class="navbtn" id="mpNext" aria-label="次の年"><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button>
-      </div>
-      <div class="card mp-grid" id="mpGrid" role="group" aria-labelledby="mpYear"></div>
+      <div class="card mp-wheels" id="mpWheels"></div>
       <div class="card"><button type="button" class="link-btn sheet-row" id="mpToday">今月に戻る</button></div>
     </div>
     <!-- a new ToDo, from the ＋ beside ToDo's title: キャンセル and 追加 on the bar, as for a new plan. Its 期限 has きょう・
@@ -6038,45 +6036,51 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // back on it once a turn comes to rest. A flick turns one and it stops on the row in the band, which is the time; a row
   // pressed turns to it, the arrow keys a row at a time. Each a list for screen readers, the row picked read as chosen
   const ROW_H = 40, LAPS = 5;
+  // one wheel: its rows (items), the one in the band to start with (start); onTake(j) as it comes to rest on another.
+  // One that goes round (loop) is its list five times over, the middle one read out, and put back on it once a turn
+  // comes to rest; one that doesn't (a year) stops at its ends. place() turns it to its row once it is laid out
+  function wheelCol(items, start, { label, idBase, show = String, loop = true, onTake, cls = "" }) {
+    const len = items.length, laps = loop ? LAPS : 1, mid = loop ? 2 * len : 0;
+    const of = (i) => (loop ? ((i % len) + len) % len : clampTo(i, 0, len - 1));
+    const col = el("div", { class: "wheel-col" + (cls ? " " + cls : ""), role: "listbox", tabindex: 0, "aria-label": label });
+    let at = start, pos = -1, chosen = null, rest = null;
+    const turnTo = (i, smooth) => col.scrollTo({ top: i * ROW_H, behavior: smooth && !reduceMotion.matches ? "smooth" : "auto" });
+    const take = (i) => { if (of(i) !== at) { at = of(i); onTake(at); } };
+    const light = (i) => {
+      if (i === pos) return;
+      col.children[pos]?.classList.remove("on"); col.children[i]?.classList.add("on"); pos = i;
+      const row = col.children[mid + of(i)];
+      if (chosen !== row) { chosen?.setAttribute("aria-selected", "false"); row.setAttribute("aria-selected", "true"); chosen = row; col.setAttribute("aria-activedescendant", row.id); }
+    };
+    // back onto the middle lap, where it can go as far either way
+    const recentre = () => { if (loop && (pos < mid || pos >= mid + len)) { const i = mid + of(pos); col.scrollTop = i * ROW_H; light(i); } };
+    for (let lap = 0; lap < laps; lap++) items.forEach((x, j) => {
+      const i = lap * len + j;
+      col.append(el("div", { class: "wheel-item", ...(lap === (loop ? 2 : 0) ? { role: "option", id: `${idBase}-${x}`, "aria-selected": "false" } : { "aria-hidden": "true" }),
+        onclick: () => { turnTo(i, true); light(i); take(i); } }, show(x)));
+    });
+    col.addEventListener("scroll", () => {
+      const i = clampTo(Math.round(col.scrollTop / ROW_H), 0, len * laps - 1);
+      light(i);
+      clearTimeout(rest); rest = setTimeout(() => { take(i); recentre(); }, 120); // once it comes to rest
+    }, { passive: true });
+    col.addEventListener("keydown", (ev) => {
+      const by = { ArrowUp: -1, ArrowDown: 1, PageUp: -5, PageDown: 5 }[ev.key];
+      if (by === undefined && ev.key !== "Home" && ev.key !== "End") return;
+      ev.preventDefault();
+      const i = ev.key === "Home" ? mid : ev.key === "End" ? mid + len - 1 : clampTo(pos + by, 0, len * laps - 1);
+      turnTo(i, false); light(i); take(i); recentre();
+    });
+    col.place = () => { const i = mid + at; turnTo(i, false); light(i); };
+    return col;
+  }
   function drawWheels(f, p, k) {
     const v = $(f + k).value || $(f + "Time").value || nextHour(), [h0, m0] = v.split(":").map(Number);
     const mins = [...new Set([...Array.from({ length: 12 }, (_, i) => i * 5), m0])].sort((a, b) => a - b);
     const lists = [Array.from({ length: 24 }, (_, i) => i), mins], at = [h0, mins.indexOf(m0)];
     const write = () => putWhen(f, k, `${pad(lists[0][at[0]])}:${pad(lists[1][at[1]])}`);
-    const cols = lists.map((items, c) => {
-      const len = items.length, mid = 2 * len, of = (i) => ((i % len) + len) % len;
-      const col = el("div", { class: "wheel-col", role: "listbox", tabindex: 0, "aria-label": `${WHEN_NAMES[k]}の${c ? "分" : "時"}` });
-      let pos = -1, chosen = null, rest = null;
-      const turnTo = (i, smooth) => col.scrollTo({ top: i * ROW_H, behavior: smooth && !reduceMotion.matches ? "smooth" : "auto" });
-      const take = (i) => { if (of(i) !== at[c]) { at[c] = of(i); write(); } };
-      const light = (i) => {
-        if (i === pos) return;
-        col.children[pos]?.classList.remove("on"); col.children[i]?.classList.add("on"); pos = i;
-        const row = col.children[mid + of(i)];
-        if (chosen !== row) { chosen?.setAttribute("aria-selected", "false"); row.setAttribute("aria-selected", "true"); chosen = row; col.setAttribute("aria-activedescendant", row.id); }
-      };
-      // back onto the middle lap, where it can go as far either way
-      const recentre = () => { if (pos < mid || pos >= mid + len) { const i = mid + of(pos); col.scrollTop = i * ROW_H; light(i); } };
-      for (let lap = 0; lap < LAPS; lap++) items.forEach((x, j) => {
-        const i = lap * len + j;
-        col.append(el("div", { class: "wheel-item", ...(lap === 2 ? { role: "option", id: `${f}${k}${c}-${x}`, "aria-selected": "false" } : { "aria-hidden": "true" }),
-          onclick: () => { turnTo(i, true); light(i); take(i); } }, c ? pad(x) : String(x)));
-      });
-      col.addEventListener("scroll", () => {
-        const i = clampTo(Math.round(col.scrollTop / ROW_H), 0, len * LAPS - 1);
-        light(i);
-        clearTimeout(rest); rest = setTimeout(() => { take(i); recentre(); }, 120); // once it comes to rest
-      }, { passive: true });
-      col.addEventListener("keydown", (ev) => {
-        const by = { ArrowUp: -1, ArrowDown: 1, PageUp: -5, PageDown: 5 }[ev.key];
-        if (by === undefined && ev.key !== "Home" && ev.key !== "End") return;
-        ev.preventDefault();
-        const i = ev.key === "Home" ? mid : ev.key === "End" ? mid + len - 1 : pos + by;
-        turnTo(i, false); light(i); take(i); recentre();
-      });
-      col.place = () => { const i = mid + at[c]; turnTo(i, false); light(i); };
-      return col;
-    });
+    const cols = lists.map((items, c) => wheelCol(items, at[c], { label: `${WHEN_NAMES[k]}の${c ? "分" : "時"}`, idBase: `${f}${k}${c}`, show: c ? pad : String,
+      onTake: (j) => { at[c] = j; write(); } }));
     p.replaceChildren(el("div", { class: "wheel", role: "group", "aria-label": WHEN_NAMES[k] },
       el("div", { class: "wheel-band" }), cols[0], el("span", { class: "wheel-sep", "aria-hidden": "true" }, ":"), cols[1]));
     for (const col of cols) col.place(); // laid out by now (the box is shown), so each stops on its row
@@ -6269,7 +6273,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   let planFromTodo = false; // that form was filled from a ToDo's sheet (この内容で予定を作る)
   let findOpen = false, dayFromFind = false; // the sheet holds 予定 (the magnifier); a day was opened from it, which 戻る goes back to
   let findPages = 1; // how many three months これからの予定 shows (もっと見る adds three more)
-  let monthPick = false, pickYear = 0; // the sheet holds the month picker, opened from the month's name; the year it shows
+  let monthPick = false; // the sheet holds the month picker, opened from the month's name
   let todoNew = false; // the sheet holds a new ToDo's form, opened from the ＋ beside ToDo's title
   let todoAdded = false; // a ToDo has been added from it since it opened, so its キャンセル reads 閉じる
   let todoNewIds = []; // and which, to be lit in the list as the sheet goes down
@@ -6295,11 +6299,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function syncSheetHead() {
     const mode = sheetMode(), adding = mode === "goal" || mode === "plan" || mode === "todo", changing = mode === "edit" || mode === "rec";
     for (const [m, id] of Object.entries(SHEET_VIEWS)) $(id).hidden = m !== mode;
+    sheetEl.classList.toggle("compact", mode === "month");
     $("labelsGroup").hidden = settingsScope !== "calendar"; $("todoLabelsGroup").hidden = settingsScope !== "todo"; $("subjectsGroup").hidden = settingsScope !== "study"; $("tilesGroup").hidden = settingsScope !== "home"; $("bodyGroup").hidden = settingsScope !== "weight"; $("moneyGroup").hidden = settingsScope !== "money"; $("woMenuGroup").hidden = settingsScope !== "woMenu"; $("jobGroup").hidden = settingsScope !== "job"; $("backupGroup").hidden = settingsScope !== "records";
     $("sheetDone").hidden = changing || adding; $("sheetSave").hidden = mode !== "edit"; $("recSave").hidden = mode !== "rec";
     $("goalSave").hidden = mode !== "goal"; $("planSave").hidden = mode !== "plan"; $("todoSave").hidden = mode !== "todo";
-    $("sheetCancel").hidden = !(changing || adding || (mode === "chart" && (mPath.length || chartFromDay)) || (mode === "settings" && settingsFrom === "day") || (mode === "day" && dayFromFind));
-    $("sheetCancel").textContent = mode === "todo" && todoAdded ? "閉じる" : changing || adding ? "キャンセル" : "戻る";
+    $("sheetCancel").hidden = !(changing || adding || mode === "month" || (mode === "chart" && (mPath.length || chartFromDay)) || (mode === "settings" && settingsFrom === "day") || (mode === "day" && dayFromFind));
+    $("sheetCancel").textContent = mode === "todo" && todoAdded ? "閉じる" : changing || adding || mode === "month" ? "キャンセル" : "戻る";
     const rel = mode === "day" ? relLabel(calDay) : "";
     $("sheetTitle").textContent = mode === "find" ? "予定" : mode === "month" ? "月を選ぶ" : mode === "goal" ? "新しい目標" : mode === "plan" ? (planCopy ? "予定を複製" : "新しい予定") : mode === "todo" ? "新しいToDo" : mode === "chart" ? chartTitle()
       : mode === "settings" ? (settingsScope === "woMenu" ? "運動のメニュー" : settingsScope === "job" ? "バイトの設定" : "設定") : mode === "rec" ? REC_EDIT[recEdit.kind].title : mode === "edit" ? "予定を編集" : (rel ? rel + "・" : "") + fmtMDW(calDay) + (holidayName(calDay) ? "・" + holidayName(calDay) : "");
@@ -6559,26 +6564,33 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("findClear").addEventListener("click", () => { $("findText").value = ""; $("findClear").hidden = true; renderFind(); $("findText").focus(); });
   $("dayAdd").addEventListener("click", openPlanFromDay);
   $("dayTodoAdd").addEventListener("click", openNewTodoFromDay);
-  // the month picker: the months of the year on show, the one on the calendar filled; a month or 今月に戻る closes it
+  // the month picker: the year and the month on wheels (the user's call: as a calendar app they showed), starting at the
+  // month on show; 完了 goes there (in 週 and 日, to its 1st, or today in this month), キャンセル or the sheet put away
+  // leaves the calendar as it was, 今月に戻る comes back to today. The years run thirty either side of this one (and as far
+  // as the month on show, should it be further)
+  let pickYM = null; // [year, month] in the wheels' band
   function openMonthPicker(byKey) {
     if (sheetEl.open) return;
     resetSheet();
-    monthPick = true; pickYear = Number(calMonth.slice(0, 4));
-    renderMonthPicker(); syncSheetHead();
+    monthPick = true;
+    const [y0, m0] = calMonth.split("-").map(Number), now = Number(todayKey.slice(0, 4));
+    const years = Array.from({ length: Math.max(now + 30, y0) - Math.min(now - 30, y0) + 1 }, (_, i) => Math.min(now - 30, y0) + i);
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
+    pickYM = [y0, m0];
+    const cols = [wheelCol(years, years.indexOf(y0), { label: "年", idBase: "mpY", show: (y) => `${y}年`, loop: false, onTake: (j) => { pickYM[0] = years[j]; } }),
+      wheelCol(months, m0 - 1, { label: "月", idBase: "mpM", show: (m) => `${m}月`, cls: "months", onTake: (j) => { pickYM[1] = months[j]; } })];
+    setChildren($("mpWheels"), el("div", { class: "wheel", role: "group", "aria-label": "年と月" }, el("div", { class: "wheel-band" }), cols));
+    syncSheetHead();
     presentSheet(byKey, "month");
+    for (const col of cols) col.place(); // laid out by now (the sheet is open), so each stops on its row
   }
-  function renderMonthPicker() {
-    $("mpYear").textContent = `${pickYear}年`;
-    const now = monthOf(todayKey);
-    setChildren($("mpGrid"), Array.from({ length: 12 }, (_, i) => {
-      const m = `${pickYear}-${String(i + 1).padStart(2, "0")}`;
-      return el("button", { type: "button", class: m === now ? "now" : null, "aria-current": m === calMonth ? "true" : null,
-        "aria-label": `${pickYear}年${i + 1}月` + (m === now ? "（今月）" : ""), onclick: () => { if (calView === "month") { calMonth = m; renderCalendar(); } else setCalDay(m === now ? todayKey : m + "-01"); closeSheet(); } }, `${i + 1}月`);
-    }));
+  // 完了: the calendar at the month in the band
+  function pickMonth() {
+    if (!pickYM) return;
+    const ym = `${pickYM[0]}-${pad(pickYM[1])}`;
+    if (calView === "month") { calMonth = ym; renderCalendar(); } else setCalDay(ym === monthOf(todayKey) ? todayKey : ym + "-01");
   }
   $("calMonthBtn").addEventListener("click", (ev) => openMonthPicker(ev.detail === 0));
-  $("mpPrev").addEventListener("click", () => { pickYear--; renderMonthPicker(); });
-  $("mpNext").addEventListener("click", () => { pickYear++; renderMonthPicker(); });
   $("mpToday").addEventListener("click", () => { setCalDay(todayKey); closeSheet(); });
   // the settings open in the same sheet: the calendar's labels from its gear or from a day's sheet, 勉強's subjects and
   // きょう's tiles from their own gears
@@ -6714,11 +6726,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const r = sheetEl.getBoundingClientRect();
     if (ev.clientY < r.top || ev.clientY > r.bottom || ev.clientX < r.left || ev.clientX > r.right) leaveRec(() => closeSheet());
   });
-  $("sheetDone").addEventListener("click", () => closeSheet());
+  $("sheetDone").addEventListener("click", () => { if (sheetMode() === "month") pickMonth(); closeSheet(); }); // (the month picker's goes to the month picked)
   // キャンセル: a new goal or plan is dropped (one begun from a day's list goes back to it), an entry's changes too; 戻る:
   // out of a chart's cell, or from an edit form or settings back to the day's list (or to the new plan that led to them)
   $("sheetCancel").addEventListener("click", () => {
     const mode = sheetMode();
+    if (mode === "month") { closeSheet(); return; } // the calendar as it was
     if (mode === "goal") { clearGoalForm(); closeSheet(); } else if (mode === "plan") { clearPlanForm(); if (planFromDay) backToDay(); else closeSheet(); }
     else if (mode === "todo") { if (!todoAdded) clearTodoForm(); if (todoFromDay) backFromTodo(); else closeSheet(); } // 閉じる keeps what was typed, as a pull down does
     else if (mode === "rec") leaveRec(() => { if (recFromDay) backFromRec(); else closeSheet(); }); else if (mode === "chart") chartBack(); else if (mode === "edit") leaveRec(showDayView); else if (mode === "day" && dayFromFind) backToFind(); else showDayView();
