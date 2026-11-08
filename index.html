@@ -5964,10 +5964,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // (sw.js) as notifications. The server is the Worker tsumikasane-push on the user's Cloudflare account (built from push/
   // on main by Workers Builds); with no server (PUSH_SERVER empty) they can be chosen but don't come
   const PUSH_SERVER = window.__pushServer || "https://tsumikasane-push.tsumikasane-app.workers.dev";
-  const ALARM_MINS = [0, 1, 3, 5, 10, 15, 20, 30, 45, 60, 120, 180, 240, 300, 360, 720, 1440, 2880, 4320, 5760, 7200, 8640, 10080, 20160];
+  // the choices, as the calendar app the user showed has them (the user's call): 予定時間, minutes, every hour up to 23,
+  // then 1, 2, 3 and 7 days. Those offered before (4〜6日前, 2週間前) still count on the plans that have them: they still
+  // come, and show on the page to be taken off (ALARM_OLD)
+  const ALARM_MINS = [0, 1, 3, 5, 10, 15, 20, 30, 45, ...Array.from({ length: 23 }, (_, i) => (i + 1) * 60), 1440, 2880, 4320, 10080];
+  const ALARM_OLD = [5760, 7200, 8640, 20160];
   const MAX_ALARMS = 3, ALL_DAY_AT = "09:00";
-  const alarmName = (m) => (m === 0 ? "予定時間" : m < 60 ? `${m}分前` : m < 1440 ? `${m / 60}時間前` : m < 10080 ? `${m / 1440}日前` : `${m / 10080}週間前`);
-  const cleanAlarms = (list) => [...new Set((Array.isArray(list) ? list : []).map(Number).filter((m) => ALARM_MINS.includes(m)))].sort((a, b) => a - b).slice(0, MAX_ALARMS);
+  const alarmName = (m) => (m === 0 ? "予定時間" : m < 60 ? `${m}分前` : m < 1440 ? `${m / 60}時間前` : `${m / 1440}日前`);
+  const cleanAlarms = (list) => [...new Set((Array.isArray(list) ? list : []).map(Number).filter((m) => ALARM_MINS.includes(m) || ALARM_OLD.includes(m)))].sort((a, b) => a - b).slice(0, MAX_ALARMS);
   const alarmsOf = (e) => cleanAlarms(e?.alarms);
   // a form's choice in its hidden field (planAlarms, edAlarms), as "60,1440": a draft keeps it with the rest of the form
   const formAlarms = (f) => cleanAlarms($(f + "Alarms").value.split(",").filter(Boolean));
@@ -5986,7 +5990,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // chosen on a device they don't come to yet asks, in that press, to let them come (pushEnable)
   function openAlarms(f) {
     alarmFor = f;
-    setChildren($("alarmList"), ALARM_MINS.map((m) => el("li", { class: "btn-row" },
+    setChildren($("alarmList"), [...new Set([...ALARM_MINS, ...formAlarms(f)])].sort((a, b) => a - b).map((m) => el("li", { class: "btn-row" },
       el("button", { type: "button", class: "row-btn", "data-min": m, "aria-pressed": "false" }, el("span", {}, alarmName(m)), icon("check", 20)))));
     syncAlarmList();
     $("alarmAllDay").hidden = !!$(f + "Time").value;
@@ -11284,7 +11288,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月9日 2:00"; // 57c93f65 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月9日 8:27"; // 13644ea8 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
