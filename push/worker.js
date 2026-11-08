@@ -15,7 +15,8 @@
 import { DurableObject } from "cloudflare:workers";
 
 const SUBJECT = "https://tsumikasane.github.io/"; // who sends them, as the push services ask (VAPID's sub)
-const ORIGINS = /^(?:https:\/\/tsumikasane\.github\.io|http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?)$/;
+// the app, its test version (its own address, tsumikasane-test.github.io: its own devices only) and a local copy
+const ORIGINS = /^(?:https:\/\/tsumikasane(?:-test)?\.github\.io|http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?)$/;
 // only the browsers' own push services: the server never posts anywhere else
 const PUSH_HOSTS = /^(?:[a-z0-9-]+\.)*(?:push\.apple\.com|fcm\.googleapis\.com|android\.googleapis\.com|push\.services\.mozilla\.com|notify\.windows\.com)$/;
 const MAX_ALARMS = 400, MAX_BODY = 200_000;
