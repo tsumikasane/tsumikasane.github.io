@@ -1414,6 +1414,8 @@ ul.list > li.btn-row { padding: 0; }
 .tsumi-cal .cal-key i.lv2 { background: color-mix(in srgb, var(--accent-fill) 45%, var(--surface)); }
 .tsumi-cal .cal-key i.lv3 { background: color-mix(in srgb, var(--accent-fill) 70%, var(--surface)); }
 .tsumi-cal .cal-key i.lv4 { background: var(--accent-fill); }
+/* 節目のお祝い: confetti over everything for a moment, never in the way of a press */
+.confetti { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none; }
 /* 1年前のきょう: a quiet line at the card's foot */
 .tsumi-past { margin: 4px 0 0; font-size: var(--t-sub); }
 .tsumi-stairs { position: relative; margin-top: 8px; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -1659,6 +1661,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 <svg class="sprite" aria-hidden="true" focusable="false">
   <symbol id="i-prev" viewBox="0 0 16 16"><path d="m5.27 8 5.33-5.33-.93-.94L3.4 8l6.27 6.27.93-.94L5.27 8Z"/></symbol>
   <symbol id="i-next" viewBox="0 0 16 16"><path d="m6 1.73-.93.94L10.4 8l-5.33 5.33.93.94L12.27 8 6 1.73Z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.6v12.8a1 1 0 0 0 1.53.85l10.2-6.4a1 1 0 0 0 0-1.7L9.53 4.75A1 1 0 0 0 8 5.6Z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2.2"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="m6.4 18.6-1-1 5.5-5.6-5.6-5.6 1.1-1 5.6 5.5 5.6-5.6 1 1.1L13 12l5.6 5.6-1 1L12 13l-5.6 5.6Z"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M21 11H13V3H11V11H3V13H11V21H13V13H21V11Z"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M21 11H3V13H21V11Z"/></symbol>
@@ -2227,7 +2231,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       <section id="sec-tsumi" style="--sec-c: var(--accent)" hidden>
         <!-- its gear opens つみあげた記録 (the user's call: the page kept for the blocks) -->
         <div class="sec-head">
-          <div class="title-row"><h2><span class="page-mark" role="img" aria-label="つみかさね"><svg class="icon" width="40" height="40" aria-hidden="true" focusable="false"><use href="#i-stairs"/></svg></span></h2><button type="button" class="icon-btn" id="tsumiSettings" aria-label="設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button></div>
+          <div class="title-row"><h2><span class="page-mark" role="img" aria-label="つみかさね"><svg class="icon" width="40" height="40" aria-hidden="true" focusable="false"><use href="#i-stairs"/></svg></span></h2><button type="button" class="icon-btn" id="tsumiPlay" aria-label="積みあげを再生" hidden><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-play"/></svg></button><button type="button" class="icon-btn" id="tsumiSettings" aria-label="設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button></div>
         </div>
         <div class="card tsumi-card">
           <p class="tsumi-total" id="tsumiTotal" hidden><span class="tsumi-kind" id="tsumiKind" hidden></span><span class="tsumi-big" id="tsumiCount">0</span><span class="tsumi-unit">こ</span><span class="tsumi-total-acts" id="tsumiTotalActs" hidden><button type="button" class="link-btn" id="tsumiUnkind">しぼりをはずす</button><button type="button" class="link-btn danger" id="tsumiDropAll" hidden>まとめて削除</button></span></p>
@@ -9671,7 +9675,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // the kind pressed wasn't said)
     $("tsumiCanvas").setAttribute("aria-label", n ? `これまでの記録 ${nf(n)} こが、${k} 段の階段に積みあがっています。${v ? `${onlyLabel()}のブロック ${nf(mine.length)} こだけに色を付けています。` : ""}つぎの段まであと ${left} こ。${!v && today ? `きょうは ${today} こ積みました。` : ""}${!v && (endText || pastText) ? (endText || pastText) + "。" : ""}前と次のボタンや左右の矢印キーで1つずつ、PageUp と PageDown で月ごとに見られます。Enter キーで、見ているブロックの記録が開きます。` : "まだブロックがありません。");
     $("tsumiPrev").hidden = $("tsumiNext").hidden = n < 2;
-    renderTsumiPast();
+    renderTsumiPast(); syncTsumiPlay();
     // opened with blocks gone on since the last look: the newest (of the kind pressed), where they drop in; else as it was
     if (opening) {
       tsumiHoverAt = null; tsumiNeko = null; // (つみねこ where the stairs have it, or where they had it at the last look)
@@ -9870,10 +9874,35 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (reduceMotion.matches) drawTsumi(); else requestAnimationFrame(frame);
     setTimeout(() => { if (tsumiFlash === f) { tsumiFlash = null; if (tab === "tsumi") drawTsumi(); } }, f.end - start + 100); // a hidden page draws no frames
   }
+  // 積みあげの再生 (the user's call): every block from the first dropping in again, a few seconds in all, in 全体 when
+  // the stairs don't fit big (the whole staircase in sight; the view chosen comes back as the page opens again), つみねこ
+  // going up with them; pressed again, or the stairs pressed, it stops with them all down. With less motion they come in
+  // without falling
+  function startTsumiReplay() {
+    const n = tsumiShown.length;
+    if (!n) return;
+    if (tsumiAnim?.replay) { tsumiAnim = null; drawTsumi(); syncTsumiPlay(); return; }
+    if (tsumiCal) setTsumiCal(false, false);
+    if (tsumiGeo?.big) tsumiView = "all"; // (not kept: the view chosen stays the one the page opens with)
+    tsumiFlash = null; tsumiNeko = null;
+    const start = performance.now(), span = clampTo(n * 6, 2500, 6000), step = span / n;
+    const a = tsumiAnim = { from: 0, start, step, end: start + (n - 1) * step + 380, replay: true };
+    syncTsumiPlay();
+    requestAnimationFrame(tsumiFrame);
+    setTimeout(() => { if (tsumiAnim === a) { tsumiAnim = null; if (tab === "tsumi") drawTsumi(); } syncTsumiPlay(); }, a.end - start + 800); // a hidden page draws no frames
+  }
+  // ▶, or ■ while it plays
+  function syncTsumiPlay() {
+    const b = $("tsumiPlay"), on = !!tsumiAnim?.replay;
+    b.hidden = tsumiShown.length < 2;
+    b.setAttribute("aria-label", on ? "再生をとめる" : "積みあげを再生");
+    b.querySelector("use").setAttribute("href", on ? "#i-stop" : "#i-play");
+  }
+  $("tsumiPlay").addEventListener("click", startTsumiReplay);
   function tsumiFrame(now) {
     if (!tsumiAnim) return;
     if (tab !== "tsumi") { tsumiAnim = null; return; }
-    if (now >= tsumiAnim.end) { tsumiAnim = null; drawTsumi(); return; }
+    if (now >= tsumiAnim.end) { tsumiAnim = null; drawTsumi(); syncTsumiPlay(); return; }
     drawTsumi(now);
     requestAnimationFrame(tsumiFrame);
   }
@@ -9992,7 +10021,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // motion, and down (a record taken off); up, one hop a step
   function nekoStep(want, now) {
     let m = tsumiNeko;
-    if (!m || m.col < 0 || want < m.col || reduceMotion.matches) m = tsumiNeko = { col: want, hop: null, joy: null };
+    if (!m || m.col < 0 || want < m.col || reduceMotion.matches || tsumiAnim?.replay) m = tsumiNeko = { col: want, hop: null, joy: null };
     if (m.hop !== null && now >= m.hop + NEKO_HOP) { m.col++; m.hop = null; m.joy = now + NEKO_JOY; }
     if (m.hop === null && m.col < want) { m.hop = now; nekoLoop(); }
     if (m.joy !== null && now >= m.joy) m.joy = null;
@@ -10066,7 +10095,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const i = base + row;
         if (i >= n) break;
         let dy = 0;
-        if (a && i >= a.from) { const p = (t - lands(i)) / 380; if (p <= 0) continue; if (p < 1) dy = -(1 - easeOut(p)) * (yOf(row) + pitch); }
+        if (a && i >= a.from) { const p = (t - lands(i)) / 380; if (p <= 0) continue; if (p < 1 && !(a.replay && reduceMotion.matches)) dy = -(1 - easeOut(p)) * (yOf(row) + pitch); }
         // in pastel, deeper for one stacked today, so 全体 shows them too (the user's calls); a deleted ToDo's or goal's
         // faint, with lines across it in its colour (the user's call: they looked like any other). One stacked since the
         // last look, and the others of the shown block's day, framed thinly in their colour (the user's call: ringed round
@@ -10075,6 +10104,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const b = tsumiShown[i], px = xOf(c), py = yOf(row) + dy, today = b.t >= dayStart, on = tsumiIn(b);
         const ink = b.gone ? colour[b.kind] : TSUMI_LIGHT[b.kind];
         paintTsumiBlock(x, sq, px, py, size, rad, ink, { gone: b.gone, today, light, dim: on ? 1 : 0.16 });
+        // 節目 (the 100th, the 500th, every 1,000th): a small gold dot at its top right corner (the user's call)
+        // (in from the corner past the 3px frame the shown block wears)
+        if (tsumiMilestone(i + 1) && size >= 6) { const r = Math.max(1.6, size * 0.1), m = Math.max(3.5, size * 0.18); x.fillStyle = "#ffcc00"; x.beginPath(); x.arc(px + size - m - r, py + m + r, r, 0, 2 * Math.PI); x.fill(); }
         x.globalAlpha = on ? 1 : light ? 0.3 : 0.16;
         // (the blocks touching now, the frame is just inside the face)
         if (size >= 8 && (i >= tsumiFresh || (i >= dayLo && i <= dayHi && i !== si0))) { x.strokeStyle = colour[b.kind]; frame(px, py); }
@@ -10320,7 +10352,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const [lo, hi] = tsumiDayRun(i), col = tsumiCol(i), top = i - (col * (col + 1)) / 2 === col;
     const newest = i === n - 1 ? "いちばん新しいブロック" : tsumiOnly && i === lastIn() ? `いちばん新しい${onlyLabel()}` : null;
     // its place among them all, or, with its kind pressed, among that kind's, as the count over the stairs is then
-    const nth = tsumiOnly && tsumiIn(b) ? `${tsumiGoneOnly ? "" : onlyLabel() + "の "}${fmtN(tsumiShown.slice(0, i + 1).filter(tsumiIn).length)} こ目` : `${fmtN((i + 1))} こ目`;
+    const nth = tsumiOnly && tsumiIn(b) ? `${tsumiGoneOnly ? "" : onlyLabel() + "の "}${fmtN(tsumiShown.slice(0, i + 1).filter(tsumiIn).length)} こ目` : `${fmtN((i + 1))} こ目${tsumiMilestone(i + 1) ? "の節目" : ""}`;
     // its day's first block (of the kind pressed) a press away, when this isn't it (the user's call: 「きょう ＋N こ」 could be
     // pressed, this couldn't)
     let dayFirst = lo;
@@ -10583,7 +10615,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     tsumiClicked = false;
     const g = tsumiGeo;
     if (!g?.pitch) return;
-    tsumiAnim = null; // a press ends the drop at once
+    if (tsumiAnim?.replay) { tsumiAnim = null; syncTsumiPlay(); } else tsumiAnim = null; // a press ends the drop at once
     const rect = ev.currentTarget.getBoundingClientRect(), px = ev.clientX - rect.left, py = ev.clientY - rect.top;
     // under the stairs: the ▼ goes down to the block it points at; anything else there picks nothing (the user's call: a
     // press just under the view picked a block out of sight)
@@ -10886,6 +10918,35 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // count afresh (the user's call: one read in was said, with 「。。」, and after taking it back no step was said again);
   // one said once isn't said again when a block taken away comes back
   const tsumiRound = (n) => (n >= 1000 ? Math.floor(n / 1000) * 1000 : [500, 300, 200, 100].find((v) => n >= v) || 0);
+  // 節目 (the user's call): the 100th, the 500th and every 1,000th block, celebrated as it goes on (celebrate) and marked on
+  // the stairs with a gold dot
+  const tsumiMilestone = (n) => n === 100 || n === 500 || (n >= 1000 && n % 1000 === 0);
+  // a moment of confetti over the screen (the user's call: 紙ふぶき), never in the way of a press; with less motion none,
+  // the message saying it still
+  function celebrate() {
+    if (reduceMotion.matches) return;
+    const dpr = window.devicePixelRatio || 1, W = innerWidth, H = innerHeight, cv = el("canvas", { class: "confetti", "aria-hidden": "true" });
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    document.body.append(cv);
+    const x = cv.getContext("2d"), colours = ["#ffcc00", "#ff375f", "#30d158", "#0a84ff", "#ff9f0a", "#bf5af2"];
+    x.scale(dpr, dpr);
+    const bits = Array.from({ length: 150 }, () => ({ x: Math.random() * W, y: -20 - Math.random() * H * 0.5, vx: (Math.random() - 0.5) * 2.4, vy: 2 + Math.random() * 3,
+      r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3, w: 6 + Math.random() * 5, h: 3 + Math.random() * 4, c: colours[Math.floor(Math.random() * colours.length)] }));
+    const start = performance.now(), life = 2800;
+    const frame = (now) => {
+      const p = (now - start) / life;
+      x.clearRect(0, 0, W, H);
+      if (p >= 1 || !cv.isConnected) { cv.remove(); return; }
+      x.globalAlpha = p > 0.75 ? (1 - p) / 0.25 : 1;
+      for (const b of bits) {
+        b.x += b.vx; b.y += b.vy; b.vy += 0.04; b.r += b.vr;
+        x.save(); x.translate(b.x, b.y); x.rotate(b.r); x.scale(1, Math.cos(b.r * 2)); x.fillStyle = b.c; x.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); x.restore();
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+    setTimeout(() => cv.remove(), life + 600); // a hidden page draws no frames
+  }
   let tsumiCounted = null; // { n, k, best, top }: blocks and steps at the last count, and the most steps and the round count said since
   function noteTsumiStep() {
     const n = tsumiBlocks(false, "tally").n, k = tsumiCol(n), round = tsumiRound(n), was = tsumiCounted;
@@ -10893,6 +10954,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const rise = k > was.k && k > was.best, hit = round > tsumiRound(was.n) && round > was.top;
     tsumiCounted = { n, k, best: rise ? k : was.best, top: hit ? round : was.top };
     if (!rise && !hit) return;
+    if (hit && tsumiMilestone(round)) setTimeout(celebrate, 200); // 節目 (the user's call)
     setTimeout(() => {
       const say = `つみかさねが ${[hit ? `${fmtN(round)} こ` : "", rise ? `${k} 段` : ""].filter(Boolean).join("・")}になりました`;
       if (flashed && Date.now() < flashed.until && typeof flashed.msg === "string") flash(`${flashed.msg.replace(/。$/, "")}。${say}`, flashed.undo, undefined, flashed.label); else flash(say);
