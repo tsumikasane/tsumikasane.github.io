@@ -708,6 +708,14 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 /* 運動: the fields for the kind picked sit in the form's grid as if loose; the other kind's are hidden (and switched off) */
 .wo-group, .form-rows { display: contents; }
 .wo-group[hidden], .form-rows[hidden] { display: none; }
+/* 筋トレ's sets one by one (setsEditor, the user's call: as a gym's app they showed): each a band in 運動's colour with its
+   number and ×, over its 重さ and 回数 as the form's own rows; ＋ under them, round; the link to them at the right */
+.wo-each, .wo-set { display: contents; }
+.wo-each[hidden] { display: none; }
+.wo-set-head { grid-column: 1 / -1; position: relative; display: flex; align-items: center; justify-content: center; min-height: 36px; margin-top: 4px; border-radius: 8px; background: var(--f-workout); color: #ffffff; font-size: var(--t-sub); font-weight: 600; }
+.wo-set-del { position: absolute; top: 50%; inset-inline-end: 0; transform: translateY(-50%); display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: transparent; border: 0; color: #ffffff; cursor: pointer; }
+.wo-each-plus { grid-column: 1 / -1; justify-self: center; display: grid; place-items: center; width: 56px; height: 56px; margin-top: 4px; padding: 0; border: 0; border-radius: 50%; background: var(--f-workout); color: #ffffff; cursor: pointer; box-shadow: 0 2px 8px color-mix(in srgb, var(--f-workout) 35%, transparent); }
+.wo-each-add { grid-column: 1 / -1; justify-self: end; text-align: right; }
 /* an item's name is typed over where it stands, as in Reminders; it reads as plain text until tapped */
 .rt-name { display: block; width: calc(100% + 12px); min-width: 0; margin: -4px -6px; padding: 4px 6px; border: 0; border-radius: 8px; background: transparent; color: var(--fg); font: inherit; line-height: 1.3; }
 .rt-name:focus { background: var(--fill); }
@@ -2006,13 +2014,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <div class="wo-group" id="woStrength" hidden>
               <label class="flabel" for="woExercise">種目</label>
               <div class="ffield"><input type="text" id="woExercise" list="woExerciseHints" maxlength="40" required><datalist id="woExerciseHints"></datalist></div>
-              <label class="flabel" for="woWeight">重さ <span class="opt">任意</span></label>
-              <div class="ffield"><input type="number" id="woWeight" min="0.1" max="999" step="any" inputmode="decimal"><span class="unit">kg</span></div>
-              <!-- 回 or 秒 (the user's call: the menu's プランク 30秒 could only go in as 30 回) -->
-              <label class="flabel" for="woReps" id="woRepsLabel">回数</label>
-              <div class="ffield"><input type="number" id="woReps" min="1" max="999" inputmode="numeric" required><select id="woPer" class="unit-pick" aria-label="回数の数え方"><option value="">回</option><option value="sec">秒</option></select></div>
-              <label class="flabel" for="woSets">セット数</label>
-              <div class="ffield"><input type="number" id="woSets" min="1" max="99" inputmode="numeric" required><span class="unit">セット</span></div>
+              <!-- 重さ・回数・セット数, the same for every set; 重さ・回数が異なるセットを追加 has them set by set instead (the user's
+                   call: as a gym's app they showed), in woEachBox, kept in woEach (setsEditor) -->
+              <div class="form-rows" id="woSame">
+                <label class="flabel" for="woWeight">重さ <span class="opt">任意</span></label>
+                <div class="ffield"><input type="number" id="woWeight" min="0.1" max="999" step="any" inputmode="decimal"><span class="unit">kg</span></div>
+                <!-- 回 or 秒 (the user's call: the menu's プランク 30秒 could only go in as 30 回) -->
+                <label class="flabel" for="woReps" id="woRepsLabel">回数</label>
+                <div class="ffield"><input type="number" id="woReps" min="1" max="999" inputmode="numeric" required><select id="woPer" class="unit-pick" aria-label="回数の数え方"><option value="">回</option><option value="sec">秒</option></select></div>
+                <label class="flabel" for="woSets">セット数</label>
+                <div class="ffield"><input type="number" id="woSets" min="1" max="99" inputmode="numeric" required><span class="unit">セット</span></div>
+              </div>
+              <div class="wo-each" id="woEachBox" hidden></div>
+              <input type="hidden" id="woEach">
+              <button type="button" class="link-btn wo-each-add" id="woEachAdd">重さ・回数が異なるセットを追加</button>
             </div>
             <label class="flabel" for="woNote">メモ <span class="opt">任意</span></label>
             <div class="ffield"><input type="text" id="woNote" maxlength="1000"></div>
@@ -4266,21 +4281,125 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       $(id).hidden = !on;
       for (const input of $(id).querySelectorAll("input")) input.disabled = !on;
     }
+    woEach.sync();
   }
   $("woType").addEventListener("change", syncWorkoutKind);
-  syncWorkoutKind();
   function setRepsUnit(per) { $("woPer").value = per; $("woRepsLabel").textContent = per === "sec" ? "秒数" : "回数"; }
   $("woPer").addEventListener("change", () => setRepsUnit($("woPer").value));
+  // ---------- 筋トレ: 重さ・回数が異なるセット ----------
+  // (the user's call: as a gym's app they showed) under 重さ・回数・セット数, 重さ・回数が異なるセットを追加 has them set by
+  // set instead: 1セット目, 2セット目… each a band with × over its own 重さ and 回数, and ＋ under them for one more (as the
+  // last one, ready to change). They start as the fields were, as many as セット数 said (two at least); × on the one left
+  // gives the fields back, holding it. 回 or 秒 is one choice for all of them, made in any. They are kept in a hidden field
+  // as JSON, so a draft keeps them and puts them back; it is empty while the fields are used. The add form's and an
+  // entry's edit form each have one (woEach, recSets)
+  function setsEditor({ same, kg, reps, setsIn, per, onPer, box, add, hidden }) {
+    const rows = () => [...box.querySelectorAll(".wo-set")];
+    const valOf = (r) => ({ kg: r.querySelector(".wo-set-kg").value, reps: r.querySelector(".wo-set-reps").value });
+    const save = () => { hidden.value = box.hidden ? "" : JSON.stringify(rows().map(valOf)); };
+    const repsWord = () => (per.value === "sec" ? "秒数" : "回数");
+    // 回 or 秒, for every set at once
+    function setPer(v) {
+      per.value = v; onPer?.(v);
+      for (const r of rows()) {
+        r.querySelector(".wo-set-per").value = v;
+        r.querySelector(".wo-set-unit").textContent = repsWord();
+        r.querySelector(".wo-set-reps").setAttribute("aria-label", `${r.dataset.n}の${repsWord()}`);
+      }
+    }
+    function row(i, x) {
+      const n = `${i + 1}セット目`;
+      return el("div", { class: "wo-set", "data-n": n },
+        el("div", { class: "wo-set-head" }, el("span", {}, n),
+          el("button", { type: "button", class: "wo-set-del", "aria-label": `${n}を削除`, onclick: () => drop(i) }, icon("close", 20))),
+        el("span", { class: "flabel", "aria-hidden": "true" }, "重さ"),
+        el("div", { class: "ffield" }, el("input", { type: "number", class: "wo-set-kg", min: 0.1, max: 999, step: "any", inputmode: "decimal", value: x.kg ?? "", "aria-label": `${n}の重さ` }), el("span", { class: "unit" }, "kg")),
+        el("span", { class: "flabel wo-set-unit", "aria-hidden": "true" }, repsWord()),
+        el("div", { class: "ffield" }, el("input", { type: "number", class: "wo-set-reps", min: 1, max: 999, inputmode: "numeric", required: true, value: x.reps ?? "", "aria-label": `${n}の${repsWord()}` }),
+          el("select", { class: "unit-pick wo-set-per", "aria-label": "回数の数え方", onchange: (ev) => setPer(ev.target.value) }, el("option", { value: "" }, "回"), el("option", { value: "sec", selected: per.value === "sec" }, "秒"))));
+    }
+    function draw(list) {
+      setChildren(box, list.map((x, i) => row(i, x)), el("button", { type: "button", class: "wo-each-plus", "aria-label": "セットを追加", onclick: plus }, icon("plus", 26)));
+    }
+    function show(on) { box.hidden = !on; same.hidden = on; add.hidden = on; sync(); }
+    function open(list) { draw(list); show(true); save(); }
+    function plus() {
+      const list = rows().map(valOf);
+      open([...list, list[list.length - 1] || { kg: "", reps: "" }]);
+      const r = rows();
+      r[r.length - 1]?.querySelector(".wo-set-kg").focus();
+    }
+    function drop(i) {
+      const list = rows().map(valOf);
+      if (list.length <= 1) { close(list[0]); kg.focus(); return; }
+      list.splice(i, 1);
+      open(list);
+      rows()[Math.min(i, list.length - 1)]?.querySelector(".wo-set-del").focus();
+    }
+    // back to the fields, holding the set given
+    function close(keep) {
+      if (keep) { kg.value = keep.kg ?? ""; reps.value = keep.reps ?? ""; setsIn.value = "1"; }
+      box.replaceChildren(); show(false); save();
+    }
+    // the fields switched off while the sets are used (and the sets while the kind is another)
+    function sync() {
+      const away = !!same.parentElement?.closest("[hidden]");
+      for (const x of same.querySelectorAll("input, select")) x.disabled = away || !box.hidden;
+      for (const x of box.querySelectorAll("input, select")) x.disabled = away;
+    }
+    add.addEventListener("click", () => {
+      open(Array.from({ length: Math.max(2, Math.min(20, Math.round(Number(setsIn.value)) || 0)) }, () => ({ kg: kg.value, reps: reps.value })));
+      box.querySelector(".wo-set-kg").focus();
+    });
+    box.addEventListener("input", save);
+    // a draft put back
+    for (const type of ["input", "change"]) hidden.addEventListener(type, () => {
+      let list = null;
+      try { list = JSON.parse(hidden.value || "null"); } catch {}
+      if (Array.isArray(list) && list.length) { draw(list.map((x) => ({ kg: x?.kg ?? "", reps: x?.reps ?? "" }))); show(true); }
+      else if (!box.hidden) { box.replaceChildren(); show(false); }
+    });
+    return {
+      sync, open,
+      // to the fields, empty (an entry added, a menu's move put in)
+      reset() { box.replaceChildren(); show(false); hidden.value = ""; },
+      // the sets: null while the fields are used, false (on the one to put right) when one is not right yet
+      read() {
+        if (box.hidden) return null;
+        const out = [];
+        for (const r of rows()) {
+          const kIn = r.querySelector(".wo-set-kg"), nIn = r.querySelector(".wo-set-reps"), k = Number(kIn.value), n = Math.round(Number(nIn.value));
+          if (!(n >= 1 && n <= 999)) { nIn.focus(); return false; }
+          if (kIn.value !== "" && !(k >= 0.1 && k <= 999)) { kIn.focus(); return false; }
+          out.push(k > 0 ? { kg: Math.round(k * 10) / 10, reps: n } : { reps: n });
+        }
+        return out.length ? out : null;
+      },
+    };
+  }
+  // sets as an entry keeps them: 回数・セット数・重さ as the first set has them, and setList only when they differ (the
+  // same throughout is kept as the fields would have it)
+  function packSets(list) {
+    const a = list[0], same = list.every((x) => x.reps === a.reps && num(x.kg) === num(a.kg));
+    return { reps: a.reps, sets: list.length, kg: num(a.kg) > 0 ? a.kg : undefined, setList: same ? undefined : list };
+  }
+  // an entry's own sets, when it has them (more than one, each with its 回数)
+  const setListOf = (w) => (Array.isArray(w.setList) && w.setList.length > 1 && w.setList.every((x) => x && num(x.reps) > 0) ? w.setList : null);
+  const woEach = setsEditor({ same: $("woSame"), kg: $("woWeight"), reps: $("woReps"), setsIn: $("woSets"), per: $("woPer"), onPer: setRepsUnit, box: $("woEachBox"), add: $("woEachAdd"), hidden: $("woEach") });
+  syncWorkoutKind();
   const WO_FIELDS = ["woDist", "woMin", "woKcal", "woExercise", "woWeight", "woReps", "woSets", "woNote"];
   $("workoutForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
     const type = $("woType").value, item = { date: viewDate, type, createdAt: Date.now() }, n = (id) => Number($(id).value);
     if (type === "筋トレ") {
-      const exercise = $("woExercise").value.trim(), reps = Math.round(n("woReps")), sets = Math.round(n("woSets"));
-      if (!exercise || !(reps > 0) || !(sets > 0)) return;
-      Object.assign(item, { exercise, reps, sets });
+      const exercise = $("woExercise").value.trim(), each = woEach.read();
+      if (each === false) return;
+      const set = each ? packSets(each) : { reps: Math.round(n("woReps")), sets: Math.round(n("woSets")), kg: n("woWeight") > 0 ? Math.round(n("woWeight") * 10) / 10 : undefined };
+      if (!exercise || !(set.reps > 0) || !(set.sets > 0)) return;
+      Object.assign(item, { exercise, reps: set.reps, sets: set.sets });
       if ($("woPer").value === "sec") item.per = "sec";
-      if (n("woWeight") > 0) item.kg = Math.round(n("woWeight") * 10) / 10;
+      if (set.kg > 0) item.kg = set.kg;
+      if (set.setList) item.setList = set.setList;
     } else {
       const minutes = Math.round(n("woMin"));
       if (!(minutes > 0)) return;
@@ -4295,12 +4414,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // a run that takes the distance to the next ランレベル says so (the user's call: the levels, as a running app has them)
     if (runLevelOf(runKm()) > lv) flash(`ランレベルが${RUN_LEVELS[runLevelOf(runKm())].name}になりました`);
     for (const id of WO_FIELDS) $(id).value = "";
+    woEach.reset();
     setRepsUnit(""); // 回 again for the next move
     $(type === "筋トレ" ? "woExercise" : "woDist").focus(); // the kind stays picked for the next one
   });
-  // what an entry says: 5.2 km・30 分・320 kcal, or ベンチプレス・60 kg × 10 回 × 3 セット; one from before the kinds, its minutes
+  // what an entry says: 5.2 km・30 分・320 kcal, or ベンチプレス・60 kg × 10 回 × 3 セット; one from before the kinds, its minutes.
+  // Sets of their own each say theirs, those alike one after another as one (60 kg × 10 回 × 2 セット、50 kg × 12 回)
   function workoutDetail(w) {
-    if (w.exercise) return keepUnits(`${w.exercise}・` + [num(w.kg) > 0 ? `${w.kg} kg` : null, `${num(w.reps)} ${w.per === "sec" ? "秒" : "回"}`, `${num(w.sets)} セット`].filter(Boolean).join(" × "));
+    if (w.exercise) {
+      const part = (kg, reps, n) => [num(kg) > 0 ? `${kg} kg` : null, `${num(reps)} ${w.per === "sec" ? "秒" : "回"}`, n ? `${n} セット` : null].filter(Boolean).join(" × ");
+      const runs = [];
+      for (const x of setListOf(w) || []) { const r = runs[runs.length - 1]; if (r && num(r.kg) === num(x.kg) && num(r.reps) === num(x.reps)) r.n++; else runs.push({ kg: x.kg, reps: x.reps, n: 1 }); }
+      return keepUnits(`${w.exercise}・` + (runs.length ? runs.map((r) => part(r.kg, r.reps, r.n > 1 ? r.n : 0)).join("、") : part(w.kg, w.reps, num(w.sets))));
+    }
     return keepUnits([num(w.km) > 0 ? `${w.km} km` : null, num(w.minutes) > 0 ? `${num(w.minutes)} 分` : null, num(w.kcal) > 0 ? `${fmtN(w.kcal)} kcal` : null].filter(Boolean).join("・"));
   }
   // the 7 days up to the day shown (the user's call: they were always today's, the day shown left out when it wasn't today)
@@ -4636,6 +4762,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a row of the menu pressed: its kind and numbers in the form (回数 from 「12〜15回」 its first number, 秒 for 「30秒」;
   // 「できる回数」 left to type), the form brought into view, and focus where something is still to type
   function fillWorkout(f) {
+    woEach.reset();
     $("woType").value = f.type; syncWorkoutKind();
     let next = null;
     if (f.type === "筋トレ") {
@@ -8050,12 +8177,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           recRow("距離", recNum("reDist", w.km, { min: 0.01, max: 500, step: "any", inputmode: "decimal" }), { opt: true, unit: "km" }),
           recRow("時間", recNum("reMin", w.minutes, { min: 1, max: 1440, inputmode: "numeric", required: true }), { unit: "分" }),
           recRow("消費カロリー", recNum("reKcal", w.kcal, { min: 1, max: 9999, inputmode: "numeric" }), { opt: true, unit: "kcal" }));
+        // its 重さ・回数・セット数, or its sets one by one when they differ, as the add form has them (setsEditor)
+        const kgIn = recNum("reWeight", w.kg, { min: 0.1, max: 999, step: "any", inputmode: "decimal" });
+        const repsIn = recNum("reReps", w.reps, { min: 1, max: 999, inputmode: "numeric", required: true });
+        const setsIn = recNum("reSets", w.sets, { min: 1, max: 99, inputmode: "numeric", required: true });
+        const per = el("select", { id: "rePer", class: "unit-pick", "aria-label": "回数の数え方" }, el("option", { value: "" }, "回"), el("option", { value: "sec", selected: w.per === "sec" }, "秒"));
+        const same = el("div", { class: "form-rows" }, recRow("重さ", kgIn, { opt: true, unit: "kg" }), recRow("回数", repsIn, { after: per }), recRow("セット数", setsIn, { unit: "セット" }));
+        const box = el("div", { class: "wo-each", hidden: true }), kept = el("input", { type: "hidden", id: "reEach" });
+        const add = el("button", { type: "button", class: "link-btn wo-each-add" }, "重さ・回数が異なるセットを追加");
         const strength = el("div", { class: "wo-group" },
           recRow("種目", el("input", { type: "text", id: "reExercise", list: "woExerciseHints", value: w.exercise || "", maxlength: 40, required: true })),
-          recRow("重さ", recNum("reWeight", w.kg, { min: 0.1, max: 999, step: "any", inputmode: "decimal" }), { opt: true, unit: "kg" }),
-          recRow("回数", recNum("reReps", w.reps, { min: 1, max: 999, inputmode: "numeric", required: true }),
-            { after: el("select", { id: "rePer", class: "unit-pick", "aria-label": "回数の数え方" }, el("option", { value: "" }, "回"), el("option", { value: "sec", selected: w.per === "sec" }, "秒")) }),
-          recRow("セット数", recNum("reSets", w.sets, { min: 1, max: 99, inputmode: "numeric", required: true }), { unit: "セット" }));
+          same, box, kept, add);
+        recSets = setsEditor({ same, kg: kgIn, reps: repsIn, setsIn, per, box, add, hidden: kept });
+        const own = setListOf(w);
+        if (own) recSets.open(own.map((x) => ({ kg: num(x.kg) > 0 ? x.kg : "", reps: x.reps })));
         // the fields for the kind picked, the others hidden and switched off as in the add form
         const sync = () => {
           const s = recStrength(w, type.value);
@@ -8063,6 +8198,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             group.hidden = !on;
             for (const input of group.querySelectorAll("input")) input.disabled = !on;
           }
+          recSets.sync();
         };
         type.addEventListener("change", sync);
         sync();
@@ -8072,15 +8208,22 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const type = $("reType").value, n = (id) => Number($(id).value), date = recDay();
         let patch;
         if (recStrength(w, type)) {
-          const exercise = $("reExercise").value.trim(), reps = Math.round(n("reReps")), sets = Math.round(n("reSets"));
+          const exercise = $("reExercise").value.trim();
           if (!exercise) return recBad("reExercise");
-          if (!(reps > 0)) return recBad("reReps");
-          if (!(sets > 0)) return recBad("reSets");
-          patch = { exercise, reps, sets, per: $("rePer").value === "sec" ? "sec" : undefined, kg: n("reWeight") > 0 ? Math.round(n("reWeight") * 10) / 10 : undefined, minutes: undefined, km: undefined, kcal: undefined };
+          const each = recSets?.read();
+          if (each === false) return null;
+          let set = each ? packSets(each) : null;
+          if (!set) {
+            const reps = Math.round(n("reReps")), sets = Math.round(n("reSets"));
+            if (!(reps > 0)) return recBad("reReps");
+            if (!(sets > 0)) return recBad("reSets");
+            set = { reps, sets, kg: n("reWeight") > 0 ? Math.round(n("reWeight") * 10) / 10 : undefined };
+          }
+          patch = { exercise, reps: set.reps, sets: set.sets, per: $("rePer").value === "sec" ? "sec" : undefined, kg: set.kg, setList: set.setList, minutes: undefined, km: undefined, kcal: undefined };
         } else {
           const minutes = Math.round(n("reMin"));
           if (!(minutes > 0)) return recBad("reMin");
-          patch = { minutes, km: n("reDist") > 0 ? Math.round(n("reDist") * 100) / 100 : undefined, kcal: n("reKcal") > 0 ? Math.round(n("reKcal")) : undefined, exercise: undefined, reps: undefined, sets: undefined, per: undefined, kg: undefined };
+          patch = { minutes, km: n("reDist") > 0 ? Math.round(n("reDist") * 100) / 100 : undefined, kcal: n("reKcal") > 0 ? Math.round(n("reKcal")) : undefined, exercise: undefined, reps: undefined, sets: undefined, per: undefined, kg: undefined, setList: undefined };
         }
         if (!date || date > todayKey) return recBad("reDate");
         return { ...patch, type, note: $("reNote").value.trim() || undefined, date };
@@ -8214,6 +8357,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   };
   // 筋トレ takes 種目・回数・セット数; one recorded as 筋トレ before those fields came keeps its minutes instead
   const recStrength = (w, type) => type === "筋トレ" && !(w.type === "筋トレ" && !w.exercise);
+  let recSets = null; // an entry of 筋トレ's sets one by one, in its edit form (setsEditor)
   // item: a ルーティーン item to light, the one a block of つみかさね was (the user's call: its day's items opened, none
   // marked)
   function openRecEdit(kind, id, byKey, item = null) {
@@ -11288,7 +11432,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月9日 8:27"; // 13644ea8 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月9日 9:06"; // e53d7b1f (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
