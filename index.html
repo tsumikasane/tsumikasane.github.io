@@ -928,7 +928,16 @@ ul.list > li.wo-edit-note { display: grid; grid-template-columns: minmax(0, 1fr)
 .wo-edit-note textarea { grid-column: 1 / -1; }
 .wo-menu .card-head .wo-edit { margin-inline-start: auto; min-height: 44px; padding: 0; }
 /* the goal's own part, under its chart */
-.m-split { padding: 8px var(--space-2); }
+.m-split { padding: 0 var(--space-2); }
+/* 分割: how many times, with − ＋ beside it as iOS's stepper (the user's call: any number, 4 and more too, where 1回・2回・
+   3回 were picked from) */
+.split-step { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.split-step output { font-variant-numeric: tabular-nums; }
+.stepper { flex: none; display: inline-flex; border-radius: 9px; background: var(--fill); }
+.stepper button { position: relative; display: grid; place-items: center; width: 48px; height: 34px; padding: 0; border: 0; border-radius: 9px; background: transparent; color: var(--fg); cursor: pointer; }
+.stepper button + button::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; border-left: .5px solid var(--separator); }
+.stepper button:disabled { color: var(--muted); opacity: .45; cursor: default; }
+.stepper button:active:not(:disabled) { background: var(--fill-press); }
 
 /* home: Health-style summary cards; the coloured head opens the page and its hit area covers the card */
 .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
@@ -2555,14 +2564,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="ffield"><input type="date" id="goalDeadline" required></div>
         <span class="flabel" id="goalSplitLabel">分割</span>
         <div class="ffield">
-          <div class="seg seg-radio" role="radiogroup" aria-labelledby="goalSplitLabel">
-            <label><input type="radio" name="goalSplit" value="1"><span>1回</span></label>
-            <label><input type="radio" name="goalSplit" value="2" checked><span>2回</span></label>
-            <label><input type="radio" name="goalSplit" value="3"><span>3回</span></label>
+          <div class="split-step">
+            <output id="goalSplitValue" aria-live="polite">2回</output>
+            <div class="stepper" role="group" aria-labelledby="goalSplitLabel">
+              <button type="button" id="goalSplitMinus" aria-label="分割を1回減らす"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+              <button type="button" id="goalSplitPlus" aria-label="分割を1回増やす"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8h10M8 3v10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+            </div>
           </div>
         </div>
       </form>
-      <p class="group-foot">分割は、マンダラチャートのマスをさらに8つずつに分ける回数です。2回で本家と同じ形（9×9マス）。あとから変えられます。</p>
+      <p class="group-foot">分割は、マンダラチャートのマスをさらに8つずつに分ける回数で、1〜9回にできます。2回で本家と同じ形（9×9マス）。あとから変えられます。</p>
     </div>
     <!-- a goal's mandala chart, from the goal's row in the list (the user's call: break a goal down like マンダラチャート and
          get it done one cell at a time). The goal's own part (達成基準, 期限, 分割, delete) shows under its first chart -->
@@ -2599,10 +2610,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <p class="group-foot">書きかえると、そのまま保存されます。</p>
         <h3 class="group-head" id="mSplitLabel">分割の回数</h3>
         <div class="card m-split">
-          <div class="seg seg-radio" role="radiogroup" aria-labelledby="mSplitLabel">
-            <label><input type="radio" name="chartSplit" value="1"><span>1回</span></label>
-            <label><input type="radio" name="chartSplit" value="2"><span>2回</span></label>
-            <label><input type="radio" name="chartSplit" value="3"><span>3回</span></label>
+          <div class="split-step">
+            <output id="mSplitValue" aria-live="polite"></output>
+            <div class="stepper" role="group" aria-labelledby="mSplitLabel">
+              <button type="button" id="mSplitMinus" aria-label="分割を1回減らす"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+              <button type="button" id="mSplitPlus" aria-label="分割を1回増やす"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8h10M8 3v10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+            </div>
           </div>
         </div>
         <p class="group-foot">減らしても、深いマスに書いたことは消えずに残り、また増やすと戻ります。</p>
@@ -5521,15 +5534,22 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a new goal is made in the sheet the ＋ opens (openNewGoal). Its name, 達成基準 and 期限 are all needed (the user's
   // call), so 追加 there stays grey until each one is filled in; 分割 always has one picked
   const goalFields = ["goalTitle", "goalCriterion", "goalDeadline"];
+  // 分割: 1 to 9 times (the user's call: any number, 4 and more too; 1 to 3 before)
+  const GOAL_MAX_DEPTH = 9;
   const syncGoalSave = () => { $("goalSave").disabled = goalFields.some((id) => !$(id).value.trim()); };
   for (const id of goalFields) for (const type of ["input", "change"]) $(id).addEventListener(type, syncGoalSave);
-  function clearGoalForm() { $("goalForm").reset(); syncGoalSave(); growField($("goalTitle")); growField($("goalCriterion")); }
+  function clearGoalForm() { $("goalForm").reset(); goalSplitNew = 2; showGoalSplit(); syncGoalSave(); growField($("goalTitle")); growField($("goalCriterion")); }
+  // a new goal's 分割, with − ＋ beside it, 2 at first
+  let goalSplitNew = 2;
+  function showGoalSplit() { $("goalSplitValue").textContent = `${goalSplitNew}回`; $("goalSplitMinus").disabled = goalSplitNew <= 1; $("goalSplitPlus").disabled = goalSplitNew >= GOAL_MAX_DEPTH; }
+  $("goalSplitMinus").addEventListener("click", () => { goalSplitNew = Math.max(1, goalSplitNew - 1); showGoalSplit(); });
+  $("goalSplitPlus").addEventListener("click", () => { goalSplitNew = Math.min(GOAL_MAX_DEPTH, goalSplitNew + 1); showGoalSplit(); });
   $("goalAdd").addEventListener("click", (ev) => openNewGoal(ev.detail === 0));
   $("goalForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
     const title = $("goalTitle").value.trim(), criterion = $("goalCriterion").value.trim(), deadline = $("goalDeadline").value;
     if (!title || !criterion || !deadline) return;
-    const depth = Number(checkedValue("goalSplit")) || 2;
+    const depth = goalSplitNew;
     act(async () => {
       const id = await goals.add({ title, criterion, deadline, depth, done: false, createdAt: Date.now() });
       clearGoalForm();
@@ -5539,12 +5559,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // 目標 as a mandala chart (the user's call: break a goal down like マンダラチャート and get it done one cell at a time).
   // The goal sits in the middle with eight cells around it; each of those can hold eight more, and so on as many times as
-  // the goal's 分割 says (1–3, chosen per goal). A cell is done by its own check until something is written inside it;
+  // the goal's 分割 says (1 to GOAL_MAX_DEPTH, chosen per goal). A cell is done by its own check until something is written inside it;
   // from then on it is done when all that is written inside is, and the goal likewise (the user's call: achievement
   // builds up from the smallest cells). These checks are the only count of progress; the −/＋ count is gone.
   // goal.mandala holds the eight around the goal, each null or { t: text, d: true once checked, c: its own eight }
-  const GOAL_DEPTHS = [1, 2, 3];
-  function goalDepth(g) { return GOAL_DEPTHS.includes(g.depth) ? g.depth : 2; }
+  function goalDepth(g) { return Number.isInteger(g.depth) && g.depth >= 1 && g.depth <= GOAL_MAX_DEPTH ? g.depth : 2; }
   // the cells written in under a cell, while `left` levels may still open below it
   function kidsOf(cell, left) { return left > 0 && Array.isArray(cell?.c) ? cell.c.filter((k) => k?.t?.trim()) : []; }
   function cellDone(cell, left) { const k = kidsOf(cell, left); return k.length ? k.every((x) => cellDone(x, left - 1)) : !!cell?.d; }
@@ -7310,6 +7329,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- a goal's mandala chart in the sheet ----------
   const mGrid = $("mGrid");
   const CELL_WORDS = ["要素", "行動", "小さな行動"]; // what the cells around the middle are called, level by level down
+  const cellWord = (level) => CELL_WORDS[level] ?? "さらに小さな行動"; // (分割 4回 and more: the levels under 小さな行動)
   const GRID_ORDER = [0, 1, 2, 3, -1, 4, 5, 6, 7]; // the 3×3 in reading order; -1 is the middle
   function chartTitle() { const g = goals.get(mandalaGoal), n = g && nodeAt(g, mPath); return n ? oneLine(n.t) : ""; }
   // the nine cells for the level walked into; paintChart fills them, and redraws them in place after each change so a
@@ -7318,7 +7338,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     mSwap = null; mGrid.classList.remove("swapping"); closeMenu();
     mGrid.classList.toggle("whole", mOverview);
     if (mOverview) { paintChart(); return; } // 全体 is drawn whole each time (paintWhole)
-    const word = CELL_WORDS[mPath.length];
+    const word = cellWord(mPath.length);
     mGrid.replaceChildren(...GRID_ORDER.map((k) => k < 0
       ? el("div", { class: "m-cell m-center" }, el("span", { class: "m-title" }), el("span", { class: "m-pct" }), el("span", { class: "m-tools" }))
       // an empty cell shows only a faint ＋ (the user's call: the written ones stand out); the placeholder is a blank, there
@@ -7381,7 +7401,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const above = mPath.map((_, i) => oneLine(nodeAt(g, mPath.slice(0, i))?.t));
     trail.textContent = above.map((t, i) => (i < above.length - 1 ? clip(t, 10) : t)).join(" › ");
     $("mHint").textContent = mSwap !== null ? "入れ替える先のマスを押してください。同じマスを押すとやめます。" : mOverview
-      ? `かたまりを押すと、その${CELL_WORDS[mPath.length]}の8マスを開きます。＋からは新しい${CELL_WORDS[mPath.length]}を書けます。`
+      ? `かたまりを押すと、その${cellWord(mPath.length)}の8マスを開きます。＋からは新しい${cellWord(mPath.length)}を書けます。`
       : left > 1
         ? "› で8つに分けられます。長押しで入れ替えなどができます。"
         : "○ で達成にします。長押しで入れ替えなどができます。";
@@ -7405,7 +7425,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const note = $("mDeadlineNote");
       note.textContent = deadlineNote(g);
       note.classList.toggle("warn", !g.done && !g.pausedAt && !!g.deadline && daysUntil(g.deadline) < 0);
-      for (const r of document.querySelectorAll('input[name="chartSplit"]')) r.checked = Number(r.value) === depth;
+      $("mSplitValue").textContent = `${depth}回`; $("mSplitMinus").disabled = depth <= 1; $("mSplitPlus").disabled = depth >= GOAL_MAX_DEPTH;
     }
   }
   // 全体: the cell shown (the goal, or one walked into, `left` levels above the last) in the middle block with its eight
@@ -7414,7 +7434,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // one goes back to this level's). One not written yet shows a faint ＋, and a press on it goes to 8マス to write it there
   // (the user's call: it couldn't be pressed)
   function paintWhole(g, node, left) {
-    const word = CELL_WORDS[mPath.length];
+    const word = cellWord(mPath.length);
     const mini = (cell, mid, l, done = cell?.t?.trim() && cellDone(cell, l)) => el("span", { class: "m-mini" + (mid ? " mid" : "") + (done ? " done" : "") },
       el("span", {}, oneLine(cell?.t)));
     mGrid.replaceChildren(...GRID_ORDER.map((k) => {
@@ -7885,14 +7905,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   mGrid.addEventListener("compositionstart", () => { composing = true; });
   mGrid.addEventListener("compositionend", () => { composing = false; });
-  for (const r of document.querySelectorAll('input[name="chartSplit"]')) r.addEventListener("change", () => {
+  // 分割 one more or one less (the user's call: any number, 4 and more too); going down keeps what the cells that become
+  // the last level showed (keepDone)
+  function stepChartSplit(by) {
     const g = goals.get(mandalaGoal);
-    if (!g || !r.checked) return;
+    if (!g) return;
+    const was = goalDepth(g), depth = Math.min(GOAL_MAX_DEPTH, Math.max(1, was + by));
+    if (depth === was) return;
     commitChartText();
-    const chart = editChart(g), depth = Number(r.value), was = goalDepth(g);
+    const chart = editChart(g);
     if (depth < was) keepDone(chart, depth, was - depth);
     saveChart(g, chart, { depth });
-  });
+  }
+  $("mSplitMinus").addEventListener("click", () => stepChartSplit(-1));
+  $("mSplitPlus").addEventListener("click", () => stepChartSplit(1));
   // the goal goes with a second press, as an event does
   function disarmGoalDelete() { clearTimeout(mDelTimer); $("mDelete").classList.remove("armed"); $("mDelete").textContent = "この目標を削除"; }
   $("mDelete").addEventListener("click", () => {
@@ -11363,7 +11389,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月9日 17:42"; // e381468d (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月9日 18:03"; // 18a12ed2 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
