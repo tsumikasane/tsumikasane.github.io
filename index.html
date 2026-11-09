@@ -870,6 +870,10 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 .m-cell.done .m-count { color: var(--fg); }
 .m-open { position: relative; display: grid; place-items: center; width: 30px; height: 30px; margin-inline-start: auto; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--accent); cursor: pointer; }
 .m-open::after { content: ""; position: absolute; inset: -7px; }  /* 44px to tap */
+/* a cell closed with ×, in the ›'s place, grey (the user's call: a square that goes no further); pressed, it opens again.
+   In 全体 its block holds only its name */
+.m-open.m-closed { color: var(--muted); }
+.m-block.closed .m-mini:not(.mid) { visibility: hidden; }
 .m-cell.done .check circle { fill: var(--f-goal); stroke: var(--f-goal); }
 .m-cell.done .check path { fill: #ffffff; }
 .m-center { justify-content: center; align-items: center; gap: 2px; padding: 6px; text-align: center; background: color-mix(in srgb, var(--c-goal) 26%, var(--surface)); }
@@ -5565,7 +5569,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // goal.mandala holds the eight around the goal, each null or { t: text, d: true once checked, c: its own eight }
   function goalDepth(g) { return Number.isInteger(g.depth) && g.depth >= 1 && g.depth <= GOAL_MAX_DEPTH ? g.depth : 2; }
   // the cells written in under a cell, while `left` levels may still open below it
-  function kidsOf(cell, left) { return left > 0 && Array.isArray(cell?.c) ? cell.c.filter((k) => k?.t?.trim()) : []; }
+  function kidsOf(cell, left) { return left > 0 && !cell?.x && Array.isArray(cell?.c) ? cell.c.filter((k) => k?.t?.trim()) : []; } // (none under a cell closed with ×)
   function cellDone(cell, left) { const k = kidsOf(cell, left); return k.length ? k.every((x) => cellDone(x, left - 1)) : !!cell?.d; }
   // 0 to 1, the cells inside counting alike however much each holds
   function cellProgress(cell, left) {
@@ -7389,7 +7393,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           !filled ? null : inner.length ? el("span", { class: "m-count" }, `${inner.filter((x) => cellDone(x, left - 2)).length}/${inner.length}`) : chartCheck(cname, done, () => toggleCell(k)),
           // the day it was checked (the user's call: when each was done was kept nowhere); none for one checked before
           filled && !inner.length && done && cell.at ? el("span", { class: "m-date" }, fmtMD(ymd(new Date(cell.at)))) : null,
-          filled && left > 1 ? el("button", { type: "button", class: "m-open", "data-role": "open", "aria-label": inner.length ? `「${cname}」の中を開く` : `「${cname}」を8つに分ける`, onclick: () => openCell(k) }, icon("next", 16)) : null);
+          filled && left > 1 ? (cell.x
+            ? el("button", { type: "button", class: "m-open m-closed", "data-role": "open", "aria-label": `「${cname}」は×で閉じています。押すと、また分けられます`, onclick: () => setCellClosed(k, false) }, icon("close", 16))
+            : el("button", { type: "button", class: "m-open", "data-role": "open", "aria-label": inner.length ? `「${cname}」の中を開く` : `「${cname}」を8つに分ける`, onclick: () => openCell(k) }, icon("next", 16))) : null);
       }
       fitCells();
       if (keep) mGrid.querySelector(`${keep.k === "mid" ? ".m-center" : `.m-cell[data-k="${keep.k}"]`} [data-role="${keep.role}"]`)?.focus();
@@ -7403,7 +7409,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("mHint").textContent = mSwap !== null ? "入れ替える先のマスを押してください。同じマスを押すとやめます。" : mOverview
       ? `かたまりを押すと、その${cellWord(mPath.length)}の8マスを開きます。＋からは新しい${cellWord(mPath.length)}を書けます。`
       : left > 1
-        ? "› で8つに分けられます。長押しで入れ替えなどができます。"
+        ? "› で8つに分けられます。長押しで、入れ替えや×で閉じることができます。"
         : "○ で達成にします。長押しで入れ替えなどができます。";
     $("mRoot").hidden = !!mPath.length;
     if (!mPath.length) {
@@ -7439,12 +7445,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("span", {}, oneLine(cell?.t)));
     mGrid.replaceChildren(...GRID_ORDER.map((k) => {
       const centre = k < 0, cell = centre ? node : node.c?.[k] || null, name = oneLine(cell?.t), l = centre ? left : left - 1;
+      const shut = !centre && !!name && !!cell.x; // closed with ×: pressed, back to this level's 8マス, where its × is
       return el("button", {
-        type: "button", class: "m-block" + (name ? "" : " empty"),
-        "aria-label": centre ? `「${name}」の8マスに戻る` : name ? `「${name}」の8マスを開く` : `${word} ${k + 1} を書く`,
+        type: "button", class: "m-block" + (name ? "" : " empty") + (shut ? " closed" : ""),
+        "aria-label": centre ? `「${name}」の8マスに戻る` : shut ? `「${name}」は×で閉じています` : name ? `「${name}」の8マスを開く` : `${word} ${k + 1} を書く`,
         onclick: () => {
           mOverview = false;
-          if (!centre && name) { mWholeFrom.push(mPath.length); mPath = [...mPath, k]; }
+          if (!centre && name && !shut) { mWholeFrom.push(mPath.length); mPath = [...mPath, k]; }
           showChartLevel();
           if (!name) mGrid.querySelector(`textarea[data-k="${k}"]`)?.focus();
         },
@@ -7678,6 +7685,25 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     slotsAt(chart, path)[k] = cell;
     saveChart(g, chart);
   }
+  // a cell closed with × (the user's call: a square that goes no further): no › into it, an × in its place that opens it
+  // again; only one with nothing written inside it (cellMenu), so nothing under it drops out of the count. 元に戻す in the
+  // message
+  function setCellClosed(k, on) {
+    commitChartText();
+    const g = goals.get(mandalaGoal);
+    if (!g) return;
+    const id = g.id, at = [...mPath];
+    const apply = (want) => {
+      const x = goals.get(id), chart = x && editChart(x), cell = chart && slotsAt(chart, at)[k];
+      if (!cell?.t?.trim()) return null;
+      if (want) cell.x = true; else delete cell.x;
+      return { x, chart, name: oneLine(cell.t) };
+    };
+    const r = apply(on);
+    if (!r) return;
+    saveChart(r.x, r.chart, { said: on ? `「${clip(r.name, 20)}」を×で閉じました` : `「${clip(r.name, 20)}」の×をはずしました`,
+      undo: () => { const u = apply(!on); if (u) saveChart(u.x, u.chart); } });
+  }
   function toggleCell(k) {
     commitChartText();
     const g = goals.get(mandalaGoal), chart = g && editChart(g), cell = chart && slotsAt(chart, mPath)[k];
@@ -7843,12 +7869,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // 長押し on a written cell opens its menu (the user's call: an action done every day had no way into ルーティーン): swap it
   // with another cell, or put it into ルーティーン. An empty one has only its place to give, so it is picked up at once
   function cellMenu(k) {
+    closeMenu(); // (another cell's, held before: its outline went with it no more)
     const g = goals.get(mandalaGoal), name = oneLine(g && nodeAt(g, mPath)?.c?.[k]?.t);
     if (!name) { pickCell(k); return; }
     const inRoutine = routines.items.some((r) => oneLine(r.name) === name), menu = $("mMenu");
-    menu.replaceChildren(
+    // ×: a cell that could still be split, with nothing written inside it, closed (the user's call); a closed one opened
+    const cell = nodeAt(g, mPath).c[k], left = goalDepth(g) - mPath.length, closable = left > 1 && (!!cell.x || !kidsOf(cell, left - 1).length);
+    setChildren(menu,
       el("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); pickCell(k); } }, "ほかのマスと入れ替える"),
-      el("button", { type: "button", role: "menuitem", disabled: inRoutine, onclick: () => { closeMenu(); addToRoutine(name); } }, inRoutine ? "ルーティーンに入っています" : "ルーティーンに入れる"));
+      el("button", { type: "button", role: "menuitem", disabled: inRoutine, onclick: () => { closeMenu(); addToRoutine(name); } }, inRoutine ? "ルーティーンに入っています" : "ルーティーンに入れる"),
+      closable ? el("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); setCellClosed(k, !cell.x); } }, cell.x ? "×をはずす（また分けられるように）" : "×で閉じる（この先は分けない）") : null);
     const box = mGrid.querySelector(`.m-cell[data-k="${k}"]`), b = box.getBoundingClientRect(), v = $("mandalaView").getBoundingClientRect();
     menu.hidden = false;
     menu.style.left = Math.max(8, Math.min(b.left - v.left, v.width - menu.offsetWidth - 8)) + "px";
@@ -11389,7 +11419,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月9日 18:03"; // 18a12ed2 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月9日 18:35"; // fb838ed5 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
