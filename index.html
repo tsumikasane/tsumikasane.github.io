@@ -9926,10 +9926,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const rad = size >= 8 ? Math.min(5, size * 0.16) : 0;
     const xOf = (c) => ox + (c - c0) * pitch + gap / 2, yOf = (row) => gridH - (row - r0 + 1) * pitch + gap / 2;
     const sq = (px, py, s = size, rr = rad) => { x.beginPath(); if (rr && x.roundRect) x.roundRect(px, py, s, s, rr); else x.rect(px, py, s, s); };
-    // a block's frame, in the colour set before: just inside its face, 1.5px, the same for the shown block and the others of
-    // its day (the user's call: the shown block's was larger, round the whole block, and thicker) and for those stacked
-    // since the last look; their colours tell them apart
-    const frame = (px, py) => { const f = size - tsumiDepth(size); x.lineWidth = 1.5; sq(px + 0.75, py + 0.75, f - 1.5, Math.max(0, rad - 0.75)); x.stroke(); };
+    // a block's frame, in the colour set before: just inside its face, as big for the shown block as for the others of its
+    // day (the user's call: the shown block's was larger, round the whole block) and for those stacked since the last
+    // look; w px thick, inwards from the face's edge: 1.5 for those, 3 for the shown block (the user's call: the two were
+    // to differ in thickness), whose colour tells it apart too
+    const frame = (px, py, w = 1.5) => { const f = size - tsumiDepth(size); x.lineWidth = w; sq(px + w / 2, py + w / 2, f - w, Math.max(0, rad - w / 2)); x.stroke(); };
     const lands = (i) => a.start + (i - a.from) * a.step; // when block i lands, while they drop in
     const dayStart = Date.parse(todayKey + "T00:00:00"), light = /^#f{3}(f{3})?$/i.test(tone("--surface", "#ffffff"));
     // the shown block's day (the user's call: what else went on that day didn't show): its other blocks outlined
@@ -10079,8 +10080,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       // (in the tint: the user's call, white round a white block read as a bigger block)
       const tint = tone("--accent", "#007d2e");
       x.strokeStyle = x.fillStyle = tint;
-      // framed as the others of its day are, in the tint (the user's call: its ring was larger and thicker than theirs)
-      if (seen && size >= 8) frame(xOf(c), yOf(row));
+      // framed as big as the others of its day are, in the tint and thicker (the user's calls: its ring was larger than
+      // theirs; then the two were to differ in thickness)
+      if (seen && size >= 8) frame(xOf(c), yOf(row), 3);
       else if (seen) {
         // too small for a frame inside it (where no other is framed): a ring round it, running over the blocks round it, so
         // over an edge in the card's colour
@@ -11445,7 +11447,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月9日 16:22"; // 53c0bf35 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月9日 16:27"; // 9de7eff1 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
