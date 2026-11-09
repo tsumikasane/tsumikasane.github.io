@@ -958,7 +958,7 @@ ul.list > li.wo-edit-note { display: grid; grid-template-columns: minmax(0, 1fr)
 .tile-head::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
 .tile-head .lbl { flex: 1; min-width: 0; }
 .tile-head .chev { display: grid; color: var(--muted); }
-.tile:has(.tile-head:active) { background: color-mix(in srgb, var(--fg) 6%, var(--surface)); }
+.tile:has(.tile-head:not(.plain):active) { background: color-mix(in srgb, var(--fg) 6%, var(--surface)); }
 .tile .big { font-family: var(--font-round); font-size: var(--t-title1); line-height: 1.2; font-weight: 700; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .tile .big small { margin-inline-start: 4px; font-family: var(--font-body); font-size: var(--t-sub); font-weight: 600; color: var(--muted); }
 .tile .sub { line-height: 1.4; }
@@ -986,6 +986,34 @@ ul.list > li.wo-edit-note { display: grid; grid-template-columns: minmax(0, 1fr)
 .tile ul li::before { content: "・"; color: var(--tile-c); }
 /* today's events: a dot in each event's label colour */
 .tile ul.ev li::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-inline: 4px 8px; border-radius: 50%; background: var(--dot); vertical-align: 1px; }
+/* its name cut short before あと45分 or いま is, and the ones over faded (the user's call) */
+.tile ul.ev li { display: flex; align-items: center; }
+.tile ul.ev li::before { flex: none; }
+.tile ul.ev .ev-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tile ul.ev .ev-left { flex: none; margin-inline-start: 6px; font-size: var(--t-foot); font-weight: 600; color: var(--tile-c); }
+.tile ul.ev li.past { color: var(--muted); }
+.tile ul.ev li.past::before { opacity: .45; }
+/* a tile whose head opens nothing (すぐに記録) */
+.tile-head.plain { cursor: default; }
+.tile-head.plain::after { content: none; }
+.tile-head.plain:active { opacity: 1; }
+/* すぐに記録: six buttons in their records' colours, three to a row on a phone, all six on one beside them */
+.qk-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 2px; }
+@container (min-width: 36em) { .qk-row { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.qk { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 64px; padding: 6px 4px; border: 0; border-radius: 12px; background: color-mix(in srgb, var(--qk-c) 13%, var(--surface)); color: var(--fg); font: inherit; font-size: var(--t-sub); font-weight: 600; line-height: 1.2; cursor: pointer; touch-action: manipulation; }
+.qk .icon { color: var(--qk-c); }
+.qk:active { opacity: .75; }
+/* きょうの運動: the day's run and moves, each a row to press (over the head's reach, as ルーティーン's are) */
+.tile ul.mv-tile { display: flex; flex-direction: column; margin: 2px 0 0; }
+.tile ul.mv-tile li { position: relative; z-index: 1; overflow: visible; white-space: normal; line-height: 1.3; }
+.tile ul.mv-tile li::before { content: none; }
+.mv-row .chip { min-width: 3.2em; text-align: center; }
+.mv-row .mv-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mv-row .mv-sub { flex: none; font-size: var(--t-foot); color: var(--muted); }
+.mv-tile li.done .check circle { fill: var(--f-workout); stroke: var(--f-workout); }
+.mv-tile li.done .check path { fill: #ffffff; }
+.mv-tile li.done .mv-name { color: var(--muted); }
+.tile ul li.warn { color: var(--warn); }
 
 /* calendar: a Sunday-first month grid of thin gray lines (between weeks and between days, as the user asked) with each
    day's plans written in coloured bars, after the iPhone Calendar's month view the user showed. Today's date is in the
@@ -4911,6 +4939,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("workoutForm").scrollIntoView({ block: "center", behavior: reduceMotion.matches ? "auto" : "smooth" });
     next?.focus({ preventScroll: true });
   }
+  // a move of the menu as a new record (きょうの運動's rows), as fillWorkout reads it
+  function menuMove(name, sets, reps) {
+    const n = parseInt(String(reps).match(/\d+/)?.[0] || "", 10), mins = /分/.test(reps);
+    return { type: "筋トレ", exercise: name, sets, reps: n > 0 ? (mins ? n * 60 : n) : "", per: /秒|分/.test(reps) ? "sec" : undefined };
+  }
   // the day's menu: ラン, then 筋トレ's moves (their 部位, or メイン, in 運動's colour, 補助 in grey), the
   // day's sets added up as the sheet does, and the sheet's notes behind メモ, with the week's totals; 変化走's way of
   // running under its line
@@ -5970,6 +6003,27 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (day === 0) return e.time ? e.time + "〜" : "終日";
     return day === days - 1 && end ? "〜" + end : "終日";
   }
+  // a turn's time on its day in minutes, [start, end], or null when it is all day: one without an end half an hour long
+  // (as 週 draws it), one ending past midnight to midnight, a run of days from its start on its first day and to its end
+  // on its last
+  function turnSpan({ e, day, days }) {
+    const hm = (s) => (/^\d{2}:\d{2}$/.test(s || "") ? Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5)) : null);
+    const s = hm(e.time), end = hm(e.endTime);
+    if (s === null) return null;
+    if (days === 1) return [s, end === null ? s + 30 : end > s ? end : 1440];
+    if (day === 0) return [s, 1440];
+    return day === days - 1 && end !== null ? [0, end] : null;
+  }
+  // a day's turns as きょう's tile shows them (the user's call): the ones still to come or going on first (all day ones
+  // among them), then the ones over; with past (over), now (going on) and left (minutes to the next to begin)
+  function planNow(list, at = nowMinutes()) {
+    const all = list.map((t) => { const sp = turnSpan(t); return { t, past: !!sp && sp[1] <= at, now: !!sp && sp[0] <= at && at < sp[1], start: sp ? sp[0] : null }; });
+    const out = [...all.filter((x) => !x.past), ...all.filter((x) => x.past)], next = out.find((x) => !x.past && x.start !== null && x.start > at);
+    for (const x of out) x.left = x === next ? x.start - at : null;
+    return out;
+  }
+  // minutes to go in words: あと45分, あと1時間20分, from 3 hours on the hours alone
+  const leftWords = (m) => (m < 60 ? `あと${m}分` : m < 180 && m % 60 ? `あと${Math.floor(m / 60)}時間${m % 60}分` : `あと${Math.floor(m / 60)}時間`);
   function groupBy(items, key) {
     const m = new Map();
     for (const x of items) {
@@ -6981,12 +7035,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     sheetEl.classList.toggle("compact", mode === "month");
     $("labelsGroup").hidden = settingsScope !== "calendar"; $("todoLabelsGroup").hidden = settingsScope !== "todo"; $("subjectsGroup").hidden = settingsScope !== "study"; $("tilesGroup").hidden = settingsScope !== "home"; $("bodyGroup").hidden = settingsScope !== "weight"; $("moneyGroup").hidden = settingsScope !== "money"; $("woMenuGroup").hidden = settingsScope !== "woMenu"; $("jobGroup").hidden = settingsScope !== "job"; $("backupGroup").hidden = settingsScope !== "records"; $("tsumiGroup").hidden = settingsScope !== "tsumi";
     $("sheetDone").hidden = changing || adding || mode === "alarm"; $("sheetSave").hidden = mode !== "edit"; $("recSave").hidden = mode !== "rec";
+    $("recSave").textContent = mode === "rec" && recEdit.fresh ? "追加" : "保存"; // (a new one from きょう)
     $("goalSave").hidden = mode !== "goal"; $("planSave").hidden = mode !== "plan"; $("todoSave").hidden = mode !== "todo";
     $("sheetCancel").hidden = !(changing || adding || mode === "month" || mode === "alarm" || (mode === "chart" && (mPath.length || chartFromDay)) || (mode === "settings" && settingsFrom === "day") || (mode === "day" && dayFromFind));
     $("sheetCancel").textContent = mode === "todo" && todoAdded ? "閉じる" : changing || adding || mode === "month" ? "キャンセル" : "戻る";
     const rel = mode === "day" ? relLabel(calDay) : "";
     $("sheetTitle").textContent = mode === "alarm" ? "通知アラーム" : mode === "find" ? "予定" : mode === "month" ? "月を選ぶ" : mode === "goal" ? "新しい目標" : mode === "plan" ? (planCopy ? "予定を複製" : "新しい予定") : mode === "todo" ? "新しいToDo" : mode === "chart" ? chartTitle()
-      : mode === "settings" ? (settingsScope === "woMenu" ? "運動のメニュー" : settingsScope === "job" ? "バイトの設定" : "設定") : mode === "rec" ? REC_EDIT[recEdit.kind].title : mode === "edit" ? "予定を編集" : (rel ? rel + "・" : "") + fmtMDW(calDay) + (holidayName(calDay) ? "・" + holidayName(calDay) : "");
+      : mode === "settings" ? (settingsScope === "woMenu" ? "運動のメニュー" : settingsScope === "job" ? "バイトの設定" : "設定") : mode === "rec" ? (recEdit.fresh ? REC_NEW[recEdit.kind].title : REC_EDIT[recEdit.kind].title) : mode === "edit" ? "予定を編集" : (rel ? rel + "・" : "") + fmtMDW(calDay) + (holidayName(calDay) ? "・" + holidayName(calDay) : "");
     // a plan's メモ on its own page: 完了 alone on the bar, back to the form
     $("memoDone").hidden = !memoFor;
     if (memoFor) { for (const id of ["sheetCancel", "sheetDone", "sheetSave", "planSave"]) $(id).hidden = true; $("sheetTitle").textContent = "メモ"; }
@@ -7393,7 +7448,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     resetSheet();
     // keyboard users land back on what they opened it from: the day (the grid has been redrawn since), the gear, or an
     // entry's row on the page showing (記録's list and the record page can hold the same entry)
-    if (sheetByKey) ({ find: $("calFind"), month: $("calMonthBtn"), gear: $("calSettings"), plan: $("calAdd"), todo: $("todoAdd"), todogear: $("todoSettings"), records: $("recSettings"), tsumi: $("tsumiSettings"), todonav: navbar.classList.contains("scrolled") ? $("navAdd") : $("todoAdd"), rec: $("sec-" + tab).querySelector(`[data-edit="${recReturnId}"]`), study: $("studySettings"), home: $("homeSettings"), grid: $("calTime").querySelector(`[data-ev="${CSS.escape(gridReturn)}"]`), weight: $("wtSettings"), money: $("moneySettings"), tiletodo: $("homeTiles").querySelector(".td-add button"), goal: $("goalAdd"), chart: $("goalList").querySelector(`[data-goal="${chartReturnId}"]`) || $("goalAdd") }[sheetOpener] || $("calGrid").querySelector(".cal-day.sel"))?.focus();
+    if (sheetByKey) ({ find: $("calFind"), month: $("calMonthBtn"), gear: $("calSettings"), plan: $("calAdd"), todo: $("todoAdd"), todogear: $("todoSettings"), records: $("recSettings"), tsumi: $("tsumiSettings"), todonav: navbar.classList.contains("scrolled") ? $("navAdd") : $("todoAdd"), rec: $("sec-" + tab).querySelector(`[data-edit="${recReturnId}"]`), study: $("studySettings"), home: $("homeSettings"), homerec: homeReturn && $("homeTiles").querySelector(homeReturn), grid: $("calTime").querySelector(`[data-ev="${CSS.escape(gridReturn)}"]`), weight: $("wtSettings"), money: $("moneySettings"), tiletodo: $("homeTiles").querySelector(".td-add button"), goal: $("goalAdd"), chart: $("goalList").querySelector(`[data-goal="${chartReturnId}"]`) || $("goalAdd") }[sheetOpener] || $("calGrid").querySelector(".cal-day.sel"))?.focus();
   });
   // Esc: from an edit form (or settings or a chart reached from a day) back to the day's list, from a chart's cell back
   // out of it, otherwise out of the sheet
@@ -8568,8 +8623,47 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       },
     },
   };
-  // 筋トレ takes 種目・回数・セット数; one recorded as 筋トレ before those fields came keeps its minutes instead
-  const recStrength = (w, type) => type === "筋トレ" && !(w.type === "筋トレ" && !w.exercise);
+  // 筋トレ takes 種目・回数・セット数; one recorded as 筋トレ before those fields came keeps its minutes instead (a new one,
+  // fresh, has none yet)
+  const recStrength = (w, type) => type === "筋トレ" && !(w.type === "筋トレ" && !w.exercise && !w.fresh);
+  // a record made from きょう without going to its page (the user's call: ワンタップ記録, and a row of きょうの運動): the
+  // edit sheet's fields for one not there yet, filled from base (fresh), under its own title, and how it goes in; one a
+  // day (体重) kept under the day. what: the words its message says it with
+  const dropUndef = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
+  const REC_NEW = {
+    meal: { title: "食事を記録", what: "食事", base: () => ({ text: "", slot: slotByClock(), date: todayKey }), add: (p) => meals.add({ ...p, createdAt: Date.now() }) },
+    workout: { title: "運動を記録", what: "運動", base: () => ({ type: "筋トレ", sets: 3, date: todayKey }), add: (p) => workouts.add({ ...p, createdAt: Date.now() }) },
+    weight: { title: "からだを記録", what: "からだ", base: () => ({ id: todayKey }), add: async (p) => { await weights.write(todayKey, { date: todayKey, ...p, createdAt: Date.now() }); return todayKey; } },
+    study: { title: "勉強を記録", what: "勉強", base: () => ({ date: todayKey }), add: (p) => study.add({ ...p, createdAt: Date.now() }) },
+    money: { title: "家計簿に記録", what: "明細", base: () => ({ kind: "out", date: todayKey }), add: (p) => expenses.add({ ...p, createdAt: Date.now() }) },
+  };
+  let homeReturn = ""; // what on きょう opened it, for a keyboard to land back on (a selector: the tiles are drawn anew)
+  // base: what to start from (a move of the day's menu, filled in); focus: the field to begin in, else the first
+  function openRecNew(kind, byKey, base = {}, focus = null) {
+    const spec = REC_EDIT[kind], nw = REC_NEW[kind];
+    if (sheetEl.open || !spec || !nw) return;
+    resetSheet();
+    const fresh = { ...nw.base(), ...base, fresh: true };
+    recEdit = { kind, id: null, fresh }; recReturnId = null;
+    delete $("recForm").dataset.typed;
+    setChildren($("recForm"), spec.fields(fresh).flat(Infinity));
+    recShown = formState($("recForm"));
+    disarmRecDelete(); syncSheetHead();
+    const field = (focus && $(focus)) || fieldsOf($("recForm")).find((x) => !x.disabled && x.type !== "hidden" && x.type !== "radio" && !x.closest("[hidden]"));
+    presentSheet(byKey, "homerec", field);
+  }
+  // the new one in, with 元に戻す while its message shows; a run taking the distance to the next ランレベル says so, as
+  // 運動's own form does
+  function saveRecNew() {
+    const { kind, fresh } = recEdit, spec = REC_EDIT[kind], nw = REC_NEW[kind], patch = spec.read(fresh);
+    if (!patch) return;
+    const st = spec.store, lv = kind === "workout" ? runLevelOf(runKm()) : 0;
+    let id = null;
+    act(async () => { id = await nw.add(dropUndef(patch)); });
+    closeSheet();
+    const up = kind === "workout" && runLevelOf(runKm()) > lv ? `。ランレベルが${RUN_LEVELS[runLevelOf(runKm())].name}になりました` : "";
+    flash(`${nw.what}を記録しました${up}`, () => act(async () => { if (id) await st.remove(id); flash("元に戻しました"); }));
+  }
   let recSets = null; // an entry of 筋トレ's sets one by one, in its edit form (setsEditor)
   // item: a ルーティーン item to light, the one a block of つみかさね was (the user's call: its day's items opened, none
   // marked)
@@ -8607,6 +8701,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   discardAsk.addEventListener("close", () => { discardGo = null; });
   $("recForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
+    if (recEdit?.fresh) { saveRecNew(); return; }
     const spec = recEdit && REC_EDIT[recEdit.kind], x = spec?.store.get(recEdit.id);
     if (!x) { closeSheet(); return; }
     const patch = spec.read(x);
@@ -8624,6 +8719,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     recDelete.classList.remove("armed"); recSkip.classList.remove("armed");
     const spec = recEdit && REC_EDIT[recEdit.kind], x = spec?.store.get(recEdit.id);
     recDelete.textContent = (typeof spec?.del === "function" ? spec.del(x) : spec?.del) || "この記録を削除";
+    recDelete.closest(".card").hidden = !!recEdit?.fresh; // a new one from きょう: nothing to delete yet
     // a repeating ToDo still to do has its turn alone to delete too (the user's call: its × took the repeat with it)
     recSkip.textContent = "この回を削除（次の回は残す）";
     recSkip.hidden = !(recEdit?.kind === "todo" && x?.repeat && x.due && !x.done && nextDue(x)); // its last turn has no next to go on to
@@ -9000,7 +9096,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // and the calendar to this month, so today's entry can't slip into another day unnoticed
   function openFromHome(key, part = null) {
     startAtToday(key);
-    if (part) setDietPart(part); // ダイエット at the part pressed on its tile
+    if (part && key === "diet") setDietPart(part); // ダイエット at the part pressed on its tile
+    if (part && key === "money") setMoneyPart(part); // 家計簿 at バイト, from its tile
     showTab(key);
   }
   // (from the sidebar too, the user's call: a day left on 日記 carried on to ダイエット and 勉強); 家計簿 at this month
@@ -9012,28 +9109,41 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // きょう's tiles, in the order they first come in: each opens its page, in the page's colour. ダイエット, with its three,
   // takes a row; the others go two to a row on a phone, squares (the user's call: ルーティーン and 目標 took a row each)
+  // a tile not of a page of its own has its icon, and the page (and part) its head opens, or open: false for a head that
+  // opens nothing (the user's call, 2026-11-09: すぐに記録, きょうの運動, バイト, and more to come)
   const HOME_TILES = [
+    { key: "quick", label: "すぐに記録", color: "var(--accent)", icon: "plus", open: false, wide: true },
     { key: "todo", label: "ToDo", color: "var(--c-todo)" },
     { key: "calendar", label: "きょうの予定", color: "var(--c-cal)" },
     { key: "journal", label: "日記", color: "var(--c-journal)" },
     { key: "study", label: "勉強", color: "var(--c-study)" },
     // 食事's, 運動's and からだ's tiles in one (the user's call), the three side by side
     { key: "diet", label: "ダイエット", color: "var(--c-weight)", wide: true },
+    { key: "move", label: "きょうの運動", color: "var(--c-workout)", icon: "workout", open: ["diet", "workout"], wide: true },
     { key: "routine", label: "ルーティーン", color: "var(--c-routine)" },
     { key: "money", label: "家計簿", color: "var(--c-money)" },
+    { key: "job", label: "バイト", color: "var(--c-money)", icon: "money", open: ["money", "job"], wide: true },
     { key: "tsumi", label: "つみかさね", color: "var(--accent)" },
     { key: "goal", label: "目標", color: "var(--c-goal)" },
   ];
+  const tileIcon = (key) => homeTile(key).icon || PAGES.find((p) => p.key === key).icon;
   const homeTile = (key) => HOME_TILES.find((t) => t.key === key);
   // which of them show, and in what order, is the user's to choose (the user's call), from the gear by the date. The
-  // settings keep the keys of both, the order and the ones hidden, so a tile the app gains later shows, at the end
+  // settings keep the keys of both, the order and the ones hidden, so a tile the app gains later shows, after the one it
+  // comes after in the app's own order (バイト after 家計簿), or first when that is first
   const homePrefs = () => settings.get("home") || {};
   // ダイエット's tile took over 食事's, 運動's and からだ's (the user's call): it comes where the first of them was, and is
   // hidden only if all three were
   const DIET_TILES = ["meal", "workout", "weight"];
   function homeTileOrder() {
     const saved = [...new Set((homePrefs().order || []).map((k) => (DIET_TILES.includes(k) ? "diet" : k)))].filter((k) => homeTile(k));
-    return [...saved, ...HOME_TILES.map((t) => t.key).filter((k) => !saved.includes(k))];
+    if (!saved.length) return HOME_TILES.map((t) => t.key);
+    HOME_TILES.forEach((t, i) => {
+      if (saved.includes(t.key)) return;
+      const before = HOME_TILES.slice(0, i).reverse().find((x) => saved.includes(x.key));
+      saved.splice(before ? saved.indexOf(before.key) + 1 : 0, 0, t.key);
+    });
+    return saved;
   }
   function homeHidden() {
     const h = new Set(homePrefs().hidden || []);
@@ -9054,10 +9164,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a Health-style summary card: the coloured head with its chevron opens the page, and its hit area covers the card.
   // A word in the big place (まだ, 未記録) is a step smaller than a number. A tile without a big one (日記) has none
   function tile(key, big, unit, sub, extra) {
-    const { label, color } = homeTile(key), page = PAGES.find((p) => p.key === key), parts = subParts(sub);
+    const { label, color, open } = homeTile(key), parts = subParts(sub), to = [].concat(open || key);
     return el("div", { class: "card tile", "data-tile": key, style: `--tile-c:${color}` },
-      el("button", { type: "button", class: "tile-head", "aria-label": label + "を開く", onclick: () => openFromHome(key) },
-        icon(page.icon, 18), el("span", { class: "lbl" }, label), el("span", { class: "chev" }, icon("next", 16))),
+      open === false ? el("div", { class: "tile-head plain" }, icon(tileIcon(key), 18), el("span", { class: "lbl" }, label))
+        : el("button", { type: "button", class: "tile-head", "aria-label": label + "を開く", onclick: () => openFromHome(to[0], to[1] || null) },
+          icon(tileIcon(key), 18), el("span", { class: "lbl" }, label), el("span", { class: "chev" }, icon("next", 16))),
       big != null ? el("div", { class: "big" + (/^[+−]?[\d.,]+$/.test(big) ? "" : " word") }, big, unit ? el("small", {}, unit) : null) : null,
       sub ? el("div", { class: "sub" }, parts) : null,
       extra);
@@ -9124,18 +9235,60 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const nearest = [...active].sort((a, b) => (a.deadline || "9999").localeCompare(b.deadline || "9999"))[0];
     const left = nearest?.deadline ? daysUntil(nearest.deadline) : null;
     const evToday = turnsByDay(todayKey, todayKey).get(todayKey) || [];
+    const evNow = planNow(evToday);
+    // ④ すぐに記録 (the user's call): each opens its form over きょう, the day's 体重 its edit when it has one
+    const quickBtn = (kind, label, ic, c, go) => el("button", { type: "button", class: "qk", "data-kind": kind, style: `--qk-c:var(${c})`,
+      onclick: (ev) => { homeReturn = `.qk[data-kind="${kind}"]`; go(ev.detail === 0); } }, icon(ic, 22), el("span", {}, label));
+    const quickRow = el("div", { class: "qk-row" },
+      quickBtn("weight", "体重", "weight", "--c-weight", (k) => (weights.get(todayKey) ? openRecEdit("weight", todayKey, k) : openRecNew("weight", k))),
+      quickBtn("meal", "食事", "meal", "--c-meal", (k) => openRecNew("meal", k)),
+      quickBtn("workout", "運動", "workout", "--c-workout", (k) => openRecNew("workout", k, {}, "reExercise")),
+      quickBtn("study", "勉強", "study", "--c-study", (k) => openRecNew("study", k)),
+      quickBtn("money", "支出", "money", "--c-money", (k) => openRecNew("money", k)),
+      quickBtn("todo", "ToDo", "todo", "--c-todo", (k) => openNewTodo(k, "homerec")));
+    // ③ きょうの運動 (the user's call): the day's menu, its run and its moves, each checked once done and pressed to record
+    // it, the form filled from the menu (重さ to type in)
+    const mm = woDays()[parseYmd(todayKey).getDay()], wt = woTally(todayKey), mKm = num(mm.km);
+    const mvRows = [
+      mKm > 0 ? { key: "run", name: `ラン ${mKm} km`, sub: mm.run || "", done: wt.ran, go: (k) => openRecNew("workout", k, { type: "ランニング", km: mKm }, "reMin") } : null,
+      ...(mm.moves || []).map(([part, name, sets, reps], i) => {
+        const base = menuMove(name, sets, reps);
+        return { key: "m" + i, part, name, sub: `${reps} × ${sets}セット`, done: wt.setsOf(name) >= sets, go: (k) => openRecNew("workout", k, base, base.per ? "reSets" : base.reps ? "reWeight" : "reReps") };
+      }),
+    ].filter(Boolean);
+    const mvList = mvRows.length ? el("ul", { class: "mv-tile" }, mvRows.map((r) => el("li", { class: r.done ? "done" : null },
+      el("button", { type: "button", class: "rt-row mv-row", "data-mv": r.key, "aria-label": `${r.name}${r.done ? "（済み）" : ""}を記録`, onclick: (ev) => { homeReturn = `.mv-row[data-mv="${r.key}"]`; r.go(ev.detail === 0); } },
+        el("span", { class: "check", "aria-hidden": "true" }, checkMark()),
+        r.part ? el("span", { class: "chip", style: `--chip-c: ${r.part === "補助" ? "var(--muted)" : "var(--c-workout)"}` }, r.part) : null,
+        el("span", { class: "mv-name" }, r.name), r.sub ? el("span", { class: "mv-sub" }, r.sub) : null)))) : null;
+    // ② バイト (the user's call): this month's pay as it stands (each job's month by its 締め日), the next shift (today's
+    // first) and how far there is to the year's 目安
+    const jobs = jobList(), jobYm = jobs.length ? periodMonthOf(jobs[0], todayKey) : null;
+    const jobPay = sum(jobs, (j) => paySummary(j, periodMonthOf(j, todayKey)).amount);
+    const nextShift = shifts.items.filter((x) => x.date >= todayKey).sort((a, b) => a.date.localeCompare(b.date) || String(a.start).localeCompare(String(b.start)))[0];
+    const wall = num(jobSet().wall), wallLeft = jobs.length && wall > 0 ? wall - yearPay(Number(todayKey.slice(0, 4))) : null;
     // つみかさね: the steps done, alone (the user's call: the next step, today's and the days on end under it were taken out)
     const tz = tsumiBlocks(false, "tally"), tk = tsumiCol(tz.n);
 
     const tiles = [
+      tile("quick", null, null, null, quickRow),
+      tile("move", mvRows.length ? String(mvRows.filter((r) => r.done).length) : "休み", mvRows.length ? `/ ${mvRows.length}` : null, null, mvList),
+      jobs.length ? tile("job", fmtN(jobPay), "円", `${Number(jobYm.slice(5))}月分の見込み`, nextShift || wallLeft !== null ? el("ul", {},
+        nextShift ? el("li", {}, `${nextShift.date === todayKey ? "きょう" : fmtShort(nextShift.date)} ${nextShift.start}〜${nextShift.end}`) : null,
+        wallLeft !== null ? el("li", { class: wallLeft < 0 ? "warn" : null }, wallLeft >= 0 ? `1年の目安まで あと ${fmtYen(wallLeft)}` : `1年の目安を ${fmtYen(-wallLeft)} こえています`) : null) : null)
+        : tile("job", "まだ", null, "バイト先を決めると、給料の見込みが出ます"),
       // its big number what is to do by today, as ToDo's tab counts (the user's call: it counted next year's too), the rest
       // under it; the lines kept short enough for half a row
       tile("todo", String(dueToday + overdue), "件 きょうまで",
         undone.length ? todoTileSub(overdue, undone.length - dueToday - overdue) : (todos.items.length ? "すべて完了" : "まだありません"),
         todoTileList(top)),
-      // none today: なし only (the user's call: the next plan under it was taken out, and なし rather than 0 件)
+      // none today: なし only (the user's call: the next plan under it was taken out, and なし rather than 0 件). The ones
+      // still to come first, the next of them counting down (あと45分) and one going on now saying いま, then the ones over
+      // faded (the user's call); those two without their time, いま or あと… saying it, so half a row has room for the name
       tile("calendar", evToday.length ? String(evToday.length) : "なし", evToday.length ? "件" : null, null,
-        evToday.length ? el("ul", { class: "ev" }, evToday.slice(0, 3).map((t) => el("li", { title: t.e.title, style: `--dot:${labelHue(labelOf(t.e))}` }, (turnTime(t) ? turnTime(t) + " " : "") + t.e.title))) : null),
+        evToday.length ? el("ul", { class: "ev" }, evNow.slice(0, 3).map(({ t, past, now, left }) => el("li", { class: past ? "past" : null, title: t.e.title, style: `--dot:${labelHue(labelOf(t.e))}` },
+          el("span", { class: "ev-name" }, (turnTime(t) && !now && left == null ? turnTime(t) + " " : "") + t.e.title),
+          now ? el("span", { class: "ev-left" }, "いま") : left != null ? el("span", { class: "ev-left" }, leftWords(left)) : null))) : null),
       // 日記: 記録済み once the day is written, not its words (the user's call), まだ before then (the user's call: no
       // field to write in on the tile, and まだ rather than 未記録)
       tile("journal", j?.text ? "記録済み" : "まだ"),
@@ -9179,6 +9332,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (focusRow.rt) $("homeTiles").querySelector(`[data-rt="${focusRow.rt}"]`)?.focus();
     if (focusRow.td) $("homeTiles").querySelector(`[data-td="${focusRow.td}"]`)?.focus();
   }
+  // きょう kept up to the minute while it shows (the next plan's あと…, and what comes with the evening): drawn again as each
+  // minute turns, and as the app is brought back, not while a sheet is open or a field is in use
+  function homeTick() {
+    const f = document.activeElement, typing = f?.matches?.("input, textarea, select, [contenteditable]");
+    if (tab === "home" && document.visibilityState === "visible" && !sheetEl.open && !typing) renderHome();
+  }
+  (function everyMinute() { setTimeout(() => { homeTick(); everyMinute(); }, 60050 - (Date.now() % 60000)); })();
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") homeTick(); });
   // きょう's tiles in the settings: a row a tile, in its order. A tap on the row shows or hides it; its grip drags it up or
   // down, or moves it a step with the arrow keys (focus stays on it). Not drawn anew while a row is being dragged
   function renderTileList() {
@@ -9195,7 +9356,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           saveHomePrefs({ hidden: [...h] });
         } },
           el("span", { class: "check", "aria-hidden": "true" }, checkMark()),
-          el("span", { class: "ticon" }, icon(PAGES.find((p) => p.key === k).icon, 20)),
+          el("span", { class: "ticon" }, icon(tileIcon(k), 20)),
           el("span", { class: "tname" }, label)),
         el("button", { type: "button", class: "grip", "aria-label": `「${label}」を動かす（${i + 1} 番目）`, onpointerdown: (ev) => startTileDrag(ev, k),
           onkeydown: (ev) => {
@@ -11889,7 +12050,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月10日 6:52"; // 91652523 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月10日 7:25"; // e40ebf63 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
