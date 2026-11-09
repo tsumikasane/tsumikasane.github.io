@@ -2457,6 +2457,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <ul class="list card tsumi-found" id="tsumiFound" hidden></ul>
         <h3 class="group-head">つみあげた記録</h3>
         <ul class="list card" id="tsumiKinds"></ul>
+        <!-- 積み忘れのお知らせ (the user's call): each day at the time set, a day with no block yet gets a notification -->
+        <h3 class="group-head">積み忘れのお知らせ</h3>
+        <form class="add" id="tsumiRemindForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="tsumiRemindOn">お知らせ</label>
+          <div class="ffield"><input type="checkbox" id="tsumiRemindOn" class="switch" role="switch"></div>
+          <label class="flabel" for="tsumiRemindAt">時刻</label>
+          <div class="ffield"><input type="time" id="tsumiRemindAt" value="21:00"></div>
+        </form>
+        <p class="group-foot" id="tsumiRemindFoot"></p>
       </div>
       <div class="sheet-view" id="subjectsGroup" hidden>
         <h3 class="group-head">科目</h3>
@@ -6328,6 +6337,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const PUSH_AHEAD = 40;
   function alarmTimes(now = Date.now()) {
     const out = [], to = addDays(todayKey, PUSH_AHEAD + 15); // a 2週間前 of a plan 54 days on comes within the 40
+    // 積み忘れのお知らせ (the user's call): each day at the time set, but today's not once a block is on (sent again then,
+    // pushSig), opening きょう to record
+    const rm = tsumiRemind();
+    if (rm.on) {
+      const [h, mi] = rm.at.split(":").map(Number), todayHas = tsumiBlocks(false, "tally").today > 0;
+      for (let i = 0; i <= PUSH_AHEAD; i++) {
+        const d = addDays(todayKey, i), p = parseYmd(d), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
+        if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5 || (i === 0 && todayHas)) continue;
+        out.push({ at, title: "つみかさね", body: "きょうはまだ積んでないよ", tag: `tsumi-remind:${d}`, url: "./#home" });
+      }
+    }
     for (const e of events.items) {
       const mins = alarmsOf(e);
       if (!mins.length || typeof e.title !== "string") continue;
@@ -6352,7 +6372,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // what the alarms are made from, short: when it changes (or the day turns, or half a day has gone by) they go again
   function pushSig() {
-    const parts = [todayKey];
+    const parts = [todayKey], rm = tsumiRemind();
+    if (rm.on) parts.push(["remind", rm.at, tsumiBlocks(false, "tally").today > 0]); // (today's goes once a block is on)
     for (const e of events.items) { const a = alarmsOf(e); if (a.length) parts.push([e.id, e.title, e.date, e.endDate, e.time, e.endTime, e.repeat, e.repeatUntil, e.skip, a, e.place]); }
     const t = JSON.stringify(parts);
     let h = 2166136261;
@@ -6448,9 +6469,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren($("pushRows"), rows);
     $("pushRows").hidden = !rows.length;
     $("pushFoot").textContent = st === "off" ? "オンにすると、予定の通知アラームがこの端末に届きます。" : pushWords(st);
+    renderTsumiRemind(); // (つみかさね's お知らせ says whether they come here)
   }
   // a notification pressed: the app at the plan's day (#calendar:2026-11-13), its plans in the sheet
   function openLink(url) {
+    if (/#home$/.test(String(url || ""))) { if (sheetEl.open) closeSheet(true); setTab("home"); return true; } // 積み忘れのお知らせ: きょう, to record
     const d = /#calendar:(\d{4}-\d{2}-\d{2})$/.exec(String(url || ""))?.[1];
     if (!d || !isDay(d)) return false;
     if (tab !== "calendar") setTab("calendar");
@@ -9060,7 +9083,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         !nearest ? (goals.items.length ? "新しい目標を立ててみましょう。" : "目標を立ててみましょう。")
           : `「${nearest.title}」` + (left > 0 ? "の期限まで" : left === 0 ? "の期限です" : "")),
       // and つみねこ in its corner, asleep till something goes on today (the user's call: on this tile too)
-      tile("tsumi", tz.n ? String(tk) : "まだ", tz.n ? "段" : null, tz.n ? null : "記録すると、ブロックが積みあがります", tz.n ? nekoSvg(tz.today ? "awake" : "asleep", 0.74) : null),
+      tile("tsumi", tz.n ? String(tk) : "まだ", tz.n ? "段" : null, tz.n ? null : "記録すると、ブロックが積みあがります", tz.n ? nekoSvg(tz.today ? "awake" : "asleep", 0.74, nekoDress(tz.n)) : null),
     ];
     // the ones shown, in the user's order, two to a row: one left without a partner before a wide one takes the next half
     // one up beside it (the user's call: it took the row, as ルーティーン and 目標 did), and one left at the end stays half
@@ -9697,7 +9720,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // the kind pressed wasn't said)
     $("tsumiCanvas").setAttribute("aria-label", n ? `これまでの記録 ${nf(n)} こが、${k} 段の階段に積みあがっています。${v ? `${onlyLabel()}のブロック ${nf(mine.length)} こだけに色を付けています。` : ""}つぎの段まであと ${left} こ。${!v && today ? `きょうは ${today} こ積みました。` : ""}${!v && (endText || pastText) ? (endText || pastText) + "。" : ""}前と次のボタンや左右の矢印キーで1つずつ、PageUp と PageDown で月ごとに見られます。Enter キーで、見ているブロックの記録が開きます。` : "まだブロックがありません。");
     $("tsumiPrev").hidden = $("tsumiNext").hidden = n < 2;
-    renderTsumiPast(); syncTsumiPlay();
+    renderTsumiPast(); syncTsumiPlay(); renderTsumiRemind();
     // opened with blocks gone on since the last look: the newest (of the kind pressed), where they drop in; else as it was
     if (opening) {
       tsumiHoverAt = null; tsumiNeko = null; // (つみねこ where the stairs have it, or where they had it at the last look)
@@ -9995,29 +10018,52 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       ["M-26 -30h5l-5 5.5h5", null, NEKO_FUR, 1.7], ["M-36 -45h7.5l-7.5 8h7.5", null, NEKO_FUR, 2.1],
     ],
   };
+  // from 300 blocks (the user's call: more poses as it grows), glad with a paw raised high
+  NEKO.cheer = [...NEKO.glad.filter((p) => p[0] !== oval(6.3, -1.6, 4.6, 2.8)), ["M9.5 -19Q13.5 -24 15.5 -30", null, NEKO_FUR, 5.4], [oval(16, -31.6, 3.4, 3.2), NEKO_PAW]];
+  // what it wears as the blocks pile up (the user's call: つみねこ grows, a scarf, a hat and the like): from 100 a red
+  // scarf over its collar, from 500 a knit hat, from 1,000 a crown in the hat's place; sitting, and curled up asleep
+  const nekoDress = (n) => (n >= 1000 ? 3 : n >= 500 ? 2 : n >= 100 ? 1 : 0);
+  const NEKO_WEAR = {
+    sit: {
+      scarf: [[oval(0, -18.6, 3.3), NEKO_FUR], ["M-11.6 -22h23.2", null, "#ff3b30", 5.6], ["M4.6 -20.4l2.1 8.4", null, "#ff3b30", 4.4]],
+      hat: [["M-8.6 -43.4C-8 -52 8 -52 8.6 -43.4Z", "#0a84ff"], ["M-9 -43.3h18", null, "#ffffff", 2], [oval(0, -50.6, 2.4), "#ffffff"]],
+      crown: [["M-7.6 -44l1.2 -7.4l3.3 4.2l3.1 -6.4l3.1 6.4l3.3 -4.2l1.2 7.4Z", "#ffcc00", "#c79a00", 0.8]],
+    },
+    asleep: {
+      scarf: [["M-15.6 -3.2q7.6 2.6 15.2 0", null, "#ff3b30", 3.8]],
+      hat: [["M-14.6 -22C-14 -29.6 -2 -29.6 -1.4 -22Z", "#0a84ff"], ["M-15 -21.9h14.2", null, "#ffffff", 1.8], [oval(-8, -28.4, 2.1), "#ffffff"]],
+      crown: [["M-14.2 -22.4l1.1 -6.6l3 3.7l2.4 -5.5l2.4 5.5l3 -3.7l1.1 6.6Z", "#ffcc00", "#c79a00", 0.8]],
+    },
+  };
+  function nekoParts(pose, dress = 0) {
+    const w = NEKO_WEAR[pose === "asleep" ? "asleep" : "sit"];
+    return [...NEKO[pose], ...(dress >= 1 ? w.scarf : []), ...(dress >= 3 ? w.crown : dress >= 2 ? w.hat : [])];
+  }
   // what each takes, [x0, y0, x1, y1] in its units (the sparkles left out, being there a moment), and a curled one a
   // little larger, as it is low
-  const NEKO_BOX = { awake: [-28, -53, 15.5, 2], glad: [-28, -53, 15.5, 2], asleep: [-38, -46, 21.5, 4.5] };
+  const NEKO_BOX = { awake: [-28, -53, 15.5, 2], glad: [-28, -53, 15.5, 2], cheer: [-28, -53, 20, 2], asleep: [-38, -46, 21.5, 4.5] };
   const nekoUnit = (S, pose) => (S / 52) * (pose === "asleep" ? 1.1 : 1);
   // (halo: edged in the card's colour first, where 全体's frame runs under it, as the months' names are)
-  let nekoPaths = null;
-  function drawNeko(x, cx, fy, u, pose, sx = 1, sy = 1, halo = null) {
+  const nekoPaths = new Map(); // pose and dress → its parts as Path2D
+  function drawNeko(x, cx, fy, u, pose, sx = 1, sy = 1, halo = null, dress = 0) {
     if (typeof Path2D !== "function") return;
-    nekoPaths ||= Object.fromEntries(Object.entries(NEKO).map(([key, parts]) => [key, parts.map(([d, ...rest]) => [new Path2D(d), ...rest])]));
+    const key = pose + dress;
+    if (!nekoPaths.has(key)) nekoPaths.set(key, nekoParts(pose, dress).map(([d, ...rest]) => [new Path2D(d), ...rest]));
+    const paths = nekoPaths.get(key);
     x.save(); x.translate(cx, fy); x.scale(u * sx, u * sy);
     x.globalAlpha = 1; x.lineCap = "round"; x.lineJoin = "round"; x.setLineDash([]);
-    if (halo) { x.strokeStyle = halo; for (const [p, , stroke, w] of nekoPaths[pose]) { x.lineWidth = (stroke ? w : 0) + 3 / u; x.stroke(p); } }
-    for (const [p, fill, stroke, w] of nekoPaths[pose]) {
+    if (halo) { x.strokeStyle = halo; for (const [p, , stroke, w] of paths) { x.lineWidth = (stroke ? w : 0) + 3 / u; x.stroke(p); } }
+    for (const [p, fill, stroke, w] of paths) {
       if (fill) { x.fillStyle = fill; x.fill(p); }
       if (stroke) { x.strokeStyle = stroke; x.lineWidth = w; x.stroke(p); }
     }
     x.restore();
   }
   // as a picture of its own (きょう's tile), px a unit
-  function nekoSvg(pose, unit) {
+  function nekoSvg(pose, unit, dress = 0) {
     const [x0, y0, x1, y1] = NEKO_BOX[pose], u = nekoUnit(52 * unit, pose);
     const s = svgEl("svg", { class: "neko", viewBox: `${x0} ${y0} ${x1 - x0} ${y1 - y0}`, width: ((x1 - x0) * u).toFixed(1), height: ((y1 - y0) * u).toFixed(1), "aria-hidden": "true", focusable: "false" });
-    for (const [d, fill, stroke, w] of NEKO[pose]) s.append(svgEl("path", { d, fill: fill || "none", stroke, "stroke-width": w, "stroke-linecap": stroke && "round", "stroke-linejoin": stroke && "round" }));
+    for (const [d, fill, stroke, w] of nekoParts(pose, dress)) s.append(svgEl("path", { d, fill: fill || "none", stroke, "stroke-width": w, "stroke-linecap": stroke && "round", "stroke-linejoin": stroke && "round" }));
     return s;
   }
   // where it sits on column c (k: the step being built): { cx, fy, u (px a unit), box (px) }; on the column's middle, or,
@@ -10177,7 +10223,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (n) {
       const nt = t || performance.now(), down = a ? clampTo(a.from + Math.floor((nt - a.start - 380) / a.step) + 1, a.from, n) : n;
       const m = nekoStep(tsumiCol(down) - 1, nt), hop = m.hop === null ? -1 : Math.min(1, (nt - m.hop) / NEKO_HOP);
-      const pose = hop >= 0 ? "awake" : m.joy !== null ? "glad" : down && tsumiShown[down - 1].t >= dayStart ? "awake" : "asleep";
+      const pose = hop >= 0 ? "awake" : m.joy !== null ? (n >= 300 ? "cheer" : "glad") : down && tsumiShown[down - 1].t >= dayStart ? "awake" : "asleep";
       const colAt = (px) => Math.floor(c0 + (px - ox) / pitch), spot = (c, p) => nekoSpot(c, k, p, pitch, size, xOf, yOf, colAt);
       nekoBox = spot(k - 1, tsumiShown[n - 1].t >= dayStart ? "awake" : "asleep").box;
       if (m.col >= 0) {
@@ -10274,7 +10320,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (neko) {
       const cl = c0 < 0.5 ? 0 : ox - 2, ct = hi >= k ? 0 : L.top;
       x.save(); x.beginPath(); x.rect(cl, ct, ox + C * pitch + 4 - cl, gridH - ct); x.clip();
-      drawNeko(x, neko.cx, neko.fy, neko.u, neko.pose, neko.sx, neko.sy, !near && L.big ? tone("--surface", "#ffffff") : null);
+      drawNeko(x, neko.cx, neko.fy, neko.u, neko.pose, neko.sx, neko.sy, !near && L.big ? tone("--surface", "#ffffff") : null, nekoDress(n));
       x.restore();
     }
     tsumiGeo.si = si; // (the mouse's ring leaves it to the one drawn here)
@@ -10438,6 +10484,29 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     btn.textContent = `${words}のきょうは ${fmtN(count(day))} こ積んでいました`;
     btn.onclick = () => { if (tsumiCal) setTsumiCal(false, false); goTsumiDay(day); };
   }
+  // 積み忘れのお知らせ (the user's call): on or off and its time (21:00 at first), kept with the account; it comes to the
+  // devices that get 通知, as plans' alarms do (alarmTimes). Turned on where they don't come yet, this press asks for them
+  const REMIND_ID = "tsumiRemind";
+  function tsumiRemind() { const v = settings.get(REMIND_ID); return { on: !!v?.on, at: /^\d\d:\d\d$/.test(v?.at || "") ? v.at : "21:00" }; }
+  function renderTsumiRemind() {
+    const r = tsumiRemind(), st = pushState(), at = $("tsumiRemindAt");
+    $("tsumiRemindOn").checked = r.on;
+    if (document.activeElement !== at) at.value = r.at;
+    at.disabled = !r.on;
+    $("tsumiRemindFoot").textContent = !r.on ? "決めた時刻になっても、その日のブロックがまだ 0 こなら、通知でお知らせします。"
+      : st === "on" ? `毎日 ${r.at} になっても、その日のブロックがまだ 0 こなら、この端末に「きょうはまだ積んでないよ」と届きます。`
+      : pushWords(st).replace("通知アラーム", "お知らせ");
+  }
+  $("tsumiRemindOn").addEventListener("change", (ev) => {
+    const on = ev.target.checked;
+    act(() => settings.set(REMIND_ID, { ...tsumiRemind(), on, updatedAt: Date.now() }));
+    if (on && pushState() === "off") pushEnable().then(renderTsumiRemind);
+    renderTsumiRemind();
+  });
+  $("tsumiRemindAt").addEventListener("change", (ev) => {
+    if (!/^\d\d:\d\d$/.test(ev.target.value)) return;
+    act(() => settings.set(REMIND_ID, { ...tsumiRemind(), at: ev.target.value, updatedAt: Date.now() }));
+  });
   // the shown block marked お気に入り or not, 元に戻す in the message
   function setTsumiFavs(keys) { act(() => settings.set(FAV_ID, { keys: [...keys], updatedAt: Date.now() })); }
   $("tsumiFav").addEventListener("click", () => {
@@ -11742,7 +11811,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月9日 18:35"; // fb838ed5 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月10日 6:16"; // 442c2720 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
