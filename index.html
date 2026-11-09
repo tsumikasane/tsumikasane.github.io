@@ -940,6 +940,7 @@ ul.list > li.wo-edit-note { display: grid; grid-template-columns: minmax(0, 1fr)
 .tile .big small { margin-inline-start: 4px; font-family: var(--font-body); font-size: var(--t-sub); font-weight: 600; color: var(--muted); }
 .tile .sub { line-height: 1.4; }
 .tile .big.word { font-size: var(--t-title2); }
+.tile .neko { position: absolute; right: var(--space-2); bottom: 8px; pointer-events: none; }  /* つみねこ, in つみかさね's corner */
 /* ダイエット's tile: what からだ, 食事 and 運動 each have today, side by side in their own colours, as their tiles had it
    (the user's call: the three in one); each opens the page at its part, the rest of the tile at the part last shown */
 .dt-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
@@ -8947,7 +8948,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         left > 0 ? "日" : null,
         !nearest ? (goals.items.length ? "新しい目標を立ててみましょう。" : "目標を立ててみましょう。")
           : `「${nearest.title}」` + (left > 0 ? "の期限まで" : left === 0 ? "の期限です" : "")),
-      tile("tsumi", tz.n ? String(tk) : "まだ", tz.n ? "段" : null, tz.n ? null : "記録すると、ブロックが積みあがります"),
+      // and つみねこ in its corner, asleep till something goes on today (the user's call: on this tile too)
+      tile("tsumi", tz.n ? String(tk) : "まだ", tz.n ? "段" : null, tz.n ? null : "記録すると、ブロックが積みあがります", tz.n ? nekoSvg(tz.today ? "awake" : "asleep", 0.74) : null),
     ];
     // the ones shown, in the user's order, two to a row: one left without a partner before a wide one takes the next half
     // one up beside it (the user's call: it took the row, as ルーティーン and 目標 did), and one left at the end stays half
@@ -9432,7 +9434,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // and a year where none would be written (the user's calls: a past year's months read as this year's, the picture saying
   // today's date over them; with years alone, the year the stairs began in had no name, its January being before them).
   // put: fitMonths's names, each with m (its tsumiMonths index); measure: a name's width; left: where a name may begin;
-  // at(c): where a name over column c goes ({ rx, by }), or null where none can. With years alone, the first year's name
+  // at(c, w): where a name w wide over column c goes ({ rx, by }), or null where none can. With years alone, the first year's name
   // where it first fits from the first month's column on; else, with no year among them and the months not this year's,
   // the leftmost with room for it written with its year (「2025年8月」)
   function yearMonths(put, h, measure, left, at) {
@@ -9443,7 +9445,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (mo0.endsWith("-01") || out.some((p) => p.m === 0)) return out;
       const label = `${Number(mo0.slice(0, 4))}年`, w = measure(label), till = tsumiCol(tsumiMonths[out[0].m][0]);
       for (let c = tsumiCol(i0); c < till; c++) {
-        const spot = at(c), q = spot && { label, rx: spot.rx, by: spot.by, w, year: true, m: 0 };
+        const spot = at(c, w), q = spot && { label, rx: spot.rx, by: spot.by, w, year: true, m: 0 };
         if (q && clear(q, null)) { out.unshift(q); break; }
       }
       return out;
@@ -9594,7 +9596,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("tsumiImageCard").hidden = !n;
     // opened with blocks gone on since the last look: the newest (of the kind pressed), where they drop in; else as it was
     if (opening) {
-      tsumiHoverAt = null;
+      tsumiHoverAt = null; tsumiNeko = null; // (つみねこ where the stairs have it, or where they had it at the last look)
       if (n && blocks[n - 1].t > tsumiSeen()) { tsumiPick = null; tsumiAnchor = null; tsumiAtGoal = false; }
       const refit = fitTsumiOpen();
       if (!tsumiAnchor) placeTsumiView();
@@ -9815,6 +9817,107 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     while (hi < tsumiShown.length - 1 && dayOf(hi + 1) === d) hi++;
     return [lo, hi];
   }
+  // つみねこ (the user's call: a character to climb the stairs, the cat of the four drawn): it sits on the step finished
+  // last, beside the ★, and hops up one as each step is finished, glad for a moment once there; curled up asleep while
+  // nothing has gone on today. On きょう's tile too, and in the picture. Drawn from these parts, in units of a cat 52 tall
+  // standing at 0, 0: [path, fill, stroke, its width]; the tail on the left, the ★ being on the right
+  const oval = (cx, cy, rx, ry = rx) => `M${cx - rx} ${cy}a${rx} ${ry} 0 1 0 ${2 * rx} 0a${rx} ${ry} 0 1 0 ${-2 * rx} 0Z`;
+  const sparkle = (cx, cy, r) => `M${cx} ${cy - r}Q${cx} ${cy} ${cx + r} ${cy}Q${cx} ${cy} ${cx} ${cy + r}Q${cx} ${cy} ${cx - r} ${cy}Q${cx} ${cy} ${cx} ${cy - r}Z`;
+  const NEKO_FUR = "#8e8e93", NEKO_TAIL = "#7d7d82", NEKO_PAW = "#b4b4b9", NEKO_INK = "#1c1c1e", NEKO_EAR = "#ffb3c1", NEKO_NOSE = "#ff8fa3";
+  const NEKO_SIT = [
+    ["M-12 -5q-16 -1 -12 -19", null, NEKO_TAIL, 5.5],
+    [oval(0, -14, 14.5, 14), NEKO_FUR], [oval(0, -10, 8.5, 8), "#dcdce0"],
+    ["M-12.5 -37l1 -15l10 8.5z", NEKO_FUR], ["M12.5 -37l-1 -15l-10 8.5z", NEKO_FUR],
+    ["M-10.2 -40.5l.8 -7.5l4.8 4.3z", NEKO_EAR], ["M10.2 -40.5l-.8 -7.5l-4.8 4.3z", NEKO_EAR],
+    [oval(0, -33, 13.5, 12.8), NEKO_FUR],
+    ["M-1.7 -29.2h3.4l-1.7 1.9z", NEKO_NOSE], ["M-3.4 -26.6q1.7 1.7 3.4 0q1.7 1.7 3.4 0", null, NEKO_INK, 1.2],
+    // a collar in the app's green, with a bell in the ★'s yellow
+    ["M-10 -22.2h20", null, "#007d2e", 3.4], [oval(0, -18.6, 2.7), "#ffcc00", "#c79a00", 0.8],
+    [oval(-6.3, -1.6, 4.6, 2.8), NEKO_PAW], [oval(6.3, -1.6, 4.6, 2.8), NEKO_PAW],
+  ];
+  const NEKO = {
+    awake: [...NEKO_SIT, [oval(-5.4, -33.6, 2, 2.5), NEKO_INK], [oval(5.4, -33.6, 2, 2.5), NEKO_INK], [oval(-4.8, -34.6, 0.75), "#ffffff"], [oval(6, -34.6, 0.75), "#ffffff"]],
+    // eyes closed with joy, and sparkles over it on the left, clear of the ★
+    glad: [...NEKO_SIT, ["M-7.6 -32.6q2.2 -3.2 4.4 0", null, NEKO_INK, 1.7], ["M3.2 -32.6q2.2 -3.2 4.4 0", null, NEKO_INK, 1.7],
+      [sparkle(-19, -44, 4.5), "#ffcc00"], [sparkle(15, -51, 3.4), "#ffcc00"], [sparkle(-25, -31, 2.4), "#ffcc00"]],
+    // curled up, its head on the left and its tail round the front, its 「zZ」 going up on the left
+    asleep: [
+      ["M-16 0C-17 -15 -6 -23 6 -22.5C16 -22 21 -13 20.5 -5C20.3 -1.5 18.5 0 15 0Z", NEKO_FUR],
+      ["M19 -4.5Q19.5 1.6 9 1.6H-4", null, NEKO_TAIL, 5.2],
+      ["M-17.4 -16.5l-1.6 -12.5l9.5 5.6z", NEKO_FUR], ["M1.4 -16.5l1.6 -12.5l-9.5 5.6z", NEKO_FUR],
+      ["M-15.8 -19.5l-.9 -6.4l4.6 3.1z", NEKO_EAR], ["M-.2 -19.5l.9 -6.4l-4.6 3.1z", NEKO_EAR],
+      [oval(-8, -12.5, 11.5, 10.5), NEKO_FUR],
+      ["M-14.6 -13.2q2.3 2 4.6 0", null, NEKO_INK, 1.5], ["M-6 -13.2q2.3 2 4.6 0", null, NEKO_INK, 1.5],
+      ["M-9.6 -9.6h3.2l-1.6 1.7z", NEKO_NOSE], [oval(-12, -1.6, 4.4, 2.6), NEKO_PAW],
+      ["M-26 -30h5l-5 5.5h5", null, NEKO_FUR, 1.7], ["M-36 -45h7.5l-7.5 8h7.5", null, NEKO_FUR, 2.1],
+    ],
+  };
+  // what each takes, [x0, y0, x1, y1] in its units (the sparkles left out, being there a moment), and a curled one a
+  // little larger, as it is low
+  const NEKO_BOX = { awake: [-28, -53, 15.5, 2], glad: [-28, -53, 15.5, 2], asleep: [-38, -46, 21.5, 4.5] };
+  const nekoUnit = (S, pose) => (S / 52) * (pose === "asleep" ? 1.1 : 1);
+  // (halo: edged in the card's colour first, where 全体's frame runs under it, as the months' names are)
+  let nekoPaths = null;
+  function drawNeko(x, cx, fy, u, pose, sx = 1, sy = 1, halo = null) {
+    if (typeof Path2D !== "function") return;
+    nekoPaths ||= Object.fromEntries(Object.entries(NEKO).map(([key, parts]) => [key, parts.map(([d, ...rest]) => [new Path2D(d), ...rest])]));
+    x.save(); x.translate(cx, fy); x.scale(u * sx, u * sy);
+    x.globalAlpha = 1; x.lineCap = "round"; x.lineJoin = "round"; x.setLineDash([]);
+    if (halo) { x.strokeStyle = halo; for (const [p, , stroke, w] of nekoPaths[pose]) { x.lineWidth = (stroke ? w : 0) + 3 / u; x.stroke(p); } }
+    for (const [p, fill, stroke, w] of nekoPaths[pose]) {
+      if (fill) { x.fillStyle = fill; x.fill(p); }
+      if (stroke) { x.strokeStyle = stroke; x.lineWidth = w; x.stroke(p); }
+    }
+    x.restore();
+  }
+  // as a picture of its own (きょう's tile), px a unit
+  function nekoSvg(pose, unit) {
+    const [x0, y0, x1, y1] = NEKO_BOX[pose], u = nekoUnit(52 * unit, pose);
+    const s = svgEl("svg", { class: "neko", viewBox: `${x0} ${y0} ${x1 - x0} ${y1 - y0}`, width: ((x1 - x0) * u).toFixed(1), height: ((y1 - y0) * u).toFixed(1), "aria-hidden": "true", focusable: "false" });
+    for (const [d, fill, stroke, w] of NEKO[pose]) s.append(svgEl("path", { d, fill: fill || "none", stroke, "stroke-width": w, "stroke-linecap": stroke && "round", "stroke-linejoin": stroke && "round" }));
+    return s;
+  }
+  // where it sits on column c (k: the step being built): { cx, fy, u (px a unit), box (px) }; on the column's middle, or,
+  // on small blocks where it would run into the ★'s ring, as far left as that takes, on the column under it there.
+  // colAt(px): the column at a point across
+  function nekoSpot(c, k, pose, pitch, size, xOf, yOf, colAt) {
+    const u = nekoUnit(clampTo(pitch * 1.25, 18, 52), pose), [x0, y0, x1, y1] = NEKO_BOX[pose];
+    let cx = xOf(c) + size / 2;
+    if (c === k - 1) cx = Math.min(cx, xOf(k) - 4 - x1 * u);
+    const fy = yOf(clampTo(colAt(cx), 0, c));
+    return { cx, fy, u, box: { x0: cx + x0 * u, y0: fy + y0 * u, x1: cx + x1 * u, y1: fy + y1 * u } };
+  }
+  // a month's name ({ rx, by, w }, h tall) on the left of it where they would meet; the caller sees that there is room
+  function nekoClear(p, box, h) {
+    if (!box || p.rx - 1 <= box.x0 || p.rx - p.w + 1 >= box.x1 || p.by - 1 <= box.y0 || p.by - h + 1 >= box.y1) return p;
+    return { ...p, rx: box.x0 - 3 };
+  }
+  // its place: the column it sits on, when its hop up to the next began, and till when it is glad, having got there
+  // (performance.now()); null to be where the stairs have it, as the page opens
+  let tsumiNeko = null, nekoRunning = false;
+  const NEKO_HOP = 460, NEKO_JOY = 1400;
+  // where it is now, for want: the column the blocks down so far have it on. Straight there the first time, with less
+  // motion, and down (a record taken off); up, one hop a step
+  function nekoStep(want, now) {
+    let m = tsumiNeko;
+    if (!m || m.col < 0 || want < m.col || reduceMotion.matches) m = tsumiNeko = { col: want, hop: null, joy: null };
+    if (m.hop !== null && now >= m.hop + NEKO_HOP) { m.col++; m.hop = null; m.joy = now + NEKO_JOY; }
+    if (m.hop === null && m.col < want) { m.hop = now; nekoLoop(); }
+    if (m.joy !== null && now >= m.joy) m.joy = null;
+    return m;
+  }
+  // drawn frame by frame while it hops or is glad (by the blocks' and the gold line's own frames while they are on)
+  function nekoLoop() {
+    if (nekoRunning) return;
+    nekoRunning = true;
+    const frame = () => {
+      const m = tsumiNeko;
+      if (tab !== "tsumi" || !m || (m.hop === null && m.joy === null)) { nekoRunning = false; return; }
+      if (!tsumiAnim && !tsumiGlow) drawTsumi();
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }
   function drawTsumi(now = 0) {
     const a = tsumiAnim, t = a ? now || performance.now() : 0;
     $("tsumiBody").classList.toggle("beside", !!tsumiSideW()); // ◀ ▶ and the words beside the stairs or under them
@@ -9930,9 +10033,28 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       x.strokeStyle = tone("--surface", "#ffffff"); x.globalAlpha = 0.9; x.lineWidth = 4; x.stroke();
       x.strokeStyle = tone("--fg", "#000000"); x.globalAlpha = 0.6; x.lineWidth = 2; x.stroke(); x.globalAlpha = 1;
     }
+    // つみねこ: on the step the blocks down so far have finished, hopping up to the next (crouched to go, stretched in the
+    // air, squashed landing), awake from the first of today's on; and where it will be once they are all down, which the
+    // months' names keep clear of
+    let neko = null, nekoBox = null;
+    if (n) {
+      const nt = t || performance.now(), down = a ? clampTo(a.from + Math.floor((nt - a.start - 380) / a.step) + 1, a.from, n) : n;
+      const m = nekoStep(tsumiCol(down) - 1, nt), hop = m.hop === null ? -1 : Math.min(1, (nt - m.hop) / NEKO_HOP);
+      const pose = hop >= 0 ? "awake" : m.joy !== null ? "glad" : down && tsumiShown[down - 1].t >= dayStart ? "awake" : "asleep";
+      const colAt = (px) => Math.floor(c0 + (px - ox) / pitch), spot = (c, p) => nekoSpot(c, k, p, pitch, size, xOf, yOf, colAt);
+      nekoBox = spot(k - 1, tsumiShown[n - 1].t >= dayStart ? "awake" : "asleep").box;
+      if (m.col >= 0) {
+        neko = { ...spot(m.col, pose), pose, sx: 1, sy: 1 };
+        if (hop >= 0) {
+          const to = spot(m.col + 1, pose), q = clampTo((hop - 0.15) / 0.7, 0, 1), e = q < 0.5 ? 2 * q * q : 1 - 2 * (1 - q) ** 2;
+          neko.cx += (to.cx - neko.cx) * e; neko.fy += (to.fy - neko.fy) * e - Math.sin(Math.PI * q) * pitch * 0.6;
+          if (hop < 0.15) { neko.sy = 1 - 0.8 * hop; neko.sx = 1 + 0.4 * hop; } else if (hop > 0.85) { const z = (1 - hop) / 0.15; neko.sy = 1 - 0.1 * z; neko.sx = 1 + 0.05 * z; } else { neko.sy = 1.06; neko.sx = 0.96; }
+        }
+      }
+    }
     // where each month began (the user's call: which month a step was didn't show): its name just over the top of the column
     // it began in, the ★ for the step being built, set to its right edge (the slope above is empty), whole or not at all,
-    // edged in the card's colour where 全体's frame runs under it (fitMonths)
+    // edged in the card's colour where 全体's frame runs under it (fitMonths); on つみねこ's left where it sits
     const mf = tsumiMark(), spots = [];
     x.save(); x.beginPath(); x.rect(ox - 2 - L.lead, 0, C * pitch + 4 + L.lead, gridH); x.clip();
     x.font = `${mf}px ${getComputedStyle(document.body).fontFamily}`; x.textAlign = "right"; x.textBaseline = "alphabetic";
@@ -9941,13 +10063,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (c < cLo || c > cHi) continue;
       // over the ring a block may wear (the user's call: a name sat on it), and, beside the ★, clear of its ring (the user's
       // call: with few records 「11月」 ran into it)
-      const rx = xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by = yOf(c) - Math.max(2, 5 - size / 4) - 4, w = x.measureText(label).width;
-      if (rx - w >= ox - 2 - L.lead && rx <= ox + C * pitch + 2 && by >= mf && by <= gridH) spots.push({ label, rx, by, w, year: mo.endsWith("-01"), m });
+      const p = nekoClear({ label, rx: xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by: yOf(c) - Math.max(2, 5 - size / 4) - 4, w: x.measureText(label).width, year: mo.endsWith("-01"), m }, nekoBox, mf);
+      if (p.rx - p.w >= ox - 2 - L.lead && p.rx <= ox + C * pitch + 2 && p.by >= mf && p.by <= gridH) spots.push(p);
     }
     x.lineWidth = 3; x.lineJoin = "round"; x.strokeStyle = tone("--surface", "#ffffff"); x.fillStyle = tone("--muted", "#8e8e93");
-    const spotAt = (c) => {
+    const spotAt = (c, w) => {
       if (c < cLo || c > cHi || c > k) return null;
-      const rx = xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by = yOf(c) - Math.max(2, 5 - size / 4) - 4;
+      const { rx, by } = nekoClear({ rx: xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by: yOf(c) - Math.max(2, 5 - size / 4) - 4, w }, nekoBox, mf);
       return rx <= ox + C * pitch + 2 && by >= mf && by <= gridH ? { rx, by } : null;
     };
     const placed = yearMonths(fitMonths(spots, mf), mf, (w) => x.measureText(w).width, ox - 2 - L.lead, spotAt);
@@ -9994,6 +10116,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         x.beginPath(); x.moveTo(cx - 5, gridH + 4); x.lineTo(cx + 5, gridH + 4); x.lineTo(cx, gridH + 10); x.closePath(); x.fill();
         tsumiGeo.below = { x: cx };
       }
+    }
+    // つみねこ, in front of that ring (the newest block may be under it), over the top row into the room for the months'
+    // names while the summit is in sight, and on the left of the first column into the room there
+    if (neko) {
+      const cl = c0 < 0.5 ? 0 : ox - 2, ct = hi >= k ? 0 : L.top;
+      x.save(); x.beginPath(); x.rect(cl, ct, ox + C * pitch + 4 - cl, gridH - ct); x.clip();
+      drawNeko(x, neko.cx, neko.fy, neko.u, neko.pose, neko.sx, neko.sy, !near && L.big ? tone("--surface", "#ffffff") : null);
+      x.restore();
     }
     // the ★ over 大きく's view, in a column in it: a gold ▲ and ★ at the view's top edge, which go up to it (the user's call:
     // on a small iPhone the ★ was out of sight, nothing saying it was there), as the ▼ goes down to the block shown
@@ -10675,14 +10805,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       x.closePath(); x.fillStyle = "rgba(0, 0, 0, .35)"; x.fill();
     }
     x.fillStyle = "#c6c6c8"; x.fillRect(PAD, ground + 1, SIZE, 1);
-    // the month names, as on the screen (the user's call: the picture had none)
+    // つみねこ, as on the screen (the user's call: in the picture too): on the step finished last, awake once something
+    // has gone on today
+    const nekoPose = blocks[n - 1].t >= dayStart ? "awake" : "asleep", nk = nekoSpot(k - 1, k, nekoPose, pitch, size, xOf, yOf, (px) => Math.floor((px - ox) / pitch));
+    drawNeko(x, nk.cx, nk.fy, nk.u, nekoPose);
+    // the month names, as on the screen (the user's call: the picture had none), on つみねこ's left where it sits
     const spots = [];
     x.font = `600 12px ${font}`; x.textAlign = "right"; x.textBaseline = "alphabetic"; x.fillStyle = "#8e8e93";
     tsumiMonths.forEach(([i, mo], m) => {
-      const c = tsumiCol(i), label = monthName(mo), rx = xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by = yOf(c) - 4, w = x.measureText(label).width;
-      if (rx - w >= 4) spots.push({ label, rx, by, w, year: mo.endsWith("-01"), m });
+      const c = tsumiCol(i), label = monthName(mo), p = nekoClear({ label, rx: xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by: yOf(c) - 4, w: x.measureText(label).width, year: mo.endsWith("-01"), m }, nk.box, 12);
+      if (p.rx - p.w >= 4) spots.push(p);
     });
-    const spotAt = (c) => (c <= k ? { rx: xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by: yOf(c) - 4 } : null);
+    const spotAt = (c, w) => (c <= k ? nekoClear({ rx: xOf(c) + size - 1 - (c === k - 1 ? 4 : 0), by: yOf(c) - 4, w }, nk.box, 12) : null);
     for (const p of yearMonths(fitMonths(spots, 12), 12, (w) => x.measureText(w).width, 4, spotAt)) x.fillText(p.label, p.rx, p.by);
     x.textAlign = "left";
     // the 段 marks, as on the screen
@@ -11432,7 +11566,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月9日 9:06"; // e53d7b1f (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月9日 9:46"; // 5766f803 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
