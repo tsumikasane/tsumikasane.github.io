@@ -4736,50 +4736,69 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- 運動のメニュー ----------
   // the user's weekly training sheet (週間トレーニングメニュー, made 2026-11-03), shown on 運動 for the weekday of the day
   // showing (the user's call: as the sheet has it). A day by getDay(), 0 being 日曜: its theme, its run (km and how), and
-  // its moves as [区分, 種目, セット, 回数]
+  // its moves as [区分, 種目, セット, 回数]. Its 筋トレ made anew from the user's list (2026-11-09): every move of it 3 sets
+  // a week, チェストプレス and アームカール twice, each day's 区分 its 部位, no 部位 twice in a day and as many as there
+  // can be (the user's call); 脚 rested on 土曜, the 変化走 day, and a move done twice or two alike (the leg presses, the
+  // pulls with アームカール, the lower back's two) days apart
+  const WO_PARTS = ["脚", "胸", "背中", "肩", "腕", "体幹"];
   const WO_MENU = [
-    { theme: "軽め", km: 4, run: "ゆっくり", moves: [["補助", "プランク", 2, "30秒"], ["補助", "サイドプランク", 2, "左右30秒"], ["補助", "ロータリートルソー", 2, "12〜15回"], ["補助", "アームカール", 2, "12〜15回"], ["補助", "カーフレイズ", 2, "12〜15回"]] },
-    { theme: "脚", km: 4, run: "ゆっくり", moves: [["メイン", "レッグプレス", 3, "10回"], ["メイン", "レッグカール", 3, "10回"], ["補助", "ヒップアブダクション", 2, "12〜15回"], ["補助", "カーフレイズ", 2, "12〜15回"]] },
-    { theme: "押す", km: 4, run: "ゆっくり", moves: [["メイン", "チェストプレス", 3, "10回"], ["メイン", "ショルダープレス", 3, "10回"], ["補助", "サイドレイズ", 2, "12〜15回"], ["補助", "アブドミナルクランチ", 2, "12〜15回"]] },
-    { theme: "引く", km: 5, run: "ゆっくり", moves: [["メイン", "ラットプルダウン", 3, "10回"], ["メイン", "シーテッドロー", 3, "10回"], ["補助", "アームカール", 2, "12〜15回"], ["補助", "バックエクステンション", 2, "12〜15回"]] },
-    { theme: "脚", km: 4, run: "ゆっくり", moves: [["メイン", "シーテッドレッグプレス", 3, "10回"], ["メイン", "レッグカール", 3, "10回"], ["補助", "ヒップアダクション", 2, "12〜15回"]] },
-    { theme: "押す", km: 4, run: "ゆっくり", moves: [["メイン", "チェストプレス", 3, "10回"], ["メイン", "ショルダープレス", 3, "10回"], ["補助", "サイドレイズ", 2, "12〜15回"]] },
-    { theme: "引く", km: 5, run: "変化走", moves: [["メイン", "懸垂", 3, "できる回数"], ["メイン", "シーテッドロー", 3, "10回"], ["補助", "バックエクステンション", 2, "12〜15回"]] },
+    { km: 4, run: "ゆっくり", moves: [["脚", "カーフレイズ", 3, "20回"], ["背中", "バックエクステンション", 3, "20回"], ["肩", "サイドレイズ", 3, "20回"]] },
+    { km: 4, run: "ゆっくり", moves: [["脚", "レッグプレス", 3, "20回"], ["胸", "チェストプレス", 3, "20回"], ["体幹", "プランク", 3, "1分"]] },
+    { km: 4, run: "ゆっくり", moves: [["脚", "レッグカール", 3, "20回"], ["背中", "ラットプルダウン", 3, "20回"], ["腕", "アームカール", 3, "20回"]] },
+    { km: 5, run: "ゆっくり", moves: [["脚", "ヒップアブダクション", 3, "20回"], ["肩", "ショルダープレス", 3, "20回"], ["体幹", "バックプランク", 3, "1分"]] },
+    { km: 4, run: "ゆっくり", moves: [["脚", "シーテッドレッグプレス", 3, "20回"], ["背中", "シーテッドロー", 3, "20回"], ["体幹", "ロータリートルソー", 3, "20回"]] },
+    { km: 4, run: "ゆっくり", moves: [["脚", "ヒップアダクション", 3, "20回"], ["胸", "チェストプレス", 3, "20回"], ["体幹", "アブドミナルクランチ", 3, "20回"]] },
+    { km: 5, run: "変化走", moves: [["背中", "懸垂", 3, "できる回数"], ["腕", "アームカール", 3, "20回"], ["体幹", "サイドプランク", 3, "左右1分"]] },
   ];
-  // the sheet's メモ, in its order, each in the parts its lines break between (one led by a space keeps it before it)
+  // the sheet's メモ, in its order, each in the parts its lines break between (one led by a space keeps it before it);
+  // 重さ, 土曜 and 疲れた日 as the 筋トレ is now (they told of メイン種目, 10回 and a light 日曜)
   const WO_NOTES = [
     ["ペース", ["変化走以外は、", "話しながら走れるペース"]],
     ["変化走", ["5分ジョグ →", "「1分速め（息が弾む程度）", "＋2分ゆっくり」×6回", " → 5分ジョグ"]],
-    ["重さ", ["メインは10回でややきつい重さ。", "3セットとも12回できたら1段階上げる"]],
+    ["重さ", ["20回でややきつい重さ。", "3セットとも楽に20回できたら1段階上げる"]],
     ["時間", ["筋トレは1回20〜25分"]],
-    ["日曜", ["大きな筋肉を休ませる軽い日なので、", "メイン種目はなし"]],
+    ["土曜", ["変化走の日なので、", "脚の筋トレはなし"]],
     ["順番", ["ランと筋トレを同じ時間にやる日は、", "筋トレを先にすると重さを保ちやすい"]],
-    ["疲れた日", ["月〜土は、", "忙しい日や疲れが残る日は", "メインの2種目だけで十分"]],
+    ["疲れた日", ["忙しい日や疲れが残る日は、", "2種目だけでも十分"]],
     ["痛みが出た日", ["完全に休む日がないので、", "膝やすねの疲れは抜けにくい。", "走り出して10分たっても痛みが引かない日は、", "ランをエアロバイク30分に替える"]],
     ["食事", ["週の合計が同じなので、", "2,500kcalのまま"]],
   ];
   // the menu as the user has made it in the app (運動のメニューを編集, the user's call), or else the sheet's: its 7 days by
-  // getDay() and its メモ as [見出し, parts]
+  // getDay() and its メモ as [見出し, parts]. One made before the 筋トレ was made anew takes the new moves (its themes,
+  // which told of the old ones, gone) and keeps its runs; and of its メモ, the ones that told of the old 筋トレ, while
+  // they are as the sheet had them, are the new ones: [見出し, its words then, the one in its place]
+  const WO_REMADE = Date.parse("2026-11-09T12:00:00+09:00");
+  const WO_NOTES_WAS = [["重さ", "メインは10回でややきつい重さ。3セットとも12回できたら1段階上げる", "重さ"], ["日曜", "大きな筋肉を休ませる軽い日なので、メイン種目はなし", "土曜"], ["疲れた日", "月〜土は、忙しい日や疲れが残る日はメインの2種目だけで十分", "疲れた日"]];
   const woEdited = () => settings.get("woMenu") || null;
-  const woDays = () => { const d = woEdited()?.days; return Array.isArray(d) && d.length === 7 ? d : WO_MENU; };
-  const woNotes = () => { const n = woEdited()?.notes; return Array.isArray(n) ? n : WO_NOTES; };
+  const woBefore = () => num(woEdited()?.updatedAt) < WO_REMADE;
+  const woDays = () => {
+    const d = woEdited()?.days;
+    if (!(Array.isArray(d) && d.length === 7)) return WO_MENU;
+    return woBefore() ? d.map((x, i) => ({ ...x, theme: "", moves: WO_MENU[i].moves })) : d;
+  };
+  const woNotes = () => {
+    const n = woEdited()?.notes;
+    if (!Array.isArray(n)) return WO_NOTES;
+    if (!woBefore()) return n;
+    return n.map(([k, parts]) => { const was = WO_NOTES_WAS.find(([w, words]) => w === k && words === [].concat(parts).join("")); return was ? WO_NOTES.find(([w]) => w === was[2]) : [k, parts]; });
+  };
   let woNotesOpen = false; // メモ stays open while the day or the records change under it
-  // a row of the menu pressed: its kind and numbers in the form (回数 from 「12〜15回」 its first number, 秒 for 「30秒」;
-  // 「できる回数」 left to type), the form brought into view, and focus where something is still to type
+  // a row of the menu pressed: its kind and numbers in the form (回数 from 「12〜15回」 its first number, 秒 for 「30秒」
+  // and 「1分」 in 秒; 「できる回数」 left to type), the form brought into view, and focus where something is still to type
   function fillWorkout(f) {
     woEach.reset();
     $("woType").value = f.type; syncWorkoutKind();
     let next = null;
     if (f.type === "筋トレ") {
-      const n = parseInt(String(f.reps).match(/\d+/)?.[0] || "", 10);
-      $("woExercise").value = f.exercise; $("woSets").value = f.sets; $("woReps").value = n > 0 ? n : "";
-      setRepsUnit(/秒/.test(f.reps) ? "sec" : "");
+      const n = parseInt(String(f.reps).match(/\d+/)?.[0] || "", 10), mins = /分/.test(f.reps);
+      $("woExercise").value = f.exercise; $("woSets").value = f.sets; $("woReps").value = n > 0 ? (mins ? n * 60 : n) : "";
+      setRepsUnit(/秒|分/.test(f.reps) ? "sec" : "");
       if (!(n > 0)) next = $("woReps");
     } else { $("woDist").value = f.km; next = $("woMin"); }
     $("workoutForm").scrollIntoView({ block: "center", behavior: reduceMotion.matches ? "auto" : "smooth" });
     next?.focus({ preventScroll: true });
   }
-  // the day's menu: ラン, then 筋トレ's moves (メイン in 運動's colour, 補助 in grey, as the sheet tells them apart), the
+  // the day's menu: ラン, then 筋トレ's moves (their 部位, or メイン, in 運動's colour, 補助 in grey), the
   // day's sets added up as the sheet does, and the sheet's notes behind メモ, with the week's totals; 変化走's way of
   // running under its line
   function renderWoMenu() {
@@ -4794,7 +4813,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         num(m.km) > 0 ? el("li", { class: t.ran ? "done" : null }, chip("ラン", "var(--c-workout)"),
           el("span", { class: "body" }, el("button", { type: "button", class: "text row-link", "aria-label": `ラン ${m.km} km を下の欄に入れる`, onclick: () => fillWorkout({ type: "ランニング", km: m.km }) }, `${m.km} km`),
             m.run ? el("span", { class: "sub" }, how ? [`${m.run}：`, ...say(how[1])] : m.run) : null), done(t.ran)) : null,
-        (m.moves || []).map(([kind, name, sets, reps]) => el("li", { class: t.setsOf(name) >= sets ? "done" : null }, chip(kind, kind === "メイン" ? "var(--c-workout)" : "var(--muted)"),
+        (m.moves || []).map(([kind, name, sets, reps]) => el("li", { class: t.setsOf(name) >= sets ? "done" : null }, chip(kind, kind === "補助" ? "var(--muted)" : "var(--c-workout)"),
           el("span", { class: "body" }, el("button", { type: "button", class: "text row-link", "aria-label": `${name} ${reps} × ${sets}セットを下の欄に入れる`, onclick: () => fillWorkout({ type: "筋トレ", exercise: name, reps, sets }) }, name),
             el("span", { class: "sub" }, `${reps} × ${sets}セット`)), done(t.setsOf(name) >= sets)))),
       el("p", { class: "wo-menu-tip muted small" }, "押すと、下の欄に入ります。"),
@@ -4816,7 +4835,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     clearTimeout(woSaveTimer); woSaveTimer = 0;
     if (!woDraft) return;
     const days = woDraft.days.map((d) => ({ theme: String(d.theme).trim(), km: Math.max(0, Math.round(num(d.km) * 10) / 10), run: String(d.run).trim(),
-      moves: d.moves.filter((x) => String(x[1] || "").trim()).map(([k, name, sets, reps]) => [k === "メイン" ? "メイン" : "補助", String(name).trim(), clampTo(Math.round(num(sets)) || 1, 1, 20), String(reps || "").trim()]) }));
+      moves: d.moves.filter((x) => String(x[1] || "").trim()).map(([k, name, sets, reps]) => [[...WO_PARTS, "メイン"].includes(k) ? k : "補助", String(name).trim(), clampTo(Math.round(num(sets)) || 1, 1, 20), String(reps || "").trim()]) }));
     const notes = woDraft.notes.filter(([k, t]) => String(k).trim() || String(t).trim()).map(([k, t]) => [String(k).trim(), [String(t).trim()]]);
     const now = { days, notes }, was = woEdited();
     if (was && JSON.stringify({ days: was.days, notes: was.notes }) === JSON.stringify(now)) return;
@@ -4835,8 +4854,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       return f;
     };
     const move = (i, to) => { day.moves.splice(to, 0, day.moves.splice(i, 1)[0]); woLater(); renderWoEdit(`[data-move="${to}"] .${to < i ? "up" : "down"}`); };
+    // 区分: its 部位 (メイン or 補助 too, for a move that has one from before)
     const rows = day.moves.map((mv, i) => el("li", { class: "wo-edit-move", "data-move": i },
-      el("select", { "aria-label": "区分", onchange: (ev) => { mv[0] = ev.target.value; woLater(); } }, ["メイン", "補助"].map((k) => el("option", { value: k, selected: mv[0] === k }, k))),
+      el("select", { "aria-label": "部位", onchange: (ev) => { mv[0] = ev.target.value; woLater(); } }, [...WO_PARTS, ...(WO_PARTS.includes(mv[0]) ? [] : [mv[0] || "補助"])].map((k) => el("option", { value: k, selected: mv[0] === k }, k))),
       field({ type: "text", value: mv[1] || "", "aria-label": "種目", maxlength: 30, class: "wo-name" }, (v) => { mv[1] = v; }),
       el("span", { class: "wo-move-btns" },
         el("button", { type: "button", class: "icon-btn up", "aria-label": `${mv[1] || "この種目"}を上へ`, disabled: i === 0, onclick: () => move(i, i - 1) }, icon("prev", 18)),
@@ -4854,7 +4874,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         recRow("走り方", field({ type: "text", id: "woEdRun", value: day.run, maxlength: 20 }, (v) => { day.run = v; }), { opt: true })),
       el("h3", { class: "group-head" }, "筋トレ"),
       el("div", { class: "card" }, el("ul", { class: "list" }, rows.length ? rows : el("li", { class: "empty" }, "この曜日の種目はありません。")),
-        el("div", { class: "label-tools" }, el("button", { type: "button", class: "link-btn", onclick: () => { day.moves.push(["補助", "", 2, ""]); renderWoEdit(".wo-edit-move:last-child .wo-name"); } }, icon("plus", 20), "種目を追加"))));
+        // (a move added: of a 部位 the day hasn't one of yet, as the menu has none twice in a day)
+        el("div", { class: "label-tools" }, el("button", { type: "button", class: "link-btn", onclick: () => { day.moves.push([WO_PARTS.find((p) => !day.moves.some((x) => x[0] === p)) || WO_PARTS[0], "", 3, ""]); renderWoEdit(".wo-edit-move:last-child .wo-name"); } }, icon("plus", 20), "種目を追加"))));
     setChildren($("woEditNotes"), woDraft.notes.length ? woDraft.notes.map((nt, i) => el("li", { class: "wo-edit-note" },
       field({ type: "text", value: nt[0], "aria-label": "見出し", maxlength: 20, class: "wo-note-title" }, (v) => { nt[0] = v; }),
       delButton(() => { woDraft.notes.splice(i, 1); woLater(); renderWoEdit(); }, "削除", nt[0] || "このメモ"),
@@ -11571,7 +11592,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月9日 11:57"; // fa8901fe (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月9日 12:06"; // b18bbfb7 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
