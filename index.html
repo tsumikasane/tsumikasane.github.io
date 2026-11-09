@@ -1414,6 +1414,20 @@ ul.list > li.btn-row { padding: 0; }
 .tsumi-cal .cal-key i.lv2 { background: color-mix(in srgb, var(--accent-fill) 45%, var(--surface)); }
 .tsumi-cal .cal-key i.lv3 { background: color-mix(in srgb, var(--accent-fill) 70%, var(--surface)); }
 .tsumi-cal .cal-key i.lv4 { background: var(--accent-fill); }
+/* お気に入り: a heart and its word, pink once on */
+.tsumi-fav { display: inline-flex; align-items: center; gap: 4px; }
+.tsumi-fav[aria-pressed="true"] { color: #ff375f; }
+#tsumiKinds .sw.fav { display: grid; place-items: center; background: transparent; color: #ff375f; }
+#tsumiKinds .row-btn[data-kind="fav"] { gap: 16px; }  /* (its word where the kinds' are, past their keys' buttons) */
+/* a kind's colour (the user's call: chosen in the gear): its key a button of its own at the row's start, the twelve colours
+   under the row while it is open, the one in use ringed */
+.tsumi-kind-row > .tsumi-sw { flex: none; display: grid; place-items: center; width: 46px; min-height: 44px; padding: 0; border: 0; border-radius: 0; background: transparent; cursor: pointer; }
+.tsumi-kind-row > .tsumi-sw + .row-btn { padding-inline-start: 0; }
+.tsumi-palette { padding: 2px var(--space-2) 12px 46px; }
+.tsumi-palette .pal { display: flex; flex-wrap: wrap; gap: 10px; }
+.tsumi-palette .pal-c { width: 34px; height: 34px; padding: 0; border: 0; border-radius: 9px; background: color-mix(in srgb, var(--k) 32%, #ffffff); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 50%, #ffffff); cursor: pointer; }
+.tsumi-palette .pal-c[aria-pressed="true"] { outline: 3px solid var(--k); outline-offset: 2px; }
+.tsumi-palette .link-btn { margin-top: 8px; min-height: 36px; }
 /* 節目のお祝い: confetti over everything for a moment, never in the way of a press */
 .confetti { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none; }
 /* 1年前のきょう: a quiet line at the card's foot */
@@ -1661,6 +1675,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 <svg class="sprite" aria-hidden="true" focusable="false">
   <symbol id="i-prev" viewBox="0 0 16 16"><path d="m5.27 8 5.33-5.33-.93-.94L3.4 8l6.27 6.27.93-.94L5.27 8Z"/></symbol>
   <symbol id="i-next" viewBox="0 0 16 16"><path d="m6 1.73-.93.94L10.4 8l-5.33 5.33.93.94L12.27 8 6 1.73Z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.1 10.9 19C6.4 14.9 3.6 12.3 3.6 9A4.5 4.5 0 0 1 8.1 4.5c1.5 0 3 .7 3.9 1.9a4.9 4.9 0 0 1 3.9-1.9A4.5 4.5 0 0 1 20.4 9c0 3.3-2.8 5.9-7.3 10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-heart-fill" viewBox="0 0 24 24"><path d="M12 20.1 10.9 19C6.4 14.9 3.6 12.3 3.6 9A4.5 4.5 0 0 1 8.1 4.5c1.5 0 3 .7 3.9 1.9a4.9 4.9 0 0 1 3.9-1.9A4.5 4.5 0 0 1 20.4 9c0 3.3-2.8 5.9-7.3 10Z"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.6v12.8a1 1 0 0 0 1.53.85l10.2-6.4a1 1 0 0 0 0-1.7L9.53 4.75A1 1 0 0 0 8 5.6Z"/></symbol>
   <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2.2"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="m6.4 18.6-1-1 5.5-5.6-5.6-5.6 1.1-1 5.6 5.5 5.6-5.6 1 1.1L13 12l5.6 5.6-1 1L12 13l-5.6 5.6Z"/></symbol>
@@ -2267,7 +2283,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
                  lines kept round both, so nothing under them moves from block to block -->
             <div class="tsumi-said">
               <div class="tsumi-tip" id="tsumiTip" aria-live="polite"></div>
-              <div class="tsumi-acts"><button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button><button type="button" class="link-btn danger tsumi-open" id="tsumiDrop" hidden>このブロックを削除</button><p class="tsumi-drop-warn" id="tsumiDropWarn" role="status" hidden></p></div>
+              <div class="tsumi-acts"><button type="button" class="link-btn tsumi-open tsumi-fav" id="tsumiFav" aria-pressed="false" hidden></button><button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button><button type="button" class="link-btn danger tsumi-open" id="tsumiDrop" hidden>このブロックを削除</button><p class="tsumi-drop-warn" id="tsumiDropWarn" role="status" hidden></p></div>
             </div>
           </div>
           <!-- 1年前のきょう (the user's call): what went on this day a year ago, or else a month ago, said quietly; pressed, there -->
@@ -7211,7 +7227,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function openSettings(byKey, scope = "calendar", field = null) {
     settingsScope = scope;
     if (scope === "records") draw(renderUsage); // 記録's バックアップ, the amount used as it is now
-    if (scope === "tsumi") { $("tsumiFind").value = ""; renderTsumiFind(); } // ことばで探す, empty each time
+    if (scope === "tsumi") { $("tsumiFind").value = ""; renderTsumiFind(); if (tsumiPaletteFor) { tsumiPaletteFor = null; renderTsumiKinds(tsumiShown); } } // ことばで探す empty, the colours shut, each time
     if (scope === "woMenu") { woDraft = null; renderWoEdit(); }
     // (バイト: one blank job to fill in when there is none yet, its 時給 ready to type)
     if (scope === "job") {
@@ -9505,11 +9521,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a kind pressed in つみあげた記録: only its blocks keep their colour; kept on this phone, as the view is (the user's call:
   // it went when the app was opened again)
   const KIND_KEY = LS_PREFIX + "tsumiKind";
-  let tsumiOnly = (() => { try { const k = localStorage.getItem(KIND_KEY); return k && TSUMI_KINDS[k] ? k : null; } catch { return null; } })(), tsumiKindKept = tsumiOnly || "";
+  let tsumiOnly = (() => { try { const k = localStorage.getItem(KIND_KEY); return k && (TSUMI_KINDS[k] || k === "fav") ? k : null; } catch { return null; } })(), tsumiKindKept = tsumiOnly || "";
   // and, 「うち削除した…」 pressed, only its deleted ones (the user's call: 14 deleted ToDos couldn't be gone through apart)
   let tsumiGoneOnly = false;
-  const tsumiIn = (b) => !tsumiOnly || (b.kind === tsumiOnly && (!tsumiGoneOnly || b.gone)); // a block of the ones pressed
-  const onlyLabel = () => (tsumiGoneOnly ? "削除した" : "") + TSUMI_KINDS[tsumiOnly].label;
+  // お気に入り (the user's call): the blocks marked with a heart, by key, kept with the account (synced); "fav" pressed in the
+  // gear colours only them, as a kind pressed does (tsumiOnly)
+  const FAV_ID = "tsumiFav", TSUMI_FAV = { label: "お気に入り", c: "--c-study" };
+  let favOf = null, favSet = new Set();
+  const tsumiFavs = () => { const v = settings.get(FAV_ID); if (v !== favOf) { favOf = v; favSet = new Set(Array.isArray(v?.keys) ? v.keys : []); } return favSet; };
+  const kindOf = (k) => (k === "fav" ? TSUMI_FAV : TSUMI_KINDS[k]);
+  const tsumiIn = (b) => !tsumiOnly || (tsumiOnly === "fav" ? tsumiFavs().has(b.key) : b.kind === tsumiOnly && (!tsumiGoneOnly || b.gone)); // a block of the ones pressed
+  const onlyLabel = () => (tsumiGoneOnly ? "削除した" : "") + kindOf(tsumiOnly).label;
   let tsumiAnim = null, tsumiFresh = Infinity; // blocks dropping in since the last look; with less motion, the first of them to ring
   let tsumiDrag = null, tsumiDragged = false; // 大きく moved under a finger; and the press that ended a move, not to be taken as a tap
   let tsumiHoverAt = null; // where the mouse rests on the stairs (a PC), the block there outlined and named (drawTsumi)
@@ -9624,8 +9646,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // call: it let go unsaid, and 元に戻す brought the record back but not the kind)
     // (its deleted ones all taken off: the kind's own again)
     if (tsumiGoneOnly && !blocks.some((b) => b.gone && b.kind === tsumiOnly)) tsumiGoneOnly = false;
-    if (tsumiOnly && !blocks.some((b) => b.kind === tsumiOnly)) {
-      const words = `${TSUMI_KINDS[tsumiOnly].label}のしぼりをはずしました`;
+    if (tsumiOnly && !blocks.some(tsumiOnly === "fav" ? (b) => tsumiFavs().has(b.key) : (b) => b.kind === tsumiOnly)) {
+      const words = `${kindOf(tsumiOnly).label}のしぼりをはずしました`;
       tsumiGone = wasKey ? { kind: tsumiOnly, key: wasKey } : null;
       tsumiOnly = null; tsumiGoneOnly = false;
       setTimeout(() => {
@@ -9638,7 +9660,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if ((tsumiOnly || "") !== tsumiKindKept) { tsumiKindKept = tsumiOnly || ""; lsPut(KIND_KEY, tsumiKindKept); }
     const k = tsumiCol(n), r = n - (k * (k + 1)) / 2, left = k + 1 - r; // steps done, blocks on the one being built, blocks to go
     // with a kind pressed, its own count and its own last 7 days, then every kind's (the user's call: they stayed every kind's)
-    const mine = tsumiOnly ? blocks.filter(tsumiIn) : blocks, v = TSUMI_KINDS[tsumiOnly];
+    const mine = tsumiOnly ? blocks.filter(tsumiIn) : blocks, v = tsumiOnly ? kindOf(tsumiOnly) : undefined;
     const since = Date.parse(addDays(todayKey, -6) + "T00:00:00"), week = mine.filter((b) => b.t >= since).length;
     // and how many went on today (the user's call: it didn't show), which wear a white dot on the stairs
     const today = mine.filter((b) => b.t >= Date.parse(todayKey + "T00:00:00")).length;
@@ -9657,7 +9679,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const goneMany = tsumiGoneOnly && v ? mine.length : 0;
     $("tsumiDropAll").hidden = goneMany < 2;
     if (goneMany >= 2) $("tsumiDropAll").setAttribute("aria-label", `削除した${v.label}のブロック ${fmtN(goneMany)} こを、まとめて削除`);
-    if (v) setChildren($("tsumiKind"), tsumiGoneOnly ? el("span", { class: "dot gone", style: `color: var(${v.c})` }) : el("span", { class: "dot blk", style: `--k: ${TSUMI_LIGHT[tsumiOnly]}` }), onlyLabel());
+    if (v) setChildren($("tsumiKind"), tsumiOnly === "fav" ? el("span", { class: "tsumi-fav", "aria-pressed": "true" }, icon("heart-fill", 14)) : tsumiGoneOnly ? el("span", { class: "dot gone", style: `color: var(${v.c})` }) : el("span", { class: "dot blk", style: `--k: ${tsumiInk(tsumiOnly)}` }), onlyLabel());
     renderTsumiMonthPick();
     // no lines under the count (the user's call: いま N 段, つぎの段まで あと N こ, きょう ＋N こ, この7日で ＋N こ, N 日つづけて
     // and the rest were taken out, as 「◯年◯月◯日から N 日の積み重ね」 was before), only what to do while there is nothing.
@@ -10072,8 +10094,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const x = cv.getContext("2d");
     x.setTransform(dpr, 0, 0, dpr, 0, 0);
     x.clearRect(0, 0, W, H);
-    const css = getComputedStyle(document.documentElement), tone = (v, d) => css.getPropertyValue(v).trim() || d, colour = {};
-    for (const [key, v] of Object.entries(TSUMI_KINDS)) colour[key] = tone(v.c, "#8e8e93");
+    const css = getComputedStyle(document.documentElement), tone = (v, d) => css.getPropertyValue(v).trim() || d, colour = {}, own = tsumiColours(), favs = tsumiFavs();
+    for (const [key, v] of Object.entries(TSUMI_KINDS)) colour[key] = own[key] || tone(v.c, "#8e8e93"); // (a colour chosen in the gear, else the kind's)
     const rad = size >= 8 ? Math.min(5, size * 0.16) : 0;
     const xOf = (c) => ox + (c - c0) * pitch + gap / 2, yOf = (row) => gridH - (row - r0 + 1) * pitch + gap / 2;
     const sq = (px, py, s = size, rr = rad) => { x.beginPath(); if (rr && x.roundRect) x.roundRect(px, py, s, s, rr); else x.rect(px, py, s, s); };
@@ -10102,8 +10124,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         // the dot, they read as 二重丸). The pastel from the light colours, in dark mode too, as the mock-ups the user chose
         // from had it; a deleted one's from the page's, being faint on the card
         const b = tsumiShown[i], px = xOf(c), py = yOf(row) + dy, today = b.t >= dayStart, on = tsumiIn(b);
-        const ink = b.gone ? colour[b.kind] : TSUMI_LIGHT[b.kind];
+        const ink = b.gone ? colour[b.kind] : tsumiInk(b.kind);
         paintTsumiBlock(x, sq, px, py, size, rad, ink, { gone: b.gone, today, light, dim: on ? 1 : 0.16 });
+        // お気に入り: a heart at its top left (a pink dot in its middle when small)
+        if (favs.has(b.key)) {
+          x.fillStyle = "#ff375f";
+          if (size >= 10) { const w = Math.max(5, size * 0.3), m = Math.max(3.5, size * 0.17), hx = px + m + w / 2, hy = py + m + w / 2; x.beginPath(); x.moveTo(hx, hy + w * 0.42); x.bezierCurveTo(hx - w * 0.75, hy - w * 0.05, hx - w * 0.35, hy - w * 0.6, hx, hy - w * 0.22); x.bezierCurveTo(hx + w * 0.35, hy - w * 0.6, hx + w * 0.75, hy - w * 0.05, hx, hy + w * 0.42); x.fill(); }
+          else if (size >= 3) { const d = Math.max(1.5, size * 0.4); x.fillRect(px + (size - d) / 2, py + (size - d) / 2, d, d); }
+        }
         // 節目 (the 100th, the 500th, every 1,000th): a small gold dot at its top right corner (the user's call)
         // (in from the corner past the 3px frame the shown block wears)
         if (tsumiMilestone(i + 1) && size >= 6) { const r = Math.max(1.6, size * 0.1), m = Math.max(3.5, size * 0.18); x.fillStyle = "#ffcc00"; x.beginPath(); x.arc(px + size - m - r, py + m + r, r, 0, 2 * Math.PI); x.fill(); }
@@ -10331,7 +10359,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // day it was stacked when that was later (the user's call: a day gone by on top looked out of place), and 「この記録を開く」
   function sayTsumi() {
     const n = tsumiShown.length, tip = $("tsumiTip"), open = $("tsumiOpen");
-    open.hidden = true;
+    open.hidden = true; $("tsumiFav").hidden = true;
     const i = shownIndex();
     // ◀ ▶ dimmed where there is none before or after (of the kind pressed)
     const ok = (j) => tsumiIn(tsumiShown[j]);
@@ -10376,9 +10404,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       }
       break;
     }
-    setChildren(tip, el("span", { class: "what" }, b.gone ? el("span", { class: "dot gone", style: `color: var(${v.c})` }) : el("span", { class: "dot blk", style: `--k: ${TSUMI_LIGHT[b.kind]}` }), el("strong", {}, v.label), " ", b.text || ""),
+    setChildren(tip, el("span", { class: "what" }, b.gone ? el("span", { class: "dot gone", style: `color: var(${v.c})` }) : el("span", { class: "dot blk", style: `--k: ${tsumiInk(b.kind)}` }), el("strong", {}, v.label), " ", b.text || ""),
       el("span", { class: "when" }, el("span", { class: "due-parts" }, dayWd(b.day), made > b.day ? part(`${made.slice(0, 4) === todayKey.slice(0, 4) ? fmtMD(made) : `${Number(made.slice(0, 4))}/${fmtMD(made)}`} に積んだ`) : null,
         monthWords ? part(monthWords) : null, dayPart, part(nth), top ? part(`${col + 1} 段目を仕上げた`) : null, newest ? part(newest) : null, b.gone && !tsumiGoneOnly ? part(b.kind === "goal" ? "削除した目標" : "削除したToDo") : null)));
+    // お気に入り, pressed on and off (the user's call)
+    const fav = $("tsumiFav"), loved = tsumiFavs().has(b.key);
+    fav.hidden = false; fav.setAttribute("aria-pressed", String(loved));
+    setChildren(fav, icon(loved ? "heart-fill" : "heart", 18), loved ? "お気に入り" : "お気に入りにする");
     // its record opened; or, a ToDo or goal deleted that can still be put back, 最近削除した項目 (the user's call: there was
     // no way back to it from its block)
     open.textContent = "この記録を開く"; delete open.dataset.trash; delete open.dataset.mark; delete open.dataset.edit;
@@ -10406,6 +10438,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     btn.textContent = `${words}のきょうは ${fmtN(count(day))} こ積んでいました`;
     btn.onclick = () => { if (tsumiCal) setTsumiCal(false, false); goTsumiDay(day); };
   }
+  // the shown block marked お気に入り or not, 元に戻す in the message
+  function setTsumiFavs(keys) { act(() => settings.set(FAV_ID, { keys: [...keys], updatedAt: Date.now() })); }
+  $("tsumiFav").addEventListener("click", () => {
+    const b = tsumiShown[shownIndex()];
+    if (!b) return;
+    const was = new Set(tsumiFavs()), now = new Set(was), on = !was.has(b.key);
+    if (on) now.add(b.key); else now.delete(b.key);
+    setTsumiFavs(now);
+    flash(on ? "お気に入りにしました" : "お気に入りをはずしました", () => setTsumiFavs(was));
+  });
   // ことばで探す (the user's call): the blocks with every word typed, in their words or their kind's name, newest first, the
   // first 50 listed; 日記's own words count, though its block says none. One pressed: the sheet goes and the block is
   // shown on the stairs, lit
@@ -10428,7 +10470,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren(list, hits.slice(0, TSUMI_FIND_MAX).map((j) => {
       const b = tsumiShown[j], v = TSUMI_KINDS[b.kind], words = tsumiWords(b);
       return el("li", { class: "btn-row" }, el("button", { type: "button", class: "row-btn tsumi-hit", onclick: () => { closeSheet(true); goTsumiBlock(j); } },
-        b.gone ? el("span", { class: "dot gone", style: `color: var(${v.c})` }) : el("span", { class: "dot blk", style: `--k: ${TSUMI_LIGHT[b.kind]}` }),
+        b.gone ? el("span", { class: "dot gone", style: `color: var(${v.c})` }) : el("span", { class: "dot blk", style: `--k: ${tsumiInk(b.kind)}` }),
         el("span", { class: "hit-body" }, el("span", { class: "hit-head" }, el("strong", {}, (b.gone ? "削除した" : "") + v.label), " ", fmtDayLong(b.day)), words ? el("span", { class: "hit-text" }, near(words)) : null),
         icon("next", 16)));
     }));
@@ -10455,23 +10497,38 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         tsumiOnly = key; tsumiGoneOnly = true; tsumiPick = tsumiShown[j].key;
         tsumiFollow(j); renderTsumi(); showTsumiStairs(true);
       } }, el("span", { class: "sw gone", style: `color: var(${v.c})` }), el("span", {}, `うち削除した${v.label}`), el("span", { class: "row-count" }, `${fmtN(gone.get(key))} こ`)));
-    const fb = document.activeElement?.closest?.("#tsumiKinds button"), list = $("tsumiKinds"), focused = fb?.dataset.kind, focusedGone = fb?.dataset.gone;
+    const fb = document.activeElement?.closest?.("#tsumiKinds button"), list = $("tsumiKinds"), focused = fb?.dataset.kind, focusedGone = fb?.dataset.gone, focusedSw = fb?.dataset.sw;
     list.classList.toggle("only", !!tsumiOnly);
     // pressed, the kind's records, to look over and put right (the user's call: from つみかさね's gear); しぼる at its end, only
     // its blocks in colour on the stairs
+    // the key at a row's start: pressed, the twelve colours under the row (the user's call)
+    const paletteRow = (key, v) => el("li", { class: "tsumi-palette" },
+      el("div", { class: "pal", role: "group", "aria-label": `${v.label}の色` }, TSUMI_PALETTE.map(([hex, name]) => el("button", { type: "button", class: "pal-c", style: `--k: ${hex}`,
+        "aria-label": name, "aria-pressed": String(tsumiInk(key).toLowerCase() === hex.toLowerCase()), onclick: () => setTsumiColour(key, hex) }))),
+      tsumiColours()[key] ? el("button", { type: "button", class: "link-btn", onclick: () => setTsumiColour(key, null) }, "もとの色に戻す") : null);
     const rows = Object.entries(TSUMI_KINDS).filter(([key]) => counts.get(key)).map(([key, v]) => {
-      const on = tsumiOnly === key && !tsumiGoneOnly;
+      const on = tsumiOnly === key && !tsumiGoneOnly, open = tsumiPaletteFor === key;
       return [el("li", { class: "btn-row tsumi-kind-row" + (on ? " on" : "") },
+        el("button", { type: "button", class: "tsumi-sw", "data-sw": key, "aria-label": `${v.label}の色を変える`, "aria-expanded": String(open),
+          onclick: () => { tsumiPaletteFor = open ? null : key; renderTsumiKinds(tsumiShown); } }, el("span", { class: "sw blk", style: `--k: ${tsumiInk(key)}` })),
         el("button", { type: "button", class: "row-btn nav", "data-kind": key, onclick: () => openTsumiKind(key) },
-          el("span", { class: "sw blk", style: `--k: ${TSUMI_LIGHT[key]}` }), el("span", {}, v.label),
+          el("span", {}, v.label),
           el("span", { class: "row-count" }, `${fmtN(counts.get(key))} こ`), el("span", { class: "chev" }, icon("next", 16))),
         el("button", { type: "button", class: "tsumi-only", "data-only": key, "aria-pressed": String(on),
           "aria-label": on ? `${v.label}のしぼりこみをはずす` : `${v.label}のブロックだけ色をつける`, onclick: () => setTsumiOnly(on ? null : key) }, on ? "しぼり中" : "しぼる")),
-        goneRow(key, v)];
+        open ? paletteRow(key, v) : null, goneRow(key, v)];
     }).flat();
+    // お気に入り (the user's call): how many, pressed (or しぼる) to colour only them
+    const favs = tsumiFavs(), favN = blocks.reduce((c, b) => c + (favs.has(b.key) ? 1 : 0), 0), favOn = tsumiOnly === "fav";
+    if (favN) rows.push(el("li", { class: "btn-row tsumi-kind-row" + (favOn ? " on" : "") },
+      el("button", { type: "button", class: "row-btn nav", "data-kind": "fav", onclick: () => setTsumiOnly(favOn ? null : "fav") },
+        el("span", { class: "sw fav" }, icon("heart-fill", 14)), el("span", {}, "お気に入り"), el("span", { class: "row-count" }, `${fmtN(favN)} こ`)),
+      el("button", { type: "button", class: "tsumi-only", "data-only": "fav", "aria-pressed": String(favOn),
+        "aria-label": favOn ? "お気に入りのしぼりこみをはずす" : "お気に入りのブロックだけ色をつける", onclick: () => setTsumiOnly(favOn ? null : "fav") }, favOn ? "しぼり中" : "しぼる")));
     setChildren(list, ...(rows.length ? rows : [el("li", { class: "empty" }, "まだ記録がありません。")]));
     if (focused) list.querySelector(`button[data-kind="${focused}"]`)?.focus();
     if (focusedGone) list.querySelector(`button[data-gone="${focusedGone}"]`)?.focus();
+    if (focusedSw) list.querySelector(`button[data-sw="${focusedSw}"]`)?.focus();
   }
   // しぼる from つみかさね's 設定: only the kind's blocks in colour, its newest in view; the sheet goes, the stairs show
   function setTsumiOnly(key) {
@@ -10909,6 +10966,21 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the kinds' colours as on a light ground (as :root has them), for the pastel blocks whatever the screen's
   // (no 画像で保存 of the stairs: taken out, the user's call)
   const TSUMI_LIGHT = { todo: "#1e6ef4", journal: "#956d51", meal: "#c55300", workout: "#007eae", study: "#e7124d", routine: "#4f7a00", weight: "#564ade", money: "#a16a00", goal: "#008575" };
+  // a kind's colour chosen in the gear (the user's call), kept with the account; the blocks (in pastel from it), their
+  // frames and the keys beside the kinds' names take it. Twelve to choose from, as on a light ground
+  const COLOUR_ID = "tsumiColours";
+  const tsumiColours = () => { const k = settings.get(COLOUR_ID)?.kinds; return k && typeof k === "object" ? k : {}; };
+  const tsumiInk = (kind) => tsumiColours()[kind] || TSUMI_LIGHT[kind];
+  const TSUMI_PALETTE = [["#1e6ef4", "青"], ["#007eae", "水色"], ["#008575", "ミント"], ["#4f7a00", "黄緑"], ["#a16a00", "黄土色"], ["#c55300", "オレンジ"],
+    ["#e7124d", "ピンク"], ["#d70015", "赤"], ["#b02fc2", "紫"], ["#564ade", "藍"], ["#956d51", "茶"], ["#636366", "グレー"]];
+  let tsumiPaletteFor = null; // the kind whose colours are open under its row
+  function setTsumiColour(key, hex) {
+    const was = tsumiColours(), kinds = { ...was };
+    if (hex && hex.toLowerCase() !== TSUMI_LIGHT[key].toLowerCase()) kinds[key] = hex; else delete kinds[key];
+    tsumiPaletteFor = null;
+    act(() => settings.set(COLOUR_ID, { kinds, updatedAt: Date.now() }));
+    flash(`${TSUMI_KINDS[key].label}の色を${hex ? "変えました" : "もとに戻しました"}`, () => act(() => settings.set(COLOUR_ID, { kinds: was, updatedAt: Date.now() })));
+  }
   // drawn again for a new width, and in the other mode's colours
   addEventListener("resize", () => { if (tab === "tsumi" && tsumiGeo) drawTsumi(); });
   matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => { if (tab === "tsumi" && tsumiGeo) drawTsumi(); });
