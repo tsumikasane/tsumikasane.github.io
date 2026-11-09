@@ -775,7 +775,22 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 
 /* goals: each one a block of its own that opens its mandala chart, with how far the chart has got, apart from the others
    as きょう's tiles are (the user's call: they ran together in one card, a line between them) */
-.goal-list { display: flex; flex-direction: column; gap: 12px; }
+.goal-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+/* two to a row, as きょう's tiles (the user's call): at least square where the page is a phone's width, taller only as far
+   as what it holds needs, the other in its row as tall. The square is a nothing in the block as tall as the block is wide
+   (aspect-ratio held a block to the square whatever it held, which ran out under it); the section names over both */
+@container (min-width: 20em) { .goal-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (min-width: 20em) and (max-width: 36em) { .goal-list > .goal::before { content: ""; padding-top: 100%; } }
+.goal-list > .goal-head, .goal-list > .empty { grid-column: 1 / -1; }
+/* a block: its name (three lines at most) and 期限 and 達成基準 from the top, how far it has got at its foot; the block
+   itself pressed, so no chevron */
+.goal { display: flex; }
+.goal > .goal-open { flex: 1; align-items: stretch; padding: 12px 14px; }
+.goal .title { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.goal .goal-meta { font-size: var(--t-sub); }
+.goal .goal-meta .sub.phrase { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.goal .progress { margin-top: auto; flex-wrap: wrap; row-gap: 2px; }
+.goal .progress .els { flex-basis: 100%; }
 .goal { position: relative; background: var(--surface); border-radius: var(--radius); }
 /* the list's section names (期限切れ・進行中・達成) with their counts, as ToDo's; 期限切れ in red, as the 期限 under it. Over
    the blocks, nearer the first of their own than the last of the section before, as the page's other headings */
@@ -783,7 +798,6 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 .goal-head.warn { color: var(--warn); }
 .goal-open { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px var(--space-2); background: transparent; border: 0; border-radius: inherit; color: var(--fg); font: inherit; line-height: 1.3; text-align: left; cursor: pointer; }
 .goal-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
-.goal-open .chev { display: grid; color: var(--muted); }
 .goal .title { font-weight: 600; overflow-wrap: anywhere; }
 /* achieved or on hold (保留): the name muted, not struck through (the user's call: a line through looked like given up) */
 .goal.done .title, .goal.paused .title { color: var(--muted); }
@@ -805,16 +819,6 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 .pct { flex: none; width: 4.5ch; text-align: right; font-size: var(--t-foot); color: var(--muted); font-variant-numeric: tabular-nums; }
 /* a goal's row: the 期限, 達成基準 on a line of its own, and the count of elements done by the % */
 .goal-meta { display: flex; flex-direction: column; line-height: 1.35; }
-/* 次にやること: a check, then the action with where it is in the chart, which opens it there */
-.goal-next-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 0; background: transparent; border: 0; color: var(--fg); font: inherit; line-height: 1.3; text-align: left; cursor: pointer; }
-.goal-next-open .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.goal-next-open .chev { display: grid; color: var(--muted); }
-/* an action just ticked off there, checked in its row for a moment before the next one takes its place */
-#goalNext li.held .check circle { fill: var(--f-goal); stroke: var(--f-goal); }
-#goalNext li.held .check path { fill: #ffffff; }
-#goalNext li.held .check:disabled { cursor: default; }
-#goalNext li.held .text { color: var(--muted); }
-#goalNext li.next-more { padding-top: 0; padding-bottom: 0; }
 .progress .els { flex: none; font-size: var(--t-foot); color: var(--muted); font-variant-numeric: tabular-nums; }
 /* 目標のマンダラ, in the sheet: the cell walked into sits tinted in the middle and the eight around it are written in
    place, like a paper chart. A cell's foot holds its check, or, once something is written inside it, how many in there
@@ -844,7 +848,7 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 .m-tools, .m-text { -webkit-user-select: none; user-select: none; }
 .mandala.swapping .m-tools { pointer-events: none; }
 .m-cell.picked { outline: 2px solid var(--accent); outline-offset: -2px; }
-/* the cell an action of 次にやること is in, lit for a moment as its chart opens (the user's call: it didn't stand out) */
+/* the cell a block of つみかさね was checked in, lit for a moment as its chart opens (the user's call: it didn't stand out) */
 .m-cell.spot { animation: m-spot 1.8s ease-out; }
 @keyframes m-spot { 0%, 55% { box-shadow: inset 0 0 0 3px var(--accent); } 100% { box-shadow: inset 0 0 0 3px transparent; } }
 @media (prefers-reduced-motion: reduce) { .m-cell.spot { animation: none; box-shadow: inset 0 0 0 3px var(--accent); } }
@@ -1578,6 +1582,7 @@ html.kb .toast, html.kb #status { bottom: calc(var(--kb) + 12px); }
 .backup-last { font-weight: 600; word-break: keep-all; }
 .backup-last.due { color: var(--warn); }
 .usage-line { word-break: keep-all; }
+.usage-line .paren { margin-inline-start: -.5em; }  /* (its 「（」's half em of nothing drawn over: renderUsage) */
 .usage-line.due { color: var(--warn); font-weight: 600; }
 .backup-nudge, .import-ask { display: flex; flex-direction: column; gap: 4px; padding: 14px var(--space-2); }
 .backup-nudge strong, .import-ask strong { font-weight: 600; }
@@ -2165,7 +2170,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="sec-head">
           <div class="title-row"><h2><span class="page-mark" role="img" aria-label="目標"><svg class="icon" width="40" height="40" aria-hidden="true" focusable="false"><use href="#i-goal"/></svg></span></h2><button type="button" class="icon-btn" id="goalAdd" aria-label="目標を追加" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg></button></div>
         </div>
-        <ul class="list card" id="goalNext" aria-label="次にやること" hidden></ul>
+        <!-- (no 次にやること: taken out, the user's call) -->
         <div class="goal-list" id="goalList"></div>
       </section>
 
@@ -5548,19 +5553,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const k = kidsOf(cell, left);
     return k.length ? k.reduce((s, x) => s + cellProgress(x, left - 1), 0) / k.length : cell?.d ? 1 : 0;
   }
-  // the first action not done yet: the first cell in reading order with nothing written inside it (as deep as the 分割
-  // goes) that isn't checked, as { path, cell }; none when all are done or nothing is written
-  function nextLeaf(g) {
-    const walk = (slots, left, path) => {
-      for (let k = 0; k < 8; k++) {
-        const c = slots?.[k];
-        if (!c?.t?.trim()) continue;
-        if (kidsOf(c, left - 1).length) { const r = walk(c.c, left - 1, [...path, k]); if (r) return r; } else if (!c.d) return { path: [...path, k], cell: c };
-      }
-      return null;
-    };
-    return walk(g.mandala, goalDepth(g), []);
-  }
   // the cell at path (indexes from the goal down); the goal itself for an empty path
   function nodeAt(g, path) {
     let n = { t: g.title, d: !!g.done, c: g.mandala };
@@ -5619,7 +5611,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const { active, paused, done } = goalGroups();
     const list = $("goalList");
     list.replaceChildren();
-    renderNextActions(goalFilter === "done" ? [] : active);
     if (!goals.items.length) { list.append(el("div", { class: "card empty" }, el("span", { class: "phrase" }, "まだ目標がありません。"), el("span", { class: "phrase" }, "右上の＋から追加できます。"))); return; }
     const shown = goalFilter === "done" ? done : [...active, ...paused];
     if (!shown.length) { list.append(el("div", { class: "card empty" }, goalFilter === "done" ? "達成した目標はまだありません。" : "進行中の目標はありません。")); return; }
@@ -5628,7 +5619,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const counts = new Map();
     for (const g of shown) counts.set(goalSection(g), (counts.get(goalSection(g)) || 0) + 1);
     let section = null;
-    // a row per goal that opens its chart (the user's call: more goals on the screen): its name; its 期限 (or the day it
+    // a block per goal, two to a row (the user's calls), that opens its chart, no chevron: its name; its 期限 (or the day it
     // was achieved or put on hold), and 達成基準 on a line of its own (the user's call: a ・ between them was left at the
     // end of the line, as a phone's row always broke there); how far the chart has got, with how many of the eight around
     // the goal are done. 分割 is left to the chart, where it is set
@@ -5649,17 +5640,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
               g.done ? el("span", { class: "chip", style: "--chip-c: var(--c-goal)" }, "達成") : null),
             when || crit ? el("span", { class: "goal-meta" }, when, crit ? el("span", { class: "sub phrase" }, `達成基準：${crit}`) : null) : null,
             el("span", { class: "progress" }, el("span", { class: "bar-track" }, el("i", { style: `width:${pct}%` })), el("span", { class: "pct" }, `${pct}%`),
-              els.length ? el("span", { class: "els" }, `要素 ${els.filter((x) => cellDone(x, depth - 1)).length}/${els.length}`) : null)),
-          el("span", { class: "chev" }, icon("next", 16)))));
+              els.length ? el("span", { class: "els" }, `要素 ${els.filter((x) => cellDone(x, depth - 1)).length}/${els.length}`) : null)))));
     }
   }
 
   // ---------- a goal held down: moved to another place in its section ----------
-  // a goal's row held down for half a second is picked up (the user's call: the goals couldn't be put in the order
-  // wanted): it follows the finger up and down its section, the rows it passes moving out of its way, and goes where it
-  // is let go, with 元に戻す; held near the top or bottom of the screen, the page scrolls. The finger moving before then
-  // is a scroll, as before, and the tap a hold ends with opens nothing. From the keyboard, Alt＋↑↓ moves the goal in focus
-  // a place. 次にやること follows the same order
+  // a goal's block held down for half a second is picked up (the user's call: the goals couldn't be put in the order
+  // wanted): it follows the finger anywhere in its section, two to a row, the others taking the places they move to, and
+  // goes where it is let go, with 元に戻す; held near the top or bottom of the screen, the page scrolls. The finger moving
+  // before then is a scroll, as before, and the tap a hold ends with opens nothing. From the keyboard, Alt with an arrow
+  // moves the goal in focus a place (← ↑ before, → ↓ after)
   const GOAL_HOLD = 500;
   const goalListEl = $("goalList");
   let goalHold = null, goalDrag = null, goalTapGone = 0; // the hold going on; the drag; when one ended
@@ -5689,7 +5679,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   });
   goalListEl.addEventListener("pointermove", (ev) => {
     if (goalHold && ev.pointerId === goalHold.id && Math.hypot(ev.clientX - goalHold.x, ev.clientY - goalHold.y) > 10) dropGoalHold();
-    if (goalDrag && ev.pointerId === goalDrag.id) { goalDrag.py = ev.clientY; placeGoalDrag(); }
+    if (goalDrag && ev.pointerId === goalDrag.id) { goalDrag.px = ev.clientX; goalDrag.py = ev.clientY; placeGoalDrag(); }
   });
   for (const type of ["pointerup", "pointercancel"]) goalListEl.addEventListener(type, (ev) => { dropGoalHold(); endGoalDrag(ev); });
   // while one is dragged the finger moves it, not the page; a long press doesn't bring up Android's own menu
@@ -5707,26 +5697,30 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (let r = row.previousElementSibling; r?.classList.contains("goal"); r = r.previousElementSibling) rows.unshift(r);
     for (let r = row.nextElementSibling; r?.classList.contains("goal"); r = r.nextElementSibling) rows.push(r);
     try { hold.btn.setPointerCapture(hold.id); } catch {}
-    const box = (r) => r.getBoundingClientRect(), base = box(goalListEl).top, from = rows.indexOf(row);
-    goalDrag = { id: hold.id, gid: g.id, row, rows, from, to: from, y: hold.y, py: hold.y, scroll: window.scrollY, gap: parseFloat(getComputedStyle(goalListEl).rowGap) || 0,
-      mids: rows.map((r) => box(r).top - base + box(r).height / 2), top: box(row).top - base, h: box(row).height,
-      lo: box(rows[0]).top - base, hi: box(rows[rows.length - 1]).bottom - base };
+    // each place in its section as it is now, from the list's corner (two to a row: the user's call): the goals fill them
+    // in their new order while it is dragged
+    const box = (r) => r.getBoundingClientRect(), b0 = box(goalListEl), from = rows.indexOf(row);
+    const slots = rows.map((r) => { const b = box(r); return { x: b.left - b0.left, y: b.top - b0.top, w: b.width, h: b.height }; });
+    goalDrag = { id: hold.id, gid: g.id, row, rows, from, to: from, x: hold.x, y: hold.y, px: hold.x, py: hold.y, scroll: window.scrollY, slots,
+      lo: { x: Math.min(...slots.map((q) => q.x)), y: slots[0].y }, hi: { x: Math.max(...slots.map((q) => q.x + q.w)), y: Math.max(...slots.map((q) => q.y + q.h)) } };
     row.classList.add("lifted"); goalListEl.classList.add("dragging");
     navigator.vibrate?.(15);
     goalDrag.raf = requestAnimationFrame(scrollGoalDrag);
   }
-  // it follows the finger within its section and takes a row's place once it covers half of it
+  // it follows the finger within its section and takes the place whose middle is nearest its own
   function placeGoalDrag() {
-    const d = goalDrag, y = Math.min(d.hi - d.top - d.h, Math.max(d.lo - d.top, d.py - d.y + window.scrollY - d.scroll));
-    d.row.style.transform = `translateY(${y}px)`;
-    const top = d.top + y;
-    let to = d.from;
-    while (to > 0 && top < d.mids[to - 1]) to--;
-    while (to < d.rows.length - 1 && top + d.h > d.mids[to + 1]) to++;
+    const d = goalDrag, me = d.slots[d.from];
+    const dx = clampTo(d.px - d.x, d.lo.x - me.x, d.hi.x - me.x - me.w), dy = clampTo(d.py - d.y + window.scrollY - d.scroll, d.lo.y - me.y, d.hi.y - me.y - me.h);
+    d.row.style.transform = `translate(${dx}px, ${dy}px)`;
+    const cx = me.x + me.w / 2 + dx, cy = me.y + me.h / 2 + dy;
+    let to = d.from, best = Infinity;
+    d.slots.forEach((q, i) => { const dd = Math.hypot(q.x + q.w / 2 - cx, q.y + q.h / 2 - cy); if (dd < best) { best = dd; to = i; } });
     if (to === d.to) return;
     d.to = to;
-    const step = d.h + d.gap; // its height and the gap between blocks: the place it leaves
-    d.rows.forEach((r, i) => { if (r !== d.row) r.style.transform = i > d.from && i <= to ? `translateY(${-step}px)` : i < d.from && i >= to ? `translateY(${step}px)` : ""; });
+    // the others moved into the places they take in the new order
+    const order = d.rows.filter((r) => r !== d.row);
+    order.splice(to, 0, d.row);
+    order.forEach((r, i) => { if (r === d.row) return; const j = d.rows.indexOf(r), q = d.slots[i], o = d.slots[j]; r.style.transform = i === j ? "" : `translate(${q.x - o.x}px, ${q.y - o.y}px)`; });
   }
   // held near the top bar or the bars at the bottom, the page scrolls
   function scrollGoalDrag() {
@@ -5748,68 +5742,23 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     goalDrag = null;
     goalTapGone = performance.now(); // the click it ends with opens nothing
     goalListEl.classList.remove("dragging");
-    const was = d.row.getBoundingClientRect().top, moved = ev.type === "pointerup" && d.to !== d.from;
+    const was = d.row.getBoundingClientRect(), moved = ev.type === "pointerup" && d.to !== d.from;
     setTimeout(() => {
       if (goalDrag) return; // another picked up meanwhile: drawn as that one is let go
       if (!moved || !moveGoal(d.gid, d.to)) { renderGoals(); return; }
       const row = goalListEl.querySelector(`[data-goal="${d.gid}"]`)?.closest(".goal");
-      if (row && !reduceMotion.matches) row.animate([{ transform: `translateY(${was - row.getBoundingClientRect().top}px)` }, { transform: "none" }], { duration: 150, easing: "ease-out" });
+      const now = row?.getBoundingClientRect();
+      if (row && !reduceMotion.matches) row.animate([{ transform: `translate(${was.left - now.left}px, ${was.top - now.top}px)` }, { transform: "none" }], { duration: 150, easing: "ease-out" });
     });
   }
   goalListEl.addEventListener("keydown", (ev) => {
     const btn = ev.target.closest?.(".goal-open[data-goal]"), g = btn && goals.get(btn.dataset.goal);
-    if (!g || !ev.altKey || (ev.key !== "ArrowUp" && ev.key !== "ArrowDown")) return;
+    const by = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1 }[ev.key];
+    if (!g || !ev.altKey || !by) return;
     ev.preventDefault();
     const { active, paused, done } = goalGroups(), same = [...active, ...paused, ...done].filter((x) => goalSection(x) === goalSection(g));
-    if (moveGoal(g.id, same.indexOf(g) + (ev.key === "ArrowUp" ? -1 : 1))) goalListEl.querySelector(`[data-goal="${g.id}"]`)?.focus();
+    if (moveGoal(g.id, same.indexOf(g) + by)) goalListEl.querySelector(`[data-goal="${g.id}"]`)?.focus();
   });
-
-  // 次にやること (the user's call: the next thing to do was out of sight until a goal was opened): for each goal under way,
-  // its first action not done yet, under where it is (the goal's name cut short, as in the trail). Its check ticks it off
-  // right here, 元に戻す in the message, and the rest opens the chart at that action's level.
-  // Three show at first, the rest behind ほかに n 件 (the user's call: with many goals it pushed the list off the screen).
-  // An action just ticked off stays in its row, checked, for a moment before the next one takes its place, so a second
-  // quick press can't tick that one off too (the user's call); its goal keeps its place even if that achieved it
-  const NEXT_SHOWN = 3, NEXT_HOLD = 1200;
-  let nextAll = false;
-  const nextHeld = new Map(); // goal id → { path, name, where, index, until }: the action just ticked off there
-  function renderNextActions(active) {
-    const box = $("goalNext"), now = Date.now(), list = [...active], rows = [];
-    for (const [id, h] of nextHeld) {
-      if (h.until <= now) nextHeld.delete(id);
-      else if (!list.some((g) => g.id === id) && goals.get(id)) list.splice(Math.min(h.index, list.length), 0, goals.get(id));
-    }
-    for (const [index, g] of list.entries()) {
-      const held = nextHeld.get(g.id), leaf = held || nextLeaf(g);
-      if (!leaf) continue;
-      const name = held ? held.name : oneLine(leaf.cell.t);
-      const where = held ? held.where : [g.title, ...leaf.path.slice(0, -1).map((_, i) => nodeAt(g, leaf.path.slice(0, i + 1))?.t)].map(oneLine);
-      const tick = () => { nextHeld.set(g.id, { path: leaf.path, name, where, index, until: Date.now() + NEXT_HOLD }); checkLeaf(g.id, leaf.path); setTimeout(renderGoals, NEXT_HOLD + 50); };
-      rows.push(el("li", { class: held ? "held" : null },
-        el("button", { type: "button", class: "check", disabled: !!held, "aria-label": held ? `「${name}」を達成にしました` : `「${name}」を達成にする`, onclick: tick }, checkMark()),
-        el("button", { type: "button", class: "goal-next-open", "aria-label": `「${name}」をチャートで開く`, onclick: (ev) => openChart(g.id, ev.detail === 0, leaf.path.slice(0, -1), leaf.path[leaf.path.length - 1]) },
-          el("span", { class: "body" }, el("span", { class: "text" }, name), el("span", { class: "sub" }, where.map((t, i) => (i < where.length - 1 ? clip(t, 10) : t)).join(" › "))),
-          el("span", { class: "chev" }, icon("next", 16)))));
-    }
-    const more = rows.length - NEXT_SHOWN;
-    box.hidden = !rows.length;
-    box.replaceChildren(...(rows.length ? [el("li", { class: "dayhead" }, el("span", {}, "次にやること")), ...(nextAll || more <= 0 ? rows : rows.slice(0, NEXT_SHOWN))] : []),
-      ...(more > 0 ? [el("li", { class: "next-more" }, el("button", { type: "button", class: "link-btn", "aria-expanded": String(nextAll), onclick: () => { nextAll = !nextAll; renderGoals(); } },
-        nextAll ? `${NEXT_SHOWN} 件だけ表示` : `ほかに ${more} 件を表示`))] : []));
-  }
-  // an action checked from 次にやること, the goal's 達成 worked out again as in its chart
-  function checkLeaf(id, path) {
-    const g = goals.get(id), at = path.slice(0, -1), k = path[path.length - 1];
-    if (!g) return;
-    const chart = editChart(g), cell = slotsAt(chart, at)[k];
-    if (!cell?.t?.trim()) return;
-    cell.d = true; cell.at = Date.now();
-    saveChart(g, chart, { said: `「${oneLine(cell.t)}」を達成にしました`, undo: () => {
-      nextHeld.delete(id);
-      const x = goals.get(id), ch = x && editChart(x), c = ch && slotsAt(ch, at)[k];
-      if (c) { delete c.d; delete c.at; saveChart(x, ch); }
-    } });
-  }
 
   // ---------- カレンダー ----------
   // untimed (all-day) events sort first
@@ -7229,7 +7178,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     presentSheet(byKey, opener, $("todoText"));
     growField($("todoText")); growField($("todoMemo")); // what was kept from before, at its height now it shows
   }
-  // a goal's chart: from its row in the list, at the goal's own eight; from 次にやること, at the level of its action (path)
+  // a goal's chart: from its block in the list, at the goal's own eight; from a block of つみかさね, at the level of the
+  // cell it was checked in (path)
   function openChart(id, byKey, path = [], spot = null) {
     if (sheetEl.open || !goals.get(id)) return;
     resetSheet();
@@ -7238,7 +7188,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     presentSheet(byKey, "chart");
     if (spot !== null) spotCell(spot);
   }
-  // the cell of the action opened from 次にやること, lit for a moment (the user's call: it didn't stand out)
+  // the cell a block of つみかさね was checked in, lit for a moment (the user's call: it didn't stand out)
   function spotCell(k) {
     const box = mGrid.querySelector(`.m-cell[data-k="${k}"]`);
     if (!box) return;
@@ -11395,15 +11345,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const from = Math.max(last, num(syncState.since)), fromDays = from ? daysBetween(ymd(new Date(from)), todayKey) : null;
     const due = synced ? fromDays === null || fromDays >= 30 : !last || days >= 7 || added >= BACKUP_AFTER, enough = recordCount(allData()) >= 10;
     // its words kept whole (keep-all), so it breaks neither as 10／月17日 nor as （12 日／前）
-    $("backupLast").hidden = !canStoreLocal;
+    $("backupLast").hidden = !canStoreLocal || !last; // (none while nothing was ever written out: the user's call)
     $("backupLast").textContent = keepUnits(last
       ? `最後に書き出した日：${fmtMDW(ymd(new Date(last)))}` + (days ? `（${days} 日前）` : "（きょう）") + (added ? `。そのあと記録が ${fmtN(added)} 件ふえています` : "")
-      : "まだ一度も書き出していません");
+      : "");
     $("backupLast").classList.toggle("due", due && enough);
     // short (the user's call): where the records are, that they can go, and what a written-out file is for
     $("storeNote").textContent = canStoreLocal && syncUser && syncState.uid
-      ? "記録はこの端末と、同期先の Firebase の両方にあります。書き出したファイルも iCloud Drive などに置いておくと、さらに安心です。"
-        + (storageKept ? "ブラウザには、記録を消さないよう頼んであります。" : "")
+      ? "記録はこの端末と、同期先の Firebase の両方にあります。" // (nothing after it: the user's call)
       : canStoreLocal
       ? "記録はこの端末のブラウザにだけあります。書き出したファイルを iCloud Drive などに置いておけば、消えても読み込んで戻せて、別の端末へも移せます。"
         + (storageKept ? "ブラウザには、記録を消さないよう頼んであります。" : "")
@@ -11497,7 +11446,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月9日 12:47"; // ab06c092 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月9日 15:30"; // 09ead01f (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -11529,9 +11478,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!canStoreLocal) return;
     const used = storageUsed(), mb = used / 1024 / 1024, near = used > STORAGE_LIMIT * 0.6;
     const moved = ALL_STORES.filter((s) => s.big), roomy = !!window.indexedDB;
-    line.textContent = `この端末で使っている量：${mb < 0.1 ? "0.1 MB 未満" : `約 ${mb.toFixed(1)} MB`}（ブラウザの上限はおよそ 5 MB）`
-      + (moved.length ? `。入りきらない${moved.map((s) => STORE_NAMES[s.name] || { settings: "設定", deleted: "削除した記録" }[s.name]).join("・")}は、もっと大きい置き場所に移して保存しています。`
+    // (in two parts, the second drawn in over the half em of nothing its 「（」 starts with, so when it starts a line it
+    // doesn't stand off from the line above: the user's call)
+    const more = (moved.length ? `。入りきらない${moved.map((s) => STORE_NAMES[s.name] || { settings: "設定", deleted: "削除した記録" }[s.name]).join("・")}は、もっと大きい置き場所に移して保存しています。`
         : near ? (roomy ? "。上限に近づいています。いっぱいになったら、記録はもっと大きい置き場所に移して保存します。" : "。上限に近づいています。いまのうちに記録を書き出しておいてください。") : "");
+    setChildren(line, el("span", { class: "phrase" }, `この端末で使っている量：${mb < 0.1 ? "0.1 MB 未満" : `約 ${mb.toFixed(1)} MB`}`),
+      el("span", { class: "phrase paren" }, "（ブラウザの上限はおよそ 5 MB）"), more ? el("span", {}, more) : null);
     line.classList.toggle("due", near && !roomy && !moved.length);
   }
   // at start: a draft too old to put back goes (the text kept aside for a store that couldn't be read stays: asideNote)
