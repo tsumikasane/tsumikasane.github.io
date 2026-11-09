@@ -773,11 +773,13 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 .budget-line { display: flex; flex-direction: column; gap: var(--space-1); }
 .budget-line .bar-track { flex: none; }  /* (flex: 1 is for a track in a row: in this column it took the 8px away) */
 
-/* goals: each one a row that opens its mandala chart, with how far the chart has got */
-.goal { position: relative; }
-.goal + .goal::before { content: ""; position: absolute; top: 0; left: var(--space-2); right: 0; border-top: .5px solid var(--separator); }
-/* the list's section names (期限切れ・進行中・達成) with their counts, as ToDo's; 期限切れ in red, as the 期限 under it */
-.goal-head { display: flex; justify-content: space-between; gap: var(--space-1); padding: 14px var(--space-2) 4px; font-size: var(--t-foot); line-height: 1.35; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* goals: each one a block of its own that opens its mandala chart, with how far the chart has got, apart from the others
+   as きょう's tiles are (the user's call: they ran together in one card, a line between them) */
+.goal-list { display: flex; flex-direction: column; gap: 12px; }
+.goal { position: relative; background: var(--surface); border-radius: var(--radius); }
+/* the list's section names (期限切れ・進行中・達成) with their counts, as ToDo's; 期限切れ in red, as the 期限 under it. Over
+   the blocks, nearer the first of their own than the last of the section before, as the page's other headings */
+.goal-head { display: flex; justify-content: space-between; gap: var(--space-1); margin: var(--space-1) 0 -4px; padding: 0 var(--space-2); font-size: var(--t-foot); line-height: 1.35; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
 .goal-head.warn { color: var(--warn); }
 .goal-open { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px var(--space-2); background: transparent; border: 0; border-radius: inherit; color: var(--fg); font: inherit; line-height: 1.3; text-align: left; cursor: pointer; }
 .goal-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
@@ -790,8 +792,7 @@ li.done .text { color: var(--muted); }  /* done: grey, as Reminders has it */
 .goal { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 #goalList.dragging { cursor: grabbing; }
 #goalList.dragging > .goal:not(.lifted) { transition: transform .2s ease; }
-.goal.lifted { z-index: 2; border-radius: 12px; background: var(--surface); box-shadow: 0 6px 20px rgba(0, 0, 0, .2); }
-.goal.lifted::before { display: none; }
+.goal.lifted { z-index: 2; background: var(--surface); box-shadow: 0 6px 20px rgba(0, 0, 0, .2); }
 .goal.lifted .goal-open { opacity: 1; }
 /* in dark mode a raised row is lighter than the card, as iOS draws it, the shadow not showing on black */
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .goal.lifted { background: #2c2c2e; box-shadow: 0 6px 20px rgba(0, 0, 0, .6); } }
@@ -2161,7 +2162,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="title-row"><h2><span class="page-mark" role="img" aria-label="目標"><svg class="icon" width="40" height="40" aria-hidden="true" focusable="false"><use href="#i-goal"/></svg></span></h2><button type="button" class="icon-btn" id="goalAdd" aria-label="目標を追加" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg></button></div>
         </div>
         <ul class="list card" id="goalNext" aria-label="次にやること" hidden></ul>
-        <div class="card" id="goalList"></div>
+        <div class="goal-list" id="goalList"></div>
       </section>
 
       <!-- つみかさね: every record a square block, the blocks stacked as stairs that climb one at a time (the user's call), as
@@ -5592,9 +5593,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const list = $("goalList");
     list.replaceChildren();
     renderNextActions(goalFilter === "done" ? [] : active);
-    if (!goals.items.length) { list.append(el("div", { class: "empty" }, el("span", { class: "phrase" }, "まだ目標がありません。"), el("span", { class: "phrase" }, "右上の＋から追加できます。"))); return; }
+    if (!goals.items.length) { list.append(el("div", { class: "card empty" }, el("span", { class: "phrase" }, "まだ目標がありません。"), el("span", { class: "phrase" }, "右上の＋から追加できます。"))); return; }
     const shown = goalFilter === "done" ? done : [...active, ...paused];
-    if (!shown.length) { list.append(el("div", { class: "empty" }, goalFilter === "done" ? "達成した目標はまだありません。" : "進行中の目標はありません。")); return; }
+    if (!shown.length) { list.append(el("div", { class: "card empty" }, goalFilter === "done" ? "達成した目標はまだありません。" : "進行中の目標はありません。")); return; }
     // in sections, each under its name with its count, as ToDo's list (the user's call): 期限切れ, 進行中, 保留, then 達成,
     // the order the goals already come in. With only 達成 showing, its name would just say the bar's choice again
     const counts = new Map();
@@ -5680,7 +5681,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (let r = row.nextElementSibling; r?.classList.contains("goal"); r = r.nextElementSibling) rows.push(r);
     try { hold.btn.setPointerCapture(hold.id); } catch {}
     const box = (r) => r.getBoundingClientRect(), base = box(goalListEl).top, from = rows.indexOf(row);
-    goalDrag = { id: hold.id, gid: g.id, row, rows, from, to: from, y: hold.y, py: hold.y, scroll: window.scrollY,
+    goalDrag = { id: hold.id, gid: g.id, row, rows, from, to: from, y: hold.y, py: hold.y, scroll: window.scrollY, gap: parseFloat(getComputedStyle(goalListEl).rowGap) || 0,
       mids: rows.map((r) => box(r).top - base + box(r).height / 2), top: box(row).top - base, h: box(row).height,
       lo: box(rows[0]).top - base, hi: box(rows[rows.length - 1]).bottom - base };
     row.classList.add("lifted"); goalListEl.classList.add("dragging");
@@ -5697,7 +5698,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     while (to < d.rows.length - 1 && top + d.h > d.mids[to + 1]) to++;
     if (to === d.to) return;
     d.to = to;
-    d.rows.forEach((r, i) => { if (r !== d.row) r.style.transform = i > d.from && i <= to ? `translateY(${-d.h}px)` : i < d.from && i >= to ? `translateY(${d.h}px)` : ""; });
+    const step = d.h + d.gap; // its height and the gap between blocks: the place it leaves
+    d.rows.forEach((r, i) => { if (r !== d.row) r.style.transform = i > d.from && i <= to ? `translateY(${-step}px)` : i < d.from && i >= to ? `translateY(${step}px)` : ""; });
   }
   // held near the top bar or the bars at the bottom, the page scrolls
   function scrollGoalDrag() {
@@ -11569,7 +11571,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月9日 11:46"; // 54aa73a3 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月9日 11:57"; // fa8901fe (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
