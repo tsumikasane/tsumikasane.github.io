@@ -1485,12 +1485,12 @@ ul.list > li.btn-row { padding: 0; }
 .wo-notes .week { margin: 0 0 10px; font-weight: 600; }
 /* a kind pressed keeps only its blocks in colour (the user's call: some colours are hard to tell apart) */
 #tsumiKinds .sw { flex: none; width: 14px; height: 14px; border-radius: 4px; }
-/* a kind's key, as its blocks are drawn (the user's call: white, the kind's colour in the middle): a white square with a
-   dot of the colour, edged faintly so it shows on a light ground (つみあげた記録, the kind over the count, the words under
-   the stairs); a deleted one's as the stairs draw it: faint white, with lines across in its colour */
-.blk { background: radial-gradient(circle closest-side, var(--k) 0 50%, #ffffff calc(50% + .5px)); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .16); }
+/* a kind's key, as its blocks are drawn (the user's call: pastel): its colour with white, a third of it the colour, and
+   the block's thickness along its bottom and right deeper (つみあげた記録, the kind pressed over the stairs, the words under
+   them); a deleted one's as the stairs draw it: faint, with lines across in its colour */
+.blk { background: color-mix(in srgb, var(--k) 32%, #ffffff); box-shadow: inset -2px -2px 0 color-mix(in srgb, var(--k) 65%, #ffffff); }
 .sw.gone, .dot.gone { position: relative; overflow: hidden; background: transparent; }
-.sw.gone::before, .dot.gone::before { content: ""; position: absolute; inset: 0; background: #ffffff; opacity: .3; }
+.sw.gone::before, .dot.gone::before { content: ""; position: absolute; inset: 0; background: color-mix(in srgb, currentColor 32%, #ffffff); opacity: .3; }
 .sw.gone::after, .dot.gone::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, currentColor 0 2px, transparent 2px 5px); }
 #tsumiKinds .tsumi-gone-row .row-btn { padding-inline-start: calc(var(--space-2) + 20px); font-size: var(--t-sub); }
 #tsumiKinds .row-btn[aria-pressed="true"] { background: var(--fill); font-weight: 600; }
@@ -9767,30 +9767,27 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     drawTsumi(now);
     requestAnimationFrame(tsumiFrame);
   }
-  // a block, on the stairs and in their picture (the user's call: white, its kind's colour in its middle, where the block
-  // was its colour with a white dot in it for one stacked today): white, edged on a light ground (a small one there light
-  // grey instead, the edges being most of it); its middle a dot of its kind's colour (the user's calls: smaller than at
-  // first, a quarter of the block across now, and nothing round it: a ルーティーン day with all its items checked was
-  // ringed, which read as 二重丸), never smaller than a small block's square (4px), larger for one stacked today, a
-  // square on small blocks; one stacked today and small, as 全体 has them, its colour all over (its larger dot hardly
-  // showed there); a deleted one's faint,
-  // with lines across it in its colour. dim: a block of another kind than the one pressed, faint, and on a light ground
-  // light grey without its edge, the kind pressed standing out (the user's call: the two looked alike); sq(px, py, s, rr)
-  // makes a block's path
-  // a block drawn as a solid one (the user's call: piled up like real blocks, touching all round): its face over the top
-  // left, its thickness along its bottom and right in grey, as a block lit from above; what is drawn on it, on its face
+  // a block, on the stairs, in pastel (the user's call, 2026-11-09, out of 17 ways of colouring them drawn side by side;
+  // white with a dot of its kind's colour before): its face its kind's colour as on a light ground (TSUMI_LIGHT) with white,
+  // PASTEL_FACE of it the colour, its thickness along its bottom and right deeper (PASTEL_SIDE), as a block lit from above
+  // (the user's call: piled up like real blocks, touching all round); no dot. One stacked today deeper still (PASTEL_TODAY),
+  // at any size, as its larger dot or its colour all over had it show, in 全体 too (the user's call). A deleted one's
+  // faint, with lines across it in its colour. dim: a block of another kind than the one pressed, faint, and on a light
+  // ground light grey without its edge, the kind pressed standing out (the user's call: the two looked alike);
+  // sq(px, py, s, rr) makes a block's path
+  const PASTEL_FACE = 0.32, PASTEL_SIDE = 0.65, PASTEL_TODAY = 0.6, PASTEL_TODAY_SIDE = 0.9;
+  // a colour (#rrggbb) with white, part of it in 1 the colour
+  function tsumiTint(hex, part) {
+    if (!/^#[0-9a-f]{6}$/i.test(hex)) return hex;
+    return `rgb(${[1, 3, 5].map((j) => Math.round(parseInt(hex.slice(j, j + 2), 16) * part + 255 * (1 - part))).join(", ")})`;
+  }
   function paintTsumiBlock(x, sq, px, py, size, rad, colour, { gone = false, today = false, light = false, dim = 1 } = {}) {
-    const faded = dim < 1, mark = light && faded ? 0.3 : dim, d = tsumiDepth(size), f = size - d, fr = Math.max(0, rad - d / 2);
-    const body = (fill) => { if (d) { x.fillStyle = fill; sq(px, py, size, Math.min(rad, 2)); x.fill(); } };
-    if (today && !gone && size < 12) { x.globalAlpha = mark; body(colour); x.fillStyle = colour; sq(px, py, f, fr); x.fill(); if (d) { x.fillStyle = "rgba(0, 0, 0, .28)"; x.fillRect(px, py + f, size, d); x.fillRect(px + f, py, d, f); } return; }
+    const faded = dim < 1, deep = today && !gone, d = tsumiDepth(size), f = size - d, fr = Math.max(0, rad - d / 2);
     x.globalAlpha = gone ? dim * 0.3 : light && faded ? 1 : dim;
-    body(light && faded ? "#e5e5ea" : light ? "#c7c7cc" : "#8e8e93");
-    x.fillStyle = light && faded ? "#f2f2f7" : light && size < 8 ? "#e5e5ea" : "#ffffff"; sq(px, py, f, fr); x.fill();
-    x.globalAlpha = mark;
-    if (gone) { if (size >= 5) goneMarks(x, px, py, f, fr, colour, sq); return; }
-    x.fillStyle = colour;
-    if (size < 8) { const dd = Math.max(1, Math.round(f * 0.5)); x.fillRect(px + (f - dd) / 2, py + (f - dd) / 2, dd, dd); return; }
-    x.beginPath(); x.arc(px + f / 2, py + f / 2, Math.max(2, f * (today ? 0.18 : 0.12)), 0, 2 * Math.PI); x.fill();
+    if (d) { x.fillStyle = light && faded ? "#e5e5ea" : tsumiTint(colour, deep ? PASTEL_TODAY_SIDE : PASTEL_SIDE); sq(px, py, size, Math.min(rad, 2)); x.fill(); }
+    x.fillStyle = light && faded ? "#f2f2f7" : tsumiTint(colour, deep ? PASTEL_TODAY : PASTEL_FACE); sq(px, py, f, fr); x.fill();
+    x.globalAlpha = light && faded ? 0.3 : dim;
+    if (gone && size >= 5) goneMarks(x, px, py, f, fr, colour, sq);
   }
   // how thick a block of this size is drawn
   function tsumiDepth(size) { return size >= 4 ? Math.max(1, Math.round(size * 0.13)) : 0; }
@@ -9943,15 +9940,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         if (i >= n) break;
         let dy = 0;
         if (a && i >= a.from) { const p = (t - lands(i)) / 380; if (p <= 0) continue; if (p < 1) dy = -(1 - easeOut(p)) * (yOf(row) + pitch); }
-        // white with its kind's colour in its middle, larger for one stacked today, so 全体 shows them too (the user's call:
-        // they had none there); a deleted ToDo's or goal's faint, with lines across it in its colour (the user's call: they
-        // looked like any other). One stacked since the last look, and the others of the shown block's day, framed thinly in
-        // their colour outside, in the gap (the user's call: ringed inside, round the dot, they read as 二重丸)
-        // (what goes on white in the light colours, in dark mode too: the user's call, its yellow, light blue and light
-        // green hardly showed on white; a deleted one's, and a small one of today's in its colour all over, in the page's,
-        // being on the card)
-        const b = tsumiShown[i], px = xOf(c), py = yOf(row) + dy, today = b.t >= dayStart, solid = today && !b.gone && size < 12, on = tsumiIn(b);
-        const ink = b.gone || solid ? colour[b.kind] : TSUMI_LIGHT[b.kind];
+        // in pastel, deeper for one stacked today, so 全体 shows them too (the user's calls); a deleted ToDo's or goal's
+        // faint, with lines across it in its colour (the user's call: they looked like any other). One stacked since the
+        // last look, and the others of the shown block's day, framed thinly in their colour (the user's call: ringed round
+        // the dot, they read as 二重丸). The pastel from the light colours, in dark mode too, as the mock-ups the user chose
+        // from had it; a deleted one's from the page's, being faint on the card
+        const b = tsumiShown[i], px = xOf(c), py = yOf(row) + dy, today = b.t >= dayStart, on = tsumiIn(b);
+        const ink = b.gone ? colour[b.kind] : TSUMI_LIGHT[b.kind];
         paintTsumiBlock(x, sq, px, py, size, rad, ink, { gone: b.gone, today, light, dim: on ? 1 : 0.16 });
         x.globalAlpha = on ? 1 : light ? 0.3 : 0.16;
         // (the blocks touching now, the frame is just inside the face)
@@ -10712,7 +10707,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (kind === "workout") { setDietPart("workout"); showTab("diet"); return; }
     showTab("study");
   }
-  // the kinds' colours as on a light ground (as :root has them), for the dots on the white blocks whatever the screen's
+  // the kinds' colours as on a light ground (as :root has them), for the pastel blocks whatever the screen's
   // (no 画像で保存 of the stairs: taken out, the user's call)
   const TSUMI_LIGHT = { todo: "#1e6ef4", journal: "#956d51", meal: "#c55300", workout: "#007eae", study: "#e7124d", routine: "#4f7a00", weight: "#564ade", money: "#a16a00", goal: "#008575" };
   // drawn again for a new width, and in the other mode's colours
@@ -11446,7 +11441,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月9日 15:30"; // 09ead01f (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月9日 16:11"; // 7df61c56 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
