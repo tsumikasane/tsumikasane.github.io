@@ -993,6 +993,8 @@ ul.list > li.wo-edit-note { display: grid; grid-template-columns: minmax(0, 1fr)
 .tile ul.ev .ev-left { flex: none; margin-inline-start: 6px; font-size: var(--t-foot); font-weight: 600; color: var(--tile-c); }
 .tile ul.ev li.past { color: var(--muted); }
 .tile ul.ev li.past::before { opacity: .45; }
+/* a name of 7 or more (カウントダウン) a step smaller in half a row, so it stays on one line */
+#homeTiles > .tile:not(.wide) .tile-head .lbl.long { font-size: var(--t-foot); }
 /* a tile whose head opens nothing (すぐに記録) */
 .tile-head.plain { cursor: default; }
 .tile-head.plain::after { content: none; }
@@ -1014,6 +1016,25 @@ ul.list > li.wo-edit-note { display: grid; grid-template-columns: minmax(0, 1fr)
 .mv-tile li.done .check path { fill: #ffffff; }
 .mv-tile li.done .mv-name { color: var(--muted); }
 .tile ul li.warn { color: var(--warn); }
+/* きょうのふりかえり and あしたの準備: a line a kind, its name in a column of its own */
+.tile ul.rv-list { margin: 4px 0 0; }
+.tile ul.rv-list li { display: flex; gap: 10px; white-space: normal; line-height: 1.45; padding: 2px 0; }
+.tile ul.rv-list li::before { content: none; }
+.rv-k { flex: none; min-width: 5.5em; color: var(--muted); font-size: var(--t-sub); line-height: 1.7; }
+.rv-v { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.rv-note { margin: 6px 0 0; font-size: var(--t-sub); color: var(--muted); }
+.rv-act { position: relative; z-index: 1; align-self: flex-start; margin-top: 6px; }
+#tileList .tnote { margin-inline-start: 8px; font-size: var(--t-foot); color: var(--muted); }
+/* 天気: its word big, then the sky's icon, the day's high and low and the chance of rain in a line, a note or two under */
+.wx-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.wx-icon { display: grid; color: var(--muted); }
+.wx-icon.sun { color: #ff9f0a; }
+.wx-icon.rain { color: var(--sat); }
+.wx-icon.snow { color: #4fb6e8; }
+.wx-temp { font-weight: 600; }
+.wx-rain { color: var(--muted); font-size: var(--t-sub); }
+.wx-note { margin: 2px 0 0; font-size: var(--t-sub); line-height: 1.35; }
+.wx-ask { align-self: flex-start; margin-top: 4px; }
 
 /* calendar: a Sunday-first month grid of thin gray lines (between weeks and between days, as the user asked) with each
    day's plans written in coloured bars, after the iPhone Calendar's month view the user showed. Today's date is in the
@@ -1744,6 +1765,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   <symbol id="i-cal-month" viewBox="0 0 24 24"><path d="M5.75 4.75h12.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2V6.75a2 2 0 0 1 2-2Zm-2 5h16.5m-16.5 4.75h16.5M9.25 4.75v14.5m5.5-14.5v14.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
   <symbol id="i-cal-week" viewBox="0 0 24 24"><path d="M5.75 4.75h12.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2V6.75a2 2 0 0 1 2-2Zm2.38 0v14.5M12 4.75v14.5m3.88-14.5v14.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
   <symbol id="i-cal-day" viewBox="0 0 24 24"><path d="M5.75 4.75h12.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2V6.75a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><rect x="10.5" y="7.75" width="3" height="8.5" rx="1"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.25"/><path d="M12 1.75v2.5M12 19.75v2.5M1.75 12h2.5M19.75 12h2.5M4.75 4.75l1.77 1.77M17.48 17.48l1.77 1.77M4.75 19.25l1.77-1.77M17.48 6.52l1.77-1.77" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7.25 19.25h10a4.25 4.25 0 0 0 .62-8.46A6.25 6.25 0 0 0 5.9 9.36 5 5 0 0 0 7.25 19.25Z"/></symbol>
+  <symbol id="i-rain" viewBox="0 0 24 24"><path d="M7.25 15.25h10a4.25 4.25 0 0 0 .62-8.46A6.25 6.25 0 0 0 5.9 5.36a5 5 0 0 0 1.35 9.89Z"/><path d="M8 18l-1 3M12.5 18l-1 3M17 18l-1 3" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-snow" viewBox="0 0 24 24"><path d="M7.25 15.25h10a4.25 4.25 0 0 0 .62-8.46A6.25 6.25 0 0 0 5.9 5.36a5 5 0 0 0 1.35 9.89Z"/><circle cx="8" cy="19.5" r="1.4"/><circle cx="12.5" cy="20.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></symbol>
+  <symbol id="i-timer" viewBox="0 0 24 24"><path d="M9.25 2.25h5.5M12 2.25v2.5M19.2 6.3l-1.3 1.3" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="12" cy="13.75" r="7.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M12 9.5v4.25l2.75 1.75" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M12 3.25a5.75 5.75 0 0 0-5.75 5.75v3.6l-1.6 2.9a.9.9 0 0 0 .79 1.33h13.12a.9.9 0 0 0 .79-1.33l-1.6-2.9V9A5.75 5.75 0 0 0 12 3.25Zm-2.4 15.5a2.5 2.5 0 0 0 4.8 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
@@ -2395,6 +2421,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="ffield"><button type="button" class="pick-btn" id="edAlarmBtn" aria-labelledby="edAlarmLabel edAlarmText"><span id="edAlarmText" class="none">なし</span><svg class="icon" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button><input type="hidden" id="edAlarms"></div>
         <span class="flabel" id="edLabelLabel">ラベル</span>
         <div class="ffield" id="edLabels"></div>
+        <label class="flabel" for="edCount">カウントダウン</label>
+        <div class="ffield"><input type="checkbox" id="edCount" class="switch" role="switch"></div>
         <!-- 場所 and URL over メモ (the user's call: as the iPhone's カレンダー has them); a URL there is a press from 開く -->
         <input type="text" id="edPlace" class="full" placeholder="場所" aria-label="場所" maxlength="200">
         <div class="full ffield"><input type="text" id="edUrl" placeholder="URL" aria-label="URL" maxlength="1000" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false"><a class="link-btn" id="edUrlOpen" target="_blank" rel="noopener noreferrer" hidden>開く</a></div>
@@ -2509,6 +2537,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <h3 class="group-head">きょうのタイル</h3>
         <ul class="list card" id="tileList"></ul>
         <p class="group-foot"><span class="phrase">チェックを付けたタイルが、きょうに出ます。</span><span class="phrase">≡&nbsp;を上下にドラッグすると、順番を変えられます。</span><span class="phrase">隠したタイルのページは、記録タブのそれぞれの一覧からも開けます。</span></p>
+        <!-- 天気's place (the user's call, 2026-11-09): where this device was when it was asked, kept on it alone -->
+        <h3 class="group-head">天気</h3>
+        <ul class="list card">
+          <li class="btn-row"><button type="button" class="row-btn" id="wxHere">現在地で天気を出す</button></li>
+          <li class="btn-row" id="wxForgetRow" hidden><button type="button" class="row-btn danger" id="wxForget">天気の場所を消す</button></li>
+        </ul>
+        <p class="group-foot"><span class="phrase">天気は Open-Meteo から取ります。</span><span class="phrase">場所はこの端末にだけ置き、</span><span class="phrase">1km ほどの細かさにして送ります。</span></p>
       </div>
       <div class="sheet-view" id="moneyGroup" hidden>
         <h3 class="group-head">予算</h3>
@@ -2549,6 +2584,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <!-- 目標体脂肪率 under it (the user's call), a line on 体脂肪率's plot as 目標体重 is on 体重's -->
           <label class="flabel" for="fatTarget">目標体脂肪率<span class="sr-only">（%）</span></label>
           <div class="ffield"><input type="number" id="fatTarget" step="0.1" min="1" max="70" placeholder="未設定" inputmode="decimal"><span class="unit">%</span><button class="btn ghost sm" type="submit">保存</button></div>
+          <!-- a day's 摂取カロリー to aim at (the user's call, 2026-11-09): きょう's ダイエット tile says the day's 食事 against it;
+               2,500 kcal, the menu's メモ's, till another is set -->
+          <label class="flabel" for="kcalGoal">摂取カロリーの目安<span class="sr-only">（kcal）</span></label>
+          <div class="ffield"><input type="number" id="kcalGoal" step="1" min="500" max="9999" placeholder="2500" inputmode="numeric"><span class="unit">kcal</span><button class="btn ghost sm" type="submit">保存</button></div>
         </form>
         <!-- what 基礎代謝 is worked out from with the day's weight (the user's call: worked out, not typed) -->
         <h3 class="group-head">基礎代謝の計算</h3>
@@ -2591,6 +2630,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="ffield"><button type="button" class="pick-btn" id="planAlarmBtn" aria-labelledby="planAlarmLabel planAlarmText"><span id="planAlarmText" class="none">なし</span><svg class="icon" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button><input type="hidden" id="planAlarms"></div>
         <span class="flabel" id="planLabelLabel">ラベル</span>
         <div class="ffield" id="planLabels"></div>
+        <!-- カウントダウン (the user's call, 2026-11-09): きょう says how many days are left to it -->
+        <label class="flabel" for="planCount">カウントダウン</label>
+        <div class="ffield"><input type="checkbox" id="planCount" class="switch" role="switch"></div>
         <input type="text" id="planPlace" class="full" placeholder="場所" aria-label="場所" maxlength="200">
         <div class="full ffield"><input type="text" id="planUrl" placeholder="URL" aria-label="URL" maxlength="1000" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false"><a class="link-btn" id="planUrlOpen" target="_blank" rel="noopener noreferrer" hidden>開く</a></div>
         <!-- メモ: its first lines here, a press opening its own page to write it large (the user's call: as a calendar app
@@ -5163,6 +5205,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const wtMaint = $("wtMaint"), wtIntake = $("wtIntake");
   const wtTarget = () => num((settings.get("weight") || {}).target);
   const fatTarget = () => num((settings.get("fat") || {}).target); // 目標体脂肪率 (the user's call), kept as 目標体重 is
+  // and a day's 摂取カロリー to aim at, 2,500 kcal (the menu's メモ's) till another is set
+  const kcalGoalInput = $("kcalGoal"), KCAL_GOAL = 2500;
+  const kcalGoal = () => num((settings.get("kcalGoal") || {}).target) || KCAL_GOAL;
   const sortedWeights = () => weights.items.filter((r) => num(r.kg) > 0 && /^\d{4}-\d{2}-\d{2}$/.test(r.id)).sort((a, b) => a.id.localeCompare(b.id));
   $("wtForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
@@ -5199,6 +5244,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function saveBodyTargets() {
     saveBodyTarget("weight", wtTargetInput, 20, 300);
     saveBodyTarget("fat", fatTargetInput, 1, 70);
+    saveBodyTarget("kcalGoal", kcalGoalInput, 500, 9999);
   }
   function saveBodyTarget(id, input, min, max) {
     const raw = input.value;
@@ -5297,6 +5343,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (document.activeElement !== wtTargetInput) wtTargetInput.value = target > 0 ? fmtKg(target) : "";
     const fatGoal = fatTarget();
     if (document.activeElement !== fatTargetInput) fatTargetInput.value = fatGoal > 0 ? fmtFat(fatGoal) : "";
+    const kcalSet = num((settings.get("kcalGoal") || {}).target);
+    if (document.activeElement !== kcalGoalInput) kcalGoalInput.value = kcalSet > 0 ? String(Math.round(kcalSet)) : "";
     // the day's メンテナンスカロリー and 摂取カロリー, and the 身長・年齢・性別 its 基礎代謝 comes from
     if (document.activeElement !== wtMaint) wtMaint.value = num(entry?.maint) > 0 ? String(entry.maint) : "";
     if (document.activeElement !== wtIntake) wtIntake.value = typeof entry?.intake === "number" ? String(entry.intake) : "";
@@ -6826,6 +6874,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (url) x.url = url;
     const alarms = formAlarms(f);
     if (alarms.length) x.alarms = alarms;
+    if ($(f + "Count").checked) x.count = true; // きょう's カウントダウン
     return x;
   }
   // a plan's URL opened from 開く beside it, once it reads as one: with its https:// or without (example.com/…)
@@ -7167,6 +7216,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("planTitle").value = e.title; $("planDate").value = start; $("planEndDate").value = extra ? addDays(start, extra) : "";
     $("planTime").value = e.time || ""; $("planEndTime").value = e.time ? e.endTime || e.time : ""; $("planMemo").value = e.memo || "";
     $("planPlace").value = e.place || ""; $("planUrl").value = e.url || ""; syncUrlOpen("plan"); syncMemoRow("plan"); setFormAlarms("plan", alarmsOf(e));
+    $("planCount").checked = !!e.count;
     planLabelChoice = labelOf(e) ? e.labelId : "";
     editingId = null; planNew = true; planFromDay = true; planCopy = true;
     disarmDelete(); renderPlanLabels(); syncPlanRows("plan"); remember("plan"); syncPlanSave(); syncSheetHead();
@@ -8199,7 +8249,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // it is taken out of the plan and kept as a plan of its own), that turn and the ones after it (この回以降: the plan
   // ends the day before and a new one carries on, so the turns past stay as they were) or every turn (すべての回, the
   // plan itself). 保存 with nothing changed only goes back to the list
-  const editFields = () => [$("edTitle").value.trim(), $("edTime").value, $("edEndTime").value, $("edRepeat").value, $("edUntil").value, edLabelChoice, $("edMemo").value.trim(), $("edPlace").value.trim(), $("edUrl").value.trim(), $("edAlarms").value].join("\n");
+  const editFields = () => [$("edTitle").value.trim(), $("edTime").value, $("edEndTime").value, $("edRepeat").value, $("edUntil").value, edLabelChoice, $("edMemo").value.trim(), $("edPlace").value.trim(), $("edUrl").value.trim(), $("edAlarms").value, $("edCount").checked].join("\n");
   function editEvent(id, start) {
     const e = events.get(id);
     if (!e) return;
@@ -8210,6 +8260,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     whenOpen.ed = null; whenKeep.ed = null; whenMonth.ed = null;
     $("edRepeat").value = e.repeat || ""; $("edUntil").value = e.repeatUntil || ""; $("edMemo").value = e.memo || "";
     $("edPlace").value = e.place || ""; $("edUrl").value = e.url || ""; syncUrlOpen("ed"); syncMemoRow("ed"); setFormAlarms("ed", alarmsOf(e));
+    $("edCount").checked = !!e.count;
     $("edScope").hidden = !e.repeat;
     fillEditDays();
     edLabelChoice = labelOf(e) ? e.labelId : "";
@@ -8264,7 +8315,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // added meanwhile went with it)
     const before = JSON.parse(JSON.stringify(e)), made = [];
     const saved = (msg) => flash(msg, () => act(async () => { if (made.length) takeBack(events, made); await events.set(before.id, before); flash("元に戻しました"); }));
-    const fields = { title, date, time: time || undefined, labelId, endDate: undefined, endTime: undefined, memo: undefined, place: undefined, url: undefined, alarms: undefined, ...rest };
+    const fields = { title, date, time: time || undefined, labelId, endDate: undefined, endTime: undefined, memo: undefined, place: undefined, url: undefined, alarms: undefined, count: undefined, ...rest };
     if (e.repeat && editScope === "one") {
       // this turn alone: taken out of the plan, and kept as a plan of its own with what the form says
       const skip = [...new Set([...(e.skip || []), editingStart])], moved = date !== editingStart;
@@ -9111,10 +9162,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // takes a row; the others go two to a row on a phone, squares (the user's call: ルーティーン and 目標 took a row each)
   // a tile not of a page of its own has its icon, and the page (and part) its head opens, or open: false for a head that
   // opens nothing (the user's call, 2026-11-09: すぐに記録, きょうの運動, バイト, and more to come)
+  // evening: shown from 20:00 (EVENING) to the day's end
   const HOME_TILES = [
+    { key: "review", label: "きょうのふりかえり", color: "var(--c-journal)", icon: "journal", open: "journal", wide: true, evening: true },
+    { key: "tomorrow", label: "あしたの準備", color: "var(--c-cal)", icon: "calendar", open: () => { setCalDay(addDays(todayKey, 1)); showTab("calendar"); }, wide: true, evening: true },
     { key: "quick", label: "すぐに記録", color: "var(--accent)", icon: "plus", open: false, wide: true },
+    { key: "weather", label: "天気", color: "var(--sat)", icon: "sun", open: false, wide: true },
     { key: "todo", label: "ToDo", color: "var(--c-todo)" },
     { key: "calendar", label: "きょうの予定", color: "var(--c-cal)" },
+    { key: "countdown", label: "カウントダウン", color: "var(--c-cal)", icon: "timer", open: "calendar" },
     { key: "journal", label: "日記", color: "var(--c-journal)" },
     { key: "study", label: "勉強", color: "var(--c-study)" },
     // 食事's, 運動's and からだ's tiles in one (the user's call), the three side by side
@@ -9127,6 +9183,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     { key: "goal", label: "目標", color: "var(--c-goal)" },
   ];
   const tileIcon = (key) => homeTile(key).icon || PAGES.find((p) => p.key === key).icon;
+  const EVENING = 20 * 60; // ⑧⑨ from 20:00
   const homeTile = (key) => HOME_TILES.find((t) => t.key === key);
   // which of them show, and in what order, is the user's to choose (the user's call), from the gear by the date. The
   // settings keep the keys of both, the order and the ones hidden, so a tile the app gains later shows, after the one it
@@ -9165,10 +9222,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // A word in the big place (まだ, 未記録) is a step smaller than a number. A tile without a big one (日記) has none
   function tile(key, big, unit, sub, extra) {
     const { label, color, open } = homeTile(key), parts = subParts(sub), to = [].concat(open || key);
+    const go = typeof open === "function" ? open : () => openFromHome(to[0], to[1] || null);
     return el("div", { class: "card tile", "data-tile": key, style: `--tile-c:${color}` },
       open === false ? el("div", { class: "tile-head plain" }, icon(tileIcon(key), 18), el("span", { class: "lbl" }, label))
-        : el("button", { type: "button", class: "tile-head", "aria-label": label + "を開く", onclick: () => openFromHome(to[0], to[1] || null) },
-          icon(tileIcon(key), 18), el("span", { class: "lbl" }, label), el("span", { class: "chev" }, icon("next", 16))),
+        : el("button", { type: "button", class: "tile-head", "aria-label": label + "を開く", onclick: go },
+          icon(tileIcon(key), 18), el("span", { class: "lbl" + (label.length >= 7 ? " long" : "") }, label), el("span", { class: "chev" }, icon("next", 16))),
       big != null ? el("div", { class: "big" + (/^[+−]?[\d.,]+$/.test(big) ? "" : " word") }, big, unit ? el("small", {}, unit) : null) : null,
       sub ? el("div", { class: "sub" }, parts) : null,
       extra);
@@ -9215,6 +9273,88 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         t.flag && !t.done ? el("span", { class: "todo-flag", "aria-hidden": "true" }, icon("flag", 15)) : null))),
       el("li", { class: "td-add" }, el("button", { type: "button", class: "link-btn", onclick: (ev) => openNewTodo(ev.detail === 0, "tiletodo") }, icon("plus", 18), "ToDoを追加")));
   }
+  // ---------- 天気（きょう） ----------
+  // ⑦ (the user's call): the day's weather where the phone is, from Open-Meteo (free, no key): its place asked for once
+  // (the browser's location, to about 1 km) and kept on this device alone, the forecast kept for an hour. Rain likely
+  // with a run still to do today, it says the run can be エアロバイク 30分, as the menu's メモ has it for a day it hurts
+  const WX_PLACE = LS_PREFIX + "wxPlace", WX_DATA = LS_PREFIX + "wxData";
+  const lsJson = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
+  const lsJsonPut = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+  let wxBusy = false, wxError = "", wxFailedAt = 0; // (after a failure, not asked again for 5 minutes but by もう一度)
+  const wxPlace = () => { const p = lsJson(WX_PLACE); return p && Number.isFinite(p.lat) && Number.isFinite(p.lon) ? p : null; };
+  function wxAsk() {
+    if (!navigator.geolocation) { wxError = "この端末では現在地がわかりません"; renderHome(); return; }
+    wxBusy = true; wxError = ""; renderHome(); syncWxSettings();
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const r = (v) => Math.round(v * 100) / 100;
+      lsJsonPut(WX_PLACE, { lat: r(pos.coords.latitude), lon: r(pos.coords.longitude), at: Date.now() });
+      lsJsonPut(WX_DATA, null); wxBusy = false; syncWxSettings(); wxFetch(true);
+    }, (err) => {
+      wxBusy = false; syncWxSettings();
+      wxError = err.code === 1 ? "位置情報の利用が許可されていません。端末の設定で許可すると出せます" : "現在地がわかりませんでした";
+      renderHome();
+    }, { timeout: 20000, maximumAge: 3600000 });
+  }
+  // the forecast for today and tomorrow (あしたの準備 too), kept for an hour, or got afresh (force)
+  async function wxFetch(force = false) {
+    const place = wxPlace(), kept = lsJson(WX_DATA);
+    if (!place || wxBusy) return;
+    if (!force && kept && kept.day === todayKey && Date.now() - kept.at < 3600000 && kept.lat === place.lat && kept.lon === place.lon) return;
+    if (!navigator.onLine) { wxError = "インターネットにつながっていないので、天気を取得できません"; return; }
+    if (!force && Date.now() - wxFailedAt < 300000) return;
+    wxBusy = true;
+    try {
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.lat}&longitude=${place.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&hourly=precipitation_probability&timezone=auto&forecast_days=2`);
+      if (!res.ok) throw new Error(String(res.status));
+      const j = await res.json();
+      if (!Array.isArray(j?.daily?.time)) throw new Error("no daily");
+      lsJsonPut(WX_DATA, { day: todayKey, at: Date.now(), lat: place.lat, lon: place.lon, daily: j.daily, hourly: j.hourly });
+      wxError = ""; wxFailedAt = 0;
+    } catch { wxError = "天気を取得できませんでした"; wxFailedAt = Date.now(); }
+    wxBusy = false;
+    if (tab === "home") renderHome();
+  }
+  // a day's weather from the forecast kept: { word, icon, hi, lo, rain (%), wet, rainAt (the first hour from now with rain
+  // likely, today) }, or null
+  const WX_RAIN = (c) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95, WX_SNOW = (c) => (c >= 71 && c <= 77) || c === 85 || c === 86;
+  function wxDay(day) {
+    const d = lsJson(WX_DATA), i = d?.daily?.time?.indexOf(day) ?? -1;
+    if (i < 0) return null;
+    const c = num(d.daily.weather_code?.[i]), rain = Math.round(num(d.daily.precipitation_probability_max?.[i]));
+    const word = c <= 1 ? "晴れ" : c === 2 ? "晴れ時々くもり" : c === 3 ? "くもり" : c === 45 || c === 48 ? "霧" : c >= 51 && c <= 57 ? "小雨"
+      : c === 65 || c === 82 ? "強い雨" : c >= 61 && c <= 67 ? "雨" : c >= 80 && c <= 81 ? "にわか雨" : WX_SNOW(c) ? "雪" : c >= 95 ? "雷雨" : "くもり";
+    const icon = c <= 1 ? "sun" : WX_RAIN(c) ? "rain" : WX_SNOW(c) ? "snow" : "cloud";
+    let rainAt = null;
+    if (day === todayKey && Array.isArray(d.hourly?.time)) {
+      const h = new Date().getHours();
+      const k = d.hourly.time.findIndex((t, n) => t.startsWith(day) && Number(t.slice(11, 13)) >= h && num(d.hourly.precipitation_probability?.[n]) >= 50);
+      if (k >= 0) rainAt = Number(d.hourly.time[k].slice(11, 13));
+    }
+    return { word, icon, hi: Math.round(num(d.daily.temperature_2m_max?.[i])), lo: Math.round(num(d.daily.temperature_2m_min?.[i])), rain, wet: rain >= 50 || WX_RAIN(c), rainAt };
+  }
+  function weatherTile() {
+    const ask = (words) => el("button", { type: "button", class: "btn sm wx-ask", disabled: wxBusy, onclick: wxAsk }, wxBusy ? "調べています…" : words);
+    if (!wxPlace()) return tile("weather", null, null, wxError || "いる場所のきょうの天気を出せます", ask("天気を出す"));
+    const w = wxDay(todayKey);
+    if (!w) { wxFetch(); return tile("weather", null, null, wxError || "天気を調べています…", wxError ? el("button", { type: "button", class: "link-btn wx-ask", onclick: () => wxFetch(true) }, "もう一度") : null); }
+    wxFetch(); // (an hour on, afresh)
+    const m = woDays()[parseYmd(todayKey).getDay()], runLeft = num(m.km) > 0 && !woTally(todayKey).ran;
+    const h = new Date().getHours();
+    return tile("weather", w.word, null, null, [
+      el("div", { class: "wx-row" }, el("span", { class: "wx-icon " + w.icon, "aria-hidden": "true" }, icon(w.icon, 28)),
+        el("span", { class: "wx-temp" }, `${w.hi}° / ${w.lo}°`), el("span", { class: "wx-rain" }, `降水確率 ${w.rain}%`)),
+      w.rainAt !== null ? el("p", { class: "wx-note" }, w.rainAt <= h ? "いま雨の予報です" : `${w.rainAt}時ごろから雨の予報です`) : null,
+      w.wet && runLeft ? el("p", { class: "wx-note" }, "ランはエアロバイク30分に替えても") : null,
+    ]);
+  }
+  // the place in the tiles' settings: asked again, or forgotten with the forecast
+  function syncWxSettings() {
+    $("wxHere").textContent = wxBusy ? "調べています…" : wxPlace() ? "現在地にしなおす" : "現在地で天気を出す";
+    $("wxHere").disabled = wxBusy;
+    $("wxForgetRow").hidden = !wxPlace();
+  }
+  $("wxHere").addEventListener("click", wxAsk);
+  $("wxForget").addEventListener("click", () => { lsJsonPut(WX_PLACE, null); lsJsonPut(WX_DATA, null); wxError = ""; syncWxSettings(); renderHome(); flash("天気の場所を消しました"); });
   function renderHome() {
     const focusRow = document.activeElement?.dataset || {}; // a ルーティーン or ToDo row on a tile, pressed from the keyboard
     const undone = todos.items.filter((t) => !t.done);
@@ -9229,6 +9369,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const rts = sortedRoutines(), rtDone = routineDone(todayKey), rtLeft = rts.filter((r) => !rtDone.has(r.id));
     const wts = sortedWeights();
     const wLast = wts[wts.length - 1];
+    // ⑥ the one 7 to 13 days before the last (a week before, give or take a missed day)
+    const wPrev = wLast ? [...wts].reverse().find((r) => r.id <= addDays(wLast.id, -7) && r.id >= addDays(wLast.id, -13)) : null;
+    const wDiff = wPrev ? Math.round((num(wLast.kg) - num(wPrev.kg)) * 10) / 10 : null;
+    // ⑤ the day's kcal: its 食事's, else its からだ's 摂取カロリー as typed
+    const mealKcal = ms.filter((m) => typeof m.kcal === "number"), wToday = weights.get(todayKey);
+    const kcalNow = mealKcal.length ? sum(mealKcal, (m) => m.kcal) : typeof wToday?.intake === "number" ? wToday.intake : null;
     const mon = monthSummary(monthOf(todayKey)), bal = Math.round(mon.inn - mon.out);
     // the goal due soonest; one made before 期限 was needed may have none, so those come last
     const active = goals.items.filter((g) => !g.done && !g.pausedAt), onHold = goals.items.some((g) => !g.done && g.pausedAt);
@@ -9269,14 +9415,49 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const wall = num(jobSet().wall), wallLeft = jobs.length && wall > 0 ? wall - yearPay(Number(todayKey.slice(0, 4))) : null;
     // つみかさね: the steps done, alone (the user's call: the next step, today's and the days on end under it were taken out)
     const tz = tsumiBlocks(false, "tally"), tk = tsumiCol(tz.n);
+    // ⑧ きょうのふりかえり and ⑨ あしたの準備 (the user's calls), from 20:00: a line a kind, [what, words]
+    // (a line of several, each kept whole: it breaks between them, sep after each but the last)
+    const evening = nowMinutes() >= EVENING, rows = (list) => el("ul", { class: "rv-list" }, list.filter(Boolean).map(([k, v, sep = "・"]) => el("li", {}, el("span", { class: "rv-k" }, k),
+      el("span", { class: "rv-v" }, Array.isArray(v) ? v.map((x, i) => el("span", { class: "phrase" }, x + (i < v.length - 1 ? sep : ""))) : v))));
+    const woToday = workouts.items.filter((w) => w.date === todayKey), ranKm = sum(woToday.filter((w) => w.type === "ランニング"), (w) => num(w.km)), setsDone = sum(woToday.filter((w) => w.exercise), (w) => num(w.sets));
+    const spent = sum(expenses.items.filter((x) => x.date === todayKey && x.kind !== "in"), (x) => num(x.amount)), todoDone = todos.items.filter((t) => t.done && doneDay(t) === todayKey).length;
+    const reviewRows = rows([
+      todoDone ? ["ToDo", `${todoDone}件 完了`] : null,
+      stMins > 0 ? ["勉強", durText(stMins)] : null,
+      woToday.length ? ["運動", ranKm > 0 || setsDone ? [ranKm > 0 ? `ラン ${Math.round(ranKm * 100) / 100} km` : null, setsDone ? `筋トレ ${setsDone}セット` : null].filter(Boolean) : `${woToday.length}件`] : null,
+      ms.length ? ["食事", [`${ms.length}回`, kcalNow !== null ? `${fmtN(kcalNow)} kcal` : null].filter(Boolean)] : null,
+      wToday && num(wToday.kg) > 0 ? ["体重", `${fmtKg(wToday.kg)} kg`] : null,
+      rts.length && rtLeft.length < rts.length ? ["ルーティーン", `${rts.length - rtLeft.length} / ${rts.length}`] : null,
+      spent ? ["支出", fmtYen(spent)] : null,
+    ]);
+    const reviewJournal = j?.text ? el("p", { class: "rv-note" }, "日記は書きました") : el("button", { type: "button", class: "btn sm rv-act", onclick: () => openFromHome("journal") }, "日記を書く");
+    const tmr = addDays(todayKey, 1), evT = turnsByDay(tmr, tmr).get(tmr) || [], tdT = todos.items.filter((t) => !t.done && t.due === tmr);
+    const shT = shifts.items.filter((x) => x.date === tmr).sort((a, b) => String(a.start).localeCompare(String(b.start))), mT = woDays()[parseYmd(tmr).getDay()], wxT = wxPlace() ? wxDay(tmr) : null;
+    const more = (list, n, f) => [...list.slice(0, n).map(f), ...(list.length > n ? [`ほか${list.length - n}件`] : [])];
+    const tomorrowRows = rows([
+      ["予定", evT.length ? more(evT, 3, (t) => (turnTime(t) ? turnTime(t) + " " : "") + t.e.title) : "なし", "、"],
+      tdT.length ? ["ToDo", more(tdT, 2, (t) => t.text), "、"] : null,
+      shT.length ? ["バイト", shT.map((x) => `${x.start}〜${x.end}`), "、"] : null,
+      num(mT.km) > 0 || mT.moves?.length ? ["運動", [num(mT.km) > 0 ? `ラン ${mT.km} km` : null, ...(mT.moves || []).map(([, name]) => name)].filter(Boolean)] : null,
+      wxT ? ["天気", [`${wxT.word} ${wxT.hi}° / ${wxT.lo}°`, `降水確率 ${wxT.rain}%`]] : null,
+    ]);
+    // ⑩ カウントダウン (the user's call): the plans marked for it, each by its next turn within a year, nearest first
+    const cdTo = addDays(todayKey, 366), cds = events.items.filter((e) => e.count).map((e) => ({ e, d: turnStarts(e, todayKey, cdTo).find((d) => d >= todayKey) })).filter((x) => x.d).sort((a, b) => a.d.localeCompare(b.d) || num(a.e.createdAt) - num(b.e.createdAt));
+    const cdDays = (d) => daysBetween(todayKey, d), cd0 = cds[0];
 
     const tiles = [
+      tile("review", tz.today ? String(tz.today) : "まだ", tz.today ? "こ" : null, tz.today ? "きょう積んだブロック" : "きょうはまだ記録がありません", [reviewRows, reviewJournal]),
+      tile("tomorrow", null, null, fmtDayLong(tmr), tomorrowRows),
       tile("quick", null, null, null, quickRow),
+      weatherTile(),
       tile("move", mvRows.length ? String(mvRows.filter((r) => r.done).length) : "休み", mvRows.length ? `/ ${mvRows.length}` : null, null, mvList),
       jobs.length ? tile("job", fmtN(jobPay), "円", `${Number(jobYm.slice(5))}月分の見込み`, nextShift || wallLeft !== null ? el("ul", {},
         nextShift ? el("li", {}, `${nextShift.date === todayKey ? "きょう" : fmtShort(nextShift.date)} ${nextShift.start}〜${nextShift.end}`) : null,
         wallLeft !== null ? el("li", { class: wallLeft < 0 ? "warn" : null }, wallLeft >= 0 ? `1年の目安まで あと ${fmtYen(wallLeft)}` : `1年の目安を ${fmtYen(-wallLeft)} こえています`) : null) : null)
         : tile("job", "まだ", null, "バイト先を決めると、給料の見込みが出ます"),
+      !cd0 ? tile("countdown", null, null, "予定の「カウントダウン」をオンにすると、あと何日かがここに出ます")
+        : tile("countdown", cdDays(cd0.d) === 0 ? "きょう" : String(cdDays(cd0.d)), cdDays(cd0.d) === 0 ? null : "日", cdDays(cd0.d) === 0 ? `「${cd0.e.title}」です` : `「${cd0.e.title}」まで`,
+          cds.length > 1 ? el("ul", {}, cds.slice(1, 3).map((x) => el("li", {}, `${x.e.title} ${cdDays(x.d) === 0 ? "きょう" : `あと${cdDays(x.d)}日`}`))) : null),
       // its big number what is to do by today, as ToDo's tab counts (the user's call: it counted next year's too), the rest
       // under it; the lines kept short enough for half a row
       tile("todo", String(dueToday + overdue), "件 きょうまで",
@@ -9294,9 +9475,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       tile("journal", j?.text ? "記録済み" : "まだ"),
       // ダイエット: からだ, 食事 and 運動 (the user's call: the three in one), each saying only what it must (the user's
       // calls): からだ the last weight, 食事 whether today's is recorded, 運動 whether today's menu is all done
+      // ⑥ and ⑤ (the user's calls): the last weight against the one a week before it, and the day's 食事 kcal against the
+      // goal (the meals' kcal, or the day's 摂取カロリー as typed when they have none)
       tile("diet", null, null, null, el("div", { class: "dt-cols" },
-        dietCol("weight", wLast ? fmtKg(wLast.kg) : "未記録", wLast ? "kg" : null),
-        dietCol("meal", ms.length ? "記録済み" : "未記録", null),
+        dietCol("weight", wLast ? fmtKg(wLast.kg) : "未記録", wLast ? "kg" : null, wDiff === null ? null : [el("span", { class: "phrase" }, "1週間前から"), " ", el("span", { class: "phrase" }, `${wDiff > 0 ? "+" : wDiff < 0 ? "−" : "±"}${fmtKg(Math.abs(wDiff))} kg`)]),
+        dietCol("meal", ms.length ? "記録済み" : "未記録", null, kcalNow === null ? null : [el("span", { class: "phrase" }, fmtN(kcalNow)), " ", el("span", { class: "phrase" }, `/ ${fmtN(kcalGoal())} kcal`)]),
         dietCol("workout", woMenuDone(todayKey) ? "完了" : "未完了", null))),
       // 勉強: today's time alone (the user's call: the subjects under it were taken out), まだ before any (the user's call:
       // not 0 分)
@@ -9319,7 +9502,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // the ones shown, in the user's order, two to a row: one left without a partner before a wide one takes the next half
     // one up beside it (the user's call: it took the row, as ルーティーン and 目標 did), and one left at the end stays half
     const hidden = homeHidden(), wide = (t) => homeTile(t.dataset.tile).wide || (t.dataset.tile === "todo" && top.length);
-    const rest = homeTileOrder().filter((k) => !hidden.has(k)).map((k) => tiles.find((t) => t.dataset.tile === k)), shown = [];
+    const rest = homeTileOrder().filter((k) => !hidden.has(k) && (!homeTile(k).evening || evening)).map((k) => tiles.find((t) => t.dataset.tile === k)), shown = [];
     let waiting = false;
     while (rest.length) {
       const t = rest.shift();
@@ -9343,6 +9526,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // きょう's tiles in the settings: a row a tile, in its order. A tap on the row shows or hides it; its grip drags it up or
   // down, or moves it a step with the arrow keys (focus stays on it). Not drawn anew while a row is being dragged
   function renderTileList() {
+    syncWxSettings();
     const list = $("tileList");
     if (tileDrag) return;
     const a = list.contains(document.activeElement) ? document.activeElement : null, focusKey = a?.closest("li")?.dataset.key, onGrip = a?.classList.contains("grip");
@@ -9357,7 +9541,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         } },
           el("span", { class: "check", "aria-hidden": "true" }, checkMark()),
           el("span", { class: "ticon" }, icon(tileIcon(k), 20)),
-          el("span", { class: "tname" }, label)),
+          el("span", { class: "tname" }, label, homeTile(k).evening ? el("span", { class: "tnote" }, "夜8時から") : null)),
         el("button", { type: "button", class: "grip", "aria-label": `「${label}」を動かす（${i + 1} 番目）`, onpointerdown: (ev) => startTileDrag(ev, k),
           onkeydown: (ev) => {
             const to = i + (ev.key === "ArrowUp" ? -1 : ev.key === "ArrowDown" ? 1 : 0);
@@ -12050,7 +12234,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月10日 7:25"; // e40ebf63 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月10日 7:51"; // c1446b85 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
