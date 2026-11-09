@@ -1389,6 +1389,33 @@ ul.list > li.btn-row { padding: 0; }
 .tsumi-unit { font-size: var(--t-sub); font-weight: 600; color: var(--muted); }
 .tsumi-sub { margin: 0; font-size: var(--t-sub); font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
 .tsumi-views { margin-top: 6px; }
+/* カレンダー: the month over its days, a week to a row, each day tinted by how many blocks went on it (four tints, against
+   the most there usually are in a day), the day shown on the stairs ringed, today's number bold */
+.tsumi-cal { padding: 10px 0 4px; }
+.tsumi-cal .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.tsumi-cal .cal-head strong { font-size: var(--t-body); font-weight: 600; font-variant-numeric: tabular-nums; }
+.tsumi-cal .cal-head .icon-btn[disabled] { opacity: .3; }
+.tsumi-cal .cal-wd, .tsumi-cal .cal-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.tsumi-cal .cal-wd span { text-align: center; font-size: var(--t-foot); color: var(--muted); }
+.tsumi-cal .cal-days { margin-top: 4px; }
+.tsumi-cal .d { display: grid; place-items: center; aspect-ratio: 1; min-width: 0; padding: 0; border: 0; border-radius: 8px; background: var(--fill); color: var(--fg); font: inherit; font-size: var(--t-sub); font-variant-numeric: tabular-nums; }
+.tsumi-cal button.d { cursor: pointer; }
+.tsumi-cal .d.none { background: transparent; color: var(--muted); }
+.tsumi-cal .d.to-come { background: transparent; color: var(--muted); opacity: .45; }
+.tsumi-cal .d.lv1 { background: color-mix(in srgb, var(--accent-fill) 22%, var(--surface)); }
+.tsumi-cal .d.lv2 { background: color-mix(in srgb, var(--accent-fill) 45%, var(--surface)); }
+.tsumi-cal .d.lv3 { background: color-mix(in srgb, var(--accent-fill) 70%, var(--surface)); color: var(--accent-ink); }
+.tsumi-cal .d.lv4 { background: var(--accent-fill); color: var(--accent-ink); }
+.tsumi-cal .d.today { font-weight: 700; }
+.tsumi-cal .d.shown { box-shadow: inset 0 0 0 2px var(--fg); }
+.tsumi-cal .cal-key { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 8px; font-size: var(--t-foot); color: var(--muted); }
+.tsumi-cal .cal-key i { width: 12px; height: 12px; border-radius: 3px; background: var(--fill); }
+.tsumi-cal .cal-key i.lv1 { background: color-mix(in srgb, var(--accent-fill) 22%, var(--surface)); }
+.tsumi-cal .cal-key i.lv2 { background: color-mix(in srgb, var(--accent-fill) 45%, var(--surface)); }
+.tsumi-cal .cal-key i.lv3 { background: color-mix(in srgb, var(--accent-fill) 70%, var(--surface)); }
+.tsumi-cal .cal-key i.lv4 { background: var(--accent-fill); }
+/* 1年前のきょう: a quiet line at the card's foot */
+.tsumi-past { margin: 4px 0 0; font-size: var(--t-sub); }
 .tsumi-stairs { position: relative; margin-top: 8px; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .tsumi-stairs canvas { display: block; touch-action: manipulation; cursor: default; }
 /* the mouse's ring and its label, drawn over the stairs (drawTsumiHover) */
@@ -2209,7 +2236,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="seg tsumi-views" role="group" aria-label="階段の見え方" id="tsumiViews" hidden>
             <button type="button" data-view="near" aria-pressed="true">大きく</button>
             <button type="button" data-view="all" aria-pressed="false">全体</button>
+            <button type="button" data-view="cal" aria-pressed="false">カレンダー</button>
           </div>
+          <!-- カレンダー (the user's call): a month's days tinted by how many blocks went on each, so the days kept up and the
+               days missed show at a glance; a day pressed goes to its first block on the stairs -->
+          <div class="tsumi-cal" id="tsumiCal" hidden></div>
           <!-- the stairs, and ◀ ▶ and the words under them; on a wide, low screen those two beside the stairs (tsumiSideW) -->
           <div class="tsumi-body" id="tsumiBody">
             <div class="tsumi-stairs" id="tsumiWrap"><canvas id="tsumiCanvas" role="img" tabindex="0"></canvas><canvas class="tsumi-over" id="tsumiOver" aria-hidden="true"></canvas><div class="tip" id="tsumiHover" aria-hidden="true" hidden></div></div>
@@ -2235,6 +2266,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
               <div class="tsumi-acts"><button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button><button type="button" class="link-btn danger tsumi-open" id="tsumiDrop" hidden>このブロックを削除</button><p class="tsumi-drop-warn" id="tsumiDropWarn" role="status" hidden></p></div>
             </div>
           </div>
+          <!-- 1年前のきょう (the user's call): what went on this day a year ago, or else a month ago, said quietly; pressed, there -->
+          <p class="tsumi-past" id="tsumiPast" hidden><button type="button" class="link-btn" id="tsumiPastBtn"></button></p>
         </div>
         <!-- (no 画像で保存: taken out, the user's call) -->
         <!-- (つみあげた記録 is in the 設定 its gear opens: the user's call) -->
@@ -9462,6 +9495,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // [column, row] when away from the summit
   const VIEW_KEY = LS_PREFIX + "tsumiView";
   let tsumiView = (() => { try { return localStorage.getItem(VIEW_KEY) === "all" ? "all" : "near"; } catch { return "near"; } })(), tsumiAnchor = null;
+  // カレンダー in place of the stairs (the user's call), kept on this phone as the view is; the month it shows
+  const CAL_KEY = LS_PREFIX + "tsumiCal";
+  let tsumiCal = (() => { try { return localStorage.getItem(CAL_KEY) === "1"; } catch { return false; } })(), tsumiCalMonth = null;
   // a kind pressed in つみあげた記録: only its blocks keep their colour; kept on this phone, as the view is (the user's call:
   // it went when the app was opened again)
   const KIND_KEY = LS_PREFIX + "tsumiKind";
@@ -9635,6 +9671,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // the kind pressed wasn't said)
     $("tsumiCanvas").setAttribute("aria-label", n ? `これまでの記録 ${nf(n)} こが、${k} 段の階段に積みあがっています。${v ? `${onlyLabel()}のブロック ${nf(mine.length)} こだけに色を付けています。` : ""}つぎの段まであと ${left} こ。${!v && today ? `きょうは ${today} こ積みました。` : ""}${!v && (endText || pastText) ? (endText || pastText) + "。" : ""}前と次のボタンや左右の矢印キーで1つずつ、PageUp と PageDown で月ごとに見られます。Enter キーで、見ているブロックの記録が開きます。` : "まだブロックがありません。");
     $("tsumiPrev").hidden = $("tsumiNext").hidden = n < 2;
+    renderTsumiPast();
     // opened with blocks gone on since the last look: the newest (of the kind pressed), where they drop in; else as it was
     if (opening) {
       tsumiHoverAt = null; tsumiNeko = null; // (つみねこ where the stairs have it, or where they had it at the last look)
@@ -9973,7 +10010,21 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     };
     requestAnimationFrame(frame);
   }
+  // the switch over the stairs: 大きく・全体・カレンダー; while the whole staircase fits big, 階段 and カレンダー (the
+  // switch showed only once 全体 was wanted; カレンダー is there from the first block)
+  function syncTsumiViews(big = !!tsumiGeo?.big) {
+    const n = tsumiShown.length, box = $("tsumiViews");
+    box.hidden = !n;
+    for (const b of box.querySelectorAll("button")) {
+      const v = b.dataset.view;
+      if (v === "all") b.hidden = !big;
+      if (v === "near") b.textContent = big ? "大きく" : "階段";
+      b.setAttribute("aria-pressed", String(v === "cal" ? tsumiCal : !tsumiCal && (v === "near") === (tsumiView === "near" || !big)));
+    }
+    $("tsumiBody").hidden = tsumiCal && !!n; $("tsumiCal").hidden = !tsumiCal || !n;
+  }
   function drawTsumi(now = 0) {
+    if (tsumiCal && tsumiShown.length) { syncTsumiViews(); renderTsumiCal(); return; } // カレンダー in place of the stairs
     const a = tsumiAnim, t = a ? now || performance.now() : 0;
     $("tsumiBody").classList.toggle("beside", !!tsumiSideW()); // ◀ ▶ and the words beside the stairs or under them
     const L = tsumiLayout(), { n, k, cols, W, axis, pitch, C, R, near } = L, r = n - (k * (k + 1)) / 2;
@@ -9985,8 +10036,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // they stood apart in the card's middle)
     const gridH = Math.ceil(pitch * R) + L.pad + L.top, ox = L.pad + L.lead + (wideScreen.matches ? 0 : Math.floor((L.inner - L.lead - pitch * C) / 2)), H = gridH + 12;
     tsumiGeo = { k, r, left: k + 1 - r, pitch, ox, gridH, cols, c0, r0, C, R, near, big: L.big, below: null };
-    $("tsumiViews").hidden = !L.big;
-    for (const b of $("tsumiViews").querySelectorAll("button")) b.setAttribute("aria-pressed", String((b.dataset.view === "near") === near));
+    syncTsumiViews(L.big);
     const cv = $("tsumiCanvas"), dpr = window.devicePixelRatio || 1, CW = L.side ? Math.min(W, L.used) : W;
     cv.classList.toggle("pan", near); cv.classList.toggle("zoom", L.big);
     if (cv.width !== Math.round(CW * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(CW * dpr); cv.height = Math.round(H * dpr); cv.style.width = CW + "px"; cv.style.height = H + "px"; }
@@ -10310,6 +10360,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (drop.dataset.key !== b.key) { drop.dataset.key = b.key; disarmTsumiDrop(); }
     renderTsumiMonthPick();
   }
+  // 1年前のきょう (the user's call): the blocks of this day a year ago, or, with none, a month ago, said quietly at the
+  // card's foot; pressed, that day's first block (goTsumiDay). A day with no such date (2月29日, 31日) says nothing
+  function renderTsumiPast() {
+    const line = $("tsumiPast"), y = Number(todayKey.slice(0, 4)), mo = Number(todayKey.slice(5, 7)), d = todayKey.slice(8);
+    const dayOf = (yy, mm) => { const t = new Date(yy, mm - 1, Number(d)); return t.getMonth() === mm - 1 ? ymd(t) : null; };
+    const yearAgo = dayOf(y - 1, mo), monthAgo = mo > 1 ? dayOf(y, mo - 1) : dayOf(y - 1, 12);
+    const count = (day) => (day ? tsumiShown.reduce((c, b) => c + (b.day === day ? 1 : 0), 0) : 0);
+    const [day, words] = count(yearAgo) ? [yearAgo, "1年前"] : count(monthAgo) ? [monthAgo, "1か月前"] : [null, ""];
+    line.hidden = !day;
+    if (!day) return;
+    const btn = $("tsumiPastBtn");
+    btn.textContent = `${words}のきょうは ${fmtN(count(day))} こ積んでいました`;
+    btn.onclick = () => { if (tsumiCal) setTsumiCal(false, false); goTsumiDay(day); };
+  }
   // ことばで探す (the user's call): the blocks with every word typed, in their words or their kind's name, newest first, the
   // first 50 listed; 日記's own words count, though its block says none. One pressed: the sheet goes and the block is
   // shown on the stairs, lit
@@ -10438,6 +10502,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function goTsumiBlock(i) {
     let b = tsumiShown[i];
     if (!b) return;
+    if (tsumiCal) setTsumiCal(false, false);
     if (tsumiOnly && !tsumiIn(b)) { letTsumiKindGo(); renderTsumi(); i = tsumiShown.findIndex((x) => x.key === b.key); b = tsumiShown[i]; if (!b) return; }
     showTsumiBlock(i); showTsumiTip(); flashTsumiBlock(i);
   }
@@ -10687,8 +10752,51 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   $("tsumiViews").addEventListener("click", (ev) => {
     const b = ev.target.closest("button[data-view]");
-    if (b) setTsumiView(b.dataset.view);
+    if (!b) return;
+    if (b.dataset.view === "cal") { setTsumiCal(true); return; }
+    if (tsumiCal) setTsumiCal(false, false);
+    setTsumiView(b.dataset.view);
   });
+  function setTsumiCal(on, draw = true) {
+    tsumiCal = on; tsumiAnim = null;
+    lsPut(CAL_KEY, on ? "1" : "0");
+    if (on) tsumiCalMonth = null; // (the shown block's month first)
+    syncTsumiViews();
+    if (draw) { drawTsumi(); sayTsumi(); }
+  }
+  // カレンダー: the month (tsumiCalMonth, else the shown block's), its days tinted by how many blocks of the ones pressed
+  // went on each: four tints, the deepest from the count most days stay under (nine in ten), so one busy day doesn't pale
+  // the rest; ‹ › a month back or on, from the first block's to this one's. A day with blocks goes to its first one
+  function renderTsumiCal() {
+    const box = $("tsumiCal"), n = tsumiShown.length;
+    if (!n) { box.replaceChildren(); return; }
+    const per = new Map();
+    for (const b of tsumiShown) if (tsumiIn(b)) per.set(b.day, (per.get(b.day) || 0) + 1);
+    const counts = [...per.values()].sort((p, q) => p - q), top = Math.max(4, counts[Math.floor(counts.length * 0.9)] || 0);
+    const level = (c) => (c ? clampTo(Math.ceil((4 * c) / top), 1, 4) : 0);
+    const firstMo = tsumiShown.reduce((m, b) => (b.day < m ? b.day : m), todayKey).slice(0, 7), lastMo = todayKey.slice(0, 7);
+    const shownDay = tsumiShown[Math.max(0, shownIndex())]?.day || todayKey;
+    let mo = tsumiCalMonth || shownDay.slice(0, 7);
+    mo = mo < firstMo ? firstMo : mo > lastMo ? lastMo : mo;
+    tsumiCalMonth = mo;
+    const y = Number(mo.slice(0, 4)), m = Number(mo.slice(5)), len = new Date(y, m, 0).getDate(), ws = weekStart(), lead = (new Date(y, m - 1, 1).getDay() - ws + 7) % 7;
+    const step = (by) => { const d = new Date(y, m - 1 + by, 1); tsumiCalMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; renderTsumiCal(); };
+    const days = [];
+    for (let i = 0; i < lead; i++) days.push(el("span", { class: "d none", "aria-hidden": "true" }));
+    for (let dd = 1; dd <= len; dd++) {
+      const d = `${mo}-${String(dd).padStart(2, "0")}`, c = per.get(d) || 0, cls = `d${c ? " lv" + level(c) : d > todayKey ? " to-come" : ""}${d === todayKey ? " today" : ""}${d === shownDay ? " shown" : ""}`;
+      days.push(c ? el("button", { type: "button", class: cls, "aria-label": `${fmtMDW(d)}、${fmtN(c)} こ`, onclick: () => { setTsumiCal(false, false); goTsumiDay(d); } }, String(dd))
+        : el("span", { class: cls, "aria-label": `${fmtMDW(d)}、なし` }, String(dd)));
+    }
+    const wd = Array.from({ length: 7 }, (_, i) => el("span", { "aria-hidden": "true" }, WD[(i + ws) % 7]));
+    setChildren(box,
+      el("div", { class: "cal-head" },
+        el("button", { type: "button", class: "icon-btn", "aria-label": "前の月", disabled: mo <= firstMo, onclick: () => step(-1) }, icon("prev", 20)),
+        el("strong", {}, `${y}年${m}月`),
+        el("button", { type: "button", class: "icon-btn", "aria-label": "次の月", disabled: mo >= lastMo, onclick: () => step(1) }, icon("next", 20))),
+      el("div", { class: "cal-wd" }, wd), el("div", { class: "cal-days" }, days),
+      el("div", { class: "cal-key", "aria-hidden": "true" }, "少ない", el("i", {}), el("i", { class: "lv1" }), el("i", { class: "lv2" }), el("i", { class: "lv3" }), el("i", { class: "lv4" }), "多い"));
+  }
   // しぼりをはずす: every kind again, the block shown kept (the user's call: nothing said the row was to be pressed again)
   $("tsumiUnkind").addEventListener("click", () => { tsumiOnly = null; tsumiGoneOnly = false; tsumiAnim = null; tsumiGone = null; renderTsumi(); });
   // the day picker (the user's calls: a month picked showed its first block; then a day was wanted): the shown block's day
