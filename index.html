@@ -1939,6 +1939,38 @@ ul.list.ts-diary > li { flex-direction: column; align-items: stretch; gap: 2px; 
 .ty-times li.top .bar i { background: var(--accent); }
 .ty-times .num { text-align: end; font-variant-numeric: tabular-nums; }
 .ty-memos { margin: 0 calc(-1 * var(--space-2)) -6px; }
+/* ToDo その2 ①〜⑩ (2026-11-11). ③ 並べ替え: ≡ at a row's end, the check put by; the row lifted while it is dragged */
+#todoList.sorting .check { opacity: .35; }
+#todoList > li > .td-grip { position: relative; z-index: 1; margin-block: -10px; margin-inline-end: calc(-1 * var(--space-2)); touch-action: none; } /* (over the name's whole-row press) */
+#todoList > li { transition: transform .2s ease; }
+#todoList > li.lifted { z-index: 3; transition: none; border-radius: 12px; background: var(--surface); box-shadow: 0 6px 20px rgba(0, 0, 0, .2); }
+#todoList > li.lifted::before { display: none; }
+#todoList.dragging { cursor: grabbing; -webkit-user-select: none; user-select: none; }
+/* ④⑤⑥ on a row: its 科目, its 金額, how long it has waited */
+.td-x.td-subject { color: var(--c-study); }
+.td-x.td-money { font-variant-numeric: tabular-nums; }
+.td-x.td-wait { color: var(--accent); font-weight: 600; }
+/* ⑧ 手つかずのToDo: each with what it can become */
+.td-panel-lead { margin-top: 0; }
+ul.td-stale > li { flex-wrap: wrap; align-items: center; }
+.td-stale .body { flex: 1 1 12em; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.td-stale .body .row-link { text-align: start; overflow-wrap: anywhere; }
+.td-stale .sub { font-size: var(--t-sub); color: var(--muted); }
+.td-stale-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.td-stale-acts .chip-btn, .td-week-items .chip-btn { background: var(--fill); box-shadow: none; }
+.td-stale-acts .chip-btn.danger { color: var(--warn); }
+/* ⑨ 週の見通し: a day a row, its count and time, a bar, its ToDos to open */
+ul.td-week > li { flex-direction: column; align-items: stretch; gap: 6px; }
+ul.td-week > li.none { color: var(--muted); }
+.td-week-head { display: flex; align-items: baseline; gap: 8px; }
+.td-week-head strong { font-weight: 600; }
+.td-week-head .sub { font-size: var(--t-sub); color: var(--muted); }
+.td-week-n { margin-inline-start: auto; font-size: var(--t-sub); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.td-week .bar-track { flex: none; height: 6px; }
+.td-week .bar-track i { background: var(--c-todo); }
+.td-week .sub.warn { font-size: var(--t-sub); color: var(--warn); }
+.td-week-items { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.td-week-items .sub { font-size: var(--t-sub); color: var(--muted); }
 /* event labels: the user's own categories. Wherever a label is picked or listed its name sits next to the colour, so colour
    is never the only cue (HIG); the month grid writes each plan's title in it and has no legend (the user's call). In the
    forms they are one-tap chips; a chosen chip fills with its colour and white text. */
@@ -2753,7 +2785,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="td-tabs" role="group" aria-label="リストで分ける" id="todoTabs"></div>
         <!-- 編集: the lists' and labels' settings (the gear that was by ＋); その他: 最近削除したToDo, and deleting the done ones -->
         <div class="td-tools">
-          <button type="button" class="td-tool" id="todoSettings" aria-haspopup="dialog" aria-label="リストとラベルを編集"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>編集</button>
+          <button type="button" class="td-tool" id="todoWeek" aria-haspopup="dialog" aria-label="これから1週間のToDoを見る"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-cal-week"/></svg>見通し</button><button type="button" class="td-tool" id="todoSettings" aria-haspopup="dialog" aria-label="リストとラベルを編集"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>編集</button>
           <button type="button" class="td-tool" id="todoMore" aria-haspopup="dialog"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-more"/></svg>その他</button>
         </div>
         <!-- ⑤ while ToDos are being picked to change at once: how many, all of them, and done (the user's call, 2026-11-10) -->
@@ -2761,6 +2793,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <button type="button" class="link-btn" id="tdSelAll">すべて選択</button>
           <span class="td-sel-n" id="tdSelN" role="status"></span>
           <button type="button" class="link-btn" id="tdSelDone">終わる</button>
+        </div>
+        <!-- (その2 ③) while putting them in order: what to do, and done -->
+        <div class="td-sel-head" id="tdSortHead" hidden>
+          <span class="td-sel-n">≡ を上下にドラッグして並べ替え</span>
+          <button type="button" class="link-btn" id="tdSortDone">終わる</button>
         </div>
         <ul class="list card" id="todoList"></ul>
         <!-- on a touch screen, until a row has been swiped: that they can be (the user's call: nothing said so) -->
@@ -3568,6 +3605,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield"><input type="time" id="tdRemindAt"></div>
         </form>
         <p class="group-foot" id="tdRemindFoot"></p>
+        <!-- (その2 ①) each morning, the day's ToDos and those past their 期限 as one notification (the user's call, 2026-11-11) -->
+        <h3 class="group-head">朝のまとめのお知らせ</h3>
+        <form class="add" id="tdMorningForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="tdMorningOn">お知らせ</label>
+          <div class="ffield"><input type="checkbox" id="tdMorningOn" class="switch" role="switch"></div>
+          <label class="flabel" for="tdMorningAt">時刻</label>
+          <div class="ffield"><input type="time" id="tdMorningAt" value="07:30"></div>
+        </form>
+        <p class="group-foot" id="tdMorningFoot"></p>
         <!-- the focus timer's lengths (the user's call, 2026-11-10) -->
         <h3 class="group-head">集中タイマー</h3>
         <form class="add" id="focusForm" autocomplete="off" onsubmit="return false">
@@ -4074,6 +4120,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- ④ how long it takes -->
         <label class="flabel" for="todoMins">かかる時間 <span class="opt">任意</span></label>
         <div class="ffield"><select id="todoMins"></select></div>
+        <!-- (その2) ④ its 勉強の科目 (while there are 科目), ⑤ its 金額 and, once it has one, its 費目 -->
+        <div class="form-rows" id="todoSubjectRow" hidden>
+          <label class="flabel" for="todoSubject">勉強の科目 <span class="opt">任意</span></label>
+          <div class="ffield"><select id="todoSubject"></select></div>
+        </div>
+        <label class="flabel" for="todoAmount">金額 <span class="opt">任意</span></label>
+        <div class="ffield"><input type="number" id="todoAmount" min="1" max="9999999" inputmode="numeric"><span class="unit">円</span></div>
+        <div class="form-rows" id="todoCatRow" hidden>
+          <label class="flabel" for="todoCat">費目</label>
+          <div class="ffield"><select id="todoCat"></select></div>
+        </div>
         <label class="flabel" for="todoFlag">重要</label>
         <div class="ffield"><input type="checkbox" id="todoFlag" class="switch" role="switch"></div>
         <span class="flabel" id="todoListLabel">リスト</span>
@@ -4089,6 +4146,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     <!-- ⑦ the ToDos done, looked back on this week or this month (the user's call, 2026-11-10), from ToDo's その他 -->
     <div class="sheet-view" id="tdReviewView" hidden>
       <div class="td-rev" id="tdRevBody"></div>
+    </div>
+    <!-- (その2) ⑧ 手つかずのToDo, from ToDo's その他, and ⑨ 週の見通し, from 見通し (the user's calls, 2026-11-11) -->
+    <div class="sheet-view" id="tdPanelView" hidden>
+      <div class="td-panel" id="tdPanelBody"></div>
     </div>
     <!-- an entry of ToDo, 食事, 運動, 勉強 or 家計簿, from its row on that page (the user's call: what was put in can be put
          right): its add form's fields with its values (the script fills them), キャンセル and 保存 on the bar, as for a plan -->
@@ -5212,10 +5273,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const until = $("todoUntil").value, repeatUntil = repeat && until && until >= due ? until : undefined;
     // ①②④⑨ its time and お知らせ, its steps, how long it takes, the day it starts
     const time = due && isHm($("todoTime").value) ? $("todoTime").value : "", remind = !!due && $("todoRemind").checked, start = tdStartOf($("todoStart").value, due), mins = tdMinsOf($("todoMins")), steps = tdNewSteps.read(), photos = tdTakeNewPhotos();
+    const more2 = tdNewMore(); // (その2 ④⑤)
     if (todoQuery) { todoQuery = ""; $("todoSearch").value = ""; } // nor would it if it lacked the words looked for
     act(async () => {
       const now = Date.now(), ids = await todos.addMany(lines.map((text, i) => ({ text, done: false, due, ...(repeat ? { repeat } : {}), ...(repeatDays ? { repeatDays } : {}), ...(repeatUntil ? { repeatUntil } : {}), ...(memo ? { memo } : {}), ...(flag ? { flag: true } : {}), ...(labelId ? { labelId } : {}), ...(listId ? { listId } : {}),
-        ...(time ? { time } : {}), ...(remind ? { remind: true } : {}), ...(start ? { start } : {}), ...(mins ? { mins } : {}), ...(steps.length ? { steps: i ? tdFreshSteps(steps) : steps } : {}), createdAt: now + i })));
+        ...(time ? { time } : {}), ...(remind ? { remind: true } : {}), ...(start ? { start } : {}), ...(mins ? { mins } : {}), ...more2, ...(steps.length ? { steps: i ? tdFreshSteps(steps) : steps } : {}), createdAt: now + i })));
       todoNewIds.push(...ids); // lit in the list as the sheet goes down
       tdKeepNewPhotos(ids[0], photos); // ⑩ (the first one's)
       // ⑨ one that starts later goes under あとで, folded: said where
@@ -5328,12 +5390,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // One done today keeps its place among them, where it was as it was checked (the user's call: it went down to 完了, as
   // a ToDo app they showed keeps it); those done before today go after the rest, in 完了, the last done first (the user's
   // call), and those done before the day was kept, after them
-  const TODO_SECTIONS = ["期限切れ", "きょう", "あした", "これから", "期限なし", "あとで", "完了"];
+  const TODO_SECTIONS = ["期限切れ", "きょう", "あした", "これから", "期限なし", "待ち", "あとで", "完了"]; // (その2 ⑥ 待ち)
   const TODO_TOMORROW = addDays(todayKey, 1);
   // ⑨ one whose 開始日 hasn't come is under あとで, after 期限なし; ① on the same day, one with a time first, by its time
-  const todoSection = (t) => (t.done && doneDay(t) !== todayKey ? "完了" : tdLater(t) ? "あとで" : !t.due ? "期限なし" : t.due < todayKey ? "期限切れ" : t.due === todayKey ? "きょう" : t.due === TODO_TOMORROW ? "あした" : "これから");
+  const todoSection = (t) => (t.done && doneDay(t) !== todayKey ? "完了" : tdWaiting(t) ? "待ち" : tdLater(t) ? "あとで" : !t.due ? "期限なし" : t.due < todayKey ? "期限切れ" : t.due === todayKey ? "きょう" : t.due === TODO_TOMORROW ? "あした" : "これから");
   const todoOrder = (a, b) => TODO_SECTIONS.indexOf(todoSection(a)) - TODO_SECTIONS.indexOf(todoSection(b))
-    || (todoSection(a) === "完了" ? num(b.doneAt) - num(a.doneAt) : Number(!!b.flag) - Number(!!a.flag) || (a.due || "9999").localeCompare(b.due || "9999") || (isHm(a.time) ? a.time : "99").localeCompare(isHm(b.time) ? b.time : "99"))
+    || (todoSection(a) === "完了" ? num(b.doneAt) - num(a.doneAt) : tdRank(a) - tdRank(b) || Number(!!b.flag) - Number(!!a.flag) || (a.due || "9999").localeCompare(b.due || "9999") || (isHm(a.time) ? a.time : "99").localeCompare(isHm(b.time) ? b.time : "99"))
     || num(a.createdAt) - num(b.createdAt);
   // a ToDo's name as a button, with 重要's mark after it while it is still to do, and said in its name (the user's call)
   function flagged(t, button) {
@@ -5379,25 +5441,30 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const history = due ? [...turnsBefore(t), ymd(new Date())] : null;
       // (①②④⑨ its time and お知らせ, its steps all to do again, how long it takes, and its 開始日 as far before its 期限)
       const start = due && isDay(t.start || "") && t.start <= t.due ? addDays(due, -daysBetween(t.start, t.due)) : "";
+      const rec = await tdOnDone(t); // (その2 ④⑤⑦)
       const next = due ? await todos.add({ text: t.text, done: false, due, repeat: t.repeat, ...(t.repeatDays ? { repeatDays: t.repeatDays } : {}), ...(t.repeatUntil ? { repeatUntil: t.repeatUntil } : {}), ...(from ? { repeatFrom: from } : {}), ...(t.memo ? { memo: t.memo } : {}), ...(t.flag ? { flag: true } : {}), ...(t.labelId ? { labelId: t.labelId } : {}), ...(t.listId ? { listId: t.listId } : {}), ...(history ? { history } : {}),
-        ...(isHm(t.time) ? { time: t.time } : {}), ...(t.remind ? { remind: true } : {}), ...(num(t.mins) > 0 ? { mins: t.mins } : {}), ...(tdFreshSteps(t.steps) ? { steps: tdFreshSteps(t.steps) } : {}), ...(start ? { start } : {}), createdAt: Date.now() }) : null;
-      await todos.update(t.id, { done: true, doneAt: Date.now(), ...(next ? { repeat: undefined, repeatDays: undefined, repeatUntil: undefined, next } : {}) });
+        ...(isHm(t.time) ? { time: t.time } : {}), ...(t.remind ? { remind: true } : {}), ...(num(t.mins) > 0 ? { mins: t.mins } : {}), ...(tdFreshSteps(t.steps) ? { steps: tdFreshSteps(t.steps) } : {}), ...(start ? { start } : {}), ...tdCarry(t), createdAt: Date.now() }) : null;
+      await todos.update(t.id, { done: true, doneAt: Date.now(), ...rec.patch, ...(next ? { repeat: undefined, repeatDays: undefined, repeatUntil: undefined, next } : {}) });
       if (next) tdMovePhotos(t.id, next); // ⑩ its photos go on with the repeat
       todoToCell(t, true); // (a goal's cell's ToDo: the cell checked too)
       // and says when that is (the user's call: it just went, its next turn far down the list), with 元に戻す; its last turn
       // (いつまで reached) says the repeat ends with it
       const undo = () => { const x = todos.get(t.id); if (x?.done) toggleTodo(x); };
-      if (quiet) return;
-      if (next) flash(`「${clip(t.text, 40)}」の次は ${fmtDay(due)}です`, undo);
-      else if (t.repeat && t.due) flash(`「${clip(t.text, 40)}」の繰り返しは、これで終わりです`, undo);
+      // (その2 ④⑤⑦ what was recorded and the time it took, ② 紙ふぶき once what was due by today is all done)
+      const more = rec.words.join("。"), cheer = tdCheer() ? "きょうまでのToDoを、ぜんぶ終えました！" : "";
+      if (quiet) { if (cheer) tdSay(cheer); return; }
+      if (next) flash([`「${clip(t.text, 40)}」の次は ${fmtDay(due)}です`, more, cheer].filter(Boolean).join("。"), undo);
+      else if (t.repeat && t.due) flash([`「${clip(t.text, 40)}」の繰り返しは、これで終わりです`, more, cheer].filter(Boolean).join("。"), undo);
+      else if (more || cheer) flash([more ? `「${clip(t.text, 40)}」を完了しました` : "", more, cheer].filter(Boolean).join("。"), undo);
       return;
     }
     const next = t.next ? todos.get(t.next) : null, back = next && !next.done;
     if (back) { tdMovePhotos(next.id, t.id); takeBack(todos, [next.id]); }
+    tdUndoRecords(t); // (その2 ④⑤ what its being done recorded, taken back)
     // what was written on the turn that goes (a memo, 重要, a new name) comes back with the repeat (the user's call: a memo
     // written there was lost with it)
     await todos.update(t.id, { done: false, doneAt: undefined, next: undefined, ...(back ? { repeat: next.repeat, repeatDays: next.repeatDays, repeatUntil: next.repeatUntil, text: next.text, memo: next.memo, flag: next.flag, labelId: next.labelId, listId: next.listId,
-      time: next.time, remind: next.remind, mins: next.mins, steps: next.steps } : {}) });
+      time: next.time, remind: next.remind, mins: next.mins, steps: next.steps, ...tdCarry(next, true) } : {}), studyMade: undefined, exMade: undefined });
     todoToCell(t, false); // (and the cell back on)
   }
   // a repeating ToDo's turn deleted alone (× on its row, or この回を削除 in its sheet): it goes on to its next turn, as if
@@ -5502,7 +5569,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     } }, text);
     setChildren($("todoMenuGroup"), el("p", { class: "ask-msg", id: "todoMenuMsg" }, name ? `ToDo（${name}）` : "ToDo"),
       todos.items.length ? item("選択して、まとめて変える", () => tdSelStart()) : null, // ⑤
+      todos.items.some((t) => !t.done) ? item("並べ替える", () => tdSortStart()) : null, // (その2 ③)
       item("完了のふりかえり", () => openTdReview(false)), // ⑦
+      (() => { const n = tdStaleList().length; return n ? item(`手つかずのToDoを見直す（${n} 件）`, () => openTdPanel("stale", false)) : null; })(), // (その2 ⑧)
+      item(name ? `「${name}」を文字で送る` : "ToDoを文字で送る", () => tdShare()), // (その2 ⑩)
       item(focusNow() ? "集中タイマーを始めなおす" : "集中タイマーを始める", () => focusStart()),
       item(gone ? `最近削除したToDo（${gone} 件）` : "最近削除したToDo", openTodoTrash),
       done.length ? item(`完了した ${done.length} 件を削除`, () => removeWithUndo(todos, done.map((t) => t.id), `完了したToDoを ${done.length} 件削除しました`), true) : null);
@@ -5511,7 +5581,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("todoMenuNo").focus();
   });
   function renderTodoBadge() {
-    const n = todos.items.filter((t) => !t.done && t.due && t.due <= todayKey).length, mi = menuEl.querySelector('button[data-tab="todo"] .mi');
+    const n = todos.items.filter((t) => !t.done && t.due && t.due <= todayKey && !tdWaiting(t)).length, mi = menuEl.querySelector('button[data-tab="todo"] .mi');
     if (!mi) return;
     mi.querySelector(".badge")?.remove();
     mi.parentElement.querySelector(".badge-sr")?.remove();
@@ -5522,7 +5592,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderTodos() {
     renderTodoBadge(); renderTodoTabs();
     if (!tdPhotosRead) loadTdPhotos(); // ⑩ (read once; the list drawn again once they are)
-    draw(renderTdSettings); draw(renderTdReview); // (ToDo's 編集, ⑦, should they be open)
+    draw(renderTdSettings); draw(renderTdReview); draw(renderTdPanel); // (ToDo's 編集, ⑦, その2 ⑧⑨, should they be open)
     const held = todoHeldBack(), picking = !!tdSel && tab === "todo";
     // with words to look for, only those holding all of them (in the name, the memo, the label's name or ② a step), every
     // one of them (no ten-row cut in 完了), and no button to delete all done, which would take more than are showing
@@ -5543,7 +5613,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     tdShownIds = [];
     list.classList.toggle("picking", picking);
     if (!shown.length) {
-      tdSelSync();
+      tdSelSync(); tdSortSync();
       list.append(el("li", { class: "empty", tabindex: -1 }, words.length
         ? `「${todoQuery.trim()}」に合うToDoはありません。`
         : items.length ? "すべて完了しました"
@@ -5625,7 +5695,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const picked = picking && tdSel.has(t.id);
       const row = el("li", { class: (t.done ? "done" : "") + (kept ? " kept" : "") + (lab ? " tinted" : "") + (picked ? " picked" : ""), style: lab ? labelStyle(lab) : null },
         picking ? el("button", { type: "button", class: "check pick", "data-check": t.id, "aria-pressed": String(picked), "aria-label": `「${t.text}」を選ぶ`, onclick: () => tdPick(t.id) }, checkMark())
-          : el("button", { type: "button", class: "check", "data-check": t.id, "aria-label": `「${t.text}」を${t.done ? "未完了に戻す" : "完了にする"}`, onclick: () => toggleTodo(t) }, checkMark()),
+          : el("button", { type: "button", class: "check", "data-check": t.id, "aria-label": `「${t.text}」を${t.done ? "未完了に戻す" : "完了にする"}`, disabled: tdSort, onclick: () => toggleTodo(t) }, checkMark()),
         el("span", { class: "body" }, flagged(todoPlaced(t), picking ? el("button", { type: "button", class: "text row-link", "data-edit": t.id, "aria-label": `「${t.text}」を選ぶ`, onclick: () => tdPick(t.id) }, t.text) : editLink("todo", t.id, t.text)),
           filed ? (kept ? tag && el("span", { class: "sub due" }, el("span", { class: "due-parts" }, tag))
             : [tag, when || n > 1 ? el("span", { class: "done-day" }, keepUnits([n > 1 ? `${n} 回` : "", when].filter(Boolean).join("・"))) : null])
@@ -5634,7 +5704,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           : delButton(() => removeWithUndo(todos, t.id), "削除", t.text),
         // behind it, for a swipe (todoSwipe): out of reach (inert) until the row is open. The day it is due on already is
         // left out (the user's call: あした on one due tomorrow moved nothing and said it had)
-        t.done || picking ? null : el("span", { class: "swipe-acts", inert: true },
+        t.done || picking || tdSort ? (tdSort && !filed ? tdGrip(t, t.text) : null) : el("span", { class: "swipe-acts", inert: true }, // (その2 ③ ≡ in its place)
           t.due === todayKey ? null : el("button", { type: "button", class: "swipe-act day0", "aria-label": `「${t.text}」をきょうに移す`, onclick: () => putOff(t, 0) }, "きょう"),
           t.due === TODO_TOMORROW ? null : el("button", { type: "button", class: "swipe-act day1", "aria-label": `「${t.text}」をあしたに移す`, onclick: () => putOff(t, 1) }, "あした"),
           t.due === addDays(todayKey, 7) ? null : el("button", { type: "button", class: "swipe-act day7", "aria-label": `「${t.text}」を来週に移す`, onclick: () => putOff(t, 7) }, "来週"))
@@ -5646,7 +5716,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       `ほか ${sum(more, (t) => group.get(t).length)} 件を見る`)));
     if (focused) refocus(list, focused);
     lightWords(list, words);
-    tdSelSync();
+    tdSelSync(); tdSortSync();
   }
   // the words looked for, lit in the names and memos that hold them (the user's call: a word found past a memo's two
   // lines didn't show, so why a ToDo was found didn't either; the memo shows whole while looking, too). CSS highlights
@@ -5803,7 +5873,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // which keeps its own. From a keyboard or VoiceOver, its sheet does the same
   const todoMenu = $("todoMenu");
   let todoHold = null, todoMenuDown = false; // the hold going on; whether a press has begun on the menu since it opened
-  const heldRow = (ev) => { const li = ev.target.closest("#todoList > li"); return li && !tdSel && todoRows.has(li) && !ev.target.closest("a[href], .td-steps, .td-thumbs, .td-steps-btn") ? li : null; }; // (⑤ not while picking; ②⑩ nor on a step or a photo)
+  const heldRow = (ev) => { const li = ev.target.closest("#todoList > li"); return li && !tdSel && !tdSort && todoRows.has(li) && !ev.target.closest("a[href], .td-steps, .td-thumbs, .td-steps-btn") ? li : null; }; // (⑤ not while picking; ②⑩ nor on a step or a photo)
   const dropHold = () => { clearTimeout(todoHold?.timer); todoHold = null; };
   todoListEl.addEventListener("pointerdown", (ev) => {
     dropHold();
@@ -5836,6 +5906,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       t.done ? item("未完了に戻す", () => { const x = todos.get(t.id); if (x?.done) toggleTodo(x); }) : item(t.flag ? "重要をはずす" : "重要にする", () => setFlag(t, !t.flag)),
       t.done ? null : [[0, "きょう"], [1, "あした"], [7, "来週"]].filter(([d]) => t.due !== addDays(todayKey, d)).map(([d, name]) => item(`${name}に移す`, () => putOff(t, d))),
       t.done ? null : item("集中タイマーを始める", () => focusStart(t.id)), // (the user's call, 2026-11-10)
+      t.done ? null : item(tdWaiting(t) ? "返事待ちをやめる" : "返事待ちにする", () => tdSetWait(t, !tdWaiting(t))), // (その2 ⑥)
       item("複製", (byKey) => { recReturnId = t.id; fillTodoCopy(t); openNewTodo(byKey, "rec"); }),
       item("選択して、まとめて変える", () => tdSelStart(t.id)), // ⑤
       again ? item("この回を削除（次の回は残す）", () => skipTurn(t), true) : null,
@@ -10024,6 +10095,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       }
     }
     out.push(...tdAlarms(now)); // ① ToDo's お知らせ (the user's call, 2026-11-10)
+    out.push(...tdMorningAlarms(now), ...tdWaitAlarms(now)); // (ToDo その2 ① 朝のまとめ, ⑥ 返事待ち)
     out.push(...goalReviewAlarms(now)); // 目標 ⑤ 見直しのお知らせ
     out.push(...tsWeekAlarms(now)); // つみかさね ⑩ 週のまとめのお知らせ
     out.push(...tsDaySumAlarms(now)); // つみかさね 1日のまとめのお知らせ
@@ -10054,6 +10126,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const g of goals.items) if (!g.done && !g.pausedAt && g.deadline) parts.push(["goal", g.id, g.title, g.deadline]); // (目標の期限の通知)
     for (const e of events.items) { const a = alarmsOf(e); if (a.length) parts.push([e.id, e.title, e.date, e.endDate, e.time, e.endTime, e.repeat, e.repeatUntil, e.skip, a, e.place]); }
     parts.push(...tdPushParts()); // (① ToDo's お知らせ, and the focus timer's end)
+    parts.push(...tdMorningParts(), ...tdWaitParts()); // (ToDo その2 ①⑥)
     parts.push(...goalReviewParts()); // (目標 ⑤)
     parts.push(...tsWeekParts()); // (つみかさね ⑩)
     parts.push(...tsDaySumParts()); // (つみかさね 1日のまとめ)
@@ -10634,6 +10707,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   let recFromDay = false; // that entry is a ToDo opened from a day's list, which キャンセル, 保存 and 削除 go back to
   let todoFromDay = false; // the new ToDo's form was opened from a day's list (ToDoを追加), which キャンセル and 閉じる go back to
   let tdReviewOpen = false; // the sheet holds ToDo's ⑦ 完了のふりかえり, opened from its その他
+  let tdPanel = null; // (ToDo その2 ⑧⑨) "stale" or "week": the sheet holds 手つかずのToDo or 週の見通し
   let mandalaGoal = null, mPath = [], chartReturnId = null; // the goal whose chart is open, the cells walked into, its row
   let chartFromDay = false; // the chart was opened from a day's list (its goal falls due that day), which 戻る goes back to
   let mOverview = false; // the chart shows 全体, the whole of it at a glance, rather than the eight to write in
@@ -10645,8 +10719,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // what the sheet holds, one view at a time: a new goal, a goal's chart, the settings, a new plan, an entry of a record
   // page, an event's edit form, or (by default) a day's plans. The settings come before a new plan, which can lead to
   // them to make its first label
-  const SHEET_VIEWS = { tdreview: "tdReviewView", alarm: "alarmView", find: "findView", month: "monthView", goal: "goalView", chart: "mandalaView", settings: "settingsView", plan: "planView", todo: "todoView", rec: "recView", edit: "editView", day: "dayView" };
-  const sheetMode = () => (tdReviewOpen ? "tdreview" : alarmFor ? "alarm" : findOpen ? "find" : monthPick ? "month" : goalNew ? "goal" : mandalaGoal ? "chart" : settingsFrom ? "settings" : planNew ? "plan" : todoNew ? "todo" : recEdit ? "rec" : editingId ? "edit" : "day");
+  const SHEET_VIEWS = { tdpanel: "tdPanelView", tdreview: "tdReviewView", alarm: "alarmView", find: "findView", month: "monthView", goal: "goalView", chart: "mandalaView", settings: "settingsView", plan: "planView", todo: "todoView", rec: "recView", edit: "editView", day: "dayView" };
+  const sheetMode = () => (tdPanel ? "tdpanel" : tdReviewOpen ? "tdreview" : alarmFor ? "alarm" : findOpen ? "find" : monthPick ? "month" : goalNew ? "goal" : mandalaGoal ? "chart" : settingsFrom ? "settings" : planNew ? "plan" : todoNew ? "todo" : recEdit ? "rec" : editingId ? "edit" : "day");
   // the form under a plan's 通知アラーム: what is kept and asked about as for the form itself (drafts, changes not saved)
   const formMode = () => { const m = sheetMode(); return m === "alarm" ? (alarmFor === "ed" ? "edit" : "plan") : m; };
   // the bar on top: 完了 over the day's list, the settings and a chart; キャンセル and 保存 over an event's or an entry's edit form, as iOS edit sheets have, and キャンセル and 追加 over a new goal or plan; 戻る over the settings when a day's
@@ -10662,7 +10736,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("sheetCancel").hidden = !(changing || adding || mode === "month" || mode === "alarm" || (mode === "chart" && (mPath.length || chartFromDay)) || (mode === "settings" && settingsFrom === "day") || (mode === "day" && dayFromFind));
     $("sheetCancel").textContent = mode === "todo" && todoAdded ? "閉じる" : changing || adding || mode === "month" ? "キャンセル" : "戻る";
     const rel = mode === "day" ? relLabel(calDay) : "";
-    $("sheetTitle").textContent = mode === "tdreview" ? "完了のふりかえり" : mode === "alarm" ? "通知アラーム" : mode === "find" ? "予定" : mode === "month" ? "月を選ぶ" : mode === "goal" ? "新しい目標" : mode === "plan" ? (planCopy ? "予定を複製" : "新しい予定") : mode === "todo" ? "新しいToDo" : mode === "chart" ? chartTitle()
+    $("sheetTitle").textContent = mode === "tdpanel" ? (tdPanel === "week" ? "週の見通し" : "手つかずのToDo") : mode === "tdreview" ? "完了のふりかえり" : mode === "alarm" ? "通知アラーム" : mode === "find" ? "予定" : mode === "month" ? "月を選ぶ" : mode === "goal" ? "新しい目標" : mode === "plan" ? (planCopy ? "予定を複製" : "新しい予定") : mode === "todo" ? "新しいToDo" : mode === "chart" ? chartTitle()
       : mode === "settings" ? (settingsScope === "woMenu" ? "運動のメニュー" : settingsScope === "job" ? "バイトの設定" : "設定") : mode === "rec" ? (recEdit.fresh ? REC_NEW[recEdit.kind].title : REC_EDIT[recEdit.kind].title) : mode === "edit" ? "予定を編集" : (rel ? rel + "・" : "") + fmtMDW(calDay) + (holidayName(calDay) ? "・" + holidayName(calDay) : "");
     // a plan's メモ on its own page: 完了 alone on the bar, back to the form
     $("memoDone").hidden = !memoFor;
@@ -10677,7 +10751,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     sheetEl.style.transform = "";
     commitChartText(); // a cell's unsaved text goes in before the chart lets go
     dropKeptDue();
-    alarmFor = null; tdReviewOpen = false; noteFor = null; stepsAll = false; $("mNote").hidden = true; gridEdit = false; memoFor = null; $("planView").classList.remove("memo-open"); $("editView").classList.remove("memo-open"); editingId = null; settingsFrom = null; goalNew = false; planNew = false; planFromDay = false; planCopy = false; planFromTodo = false; monthPick = false; findOpen = false; dayFromFind = false; todoNew = false; todoAdded = false; todoNewIds = []; todoFromDay = false; recEdit = null; recShown = null; recFromDay = false; mandalaGoal = null; mPath = []; mEditGoal = null; chartFromDay = false; mOverview = false; mWholeFrom = []; mSwap = null; menuFor = null; $("mMenu").hidden = true;
+    alarmFor = null; tdReviewOpen = false; tdPanel = null; noteFor = null; stepsAll = false; $("mNote").hidden = true; gridEdit = false; memoFor = null; $("planView").classList.remove("memo-open"); $("editView").classList.remove("memo-open"); editingId = null; settingsFrom = null; goalNew = false; planNew = false; planFromDay = false; planCopy = false; planFromTodo = false; monthPick = false; findOpen = false; dayFromFind = false; todoNew = false; todoAdded = false; todoNewIds = []; todoFromDay = false; recEdit = null; recShown = null; recFromDay = false; mandalaGoal = null; mPath = []; mEditGoal = null; chartFromDay = false; mOverview = false; mWholeFrom = []; mSwap = null; menuFor = null; $("mMenu").hidden = true;
     disarmDelete(); disarmGoalDelete(); disarmRecDelete(); syncSheetHead();
   }
   // a grey day of the month before or after opens its sheet too, without turning the month (the user's call)
@@ -10713,7 +10787,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function openNewTodoFromDay() {
     if (!$("todoText").value.trim()) clearTodoForm();
     $("todoDue").value = calDay; syncTodoDue();
-    todoNew = true; todoFromDay = true; todoAdded = false; renderTodoLabels(); syncSheetHead(); syncTodoSave(); tdSyncNew(); renderTodoParse(); renderTodoSetPick();
+    todoNew = true; todoFromDay = true; todoAdded = false; renderTodoLabels(); syncSheetHead(); syncTodoSave(); tdSyncNew(); renderTodoParse(); renderTodoSetPick(); tdFillNewMore();
     sheetEl.scrollTop = 0;
     $("todoText").focus();
     growField($("todoText")); growField($("todoMemo"));
@@ -10733,6 +10807,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (t.due && !t.done && t.remind) $("todoRemind").checked = true;
     setChildren($("todoMins"), tdMinsOptions(t.mins));
     tdNewSteps.fill(tdFreshSteps(t.steps) || []);
+    tdFillNewMore(t); // (その2 ④⑤)
     todoLabelChoice = todoLabelOf(t) ? t.labelId : ""; todoListChoice = todoListOf(t) ? t.listId : ""; renderTodoLabels();
     syncTodoDue(); syncTodoSave(); tdSyncNew();
   }
@@ -10969,6 +11044,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (scope === "workout") renderWoSettings(); // 運動's month's goal (⑧) and rest (⑨)
     if (scope === "meal") renderMealSettings(); // 食事's 目安, protein goal (⑤) and お知らせ (⑩)
     if (scope === "goal") renderGoalSettings(); // 目標's ⑤ 見直しのお知らせ
+    if (scope === "todo") renderTdMorning(); // (ToDo その2 ① 朝のまとめのお知らせ)
     // (バイト: one blank job to fill in when there is none yet, its 時給 ready to type)
     if (scope === "job") {
       if (!jobList().length) act(() => settings.set("jobs", { ...jobSet(), items: [newJob()], updatedAt: Date.now() }));
@@ -11009,7 +11085,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (sheetEl.open) return;
     resetSheet();
     if (!$("todoText").value.trim()) todoListChoice = (opener === "todo" || opener === "todonav") && todoTab && todoLists.get(todoTab) ? todoTab : "";
-    todoNew = true; renderTodoLabels(); syncSheetHead(); syncTodoSave(); syncTodoDue(); tdSyncNew(); renderTodoParse(); renderTodoSetPick();
+    todoNew = true; renderTodoLabels(); syncSheetHead(); syncTodoSave(); syncTodoDue(); tdSyncNew(); renderTodoParse(); renderTodoSetPick(); tdFillNewMore();
     presentSheet(byKey, opener, $("todoText"));
     growField($("todoText")); growField($("todoMemo")); // what was kept from before, at its height now it shows
   }
@@ -11086,7 +11162,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     resetSheet();
     // keyboard users land back on what they opened it from: the day (the grid has been redrawn since), the gear, or an
     // entry's row on the page showing (記録's list and the record page can hold the same entry)
-    if (sheetByKey) ({ tdreview: $("todoMore"), goalgear: $("goalSettings"), find: $("calFind"), month: $("calMonthBtn"), gear: $("calSettings"), plan: $("calAdd"), todo: $("todoAdd"), todogear: $("todoSettings"), records: $("recSettings"), tsumi: $("tsumiSettings"), tsumiadd: $("tsumiAdd"), todonav: navbar.classList.contains("scrolled") ? $("navAdd") : $("todoAdd"), rec: $("sec-" + tab).querySelector(`[data-edit="${recReturnId}"]`), study: $("studySettings"), home: $("homeSettings"), homerec: homeReturn && $("homeTiles").querySelector(homeReturn), grid: $("calTime").querySelector(`[data-ev="${CSS.escape(gridReturn)}"]`), weight: $("wtSettings"), money: $("moneySettings"), tiletodo: $("homeTiles").querySelector(".td-add button"), goal: $("goalAdd"), chart: $("goalList").querySelector(`[data-goal="${chartReturnId}"]`) || $("goalAdd") }[sheetOpener] || $("calGrid").querySelector(".cal-day.sel"))?.focus();
+    if (sheetByKey) ({ tdreview: $("todoMore"), tdstale: $("todoMore"), tdweek: $("todoWeek"), goalgear: $("goalSettings"), find: $("calFind"), month: $("calMonthBtn"), gear: $("calSettings"), plan: $("calAdd"), todo: $("todoAdd"), todogear: $("todoSettings"), records: $("recSettings"), tsumi: $("tsumiSettings"), tsumiadd: $("tsumiAdd"), todonav: navbar.classList.contains("scrolled") ? $("navAdd") : $("todoAdd"), rec: $("sec-" + tab).querySelector(`[data-edit="${recReturnId}"]`), study: $("studySettings"), home: $("homeSettings"), homerec: homeReturn && $("homeTiles").querySelector(homeReturn), grid: $("calTime").querySelector(`[data-ev="${CSS.escape(gridReturn)}"]`), weight: $("wtSettings"), money: $("moneySettings"), tiletodo: $("homeTiles").querySelector(".td-add button"), goal: $("goalAdd"), chart: $("goalList").querySelector(`[data-goal="${chartReturnId}"]`) || $("goalAdd") }[sheetOpener] || $("calGrid").querySelector(".cal-day.sel"))?.focus();
   });
   // Esc: from an edit form (or settings or a chart reached from a day) back to the day's list, from a chart's cell back
   // out of it, otherwise out of the sheet
@@ -12126,12 +12202,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           } }, "未完了に戻す");
           const mo = tdEditRows(t, due); // (②④⑩ and the timer's, as for one to do)
           return [text, recRow("期限", due, { opt: true, after: [quick, clear], below: true }),
-            recRow("完了", el("output", { id: "reDone" }, doneDay(t) ? fmtDayLong(doneDay(t)) : "日付なし"), { after: back }), turnsRow, mo.mins, labelRow, mo.steps, mo.photos, mo.focus, madeRow, memo];
+            recRow("完了", el("output", { id: "reDone" }, doneDay(t) ? fmtDayLong(doneDay(t)) : "日付なし"), { after: back }), turnsRow, mo.mins, mo.more, labelRow, mo.steps, mo.photos, mo.focus, madeRow, memo];
         }
         // ① its time and お知らせ, ⑨ 開始日, ④ かかる時間, ② its steps, ⑩ its photos, the time focused on it, and ⑧ what to do
         // with one put off again and again (the user's calls, 2026-11-10)
         const mo = tdEditRows(t, due);
-        return [text, mo.moved, recRow("期限", due, { opt: true, after: [quick, clear], below: true }), mo.time, repeatRow, untilRow, mo.remind, mo.start, mo.mins, turnsRow, recRow("重要", flag), labelRow, mo.steps, mo.photos, mo.focus, madeRow, memo];
+        return [text, mo.moved, recRow("期限", due, { opt: true, after: [quick, clear], below: true }), mo.time, repeatRow, untilRow, mo.remind, mo.start, mo.mins, mo.more, turnsRow, recRow("重要", flag), labelRow, mo.steps, mo.photos, mo.focus, madeRow, memo];
       },
       // a 期限 changed here is the repeat's new day; left as it was, the day its turns count from stays too. A done one's
       // sheet has no repeat or 重要 to read: they stay as they were. A label or list deleted since stays on it, so its
@@ -13718,7 +13794,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("wxForget").addEventListener("click", () => { lsJsonPut(WX_PLACE, null); lsJsonPut(WX_DATA, null); wxError = ""; syncWxSettings(); renderHome(); flash("天気の場所を消しました"); });
   function renderHome() {
     const focusRow = document.activeElement?.dataset || {}; // a ルーティーン or ToDo row on a tile, pressed from the keyboard
-    const undone = todos.items.filter((t) => !t.done && !tdLater(t)); // (⑨ not those waiting for their 開始日)
+    const undone = todos.items.filter((t) => !t.done && !tdLater(t) && !tdWaiting(t)); // (⑨ not those waiting for their 開始日, nor その2 ⑥ 返事待ち)
     const dueToday = undone.filter((t) => t.due === todayKey).length;
     const overdue = undone.filter((t) => t.due && t.due < todayKey).length;
     // the tile's three to do: one checked off a moment ago still holds its place there
@@ -16688,7 +16764,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月11日 6:37"; // 702d2b44 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月11日 8:36"; // 28dd7e69 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -17349,7 +17425,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const at = dayAt(t.due, t.time);
       if (at > now + 5000 && at <= last) out.push({ at, title: oneLine(t.text).slice(0, 100) || "ToDo", body: tdAlarmBody(t), tag: `todo:${t.id}:${t.due}`, url: `./#todo:${t.id}` });
     }
-    for (const [d, list] of byDay) {
+    for (const [d, list] of tdMorning().on ? [] : byDay) { // (その2 ①: with 朝のまとめ on, they are in it)
       const at = dayAt(d, am);
       if (at <= now + 5000 || at > last) continue;
       const names = list.sort(todoOrder).map((t) => oneLine(t.text)).join("、");
@@ -17788,7 +17864,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("dl", { class: "td-rev-stats" },
           el("div", {}, el("dt", {}, "期限までに完了"), el("dd", {}, withDue.length ? `${onTime}/${withDue.length} 件（${Math.round((onTime / withDue.length) * 100)}%）` : "—")),
           el("div", {}, el("dt", {}, "1日あたり"), el("dd", {}, `${(Math.round((list.length / upTo) * 10) / 10).toFixed(1)} 件`)),
-          el("div", {}, el("dt", {}, "集中した時間"), el("dd", {}, focus ? keepUnits(durText(Math.round(focus))) : "—")))),
+          el("div", {}, el("dt", {}, "集中した時間"), el("dd", {}, focus ? keepUnits(durText(Math.round(focus))) : "—")), tdEstRow(list))), // (その2 ⑦)
       list.length ? [el("h3", { class: "group-head" }, "リストごと"), el("div", { class: "card pad" }, rows(byList)),
         el("h3", { class: "group-head" }, "ラベルごと"), el("div", { class: "card pad" }, rows(byLabel))]
         : el("p", { class: "group-foot" }, tdRevBy === "week" ? "今週完了したToDoは、まだありません。" : "今月完了したToDoは、まだありません。"));
@@ -17864,7 +17940,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       : t.remind && t.due ? x("td-bell", el("span", { role: "img", "aria-label": "お知らせあり" }, icon("bell", 13))) : null;
     const moved = tdMoved(t);
     return { time, rest: [tdLater(t) ? x("td-start", `${fmtDay(t.start)}から`) : null, num(t.mins) > 0 ? x("td-mins", icon("timer", 13), " ", keepUnits(durText(num(t.mins)))) : null,
-      moved >= 2 ? x("td-moved" + (moved >= 3 ? " many" : ""), `${moved}回先送り`) : null, num(t.focus) >= 1 ? x("td-focus", `集中 ${keepUnits(durText(Math.round(num(t.focus))))}`) : null] };
+      moved >= 2 ? x("td-moved" + (moved >= 3 ? " many" : ""), `${moved}回先送り`) : null, num(t.focus) >= 1 ? x("td-focus", `集中 ${keepUnits(durText(Math.round(num(t.focus))))}`) : null, ...tdMoreParts(t, x)] }; // (その2 ④⑤⑥)
   }
 
   // ⑩ a ToDo's photos (the user's call): kept on this device only, in 体型の写真's store with the ToDo's id in place of a
@@ -18002,7 +18078,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     days[day] = num(days[day]) + mins;
     act(async () => {
       await settings.set(FOCUS_LOG_ID, { days, updatedAt: Date.now() });
-      if (t) await todos.update(t.id, { focus: num(t.focus) + mins });
+      if (t) await todos.update(t.id, { focus: num(t.focus) + mins, ...(await tdStudyFromFocus(t, mins, day)) }); // (その2 ④ in 勉強 too)
     });
   }
   function focusTick() {
@@ -18104,6 +18180,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     tdNewPhotos = [];
     tdNewPhotosBox.redraw();
     setChildren($("todoMins"), tdMinsOptions(0));
+    tdFillNewMore(); // (その2 ④⑤)
     tdSyncNew(); renderTodoParse(); renderTodoSetPick();
   }
   // its photos as it is added (taken out of the form first, which is then cleared), to the first ToDo it made
@@ -18132,14 +18209,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       photos: tdPhotosEditor("rePhotos", t.id),
       focus: num(t.focus) >= 1 ? recRow("集中した時間", el("output", { id: "reFocus" }, keepUnits(durText(Math.round(num(t.focus)))))) : null,
       moved: tdMovedCard(t),
+      more: tdMoreRows(t), // (その2 ④⑤⑥)
     };
   }
   function tdEditRead(t, due) {
     const steps = $("reSteps")?.read() || [];
     const out = { mins: $("reMins") ? tdMinsOf($("reMins")) : t.mins, steps: steps.length ? steps : undefined };
-    if (!$("reTime")) return out; // (a done one's: no time, お知らせ or 開始日 to read)
+    if (!$("reTime")) return { ...out, ...tdMoreRead(t) }; // (a done one's: no time, お知らせ or 開始日 to read)
     const time = $("reTime").value;
-    return { ...out, time: due && isHm(time) ? time : undefined, remind: due && $("reRemind").checked ? true : undefined, start: tdStartOf($("reStart").value, due) || undefined,
+    return { ...out, ...tdMoreRead(t), time: due && isHm(time) ? time : undefined, remind: due && $("reRemind").checked ? true : undefined, start: tdStartOf($("reStart").value, due) || undefined,
       moved: !t.done && t.due && due && due > t.due ? num(t.moved) + 1 : !due ? undefined : t.moved };
   }
 
@@ -20250,6 +20328,373 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("tsumiAnnivForm").reset();
     flash(`「${name}」を記念日にしました`, () => act(() => settings.set(ANNIV_ID, { items: was, updatedAt: Date.now() })));
   });
+
+  // ---------- ToDo その2 ①〜⑩ (the user's calls, 2026-11-11): the morning's ToDos as one notification (①), 紙ふぶき once
+  // what was due by today is all done (②), an order of one's own (③), 勉強 (④) and 家計簿 (⑤) joined to a ToDo, 返事待ち
+  // (⑥), the time guessed against the time it took (⑦), the ones left untouched gone over (⑧), the week ahead (⑨) and a
+  // list as words to send (⑩) ----------
+  // a word after the message showing (its 元に戻す kept), or a message of its own
+  function tdSay(words, undo = null) {
+    setTimeout(() => {
+      if (flashed && Date.now() < flashed.until && typeof flashed.msg === "string" && !flashed.msg.includes(words)) flash(`${flashed.msg.replace(/[。！]$/, "")}。${words}`, flashed.undo, undefined, flashed.label);
+      else if (!flashed?.msg?.includes?.(words)) flash(words, undo);
+    }, 0);
+  }
+
+  // ① 朝のまとめのお知らせ (the user's call): each morning at the time set (off at first; 7:30), the ToDos due that day or
+  // before, still to do, as one notification; pressed, ToDo. It stands in for the morning's own of those with お知らせ
+  // and no time (tdAlarms), which it holds. Sent again as they change (pushSig), so it says them as they are
+  const TD_MORNING_ID = "tdMorning";
+  function tdMorning() { const v = settings.get(TD_MORNING_ID) || {}; return { on: !!v.on, at: isHm(v.at) ? v.at : "07:30" }; }
+  // a morning's: due by then, begun by then (not あとで), not waiting (⑥)
+  const tdMorningList = (d) => todos.items.filter((t) => !t.done && typeof t.text === "string" && isDay(t.due || "") && t.due <= d && !(isDay(t.start || "") && t.start > d) && !tdWaiting(t)).sort(todoOrder);
+  function tdMorningAlarms(now) {
+    const r = tdMorning(), out = [];
+    if (!r.on) return out;
+    for (let i = 0; i <= PUSH_AHEAD; i++) {
+      const d = addDays(todayKey, i), at = dayAt(d, r.at);
+      if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5) continue;
+      const list = tdMorningList(d);
+      if (!list.length) continue;
+      const late = list.filter((t) => t.due < d).length, names = list.map((t) => oneLine(t.text)).join("、");
+      out.push({ at, title: `きょうのToDo ${list.length}件` + (late ? `（期限切れ ${late}件）` : ""), body: names.length > 120 ? names.slice(0, 119) + "…" : names, tag: `td-morning:${d}`, url: "./#todo" });
+    }
+    return out;
+  }
+  function tdMorningParts() {
+    const r = tdMorning();
+    return r.on ? [["tdMorning", r.at, todos.items.filter((t) => !t.done && t.due).map((t) => [t.id, t.text, t.due, t.start || "", tdWaiting(t) ? 1 : 0])]] : [];
+  }
+  function renderTdMorning() {
+    const r = tdMorning(), st = pushState(), f = $("tdMorningAt");
+    $("tdMorningOn").checked = r.on;
+    if (document.activeElement !== f) f.value = r.at;
+    f.disabled = !r.on;
+    $("tdMorningFoot").textContent = !r.on ? "毎朝、その日までの期限のToDo（期限切れもふくむ）を、1つの通知でお知らせします。"
+      : st === "on" ? `毎朝 ${r.at} に、この端末に届きます。お知らせを付けた時刻のないToDoも、この通知にまとまります。` : pushWords(st).replace("通知アラーム", "お知らせ");
+  }
+  function saveTdMorning(patch) { act(() => settings.set(TD_MORNING_ID, { ...tdMorning(), ...patch, updatedAt: Date.now() })); renderTdMorning(); }
+  $("tdMorningOn").addEventListener("change", (ev) => { saveTdMorning({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderTdMorning); });
+  $("tdMorningAt").addEventListener("change", (ev) => { if (isHm(ev.target.value)) saveTdMorning({ at: ev.target.value }); });
+
+  // ② the last of what was due by today checked off (the user's call): 紙ふぶき and a word, once a day (kept on this device)
+  const TD_CHEER_KEY = LS_PREFIX + "tdCheer";
+  function tdCheer() {
+    const due = todos.items.filter((x) => isDay(x.due || "") && x.due <= todayKey && !tdLater(x) && !tdWaiting(x));
+    if (!due.length || due.some((x) => !x.done) || !due.some((x) => doneDay(x) === todayKey)) return false;
+    try { if (localStorage.getItem(TD_CHEER_KEY) === todayKey) return false; localStorage.setItem(TD_CHEER_KEY, todayKey); } catch { return false; }
+    setTimeout(celebrate, 250);
+    return true;
+  }
+
+  // ③ an order of one's own (the user's call): from その他, each row still to do has ≡ at its end, dragged up or down in its
+  // heading (or moved with ↑ ↓ on it); its place is kept as rank, which comes before 重要 and the 期限 in its heading.
+  // Ones never moved come after, in the order they had. 終わる, or another page, ends it
+  let tdSort = false, tdDrag = null;
+  function tdSortStart() {
+    tdSel = null; tdSort = true; closeRow();
+    if (todoQuery) { todoQuery = ""; $("todoSearch").value = ""; } // (every row of a heading, to put them all in order)
+    renderTodos();
+    $("todoList").querySelector(".td-grip")?.focus();
+  }
+  function tdSortSync() {
+    if (tdSort && tab !== "todo") tdSort = false;
+    $("tdSortHead").hidden = !tdSort;
+    $("todoList").classList.toggle("sorting", tdSort);
+    $("todoSearch").disabled = tdSort; // (words looked for would leave some of a heading's rows out of its order)
+    if (tdSort) document.querySelector("#sec-todo .td-tools").hidden = true;
+    else if (!tdSel) document.querySelector("#sec-todo .td-tools").hidden = false;
+  }
+  $("tdSortDone").addEventListener("click", () => { tdSort = false; renderTodos(); });
+  // the rows of the heading a row is under, those still to do
+  function tdSectionRows(li) {
+    let a = li;
+    while (a.previousElementSibling && !a.previousElementSibling.classList.contains("dayhead")) a = a.previousElementSibling;
+    const out = [];
+    for (let r = a; r && !r.classList.contains("dayhead"); r = r.nextElementSibling) if (r.querySelector(".td-grip")) out.push(r);
+    return out;
+  }
+  const tdRank = (t) => (Number.isFinite(t.rank) ? t.rank : Infinity);
+  function tdSortMove(ids, from, to) {
+    if (from === to || to < 0 || to >= ids.length) return;
+    const order = [...ids], [x] = order.splice(from, 1);
+    order.splice(to, 0, x);
+    const was = ids.map((id) => [id, { rank: todos.get(id)?.rank }]);
+    act(() => todos.updateMany(order.map((id, i) => [id, { rank: i + 1 }])));
+    flash("順番を変えました", () => act(() => todos.updateMany(was)));
+  }
+  function tdGrip(t, label) {
+    return el("button", { type: "button", class: "grip td-grip", "data-grip": t.id, "aria-label": `「${label}」を動かす`, onpointerdown: (ev) => tdSortDrag(ev, t.id),
+      onkeydown: (ev) => {
+        const by = ev.key === "ArrowUp" ? -1 : ev.key === "ArrowDown" ? 1 : 0;
+        if (!by) return;
+        ev.preventDefault();
+        const rows = tdSectionRows(ev.currentTarget.closest("li")), ids = rows.map((r) => todoRows.get(r).id), i = ids.indexOf(t.id);
+        tdSortMove(ids, i, i + by);
+        $("todoList").querySelector(`[data-grip="${t.id}"]`)?.focus();
+      } }, icon("grip", 22));
+  }
+  function tdSortDrag(ev, id) {
+    if (ev.button !== 0 || tdDrag) return;
+    ev.preventDefault();
+    const li = ev.currentTarget.closest("li"), rows = tdSectionRows(li), box = (r) => r.getBoundingClientRect();
+    try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch {}
+    tdDrag = { id, li, rows, from: rows.indexOf(li), to: rows.indexOf(li), pid: ev.pointerId, y: ev.clientY, py: ev.clientY, sy: scrollY,
+      mids: rows.map((r) => box(r).top + scrollY + box(r).height / 2), top: box(li).top + scrollY, h: box(li).height,
+      lo: box(rows[0]).top + scrollY, hi: box(rows[rows.length - 1]).bottom + scrollY };
+    li.classList.add("lifted"); $("todoList").classList.add("dragging");
+    tdDrag.raf = requestAnimationFrame(tdSortScroll);
+  }
+  function tdSortPlace() {
+    const d = tdDrag, y = clampTo(d.py - d.y + scrollY - d.sy, d.lo - d.top, d.hi - d.top - d.h);
+    d.li.style.transform = `translateY(${y}px)`;
+    // it takes a row's place once it covers half of it
+    const top = d.top + y;
+    let to = d.from;
+    while (to > 0 && top < d.mids[to - 1]) to--;
+    while (to < d.rows.length - 1 && top + d.h > d.mids[to + 1]) to++;
+    if (to === d.to) return;
+    d.to = to;
+    d.rows.forEach((r, i) => { if (r !== d.li) r.style.transform = i > d.from && i <= to ? `translateY(${-d.h}px)` : i < d.from && i >= to ? `translateY(${d.h}px)` : ""; });
+  }
+  // near the top bar or the tab bar, the page goes up or down under it
+  function tdSortScroll() {
+    const d = tdDrag;
+    if (!d) return;
+    const [head, low] = tsumiBand(), edge = 48, by = d.py < head + edge ? d.py - (head + edge) : d.py > low - edge ? d.py - (low - edge) : 0;
+    if (by) { const was = scrollY; window.scrollBy(0, by / 4); if (scrollY !== was) tdSortPlace(); }
+    d.raf = requestAnimationFrame(tdSortScroll);
+  }
+  function tdSortEnd(ev) {
+    const d = tdDrag;
+    if (!d || (ev.pointerId !== undefined && ev.pointerId !== d.pid)) return;
+    cancelAnimationFrame(d.raf);
+    tdDrag = null;
+    $("todoList").classList.remove("dragging");
+    if (ev.type === "pointerup" && d.to !== d.from) { tdSortMove(d.rows.map((r) => todoRows.get(r).id), d.from, d.to); return; }
+    d.li.classList.remove("lifted");
+    for (const r of d.rows) r.style.transform = "";
+  }
+  $("todoList").addEventListener("pointermove", (ev) => { if (tdDrag?.pid === ev.pointerId) { tdDrag.py = ev.clientY; tdSortPlace(); } });
+  $("todoList").addEventListener("pointerup", tdSortEnd);
+  $("todoList").addEventListener("pointercancel", tdSortEnd);
+
+  // ④ a ToDo's 勉強の科目 and ⑤ its 金額 and 費目 (the user's calls): kept on it, gone on with a repeat; ⑥ 返事待ち. What a
+  // repeat's next turn takes (all: the turn taken back, every one of them as that turn had it)
+  function tdCarry(t, all = false) {
+    if (all) return { subject: t.subject, amount: t.amount, cat: t.cat, rank: t.rank };
+    return { ...(t.subject ? { subject: t.subject } : {}), ...(num(t.amount) > 0 ? { amount: t.amount, ...(t.cat ? { cat: t.cat } : {}) } : {}), ...(Number.isFinite(t.rank) ? { rank: t.rank } : {}) };
+  }
+  // its being done: ④ its かかる時間 in 勉強 under its 科目 (unless the focus timer's time went there already), ⑤ its 金額 in
+  // 家計簿 as spending, and ⑦ the time it was thought to take against the time focused on it. What was made is kept on it
+  // (studyMade, exMade), so its being checked back on takes it back
+  async function tdOnDone(t) {
+    const patch = {}, words = [], sub = t.subject && subjects.get(t.subject), mins = Math.round(num(t.mins));
+    if (sub && !(num(t.studied) > 0) && mins > 0) {
+      patch.studyMade = await study.add({ date: todayKey, minutes: mins, subjectId: sub.id, note: clip(oneLine(t.text), 60), createdAt: Date.now() });
+      words.push(`勉強（${oneLine(sub.name)}）に ${durText(mins)}を記録しました`);
+    }
+    if (num(t.amount) > 0) {
+      const cat = t.cat && exCats("out", true).includes(t.cat) ? t.cat : t.cat || exCats("out")[0], m = lastMethod();
+      patch.exMade = await expenses.add({ date: todayKey, kind: "out", category: cat, amount: Math.round(num(t.amount)), memo: clip(oneLine(t.text), 60), ...(m ? { method: m } : {}), createdAt: Date.now() });
+      words.push(`家計簿に ${fmtN(Math.round(num(t.amount)))} 円（${cat}）を記録しました`);
+    }
+    if (mins > 0 && num(t.focus) >= 1) words.push(`見積もり ${durText(mins)} → 実際 ${durText(Math.round(num(t.focus)))}`);
+    return { patch, words };
+  }
+  function tdUndoRecords(t) {
+    if (t.studyMade && study.get(t.studyMade)) takeBack(study, [t.studyMade]);
+    if (t.exMade && expenses.get(t.exMade)) takeBack(expenses, [t.exMade]);
+  }
+  // ④ the focus timer's time on a ToDo with a 科目: in 勉強 too, said after the timer's own words
+  async function tdStudyFromFocus(t, mins, day) {
+    const sub = t.subject && subjects.get(t.subject), m = Math.round(mins);
+    if (!sub || m < 1) return {};
+    await study.add({ date: day, minutes: m, subjectId: sub.id, note: clip(oneLine(t.text), 60), createdAt: Date.now() });
+    tdSay(`勉強（${oneLine(sub.name)}）に ${durText(m)}を記録しました`);
+    return { studied: num(t.studied) + m };
+  }
+  // the new ToDo's form: 勉強の科目 (while there are 科目), 金額, and its 費目 once a 金額 is put in; t: a copy's to begin from
+  function tdFillNewMore(t = null) {
+    const sel = $("todoSubject"), keep = t ? t.subject || "" : sel.value, cat = $("todoCat"), keepCat = t ? t.cat || "" : cat.value;
+    setChildren(sel, el("option", { value: "" }, "なし"), sortedSubjects().map((s) => el("option", { value: s.id }, s.name)));
+    sel.value = subjects.get(keep) ? keep : "";
+    $("todoSubjectRow").hidden = !subjects.items.length;
+    setChildren(cat, exCats("out").map((c) => el("option", { value: c }, c)));
+    if (keepCat && exCats("out").includes(keepCat)) cat.value = keepCat;
+    if (t) $("todoAmount").value = num(t.amount) > 0 ? String(t.amount) : "";
+    tdSyncAmount();
+  }
+  function tdSyncAmount() { $("todoCatRow").hidden = !(Number($("todoAmount").value) > 0); }
+  $("todoAmount").addEventListener("input", tdSyncAmount);
+  const tdAmountOf = (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 9999999 ? n : 0; };
+  function tdNewMore() {
+    const subject = subjects.get($("todoSubject").value) ? $("todoSubject").value : "", amount = tdAmountOf($("todoAmount").value);
+    return { ...(subject ? { subject } : {}), ...(amount ? { amount, cat: $("todoCat").value || exCats("out")[0] } : {}) };
+  }
+  // the edit form's: ④ 勉強の科目, ⑤ 金額 and 費目, ⑥ 返事待ち (what is waited for, and when to be told to look)
+  const TD_WAIT_DAYS = [[1, "1日後"], [2, "2日後"], [3, "3日後"], [5, "5日後"], [7, "1週間後"], [14, "2週間後"], [0, "お知らせなし"]];
+  function tdMoreRows(t) {
+    const out = [];
+    if (subjects.items.length) {
+      const sel = el("select", { id: "reSubject" }, el("option", { value: "" }, "なし"), sortedSubjects().map((s) => el("option", { value: s.id }, s.name)));
+      sel.value = t.subject && subjects.get(t.subject) ? t.subject : "";
+      out.push(recRow("勉強の科目", sel, { opt: true }));
+    }
+    const amount = el("input", { type: "number", id: "reAmount", value: num(t.amount) > 0 ? String(t.amount) : "", min: 1, max: 9999999, inputmode: "numeric" });
+    const cats = exCats("out"), cat = el("select", { id: "reCat" }, [...cats, ...(t.cat && !cats.includes(t.cat) ? [t.cat] : [])].map((c) => el("option", { value: c }, c)));
+    if (t.cat) cat.value = t.cat;
+    const catRow = el("div", { class: "form-rows", id: "reCatRow", hidden: !(num(t.amount) > 0) }, recRow("費目", cat));
+    amount.addEventListener("input", () => { catRow.hidden = !(Number(amount.value) > 0); });
+    out.push(recRow("金額", amount, { unit: "円", opt: true }), catRow);
+    if (!t.done) {
+      const w = t.wait || {}, on = el("input", { type: "checkbox", id: "reWait", class: "switch", role: "switch", checked: tdWaiting(t) });
+      const who = el("input", { type: "text", id: "reWaitWho", value: w.who || "", maxlength: 40, placeholder: "先生の返事" });
+      const days = el("select", { id: "reWaitDays" }, TD_WAIT_DAYS.map(([v, s]) => el("option", { value: v }, s)));
+      days.value = String(Number.isInteger(w.days) ? w.days : 3);
+      const more = el("div", { class: "form-rows", id: "reWaitRows", hidden: !tdWaiting(t) }, recRow("待っているもの", who, { opt: true }), recRow("確認のお知らせ", days));
+      on.addEventListener("change", () => { more.hidden = !on.checked; });
+      out.push(recRow("返事待ち", on), more);
+    }
+    return out;
+  }
+  function tdMoreRead(t) {
+    const out = {};
+    if ($("reSubject")) out.subject = subjects.get($("reSubject").value) ? $("reSubject").value : undefined;
+    if ($("reAmount")) { const a = tdAmountOf($("reAmount").value); out.amount = a || undefined; out.cat = a ? $("reCat").value || exCats("out")[0] : undefined; }
+    if ($("reWait")) out.wait = $("reWait").checked ? { since: tdWaiting(t) ? t.wait.since : todayKey, who: oneLine($("reWaitWho").value).slice(0, 40) || undefined, days: Number($("reWaitDays").value) || 0 } : undefined;
+    return out;
+  }
+
+  // ⑥ 返事待ち (the user's call): one waiting on someone (先生の返事), under 待ち, with how many days it has waited; told
+  // to look again when the days set have gone by (the morning's time for ToDos with no time), up to three times
+  function tdWaiting(t) { return !t.done && !!t.wait && isDay(t.wait.since || ""); }
+  function tdSetWait(t, on) {
+    const x = todos.get(t.id);
+    if (!x || x.done) return;
+    const was = x.wait;
+    act(() => todos.update(x.id, { wait: on ? { since: todayKey, days: 3 } : undefined }));
+    flash(on ? `「${clip(x.text, 40)}」を返事待ちにしました。3日後に確認のお知らせが届きます` : `「${clip(x.text, 40)}」の返事待ちをやめました`, () => act(() => todos.update(x.id, { wait: was })));
+  }
+  function tdWaitAlarms(now) {
+    const out = [], am = tdRemindAt();
+    for (const t of todos.items) {
+      if (!tdWaiting(t) || !(t.wait.days > 0) || typeof t.text !== "string") continue;
+      for (let k = 1, n = 0; n < 3 && k < 400; k++) {
+        const d = addDays(t.wait.since, k * t.wait.days), at = dayAt(d, am);
+        if (at > now + PUSH_AHEAD * 864e5) break;
+        if (at <= now + 5000) continue;
+        n++;
+        out.push({ at, title: `返事待ち：${oneLine(t.text).slice(0, 80)}`, body: `${t.wait.who ? oneLine(t.wait.who) : "返事"}を待って ${daysBetween(t.wait.since, d)} 日です。確認してみましょう`, tag: `td-wait:${t.id}:${d}`, url: `./#todo:${t.id}` });
+      }
+    }
+    return out;
+  }
+  function tdWaitParts() { return todos.items.filter(tdWaiting).map((t) => ["tdWait", t.id, t.text, t.wait.since, t.wait.days || 0, t.wait.who || ""]); }
+  // on a row: ⑥ how long it has waited, ④ its 科目, ⑤ its 金額
+  function tdMoreParts(t, x) {
+    const sub = t.subject && subjects.get(t.subject);
+    return [tdWaiting(t) ? x("td-wait", `待ち ${daysBetween(t.wait.since, todayKey) + 1}日目${t.wait.who ? "・" + clip(oneLine(t.wait.who), 16) : ""}`) : null,
+      sub ? x("td-subject", icon("study", 13), " ", sub.name) : null, num(t.amount) > 0 ? x("td-money", `${fmtN(Math.round(num(t.amount)))} 円`) : null];
+  }
+
+  // ⑦ 完了のふりかえり's: the time thought against the time focused, for those done with both
+  function tdEstRow(list) {
+    const xs = list.filter((t) => num(t.mins) > 0 && num(t.focus) >= 1), est = sum(xs, (t) => t.mins), got = sum(xs, (t) => t.focus), r = est ? got / est : 0;
+    return el("div", {}, el("dt", {}, "見積もりと実際"), el("dd", {}, xs.length ? `見積もりの ${(Math.round(r * 10) / 10).toFixed(1)} 倍${r >= 1.3 ? "（多くかかりがち）" : r <= 0.8 ? "（早く終わりがち）" : ""}・${xs.length} 件` : "—"));
+  }
+
+  // ⑧ 手つかずのToDo and ⑨ 週の見通し (the user's calls), each in the sheet: from その他, and from 見通し by 編集
+  function openTdPanel(kind, byKey) {
+    if (sheetEl.open) return;
+    resetSheet();
+    tdPanel = kind; syncSheetHead();
+    presentSheet(byKey, kind === "week" ? "tdweek" : "tdstale");
+    renderTdPanel();
+  }
+  function renderTdPanel() { if (!sheetEl.open || !tdPanel) return; if (tdPanel === "stale") renderTdStale(); else renderTdWeek(); }
+  // a ToDo pressed there: its own sheet
+  function tdPanelEdit(id) { closeSheet(true); openRecEdit("todo", id, false); }
+  // ⑧ still to do and not looked at for a long while: past its 期限 two weeks and more, put off three times and more, or
+  // with no 期限 a month after it was added; the longest first
+  function tdStaleList() {
+    const out = [];
+    for (const t of todos.items) {
+      if (t.done || tdLater(t) || tdWaiting(t) || typeof t.text !== "string") continue;
+      const age = num(t.createdAt) > 1.5e12 ? daysBetween(ymd(new Date(num(t.createdAt))), todayKey) : 0, moved = tdMoved(t);
+      const late = isDay(t.due || "") && t.due < todayKey ? daysBetween(t.due, todayKey) : 0;
+      const why = late >= 14 ? `期限から ${late} 日` : moved >= 3 ? `${moved}回先送り` : !t.due && age >= 30 ? `追加して ${age} 日` : null;
+      if (why) out.push({ t, why, score: Math.max(late, moved * 10, t.due ? 0 : age) });
+    }
+    return out.sort((a, b) => b.score - a.score);
+  }
+  function tdStaleDo(t, what) {
+    const x = todos.get(t.id);
+    if (!x) return;
+    if (what === "del") { removeWithUndo(todos, x.id); return; }
+    const was = { due: x.due, repeatFrom: x.repeatFrom, moved: x.moved, start: x.start }, wk = addDays(todayKey, 7);
+    const patch = what === "later" ? { start: wk, ...(x.due && x.due < wk ? { due: wk } : {}) } : tdDuePatch(x, what === "today" ? todayKey : wk);
+    act(() => todos.update(x.id, patch));
+    flash(what === "later" ? `「${clip(x.text, 40)}」を、来週まで「あとで」にしました` : `「${clip(x.text, 40)}」を${what === "today" ? "きょう" : "来週"}に移しました`, () => act(() => todos.update(x.id, was)));
+  }
+  function renderTdStale() {
+    const list = tdStaleList();
+    setChildren($("tdPanelBody"), el("p", { class: "group-foot td-panel-lead" }, el("span", { class: "phrase" }, "長いあいだそのままのToDoです。"),
+      el("span", { class: "phrase" }, "続けるなら期限を、しばらく先なら「あとで」に、いらなければ削除を。")),
+      list.length ? el("ul", { class: "list card td-stale" }, list.map(({ t, why }) => el("li", {},
+        el("span", { class: "body" }, el("button", { type: "button", class: "text row-link", onclick: () => tdPanelEdit(t.id) }, t.text), el("span", { class: "sub" }, why)),
+        el("span", { class: "td-stale-acts", role: "group", "aria-label": `「${t.text}」をどうするか` },
+          [["today", "きょう"], ["week", "来週"], ["later", "あとで"], ["del", "削除"]].map(([k, w]) => el("button", { type: "button", class: "chip-btn" + (k === "del" ? " danger" : ""), onclick: () => tdStaleDo(t, k) }, w))))))
+        : el("div", { class: "card empty" }, "見直すToDoはありません。"));
+  }
+  // ⑨ the 7 days from today, of the list showing: each day's ToDos still to do (today's with those past their 期限), how
+  // long they take, a bar by how many, and their names to open
+  function renderTdWeek() {
+    const name = todoTab ? todoLists.get(todoTab)?.name : "", live = todos.items.filter((t) => !t.done && inTodoTab(t) && typeof t.text === "string");
+    const rows = Array.from({ length: 7 }, (_, i) => {
+      const d = addDays(todayKey, i), xs = live.filter((t) => isDay(t.due || "") && (i ? t.due === d : t.due <= d)).sort(todoOrder);
+      return { d, xs, late: i ? 0 : xs.filter((t) => t.due < d).length, mins: sum(xs, (t) => t.mins) };
+    });
+    const most = Math.max(1, ...rows.map((r) => r.xs.length)), end = rows[6].d, after = live.filter((t) => isDay(t.due || "") && t.due > end).length, none = live.filter((t) => !t.due).length;
+    setChildren($("tdPanelBody"), el("p", { class: "group-foot td-panel-lead" }, `これから1週間の${name ? `「${name}」の` : ""}ToDoです。`),
+      el("ul", { class: "list card td-week" }, rows.map((r) => el("li", { class: r.xs.length ? null : "none" },
+        el("div", { class: "td-week-head" }, el("strong", {}, relLabel(r.d) || fmtMDW(r.d)), relLabel(r.d) ? el("span", { class: "sub" }, fmtMDW(r.d)) : null,
+          el("span", { class: "td-week-n" }, r.xs.length ? keepUnits(`${r.xs.length} 件` + (r.mins ? `・${durText(r.mins)}` : "")) : "なし")),
+        r.xs.length ? el("span", { class: "bar-track", "aria-hidden": "true" }, el("i", { style: `width: ${Math.round((r.xs.length / most) * 100)}%` })) : null,
+        r.late ? el("span", { class: "sub warn" }, `期限切れ ${r.late} 件をふくむ`) : null,
+        r.xs.length ? el("div", { class: "td-week-items" }, r.xs.slice(0, 5).map((t) => el("button", { type: "button", class: "chip-btn", onclick: () => tdPanelEdit(t.id) }, clip(oneLine(t.text), 18))),
+          r.xs.length > 5 ? el("span", { class: "sub" }, `ほか ${r.xs.length - 5} 件`) : null) : null))),
+      after || none ? el("p", { class: "group-foot" }, [after ? `その先 ${after} 件` : "", none ? `期限なし ${none} 件` : ""].filter(Boolean).join("・")) : null);
+  }
+  $("todoWeek").addEventListener("click", (ev) => openTdPanel("week", ev.detail === 0));
+
+  // ⑩ the list showing as words (the user's call): 「□ 牛乳」 a line, with each one's 期限 and its steps still to do, to send
+  // from the share sheet (LINE and the like); where there is none, copied
+  function tdShareText() {
+    const name = todoTab ? todoLists.get(todoTab)?.name || "" : "", list = todos.items.filter((t) => !t.done && inTodoTab(t) && typeof t.text === "string").sort(todoOrder);
+    const lines = [`ToDo${name ? `（${name}）` : ""}`];
+    for (const t of list) {
+      const when = isDay(t.due || "") ? `（${relLabel(t.due) || fmtMD(t.due)}${isHm(t.time) ? " " + t.time : ""}まで）` : "";
+      lines.push(`□ ${oneLine(t.text)}${when}`);
+      for (const s of Array.isArray(t.steps) ? t.steps : []) if (s && !s.done && s.text) lines.push(`　・${oneLine(s.text)}`);
+    }
+    return { name, text: lines.join("\n"), n: list.length };
+  }
+  async function tdShare() {
+    const { name, text, n } = tdShareText();
+    if (!n) { flash("送るToDoがありません"); return; }
+    if (navigator.share) {
+      try { await navigator.share({ title: name || "ToDo", text }); return; } catch (e) { if (e?.name === "AbortError") return; }
+    }
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch {
+      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
+      document.body.append(ta); ta.select();
+      try { ok = document.execCommand("copy"); } catch {}
+      ta.remove();
+    }
+    flash(ok ? `ToDo ${n} 件を文字でコピーしました。LINEなどに貼り付けられます` : "コピーできませんでした");
+  }
 
   // ---------- boot ----------
   function renderAll() {
