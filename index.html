@@ -1612,6 +1612,52 @@ dialog.td-photo-view::backdrop { background: rgba(0, 0, 0, .6); }
 .focus-bar { z-index: 30; }
 .focus-name { min-width: 0; max-width: 9em; overflow: hidden; text-overflow: ellipsis; font-size: var(--t-sub); opacity: .85; }
 .focus-name:empty { display: none; }
+/* 記録 ①〜⑩ (2026-11-10). ② the search over every record, over the cards; ①③⑤⑥⑦ cards and rows that open a day */
+#recAllBox { margin-bottom: calc(-1 * var(--space-1)); }
+.rec-found-say { margin: 0; padding: 0 var(--space-2); }
+.rec-found-head .n { margin-inline-start: 8px; font-weight: 400; color: var(--muted); }
+.rec-day-open { display: inline-flex; align-items: center; gap: 2px; min-height: 32px; margin: -6px 0; padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; }
+.rec-day-open .icon { width: 14px; height: 14px; }
+/* ④ each kind's days on end, a quiet line under its card's own */
+.sum-streak { font-size: var(--t-foot); color: var(--muted); }
+/* the wide cards of ③⑤⑥⑦: rows of their own, each a button where it opens something */
+.rec-extra .rec-rows { display: grid; margin: 4px 0 0; padding: 0; list-style: none; }
+.rec-extra .rec-rows > li + li { border-top: .5px solid var(--separator); }
+.rec-row-btn { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 6px 0; border: 0; background: transparent; color: var(--fg); font: inherit; text-align: start; cursor: pointer; }
+.rec-row-btn .icon { flex: none; color: var(--muted); }
+.rec-row-main { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.rec-row-main small { font-size: var(--t-foot); color: var(--muted); }
+.rec-row-val { flex: none; font-weight: 700; font-variant-numeric: tabular-nums; text-align: end; }
+.rec-row-plain { display: flex; align-items: baseline; gap: 10px; min-height: 36px; padding: 6px 0; font-size: var(--t-sub); }
+.rec-row-plain .when { flex: none; min-width: 6.5em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rec-row-plain .rec-row-val { margin-inline-start: auto; }
+.rec-sub-head { margin: 8px 0 0; font-size: var(--t-foot); font-weight: 600; color: var(--muted); }
+.rec-extra .link-btn.more { align-self: flex-start; min-height: 40px; }
+/* ⑦ the days left out, a chip a day */
+.rec-miss { display: grid; gap: 6px; padding: 8px 0; }
+.rec-miss + .rec-miss { border-top: .5px solid var(--separator); }
+.rec-miss-head { display: flex; align-items: baseline; gap: 8px; font-size: var(--t-sub); font-weight: 600; }
+.rec-miss-head small { font-weight: 400; color: var(--muted); }
+.rec-miss-days { display: flex; flex-wrap: wrap; gap: 6px; }
+.rec-miss-days .chip-btn { min-height: 34px; background: var(--fill); box-shadow: none; }
+.rec-miss-days .sub { align-self: center; }
+/* ① a day's page: each kind under its name in its colour, its day's total at the right; the pages to add to it */
+.rec-day-steps { display: flex; justify-content: space-between; margin: -10px 0 -6px; }  /* (shown on a phone too, unlike the day sheet's, which a swipe stands for) */
+.rec-day-head { display: flex; align-items: baseline; gap: 8px; }
+.rec-day-kind { display: inline-flex; align-items: center; gap: 6px; color: var(--kc, var(--muted)); }
+.rec-day-head .rec-total { font-weight: 400; }
+.rec-day-go { display: flex; flex-wrap: wrap; gap: 8px; }
+.rec-day-go .chip-btn { min-height: 36px; background: var(--fill); box-shadow: none; }
+/* ⑨ 記録's cards in its 設定, as きょう's tiles there */
+#recCardList > li { padding-block: 0; padding-inline-end: 0; transition: transform .2s ease; }
+#recCardList > li:has(.tile-pick:active) { background: var(--fill-press); }
+#recCardList li.on .check circle { fill: var(--accent-fill); stroke: var(--accent-fill); }
+#recCardList li.on .check path { fill: var(--accent-ink); }
+#recCardList li:not(.on) .tname { color: var(--muted); }
+#recCardList > li.lifted { z-index: 2; transition: none; border-radius: 12px; background: var(--surface); box-shadow: 0 6px 20px rgba(0, 0, 0, .2); }
+#recCardList > li.lifted::before { display: none; }
+#recCardList.dragging { cursor: grabbing; -webkit-user-select: none; user-select: none; }
+#csvList .row-count { font-variant-numeric: tabular-nums; }
 
 /* event labels: the user's own categories. Wherever a label is picked or listed its name sits next to the colour, so colour
    is never the only cue (HIG); the month grid writes each plan's title in it and has no legend (the user's call). In the
@@ -2423,6 +2469,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="sec-head">
           <div class="title-row"><h2><span class="page-mark" role="img" aria-label="記録"><svg class="icon" width="40" height="40" aria-hidden="true" focusable="false"><use href="#i-records"/></svg></span></h2><button type="button" class="icon-btn" id="recSettings" aria-label="設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button></div>
         </div>
+        <!-- ② every record looked for at once (the user's call, 2026-11-10): while words are typed, what holds them, by kind,
+             in place of the cards -->
+        <div class="rec-search" id="recAllBox">
+          <svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+          <input type="search" id="recAll" autocomplete="off" enterkeyhint="search" placeholder="すべての記録から探す" aria-label="すべての記録から探す">
+          <button type="button" class="rec-search-clear" id="recAllClear" aria-label="探す言葉を消す" hidden><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
+        </div>
+        <div class="rec-groups" id="recFound" hidden></div>
         <div class="grid" id="sumCards"></div>
         <!-- what was deleted in the last 30 days, each back with a tap (the user's call, as the iPhone's Photos keeps them) -->
         <ul class="list card">
@@ -2444,6 +2498,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <button type="button" class="rec-search-clear" id="recSearchClear" aria-label="探す言葉を消す" hidden><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
         </div>
         <div class="rec-groups" id="recList"></div>
+      </section>
+
+      <!-- 記録 › a day: ① every record of that day together (the user's call, 2026-11-10), each opening in the sheet to put
+           right; the day before and after, and the pages to write more for that day -->
+      <section id="sec-recday" hidden>
+        <div class="sec-head"><h2 id="recDayTitle"></h2><p class="sum-since" id="recDayNote"></p></div>
+        <div class="rec-day-steps">
+          <button type="button" class="navbtn" id="recDayPrev"><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-prev"/></svg>前の日</button>
+          <button type="button" class="navbtn" id="recDayNext">次の日<svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button>
+        </div>
+        <div class="rec-groups" id="recDayBody"></div>
       </section>
 
       <!-- 記録 › 最近削除した項目: what was deleted in the last 30 days, newest first, each with 戻す; then it goes for good -->
@@ -3183,6 +3248,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       <!-- 記録's: バックアップ, from its gear (the user's call: it was at the foot of 記録); 同期 and 端末の中のコピー open their
            pages under 記録 -->
       <div class="sheet-view" id="backupGroup" hidden>
+        <!-- ⑨ which of 記録's cards show, and in what order (the user's call, 2026-11-10), as きょう's tiles -->
+        <h3 class="group-head">カード</h3>
+        <ul class="list card" id="recCardList"></ul>
+        <p class="group-foot"><span class="phrase">チェックを付けたカードが、記録に出ます。</span><span class="phrase">≡&nbsp;を上下にドラッグすると、順番を変えられます。</span></p>
         <h3 class="group-head">バックアップ</h3>
         <ul class="list card">
           <li class="btn-row"><button type="button" class="row-btn" id="exportBtn"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-export"/></svg>記録を書き出す</button></li>
@@ -3205,6 +3274,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <button type="button" class="link-btn" id="importCancel">やめる</button>
           </div>
         </div>
+        <!-- ⑧ a kind of record as a table, for Excel or Numbers; ⑩ 日記 as one book (the user's calls, 2026-11-10) -->
+        <h3 class="group-head">表にして書き出す（CSV）</h3>
+        <ul class="list card" id="csvList"></ul>
+        <p class="group-foot"><span class="phrase">Excel・Numbers・Googleスプレッドシートで開けます。</span><span class="phrase">読み込みには使えないので、バックアップには上の「記録を書き出す」を使ってください。</span></p>
+        <h3 class="group-head">日記を1冊に</h3>
+        <ul class="list card">
+          <li class="btn-row"><button type="button" class="row-btn" id="journalBook"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-journal"/></svg>日記を1冊にまとめて書き出す</button></li>
+        </ul>
+        <p class="group-foot" id="journalBookFoot"></p>
         <p class="group-foot" id="storeNote"></p>
         <p class="group-foot usage-line" id="usageLine" hidden></p>
         <p class="group-foot" id="appVersion" hidden></p>
@@ -3769,9 +3847,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const PAGES = [...TABS, ...RECORDS];
   const isRecord = (key) => RECORDS.some((r) => r.key === key);
   // a page a level down, under a tab, outside the menu: a record's entries under 記録
-  const SUBPAGES = [{ key: "reclist", parent: "records" }, { key: "trash", parent: "records" }, { key: "copies", parent: "records" }, { key: "sync", parent: "records" }, { key: "runlevel", parent: "diet" }];
+  const SUBPAGES = [{ key: "reclist", parent: "records" }, { key: "recday", parent: "records" }, { key: "trash", parent: "records" }, { key: "copies", parent: "records" }, { key: "sync", parent: "records" }, { key: "runlevel", parent: "diet" }];
   // the page a page sits under: きょう for the record pages, 記録 for a record's entries
-  const parentOf = (key) => (isRecord(key) ? "home" : key === "trash" && (trashBack || trashOf === "todos") ? trashBack || "todo" : (key === "reclist" && recListBack) || SUBPAGES.find((p) => p.key === key)?.parent || null);
+  const parentOf = (key) => (isRecord(key) ? "home" : key === "trash" && (trashBack || trashOf === "todos") ? trashBack || "todo" : (key === "reclist" && recListBack) || (key === "recday" && recDayBack === "reclist" && recListKind ? "reclist" : null) || SUBPAGES.find((p) => p.key === key)?.parent || null);
   const SLOTS = ["朝食", "昼食", "夕食", "間食"];
 
   let tab = "home";
@@ -4323,7 +4401,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       else b.removeAttribute("aria-current");
     });
     $("backBtn").hidden = !parent;
-    if (parent) $("backBtn").setAttribute("aria-label", PAGES.find((p) => p.key === parent).label + "に戻る");
+    if (parent) $("backBtn").setAttribute("aria-label", (PAGES.find((p) => p.key === parent)?.label || (parent === "reclist" ? `${RECORD_LISTS[recListKind]?.label || "記録"}の一覧` : "前のページ")) + "に戻る"); // (記録 ① a day: back to the list it came from)
     try { history.replaceState(null, "", "#" + key); } catch {}
     window.scrollTo(0, 0);
     watchTitle();
@@ -4343,6 +4421,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (back) { window.scrollTo(0, back.y); updateBar(); }
     }
     if (key === "reclist") draw(renderRecList);
+    if (key === "recday") draw(renderRecDay); // ①
     if (key === "trash") draw(renderTrash);
     if (key === "copies") draw(renderCopies);
     if (key === "sync") draw(renderSync);
@@ -10289,7 +10368,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // きょう's tiles from their own gears
   function openSettings(byKey, scope = "calendar", field = null) {
     settingsScope = scope;
-    if (scope === "records") draw(renderUsage); // 記録's バックアップ, the amount used as it is now
+    if (scope === "records") { draw(renderUsage); draw(renderRecSettings); } // 記録's バックアップ, the amount used as it is now; ⑧⑨⑩
     if (scope === "tsumi") { $("tsumiFind").value = ""; renderTsumiFind(); if (tsumiPaletteFor) { tsumiPaletteFor = null; renderTsumiKinds(tsumiShown); } } // ことばで探す empty, the colours shut, each time
     if (scope === "woMenu") { woDraft = null; renderWoEdit(); }
     if (scope === "money") { renderCatBudgets(); renderCatEditor(); renderFixedForms(); renderSaveForms(); } // 家計簿's 費目ごとの予算, 費目, 固定費 and 貯金の目標
@@ -15130,6 +15209,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   function renderSummary() {
     if (tab !== "records") return;
+    renderRecFound(); // ② (what was found, while words are typed over the cards)
     const rec = [...recordedDays()].filter((d) => d && d <= todayKey).sort();
     if (!rec.length) {
       setChildren($("sumCards"), el("div", { class: "card sum-card wide" }, el("p", { class: "sum-empty" }, "まだ記録がありません。「きょう」から記録すると、ここに積み重なっていきます。")));
@@ -15173,24 +15253,29 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const byRoutine = new Map();
     for (const x of rtDays) for (const id of x.done) { const r = routines.get(id); if (r) byRoutine.set(r.name, (byRoutine.get(r.name) || 0) + 1); }
 
-    setChildren($("sumCards"),
-      sumCard("var(--accent)", "records", "続けた日", String(rec.length), "日 記録した日", `いまの連続 ${streak} 日・いちばん長い連続 ${longest} 日`, "wide"),
-      sumCard("var(--c-journal)", "journal", "日記", String(js.length), "日 書いた日", js.length ? null : "まだ書いていません", null, null, "journal"),
-      sumCard("var(--c-meal)", "meal", "食事", fmtN(ms.length), "回",
-        `${new Set(ms.map((m) => m.date)).size} 日記録` + (kcalDays.size ? `・1日平均 ${fmtN(Math.round(avgKcal))} kcal` : ""), null, null, "meal"),
-      sumCard("var(--c-workout)", "workout", "運動", ...durBig(wMin),
-        `${ws.length} 回・${new Set(ws.map((w) => w.date)).size} 日` + (wKm > 0 ? `・${Math.round(wKm * 10) / 10} km` : ""), null, null, "workout"),
+    // ⑨ in the order chosen, those hidden left out; ④ each kind's with its days on end; ③⑤⑥⑦ their own cards
+    const cards = {
+      days: () => sumCard("var(--accent)", "records", "続けた日", String(rec.length), "日 記録した日", `いまの連続 ${streak} 日・いちばん長い連続 ${longest} 日`, "wide"),
+      journal: () => withStreak(sumCard("var(--c-journal)", "journal", "日記", String(js.length), "日 書いた日", js.length ? null : "まだ書いていません", null, null, "journal"), "journal"),
+      meal: () => withStreak(sumCard("var(--c-meal)", "meal", "食事", fmtN(ms.length), "回",
+        `${new Set(ms.map((m) => m.date)).size} 日記録` + (kcalDays.size ? `・1日平均 ${fmtN(Math.round(avgKcal))} kcal` : ""), null, null, "meal"), "meal"),
+      workout: () => withStreak(sumCard("var(--c-workout)", "workout", "運動", ...durBig(wMin),
+        `${ws.length} 回・${new Set(ws.map((w) => w.date)).size} 日` + (wKm > 0 ? `・${Math.round(wKm * 10) / 10} km` : ""), null, null, "workout"), "workout"),
       // 体重 beside 運動, so on a phone the four short cards make two rows
-      sumCard("var(--c-weight)", "weight", "からだ", wLast ? fmtKg(wLast.kg) : "—", wLast ? "kg" : null,
+      weight: () => withStreak(sumCard("var(--c-weight)", "weight", "からだ", wLast ? fmtKg(wLast.kg) : "—", wLast ? "kg" : null,
         !wLast ? "まだ記録がありません" : wts.length > 1
           ? `${wts.length} 回・${fmtMD(wFirst.id)}から ${signed(num(wLast.kg) - num(wFirst.kg))} kg` // the count first, as 運動's and 勉強's
-          : `${fmtMD(wLast.id)}の記録`, null, null, "weight"),
-      sumCard("var(--c-study)", "study", "勉強", ...durBig(stMin), `${sts.length} 回・${new Set(sts.map((x) => x.date)).size} 日`, "list",
-        topList(bySub, subColor, durText), "study"),
-      sumCard("var(--c-routine)", "routine", "ルーティーン", fmtN(sum(rtDays, (x) => x.done.length)), "回 できた",
-        rtDays.length ? `${rtDays.length} 日チェック` : "まだチェックしていません", "list", topList(byRoutine, () => "var(--c-routine)", (n) => `${n} 回`), "routine"),
-      sumCard("var(--c-money)", "money", "家計簿", fmtN(Math.round(out)), "円 支出", `収入 ${fmtYen(inn)}・収支 ${net > 0 ? "+" : ""}${fmtYen(net)}`, "list",
-        topList(byCat, () => "var(--c-money)", fmtYen), "money"));
+          : `${fmtMD(wLast.id)}の記録`, null, null, "weight"), "weight"),
+      study: () => withStreak(sumCard("var(--c-study)", "study", "勉強", ...durBig(stMin), `${sts.length} 回・${new Set(sts.map((x) => x.date)).size} 日`, "list",
+        topList(bySub, subColor, durText), "study"), "study"),
+      routine: () => withStreak(sumCard("var(--c-routine)", "routine", "ルーティーン", fmtN(sum(rtDays, (x) => x.done.length)), "回 できた",
+        rtDays.length ? `${rtDays.length} 日チェック` : "まだチェックしていません", "list", topList(byRoutine, () => "var(--c-routine)", (n) => `${n} 回`), "routine"), "routine"),
+      money: () => withStreak(sumCard("var(--c-money)", "money", "家計簿", fmtN(Math.round(out)), "円 支出", `収入 ${fmtYen(inn)}・収支 ${net > 0 ? "+" : ""}${fmtYen(net)}`, "list",
+        topList(byCat, () => "var(--c-money)", fmtYen), "money"), "money"),
+      memory: recMemoryCard, missed: recMissedCard, milestone: recMilestoneCard, best: recBestCard,
+    };
+    const hidden = recCardHidden();
+    setChildren($("sumCards"), recCardOrder().filter((k) => !hidden.has(k) && cards[k]).map((k) => cards[k]()).filter(Boolean));
   }
 
   // 記録 › a record's entries: a card opens them on a page that slides in from the right, newest first by month, each as
@@ -15279,7 +15364,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         parts.push(el("h3", { class: "group-head" }, fmtMonth(month)), ul = el("ul", { class: "list card rec-list" }));
       }
       const rel = relLabel(d), day = (rel ? rel + "・" : "") + fmtMDW(d), xs = byDay.get(d), total = words.length ? null : spec.total?.(xs);
-      ul.append(...(spec.oneLine ? [] : [el("li", { class: "dayhead" }, el("span", {}, day), total ? el("span", { class: "rec-total" }, subParts(total)) : null)]), ...spec.rows(xs, day));
+      ul.append(...(spec.oneLine ? [] : [recDayHead(d, total)]), ...spec.rows(xs, day)); // (① its date opens the day whole)
     }
     setChildren($("recList"), parts.length ? parts : el("div", { class: "card empty" }, words.length ? `「${q}」に合う記録はありません。` : "まだ記録がありません。「きょう」から記録すると、ここに並びます。"));
   }
@@ -15837,7 +15922,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月10日 17:04"; // 67698279 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月10日 17:48"; // bb8979d7 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -17292,12 +17377,368 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       moved: !t.done && t.due && due && due > t.due ? num(t.moved) + 1 : !due ? undefined : t.moved };
   }
 
+  // ---------- 記録 ①〜⑩ (the user's calls, 2026-11-10): a day's records all together (①), every record looked for at once
+  // (②), the same day a month and years ago (③), each kind's days on end (④), the milestones (⑤), the bests (⑥), the
+  // days left out (⑦), a kind as a table (⑧), the cards' order (⑨), and 日記 as one book (⑩). Still everything so far in
+  // one view, no weeks, months or years, no charts, nothing typed in here (the user's calls before) ----------
+  const dayLabel = (d) => { const rel = relLabel(d); return (rel ? rel + "・" : "") + fmtDayLong(d); };
+  // the days each kind has a record on, up to today
+  function recDaysOf(kind) {
+    const ds = kind === "journal" ? journal.items.filter((j) => j.text?.trim()).map((j) => j.date || j.id)
+      : kind === "weight" ? weights.items.map((w) => w.date || w.id)
+      : kind === "routine" ? routineDays.items.filter((x) => x.done?.length).map((x) => x.date)
+      : kind === "todo" ? todos.items.filter((t) => t.done).map(doneDay)
+      : ({ meal: meals, workout: workouts, study, money: expenses }[kind]?.items || []).map((x) => x.date);
+    return new Set(ds.filter((d) => isDay(d || "") && d <= todayKey));
+  }
+
+  // ① a day's records all together: each kind's under its name, as its list has them (each opening in the sheet to put
+  // right), the ToDos done that day, and the pages to write more for that day. Opened from a day's date in a kind's list
+  // (back there), or from 記録's cards (back to 記録)
+  let recDayAt = todayKey, recDayBack = null;
+  function openRecDay(d, back = null) {
+    if (!isDay(d || "")) return;
+    recDayAt = d > todayKey ? todayKey : d; recDayBack = back;
+    renderRecDay();
+    showTab("recday");
+  }
+  // a day's date heading its entries (a kind's list, ② what was found): pressed, that day's records all together
+  function recDayHead(d, total = null, back = "reclist") {
+    return el("li", { class: "dayhead" }, el("button", { type: "button", class: "rec-day-open", "aria-label": `${fmtDayLong(d)}の記録をまとめて見る`, onclick: () => openRecDay(d, back) }, dayLabel(d), icon("next", 14)),
+      total ? el("span", { class: "rec-total" }, subParts(total)) : null);
+  }
+  const REC_DAY_KINDS = ["journal", "meal", "workout", "study", "weight", "routine", "money"];
+  // a kind's page on a day, to write there: 家計簿 at that day in its form and its month, ダイエット at its part
+  function openKindOnDay(kind, d) {
+    if (kind === "money") { setMoneyPart("book"); exDate.value = d; setMoneyMonth(monthOf(d)); showTab("money"); return; }
+    setViewDate(d);
+    if (isDietPart(kind)) { setDietPart(kind); showTab("diet"); } else showTab(kind);
+  }
+  function renderRecDay() {
+    const d = recDayAt, parts = [];
+    $("recDayTitle").textContent = fmtDayLong(d);
+    $("recDayNote").textContent = relLabel(d) || `${daysBetween(d, todayKey)} 日前`;
+    $("recDayNext").disabled = d >= todayKey;
+    for (const kind of REC_DAY_KINDS) {
+      const spec = RECORD_LISTS[kind], xs = spec.items().filter((x) => x.date === d);
+      if (!xs.length) continue;
+      const total = spec.total?.(xs);
+      parts.push(el("h3", { class: "group-head rec-day-head" }, el("span", { class: "rec-day-kind", style: `--kc: var(--c-${kind})` }, icon(kind, 16), spec.label), total ? el("span", { class: "rec-total" }, subParts(total)) : null),
+        el("ul", { class: "list card rec-list" }, spec.rows(xs, fmtMDW(d))));
+    }
+    const done = todos.items.filter((t) => t.done && doneDay(t) === d).sort((a, b) => num(a.doneAt) - num(b.doneAt));
+    if (done.length) parts.push(el("h3", { class: "group-head rec-day-head" }, el("span", { class: "rec-day-kind", style: "--kc: var(--c-todo)" }, icon("todo", 16), "完了したToDo"), el("span", { class: "rec-total" }, `${done.length} 件`)),
+      el("ul", { class: "list card rec-list" }, done.map((t) => el("li", {}, recOpen("todo", t.id, `「${t.text}」を編集`, t.text, "rec-what")))));
+    const has = new Set(REC_DAY_KINDS.filter((k) => recDaysOf(k).has(d)));
+    setChildren($("recDayBody"), parts.length ? parts : el("div", { class: "card empty" }, "この日の記録はありません。"),
+      el("h3", { class: "group-head" }, "この日に書く"),
+      el("div", { class: "rec-day-go" }, REC_DAY_KINDS.map((k) => el("button", { type: "button", class: "chip-btn", onclick: () => openKindOnDay(k, d) },
+        (k === "journal" ? (has.has(k) ? "日記を開く" : "日記を書く") : RECORD_LISTS[k].label)))));
+  }
+  $("recDayPrev").addEventListener("click", () => { recDayAt = addDays(recDayAt, -1); renderRecDay(); });
+  $("recDayNext").addEventListener("click", () => { if (recDayAt < todayKey) { recDayAt = addDays(recDayAt, 1); renderRecDay(); } });
+
+  // ② every record looked for at once (the user's call): the words typed above the cards, and in their place what holds
+  // all of them, by kind, the latest days first (five days a kind, the rest in that kind's list with the same words);
+  // ToDos by their name, memo and steps. A day's date opens it whole (①), an entry opens it to put right
+  let recAllQuery = "";
+  const REC_FIND = ["journal", "meal", "workout", "study", "routine", "money"]; // (からだ: numbers only)
+  function renderRecFound() {
+    const q = recAllQuery.trim(), words = foldText(q).split(/\s+/).filter(Boolean), box = $("recFound");
+    $("recAllClear").hidden = !recAllQuery;
+    box.hidden = !words.length; $("sumCards").hidden = !!words.length;
+    if (!words.length) { box.replaceChildren(); return; }
+    const parts = [], has = (s) => { const t = foldText(s); return words.every((w) => t.includes(w)); };
+    let total = 0;
+    for (const kind of REC_FIND) {
+      const spec = RECORD_LISTS[kind], found = spec.items().filter((x) => x.date && x.date <= todayKey && has(spec.text(x)));
+      if (!found.length) continue;
+      total += found.length;
+      const byDay = groupBy(found, (x) => x.date), days = [...byDay.keys()].sort().reverse(), shown = days.slice(0, 5);
+      const more = found.length - sum(shown, (d) => byDay.get(d).length);
+      parts.push(el("h3", { class: "group-head rec-found-head" }, spec.label, el("span", { class: "n" }, `${found.length} 件`)),
+        el("ul", { class: "list card rec-list" }, shown.flatMap((d) => [recDayHead(d, null, "records"), ...spec.rows(byDay.get(d), dayLabel(d))])),
+        more > 0 ? el("button", { type: "button", class: "link-btn rec-found-more", onclick: () => { openRecList(kind); recQuery = q; draw(renderRecList); } }, `ほか ${more} 件を${spec.label}の一覧で見る`) : null);
+    }
+    const tds = todos.items.filter((t) => has([t.text, t.memo || "", ...(Array.isArray(t.steps) ? t.steps.map((s) => s?.text || "") : [])].join(" ")))
+      .sort((a, b) => Number(!!a.done) - Number(!!b.done) || (a.due || "9999").localeCompare(b.due || "9999"));
+    if (tds.length) {
+      total += tds.length;
+      parts.push(el("h3", { class: "group-head rec-found-head" }, "ToDo", el("span", { class: "n" }, `${tds.length} 件`)),
+        el("ul", { class: "list card rec-list" }, tds.slice(0, 10).map((t) => el("li", {}, recOpen("todo", t.id, `「${t.text}」を編集`, t.text, "rec-what"),
+          el("span", { class: "rec-num" }, t.done ? (doneDay(t) ? `${fmtDay(doneDay(t))}に完了` : "完了") : t.due ? `期限 ${fmtDay(t.due)}` : "")))),
+        tds.length > 10 ? el("button", { type: "button", class: "link-btn rec-found-more", onclick: () => { todoQuery = q; $("todoSearch").value = q; showTab("todo"); } }, `ほか ${tds.length - 10} 件をToDoで見る`) : null);
+    }
+    setChildren(box, el("p", { class: "sub rec-found-say", role: "status" }, total ? `「${q}」の記録 ${total} 件` : `「${q}」に合う記録はありません。`), parts);
+  }
+  $("recAll").addEventListener("input", (ev) => { recAllQuery = ev.target.value; renderRecFound(); });
+  $("recAll").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing) ev.target.blur(); });
+  $("recAllClear").addEventListener("pointerdown", (ev) => ev.preventDefault());
+  $("recAllClear").addEventListener("click", () => { recAllQuery = ""; $("recAll").value = ""; renderRecFound(); $("recAll").focus(); });
+
+  // ④ a kind's days on end: the run going now (to today or yesterday), else how long since the last, and the longest
+  function recStreak(days) {
+    if (!days.size) return null;
+    const sorted = [...days].sort(), last = sorted[sorted.length - 1];
+    let longest = 0, run = 0, prev = null, now = 0;
+    for (const d of sorted) { run = prev && addDays(prev, 1) === d ? run + 1 : 1; longest = Math.max(longest, run); prev = d; }
+    if (last >= addDays(todayKey, -1)) for (let d = last; days.has(d); d = addDays(d, -1)) now++;
+    return { now, longest, ago: daysBetween(last, todayKey) };
+  }
+  // under its card's own line
+  function withStreak(card, kind) {
+    const s = recStreak(recDaysOf(kind));
+    if (!s) return card;
+    const line = el("div", { class: "sum-streak" }, dotParts([s.now ? `連続 ${s.now} 日` : `前回は ${s.ago} 日前`, `最長 ${s.longest} 日`]));
+    (card.querySelector(".sub") || card.querySelector(".big"))?.after(line);
+    return card;
+  }
+
+  // ③ the same day a month ago and a year (and more) ago, those with records, each as its 日記's first words or how much
+  // there was; pressed, that day whole (①)
+  function recDaySummary(d) {
+    const j = journal.items.find((x) => (x.date || x.id) === d && x.text?.trim());
+    const ms = meals.items.filter((x) => x.date === d).length, wo = workouts.items.filter((x) => x.date === d), st = sum(study.items.filter((x) => x.date === d), (x) => x.minutes);
+    const w = weights.items.find((x) => (x.date || x.id) === d), rt = routineDays.items.find((x) => x.date === d && x.done?.length), td = todos.items.filter((t) => t.done && doneDay(t) === d).length;
+    const ex = expenses.items.filter((x) => x.date === d && x.kind !== "in");
+    const bits = [ms ? `食事 ${ms} 回` : "", wo.length ? `運動 ${wo.map((x) => x.type).filter(Boolean)[0] || ""}${wo.length > 1 ? ` ほか ${wo.length - 1}` : ""}` : "", st ? `勉強 ${durText(st)}` : "",
+      w ? `体重 ${fmtKg(w.kg)} kg` : "", rt ? `ルーティーン ${rt.done.length}` : "", td ? `ToDo ${td} 件完了` : "", ex.length ? `支出 ${fmtYen(sum(ex, (x) => x.amount))}` : ""].filter(Boolean);
+    if (!j && !bits.length) return null;
+    return { text: j ? clip(oneLine(j.text), 60) : bits.join("・"), more: j ? bits.slice(0, 3).join("・") : "" };
+  }
+  function recMemoryCard() {
+    const rows = [[addMonthsDay(todayKey, -1), "1か月前"], ...[1, 2, 3, 4, 5].map((y) => [addMonthsDay(todayKey, -12 * y), `${y}年前`])]
+      .map(([d, word]) => ({ d, word, s: recDaySummary(d) })).filter((r) => r.s);
+    if (!rows.length) return null;
+    return el("div", { class: "card sum-card wide rec-extra", "data-card": "memory", style: "--sum-c: var(--accent)" },
+      el("h3", { class: "sum-head" }, icon("calendar", 18), el("span", {}, "1か月前・1年前のきょう")),
+      el("ul", { class: "rec-rows" }, rows.map((r) => el("li", {}, el("button", { type: "button", class: "rec-row-btn", "aria-label": `${r.word}、${fmtDayLong(r.d)}の記録を見る`, onclick: () => openRecDay(r.d, "records") },
+        el("span", { class: "rec-row-main" }, el("small", {}, `${r.word}・${fmtDayLong(r.d)}`), el("span", {}, r.s.text), r.s.more ? el("small", {}, r.s.more) : null), icon("next", 16))))));
+  }
+
+  // ⑤ the milestones: 記録した日 100 日, 勉強 100 時間, ラン 100 km… each with the day it was passed, the latest first; and the
+  // next ones, the nearest (by how far along) first, with how much is left. All of them at a press
+  const MILESTONES = [
+    { key: "days", label: "記録した日", unit: "日", steps: [7, 30, 50, 100, 200, 300, 365, 500, 730, 1000, 1500, 2000] },
+    { key: "journal", label: "日記", unit: "日", steps: [7, 30, 50, 100, 200, 365, 500, 730, 1000] },
+    { key: "study", label: "勉強", unit: "時間", steps: [10, 50, 100, 200, 300, 500, 1000, 2000, 3000] },
+    { key: "workout", label: "運動", unit: "時間", steps: [10, 50, 100, 200, 300, 500, 1000] },
+    { key: "run", label: "ラン", unit: "km", steps: [10, 50, 100, 200, 300, 500, 1000, 2000] },
+    { key: "todo", label: "ToDoの完了", unit: "件", steps: [10, 50, 100, 200, 300, 500, 1000, 2000, 5000] },
+    { key: "routine", label: "ルーティーン", unit: "回", steps: [50, 100, 300, 500, 1000, 2000, 5000] },
+    { key: "meal", label: "食事の記録", unit: "回", steps: [50, 100, 300, 500, 1000, 2000, 5000] },
+    { key: "weight", label: "からだの記録", unit: "回", steps: [30, 100, 200, 365, 500, 1000] },
+  ];
+  // what each adds, a day at a time: [day, how much]
+  function msEvents(key) {
+    const upTo = (xs) => xs.filter(([d]) => isDay(d || "") && d <= todayKey);
+    if (key === "days") return [...recordedDays()].map((d) => [d, 1]);
+    if (key === "journal" || key === "weight") return [...recDaysOf(key)].map((d) => [d, 1]);
+    if (key === "study") return upTo(study.items.map((x) => [x.date, num(x.minutes) / 60]));
+    if (key === "workout") return upTo(workouts.items.map((x) => [x.date, num(x.minutes) / 60]));
+    if (key === "run") return upTo(workouts.items.filter((w) => w.type === "ランニング").map((w) => [w.date, num(w.km)]));
+    if (key === "todo") return upTo(todos.items.filter((t) => t.done).map((t) => [doneDay(t), 1]));
+    if (key === "routine") return upTo(routineDays.items.map((x) => [x.date, (x.done || []).length]));
+    if (key === "meal") return upTo(meals.items.map((x) => [x.date, 1]));
+    return [];
+  }
+  function milestones() {
+    const reached = [], next = [];
+    for (const m of MILESTONES) {
+      const ev = msEvents(m.key).filter(([, n]) => n > 0).sort((a, b) => a[0].localeCompare(b[0]));
+      let got = 0, i = 0;
+      for (const [d, n] of ev) { got += n; while (i < m.steps.length && got + 1e-9 >= m.steps[i]) reached.push({ m, step: m.steps[i++], d }); }
+      if (i < m.steps.length && got > 0) next.push({ m, step: m.steps[i], left: m.steps[i] - got, ratio: got / m.steps[i] });
+    }
+    reached.sort((a, b) => b.d.localeCompare(a.d) || b.step - a.step);
+    next.sort((a, b) => b.ratio - a.ratio);
+    return { reached, next };
+  }
+  const msLeft = (x) => (x.m.unit === "時間" ? durText(Math.max(1, Math.ceil(x.left * 60))) : x.m.unit === "km" ? `${(Math.ceil(x.left * 10) / 10).toFixed(1)} km` : `${Math.ceil(x.left)} ${x.m.unit}`);
+  let msAll = false;
+  function recMilestoneCard() {
+    const { reached, next } = milestones();
+    if (!reached.length && !next.length) return null;
+    const row = (r) => el("li", { class: "rec-row-plain" }, el("span", { class: "when" }, r.d === todayKey ? "きょう" : fmtDay(r.d)), el("span", {}, keepUnits(`${r.m.label} ${fmtN(r.step)} ${r.m.unit}`)));
+    return el("div", { class: "card sum-card wide rec-extra", "data-card": "milestone", style: "--sum-c: var(--accent)" },
+      el("h3", { class: "sum-head" }, icon("flag", 18), el("span", {}, "節目")),
+      reached.length ? [el("p", { class: "rec-sub-head" }, "これまでの節目"), el("ul", { class: "rec-rows" }, (msAll ? reached : reached.slice(0, 3)).map(row)),
+        reached.length > 3 ? el("button", { type: "button", class: "link-btn more", "aria-expanded": String(msAll), onclick: () => { msAll = !msAll; renderSummary(); } }, msAll ? "しまう" : `すべての節目（${reached.length}）`) : null] : null,
+      next.length ? [el("p", { class: "rec-sub-head" }, "次の節目"), el("ul", { class: "rec-rows" }, next.slice(0, 3).map((x) => el("li", { class: "rec-row-plain" },
+        el("span", {}, keepUnits(`${x.m.label} ${fmtN(x.step)} ${x.m.unit}まで`)), el("strong", { class: "rec-row-val" }, `あと ${keepUnits(msLeft(x))}`))))] : null);
+  }
+
+  // ⑥ the bests so far (運動's 自己ベスト aside, which its page has): the day studied most, worked out longest, run
+  // farthest, the most ToDos done, the most of ルーティーン, the most spent, the lightest weighed, the longest 日記. The
+  // latest of equal ones; pressed, that day whole (①)
+  function recBests() {
+    const out = [];
+    const topDay = (pairs) => { const by = new Map(); for (const [d, v] of pairs) if (isDay(d || "") && d <= todayKey && v > 0) by.set(d, (by.get(d) || 0) + v); let b = null; for (const [d, v] of by) if (!b || v > b.v || (v === b.v && d > b.d)) b = { d, v }; return b; };
+    const put = (label, b, fmt, kind) => { if (b) out.push({ label, d: b.d, value: fmt(b.v), kind }); };
+    put("いちばん勉強した日", topDay(study.items.map((x) => [x.date, num(x.minutes)])), durText, "study");
+    put("いちばん長く運動した日", topDay(workouts.items.map((x) => [x.date, num(x.minutes)])), durText, "workout");
+    put("いちばん走った日", topDay(workouts.items.filter((w) => w.type === "ランニング").map((w) => [w.date, num(w.km)])), (v) => `${(Math.round(v * 10) / 10).toFixed(1)} km`, "workout");
+    put("いちばんToDoを完了した日", topDay(todos.items.filter((t) => t.done).map((t) => [doneDay(t), 1])), (v) => `${v} 件`, "todo");
+    put("いちばんルーティーンができた日", topDay(routineDays.items.map((x) => [x.date, (x.done || []).length])), (v) => `${v} 項目`, "routine");
+    put("いちばん支出が多かった日", topDay(expenses.items.filter((e) => e.kind !== "in").map((e) => [e.date, num(e.amount)])), fmtYen, "money");
+    const ws = weights.items.filter((w) => num(w.kg) > 0 && (w.date || w.id) <= todayKey);
+    if (ws.length > 1) { const w = ws.reduce((a, b) => (num(b.kg) < num(a.kg) || (num(b.kg) === num(a.kg) && (b.date || b.id) > (a.date || a.id)) ? b : a)); out.push({ label: "いちばん軽かった体重", d: w.date || w.id, value: `${fmtKg(w.kg)} kg`, kind: "weight" }); }
+    put("いちばん長い日記", topDay(journal.items.filter((j) => j.text?.trim()).map((j) => [j.date || j.id, [...j.text.trim()].length])), (v) => `${fmtN(v)} 字`, "journal");
+    return out;
+  }
+  function recBestCard() {
+    const bs = recBests();
+    if (!bs.length) return null;
+    return el("div", { class: "card sum-card wide rec-extra", "data-card": "best", style: "--sum-c: var(--accent)" },
+      el("h3", { class: "sum-head" }, icon("heart", 18), el("span", {}, "これまでのいちばん")),
+      el("ul", { class: "rec-rows" }, bs.map((b) => el("li", {}, el("button", { type: "button", class: "rec-row-btn", "aria-label": `${b.label}、${b.value}、${fmtDayLong(b.d)}`, onclick: () => openRecDay(b.d, "records") },
+        el("span", { class: "rec-row-main" }, el("span", {}, b.label), el("small", {}, b.d === todayKey ? "きょう" : fmtDayLong(b.d))), el("span", { class: "rec-row-val" }, keepUnits(b.value)), icon("next", 16))))));
+  }
+
+  // ⑦ the days left out these 30 days (not today, which isn't over): of 日記, 食事, 体重 and ルーティーン (a day off, or one
+  // with nothing on it, not counted), from each one's first record, for those kept lately. A day pressed opens its page
+  // there, to write it
+  const MISSED_KINDS = [["journal", "日記"], ["meal", "食事"], ["weight", "体重"], ["routine", "ルーティーン"]];
+  function recMissed() {
+    const from = addDays(todayKey, -30), out = [];
+    for (const [kind, label] of MISSED_KINDS) {
+      const days = recDaysOf(kind), first = [...days].sort()[0];
+      if (!first || ![...days].some((d) => d >= from)) continue;
+      const miss = [];
+      for (let d = addDays(todayKey, -1); d >= from && d >= first; d = addDays(d, -1)) {
+        if (days.has(d) || (kind === "routine" && (!rtItemsOn(d).length || rtRest(d)))) continue;
+        miss.push(d);
+      }
+      if (miss.length) out.push({ kind, label, miss });
+    }
+    return out;
+  }
+  function recMissedCard() {
+    const ms = recMissed();
+    if (!ms.length) return null;
+    return el("div", { class: "card sum-card wide rec-extra", "data-card": "missed", style: "--sum-c: var(--accent)" },
+      el("h3", { class: "sum-head" }, icon("bell", 18), el("span", {}, "書き忘れた日（30日）")),
+      ms.map((x) => el("div", { class: "rec-miss" }, el("div", { class: "rec-miss-head" }, x.label, el("small", {}, `${x.miss.length} 日`)),
+        el("div", { class: "rec-miss-days" }, x.miss.slice(0, 6).map((d) => el("button", { type: "button", class: "chip-btn", "aria-label": `${fmtDayLong(d)}の${x.label}を書く`, onclick: () => openKindOnDay(x.kind, d) }, d === addDays(todayKey, -1) ? "きのう" : fmtShort(d))),
+          x.miss.length > 6 ? el("span", { class: "sub" }, `ほか ${x.miss.length - 6} 日`) : null))));
+  }
+
+  // ⑨ which cards show, and in what order (the user's call): kept with the account, as きょう's tiles; a card the app gains
+  // later comes after the one it comes after in the app's own order
+  const REC_CARDS = [
+    { key: "days", label: "続けた日", icon: "records" }, { key: "memory", label: "1か月前・1年前のきょう", icon: "calendar" }, { key: "missed", label: "書き忘れた日", icon: "bell" },
+    { key: "journal", label: "日記", icon: "journal" }, { key: "meal", label: "食事", icon: "meal" }, { key: "workout", label: "運動", icon: "workout" }, { key: "weight", label: "からだ", icon: "weight" },
+    { key: "study", label: "勉強", icon: "study" }, { key: "routine", label: "ルーティーン", icon: "routine" }, { key: "money", label: "家計簿", icon: "money" },
+    { key: "milestone", label: "節目", icon: "flag" }, { key: "best", label: "これまでのいちばん", icon: "heart" },
+  ];
+  const recCard = (k) => REC_CARDS.find((c) => c.key === k);
+  const recCardPrefs = () => settings.get("recordCards") || {};
+  function recCardOrder() {
+    const saved = [...new Set(recCardPrefs().order || [])].filter((k) => recCard(k));
+    if (!saved.length) return REC_CARDS.map((c) => c.key);
+    REC_CARDS.forEach((c, i) => {
+      if (saved.includes(c.key)) return;
+      const before = REC_CARDS.slice(0, i).reverse().find((x) => saved.includes(x.key));
+      saved.splice(before ? saved.indexOf(before.key) + 1 : 0, 0, c.key);
+    });
+    return saved;
+  }
+  const recCardHidden = () => new Set(recCardPrefs().hidden || []);
+  const saveRecCards = (patch) => act(() => settings.set("recordCards", { ...recCardPrefs(), ...patch, updatedAt: Date.now() }));
+  function renderRecCardList() {
+    const list = $("recCardList");
+    if (tileDrag && tileDrag.list === list) return;
+    const a = list.contains(document.activeElement) ? document.activeElement : null, focusKey = a?.closest("li")?.dataset.key, onGrip = a?.classList.contains("grip");
+    const hidden = recCardHidden(), keys = recCardOrder();
+    setChildren(list, keys.map((k, i) => {
+      const { label, icon: ic } = recCard(k), on = !hidden.has(k);
+      return el("li", { class: on ? "on" : null, "data-key": k, style: "--tile-c: var(--accent)" },
+        el("button", { type: "button", class: "tile-pick", role: "checkbox", "aria-checked": String(on), onclick: () => {
+          const h = recCardHidden();
+          if (on) h.add(k); else h.delete(k);
+          saveRecCards({ hidden: [...h] });
+        } }, el("span", { class: "check", "aria-hidden": "true" }, checkMark()), el("span", { class: "ticon" }, icon(ic, 20)), el("span", { class: "tname" }, label)),
+        el("button", { type: "button", class: "grip", "aria-label": `「${label}」を動かす（${i + 1} 番目）`, onpointerdown: (ev) => startTileDrag(ev, k, list, moveRecCard),
+          onkeydown: (ev) => {
+            const to = i + (ev.key === "ArrowUp" ? -1 : ev.key === "ArrowDown" ? 1 : 0);
+            if (to === i) return;
+            ev.preventDefault();
+            if (to >= 0 && to < keys.length) moveRecCard(k, to);
+          } }, icon("grip", 22)));
+    }));
+    if (focusKey) list.querySelector(`li[data-key="${focusKey}"] ${onGrip ? ".grip" : ".tile-pick"}`)?.focus();
+  }
+  function moveRecCard(k, to) {
+    const keys = recCardOrder().filter((x) => x !== k);
+    keys.splice(to, 0, k);
+    saveRecCards({ order: keys });
+  }
+  $("recCardList").addEventListener("pointermove", (ev) => { if (tileDrag?.id === ev.pointerId) { tileDrag.py = ev.clientY; placeTileDrag(); } });
+  $("recCardList").addEventListener("pointerup", endTileDrag);
+  $("recCardList").addEventListener("pointercancel", endTileDrag);
+
+  // ⑧ a kind of record as a table (CSV), oldest first, for Excel, Numbers or Google's: UTF-8 with its mark, so Excel reads
+  // the Japanese, and each kind's own columns. Not for reading back in (a backup is 記録を書き出す's)
+  const csvCell = (v) => { const s = v == null ? "" : String(v); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const csvOf = (rows) => "﻿" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  const byDate = (xs, d = (x) => x.date) => [...xs].filter((x) => isDay(d(x) || "")).sort((a, b) => d(a).localeCompare(d(b)) || num(a.createdAt) - num(b.createdAt));
+  const numOr = (v) => (typeof v === "number" && isFinite(v) ? v : "");
+  const CSV_KINDS = [
+    ["money", "家計簿", () => expenses.items.length, () => [["日付", "区分", "費目", "金額", "メモ", "支払い方法"],
+      ...byDate(expenses.items).map((e) => [e.date, e.kind === "in" ? "収入" : "支出", expenseCat(e) || "", num(e.amount), e.memo || "", payName(e.method) || ""])]],
+    ["weight", "からだ", () => weights.items.length, () => [["日付", "体重(kg)", "体脂肪率(%)", "摂取カロリー(kcal)", ...SIZES.map(([, n]) => `${n}(cm)`)],
+      ...byDate(weights.items, (w) => w.date || w.id).map((w) => [w.date || w.id, numOr(w.kg), num(w.fat) > 0 ? w.fat : "", numOr(w.intake), ...SIZES.map(([k]) => (num(w[k]) > 0 ? w[k] : ""))])]],
+    ["study", "勉強", () => study.items.length, () => [["日付", "科目", "時間(分)", "メモ"], ...byDate(study.items).map((x) => [x.date, subjectOf(x)?.name || "", num(x.minutes), x.note || ""])]],
+    ["workout", "運動", () => workouts.items.length, () => [["日付", "種類", "内容", "時間(分)", "距離(km)", "消費カロリー(kcal)", "メモ"],
+      ...byDate(workouts.items).map((w) => [w.date, w.type || "", workoutDetail(w), num(w.minutes) || "", num(w.km) || "", num(w.kcal) || "", w.note || ""])]],
+    ["meal", "食事", () => meals.items.length, () => [["日付", "区分", "食べたもの", "カロリー(kcal)", "たんぱく質(g)", "脂質(g)", "炭水化物(g)", "時刻"],
+      ...byDate(meals.items).map((m) => [m.date, m.slot || "", m.text || "", numOr(m.kcal), numOr(m.p), numOr(m.f), numOr(m.c), m.at || ""])]],
+    ["journal", "日記", () => journal.items.filter((j) => j.text?.trim()).length, () => [["日付", "日記"], ...byDate(journal.items.filter((j) => j.text?.trim()), (j) => j.date || j.id).map((j) => [j.date || j.id, j.text.trim()])]],
+    ["routine", "ルーティーン", () => routineDays.items.filter((x) => x.done?.length).length, () => [["日付", "できた項目", "数"],
+      ...byDate(routineDays.items.filter((x) => x.done?.length)).map((x) => { const names = x.done.map((id) => routines.get(id)?.name).filter(Boolean); return [x.date, names.join("・"), x.done.length]; })]],
+    ["todo", "ToDo", () => todos.items.length, () => [["名前", "完了", "期限", "時刻", "完了した日", "リスト", "ラベル", "重要", "メモ"],
+      ...[...todos.items].sort((a, b) => num(a.createdAt) - num(b.createdAt)).map((t) => [t.text, t.done ? "完了" : "", t.due || "", t.time || "", doneDay(t) || "", todoListOf(t)?.name || "", todoLabelOf(t)?.name || "", t.flag ? "重要" : "", t.memo || ""])]],
+  ];
+  // (in plain letters: some browsers drop a name with Japanese in it, saving it as "download")
+  const CSV_FILE = { money: "kakeibo", weight: "karada", study: "benkyo", workout: "undo", meal: "shokuji", journal: "nikki", routine: "routine", todo: "todo" };
+  async function exportCsv(key) {
+    const k = CSV_KINDS.find((x) => x[0] === key);
+    if (!k || !k[2]()) { flash("書き出す記録がありません"); return; }
+    const name = `tsumikasane-${CSV_FILE[key]}-${todayKey}.csv`, how = await handOut(new Blob([csvOf(k[3]())], { type: "text/csv" }), name);
+    if (how) flash(how === "shared" ? `${k[1]}を表にして書き出しました` : `「${name}」を書き出しました`);
+  }
+  function renderCsvList() {
+    setChildren($("csvList"), CSV_KINDS.map(([key, label, count]) => el("li", { class: "btn-row" },
+      el("button", { type: "button", class: "row-btn", "data-csv": key, onclick: () => exportCsv(key) }, icon(key === "weight" ? "weight" : key, 22), el("span", {}, label), el("span", { class: "row-count" }, `${fmtN(count())} 件`)))));
+  }
+
+  // ⑩ 日記 as one book (the user's call): every day written, oldest first, under its date with its year, as one text file
+  function journalBookText() {
+    const js = journal.items.filter((j) => j.text?.trim()).map((j) => ({ d: j.date || j.id, text: j.text.trim().replace(/\r\n?/g, "\n") })).filter((j) => isDay(j.d)).sort((a, b) => a.d.localeCompare(b.d));
+    if (!js.length) return null;
+    const long = (d) => `${Number(d.slice(0, 4))}年${fmtMDW(d)}`;
+    return { n: js.length, text: `つみかさね　日記\n${long(js[0].d)}〜${long(js[js.length - 1].d)}（${js.length} 日）\n` + js.map((j) => `\n────────────\n${long(j.d)}\n\n${j.text}\n`).join("") };
+  }
+  $("journalBook").addEventListener("click", async () => {
+    const b = journalBookText();
+    if (!b) { flash("書き出す日記がありません"); return; }
+    const name = `tsumikasane-nikki-${todayKey}.txt`, how = await handOut(new Blob([b.text], { type: "text/plain" }), name);
+    if (how) flash(how === "shared" ? `日記 ${b.n} 日分を書き出しました` : `「${name}」を書き出しました`);
+  });
+  // 記録's 設定: ⑨ the cards, ⑧ the tables, ⑩ the book
+  function renderRecSettings() {
+    renderRecCardList(); renderCsvList();
+    const n = journal.items.filter((j) => j.text?.trim()).length;
+    $("journalBookFoot").textContent = n ? `書いた ${fmtN(n)} 日分を、古い日から順に1つのテキストファイルにします。` : "日記を書くと、ここから1冊にまとめて書き出せます。";
+  }
+
   // ---------- boot ----------
   function renderAll() {
     tsumiTallied = null; tsumiStale = true; rtIdx = null; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)
-    for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderRunLevel, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderTrashRow, renderCopyRow, renderSyncRow, renderEmptyHint, renderSummary, renderTsumi, noteTsumiStep, paintChart, renderPushStates]) draw(fn);
+    for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderRunLevel, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderRecSettings, renderTrashRow, renderCopyRow, renderSyncRow, renderEmptyHint, renderSummary, renderTsumi, noteTsumiStep, paintChart, renderPushStates]) draw(fn);
     pushSoon(); // the plans' 通知アラーム to the server, should they have changed
     if (tab === "reclist") draw(renderRecList);
+    if (tab === "recday") draw(renderRecDay); // ①
     if (tab === "trash") draw(renderTrash);
     if (tab === "copies") draw(renderCopies);
     if (tab === "sync") draw(renderSync);
@@ -17325,7 +17766,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (linkTodo) initial = "todo";
     if (isDietPart(initial)) { setDietPart(initial); initial = "diet"; } // 食事's, 運動's and からだ's own pages, from before ダイエット
     // straight there: no slide in from きょう as the app opens (a record's entries open at 記録, which record being unknown)
-    draw(() => setTab(["reclist", "trash", "copies", "sync"].includes(initial) ? "records" : PAGES.some((p) => p.key === initial) || initial === "runlevel" ? initial : "home"));
+    draw(() => setTab(["reclist", "recday", "trash", "copies", "sync"].includes(initial) ? "records" : PAGES.some((p) => p.key === initial) || initial === "runlevel" ? initial : "home"));
     draw(loadJournalForm);
     renderAll();
     draw(runFixed); // 家計簿's 固定費 whose day has come
