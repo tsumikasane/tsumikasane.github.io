@@ -1805,6 +1805,31 @@ dialog.td-photo-view::backdrop { background: rgba(0, 0, 0, .6); }
 .ts-letter-text { margin: 0; padding: 14px var(--space-2); max-height: 50vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--t-body); line-height: 1.6; }
 /* つみねこの名前, over its words in the bubble */
 .neko-say .neko-name { display: block; font-size: var(--t-foot); font-weight: 600; color: var(--muted); }
+/* 今月の目標, 期間をえらんで数える, つみねこの日記 (the user's calls) */
+.ts-mgoal { padding: 12px var(--space-2); display: flex; flex-direction: column; gap: 6px; }
+.ts-mgoal p { margin: 0; font-size: var(--t-sub); }
+.ts-mgoal b { font-family: var(--font-round); font-size: calc(var(--t-body) + 6px); font-variant-numeric: tabular-nums; }
+.ts-mgoal .bar-track { flex: none; height: 8px; }
+.ts-mgoal .bar-track i { background: var(--accent); }
+.ts-mgoal .link-btn { align-self: flex-start; min-height: 36px; padding: 0; }
+.ts-span { padding: 12px var(--space-2); display: flex; flex-direction: column; gap: 10px; }
+.ts-span-pick { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ts-span-pick input { min-height: 36px; padding: 2px 8px; border: 0; border-radius: 8px; background: var(--fill); color: var(--fg); font: inherit; font-size: 16px; }
+.ts-span-out p { margin: 0 0 4px; font-size: var(--t-sub); }
+.ts-span-out b { font-family: var(--font-round); font-size: calc(var(--t-body) + 8px); font-variant-numeric: tabular-nums; }
+.ts-diary > li { flex-direction: column; align-items: stretch; gap: 2px; text-align: left; }
+.ts-diary .day { font-size: var(--t-foot); font-weight: 600; color: var(--muted); }
+.ts-diary .words { font-size: var(--t-sub); line-height: 1.5; overflow-wrap: anywhere; }
+/* 月のひとこと under the calendar view's month, and its goal */
+.ts-month-note { margin: 6px 0 0; }
+.ts-month-note .link-btn { min-height: 36px; padding: 0; font-size: var(--t-sub); text-align: left; }
+.ts-month-goal { margin: 4px 0 0; font-size: var(--t-sub); color: var(--muted); }
+.ts-month-goal.done { color: var(--accent); font-weight: 600; }
+/* 月の地層 on the year's page */
+.ty-strata svg { display: block; width: 100%; height: auto; }
+.ty-strata text { font-size: 10px; fill: var(--muted); }
+.ty-notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--t-sub); }
+.ty-notes .m { display: inline-block; min-width: 3em; color: var(--muted); font-variant-numeric: tabular-nums; }
 .ts-h .name .icon { color: var(--accent); }
 .ts-h .sub { color: var(--muted); text-align: end; font-variant-numeric: tabular-nums; }
 .ts-h.to-come .name { color: var(--muted); padding-inline-start: 20px; }
@@ -3319,11 +3344,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
                  lines kept round both, so nothing under them moves from block to block -->
             <div class="tsumi-said">
               <div class="tsumi-tip" id="tsumiTip" aria-live="polite"></div>
-              <div class="tsumi-acts"><button type="button" class="link-btn tsumi-open tsumi-fav" id="tsumiFav" aria-pressed="false" hidden></button><button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button><button type="button" class="link-btn tsumi-open tsumi-photo-btn" id="tsumiPhoto" aria-haspopup="dialog" hidden></button><button type="button" class="link-btn tsumi-open" id="tsumiDayAll" hidden>その日をまとめて見る</button><button type="button" class="link-btn tsumi-open" id="tsumiAgain" hidden></button><button type="button" class="link-btn danger tsumi-open" id="tsumiDrop" hidden>このブロックを削除</button><p class="tsumi-drop-warn" id="tsumiDropWarn" role="status" hidden></p></div>
+              <div class="tsumi-acts"><button type="button" class="link-btn tsumi-open tsumi-fav" id="tsumiFav" aria-pressed="false" hidden></button><button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button><button type="button" class="link-btn tsumi-open tsumi-photo-btn" id="tsumiPhoto" aria-haspopup="dialog" hidden></button><button type="button" class="link-btn tsumi-open" id="tsumiDayAll" hidden>その日をまとめて見る</button><button type="button" class="link-btn tsumi-open" id="tsumiAgain" hidden></button><button type="button" class="link-btn tsumi-open" id="tsumiNoteBtn" aria-haspopup="dialog" hidden></button><button type="button" class="link-btn danger tsumi-open" id="tsumiDrop" hidden>このブロックを削除</button><p class="tsumi-drop-warn" id="tsumiDropWarn" role="status" hidden></p></div>
             </div>
           </div>
           <!-- 1年前のきょう (the user's call): what went on this day a year ago, or else a month ago, said quietly; pressed, there -->
           <p class="tsumi-past" id="tsumiPast" hidden><button type="button" class="link-btn" id="tsumiPastBtn"></button></p>
+          <!-- 1か月前・1年前の旗 (the user's call): how many since then; pressed, the block with the flag -->
+          <p class="tsumi-past" id="tsumiFlagLine" hidden><button type="button" class="link-btn" id="tsumiFlagBtn"></button></p>
           <!-- ① round the turn of the year: the year looked back on -->
           <p class="tsumi-past" id="tsumiYearLine" hidden><button type="button" class="link-btn" id="tsumiYearBtn"></button></p>
         </div>
@@ -3565,12 +3592,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <button type="button" class="rec-search-clear" id="tsumiFindClear" aria-label="探す言葉を消す" hidden><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
         </div>
         <p class="group-foot" id="tsumiFindSaid" aria-live="polite" hidden></p>
+        <p class="rec-page" id="tsumiFindAllRow" hidden><button type="button" class="link-btn" id="tsumiFindAll"></button></p>
         <ul class="list card tsumi-found" id="tsumiFound" hidden></ul>
         <h3 class="group-head">つみあげた記録</h3>
         <ul class="list card" id="tsumiKinds"></ul>
         <!-- ① each year's own page (the user's call, 2026-11-10) -->
         <h3 class="group-head" id="tsumiYearsHead">ふりかえり</h3>
         <ul class="list card" id="tsumiYears"></ul>
+        <!-- 期間をえらんで数える (the user's call): what went on between two days -->
+        <h3 class="group-head" id="tsumiSpanHead">期間をえらんで数える</h3>
+        <div class="card ts-span">
+          <div class="ts-span-pick"><input type="date" id="tsumiSpanFrom" aria-label="この日から"><span>〜</span><input type="date" id="tsumiSpanTo" aria-label="この日まで"></div>
+          <div class="ts-span-out" id="tsumiSpanOut"></div>
+        </div>
         <!-- ⑤ 記念のブロック: the first of each kind, goals achieved, 自己ベスト, ごほうび and 節目, newest first; pressed, on the stairs -->
         <h3 class="group-head" id="tsumiMemoHead">記念のブロック</h3>
         <ul class="list card" id="tsumiMemos"></ul>
@@ -3608,12 +3642,26 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <h3 class="group-head">このペースなら</h3>
         <div class="card ts-pace" id="tsumiPace"></div>
         <p class="group-foot">この2週間に積んだ数から出した、だいたいの日です。</p>
+        <!-- 今月の目標 (the user's call): this month's count to reach -->
+        <h3 class="group-head" id="tsumiMonthGoalHead">今月の目標</h3>
+        <div class="card ts-mgoal" id="tsumiMonthGoal" hidden></div>
+        <form class="add" id="tsumiMonthGoalForm" autocomplete="off" novalidate>
+          <label class="flabel" for="tsumiMonthGoalN">ブロックの数</label>
+          <div class="ffield ts-n"><input type="number" id="tsumiMonthGoalN" inputmode="numeric" min="1" step="1"><span>こ</span></div>
+          <div class="actions"><button class="btn" type="submit">決める</button></div>
+        </form>
+        <p class="group-foot" id="tsumiMonthGoalFoot">月ごとに決めます。届いたら、つみかさねで紙ふぶきが舞います。</p>
         <!-- つみねこの名前 (the user's call) -->
         <h3 class="group-head" id="nekoNameHead">つみねこの名前</h3>
         <form class="add" id="nekoNameForm" autocomplete="off" onsubmit="return false">
           <input type="text" id="nekoNameInput" class="full" maxlength="10" enterkeyhint="done" aria-labelledby="nekoNameHead">
         </form>
         <p class="group-foot">名前をつけると、つみねこが話すときと積み忘れのお知らせで、その名前を名のります。</p>
+        <!-- つみねこの日記 (the user's call): a line a day on how the day went, to yesterday -->
+        <h3 class="group-head" id="nekoDiaryHead">つみねこの日記</h3>
+        <ul class="list card ts-diary" id="nekoDiary"></ul>
+        <p class="rec-page" id="nekoDiaryMoreRow" hidden><button type="button" class="link-btn" id="nekoDiaryMore"></button></p>
+        <p class="group-foot">つみねこが、その日の積み方を見て毎日書いています（きのうまで）。</p>
         <!-- ⑨ つみねこの着せかえ -->
         <h3 class="group-head">つみねこの着せかえ</h3>
         <div class="card neko-closet" id="nekoCloset"></div>
@@ -3641,6 +3689,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </form>
         <p class="group-foot" id="tsumiRemindFoot"></p>
         <p class="group-foot">きょうまだ積んでいない日は、ホーム画面のアイコンに「1」のしるしが付きます（通知を受け取っている iPhone などで）。</p>
+        <!-- 1日のまとめのお知らせ (the user's call): each night at the time, today's count and kinds -->
+        <h3 class="group-head">1日のまとめのお知らせ</h3>
+        <form class="add" id="tsumiDayForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="tsumiDayOn">お知らせ</label>
+          <div class="ffield"><input type="checkbox" id="tsumiDayOn" class="switch" role="switch"></div>
+          <label class="flabel" for="tsumiDayAt">時刻</label>
+          <div class="ffield"><input type="time" id="tsumiDayAt" value="22:00"></div>
+        </form>
+        <p class="group-foot" id="tsumiDayFoot"></p>
         <!-- ⑩ 週のまとめのお知らせ (the user's call, 2026-11-10) -->
         <h3 class="group-head">週のまとめのお知らせ</h3>
         <form class="add" id="tsumiWeekForm" autocomplete="off" onsubmit="return false">
@@ -4126,6 +4183,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 <dialog class="td-photo-view tsumi-photo-view" id="tsumiPhotoView" aria-label="写真">
   <img id="tsumiPhotoImg" alt="">
   <div class="td-photo-bar"><button type="button" class="icon-btn" id="tsumiPhotoPrev" aria-label="前の写真"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-prev"/></svg></button><button type="button" class="icon-btn" id="tsumiPhotoNext" aria-label="次の写真"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button><span class="n" id="tsumiPhotoN"></span><button type="button" class="link-btn" id="tsumiPhotoClose">閉じる</button></div>
+</dialog>
+<!-- a line of words asked for: a block's ひとこと, a month's -->
+<dialog class="ask" id="tsTextAsk" aria-labelledby="tsTextTitle">
+  <div class="ask-group">
+    <p class="ask-msg" id="tsTextTitle"></p>
+    <div class="ask-field"><input type="text" id="tsTextInput" maxlength="60" enterkeyhint="done" aria-labelledby="tsTextTitle"><button type="button" class="ask-go" id="tsTextSave">残す</button></div>
+    <button type="button" class="ask-btn danger" id="tsTextClear" hidden>ひとことを消す</button>
+  </div>
+  <button type="button" class="ask-btn ask-keep" id="tsTextNo">やめる</button>
 </dialog>
 <!-- 未来の自分への手紙, as it opens (and read again from the gear) -->
 <dialog class="ask" id="tsumiLetterView" aria-labelledby="tsumiLetterTitle">
@@ -9876,6 +9942,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...tdAlarms(now)); // ① ToDo's お知らせ (the user's call, 2026-11-10)
     out.push(...goalReviewAlarms(now)); // 目標 ⑤ 見直しのお知らせ
     out.push(...tsWeekAlarms(now)); // つみかさね ⑩ 週のまとめのお知らせ
+    out.push(...tsDaySumAlarms(now)); // つみかさね 1日のまとめのお知らせ
     return out.sort((a, b) => a.at - b.at).slice(0, 400);
   }
   function alarmBody(e, start, at) {
@@ -9904,6 +9971,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...tdPushParts()); // (① ToDo's お知らせ, and the focus timer's end)
     parts.push(...goalReviewParts()); // (目標 ⑤)
     parts.push(...tsWeekParts()); // (つみかさね ⑩)
+    parts.push(...tsDaySumParts()); // (つみかさね 1日のまとめ)
     const t = JSON.stringify(parts);
     let h = 2166136261;
     for (let i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 16777619);
@@ -14184,8 +14252,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const FAV_ID = "tsumiFav", TSUMI_FAV = { label: "お気に入り", c: "--c-study" };
   let favOf = null, favSet = new Set();
   const tsumiFavs = () => { const v = settings.get(FAV_ID); if (v !== favOf) { favOf = v; favSet = new Set(Array.isArray(v?.keys) ? v.keys : []); } return favSet; };
-  const kindOf = (k) => (k === "fav" ? TSUMI_FAV : TSUMI_KINDS[k]);
-  const tsumiIn = (b) => !tsumiOnly || (tsumiOnly === "fav" ? tsumiFavs().has(b.key) : b.kind === tsumiOnly && (!tsumiGoneOnly || b.gone)); // a block of the ones pressed
+  // (探したブロックを全部光らせる, the user's call: "found", the blocks ことばで探す found, this time only)
+  let tsFoundKeys = new Set(), tsFoundWords = "";
+  const kindOf = (k) => (k === "fav" ? TSUMI_FAV : k === "found" ? { label: `「${tsFoundWords}」`, c: "--c-study" } : TSUMI_KINDS[k]);
+  const tsumiIn = (b) => !tsumiOnly || (tsumiOnly === "fav" ? tsumiFavs().has(b.key) : tsumiOnly === "found" ? tsFoundKeys.has(b.key) : b.kind === tsumiOnly && (!tsumiGoneOnly || b.gone)); // a block of the ones pressed
   const onlyLabel = () => (tsumiGoneOnly ? "削除した" : "") + kindOf(tsumiOnly).label;
   let tsumiAnim = null, tsumiFresh = Infinity; // blocks dropping in since the last look; with less motion, the first of them to ring
   let tsumiDrag = null, tsumiDragged = false; // 大きく moved under a finger; and the press that ended a move, not to be taken as a tap
@@ -14305,7 +14375,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // call: it let go unsaid, and 元に戻す brought the record back but not the kind)
     // (its deleted ones all taken off: the kind's own again)
     if (tsumiGoneOnly && !blocks.some((b) => b.gone && b.kind === tsumiOnly)) tsumiGoneOnly = false;
-    if (tsumiOnly && !blocks.some(tsumiOnly === "fav" ? (b) => tsumiFavs().has(b.key) : (b) => b.kind === tsumiOnly)) {
+    if (tsumiOnly && !blocks.some(tsumiOnly === "fav" ? (b) => tsumiFavs().has(b.key) : tsumiOnly === "found" ? (b) => tsFoundKeys.has(b.key) : (b) => b.kind === tsumiOnly)) {
       const words = `${kindOf(tsumiOnly).label}のしぼりをはずしました`;
       tsumiGone = wasKey ? { kind: tsumiOnly, key: wasKey } : null;
       tsumiOnly = null; tsumiGoneOnly = false;
@@ -14338,7 +14408,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const goneMany = tsumiGoneOnly && v ? mine.length : 0;
     $("tsumiDropAll").hidden = goneMany < 2;
     if (goneMany >= 2) $("tsumiDropAll").setAttribute("aria-label", `削除した${v.label}のブロック ${fmtN(goneMany)} こを、まとめて削除`);
-    if (v) setChildren($("tsumiKind"), tsumiOnly === "fav" ? el("span", { class: "tsumi-fav", "aria-pressed": "true" }, icon("heart-fill", 14)) : tsumiGoneOnly ? el("span", { class: "dot gone", style: `color: var(${v.c})` }) : el("span", { class: "dot blk", style: `--k: ${tsumiInk(tsumiOnly)}` }), onlyLabel());
+    if (v) setChildren($("tsumiKind"), tsumiOnly === "fav" ? el("span", { class: "tsumi-fav", "aria-pressed": "true" }, icon("heart-fill", 14)) : tsumiOnly === "found" ? el("span", { class: "tsumi-fav" }, icon("search", 14)) : tsumiGoneOnly ? el("span", { class: "dot gone", style: `color: var(${v.c})` }) : el("span", { class: "dot blk", style: `--k: ${tsumiInk(tsumiOnly)}` }), onlyLabel());
     renderTsumiMonthPick();
     // no lines under the count (the user's call: いま N 段, つぎの段まで あと N こ, きょう ＋N こ, この7日で ＋N こ, N 日つづけて
     // and the rest were taken out, as 「◯年◯月◯日から N 日の積み重ね」 was before), only what to do while there is nothing.
@@ -14356,7 +14426,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // the kind pressed wasn't said)
     $("tsumiCanvas").setAttribute("aria-label", n ? `これまでの記録 ${nf(n)} こが、${k} 段の階段に積みあがっています。${v ? `${onlyLabel()}のブロック ${nf(mine.length)} こだけに色を付けています。` : ""}つぎの段まであと ${left} こ。${!v && today ? `きょうは ${today} こ積みました。` : ""}${!v && (endText || pastText) ? (endText || pastText) + "。" : ""}前と次のボタンや左右の矢印キーで1つずつ、PageUp と PageDown で月ごとに見られます。Enter キーで、見ているブロックの記録が開きます。` : "まだブロックがありません。");
     $("tsumiPrev").hidden = $("tsumiNext").hidden = n < 2;
-    renderTsumiPast(); syncTsumiPlay(); renderTsumiRemind();
+    renderTsumiPast(); renderTsumiFlagLine(); syncTsumiPlay(); renderTsumiRemind();
     // opened with blocks gone on since the last look: the newest (of the kind pressed), where they drop in; else as it was
     if (opening) {
       tsumiHoverAt = null; tsumiNeko = null; // (つみねこ where the stairs have it, or where they had it at the last look)
@@ -14791,6 +14861,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (tsumiCal && tsumiShown.length) { syncTsumiViews(); if (tsumiCal === "kinds") renderTsumiPillars(); else renderTsumiCal(); return; } // カレンダー or 種類 in place of the stairs
     const a = tsumiAnim, t = a ? now || performance.now() : 0;
     // 積んだときの音 (the user's call): a soft knock as blocks land (not in a replay)
+    // 再生に音楽 (the user's call): in ▶'s replay, the newest block landed rings its kind's note
+    if (a && a.replay && a.step > 0 && tsSoundOn()) { const landed = clampTo(Math.floor((t - a.start - 380) / a.step) + 1, 0, (a.to ?? tsumiShown.length) - a.from); if (landed > (a.knocked || 0)) { a.knocked = landed; const b = tsumiShown[a.from + landed - 1]; if (b) tsNote(b.kind); } }
     if (a && !a.replay && a.step > 0) { const landed = clampTo(Math.floor((t - a.start - 380) / a.step) + 1, 0, tsumiShown.length - a.from); if (landed > (a.knocked || 0)) { a.knocked = landed; tsKnock(); } }
     $("tsumiBody").classList.toggle("beside", !!tsumiSideW()); // ◀ ▶ and the words beside the stairs or under them
     const L = tsumiLayout(), { n, k, cols, W, axis, pitch, C, R, near } = L, r = n - (k * (k + 1)) / 2;
@@ -14859,6 +14931,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       }
     }
     x.globalAlpha = 1;
+    // 1か月前・1年前の旗 (the user's call): in the block that was the newest then, at its lower left (not while they drop)
+    if (size >= 3 && !a) for (const f of tsFlags()) {
+      const c = tsumiCol(f.i), row = f.i - (c * (c + 1)) / 2;
+      if (c < cLo || c > cHi || row < lo || row > hi) continue;
+      const px = xOf(c), py = yOf(row), u = size;
+      x.strokeStyle = x.fillStyle = f.colour; x.lineWidth = Math.max(1, u * 0.06);
+      if (u < 8) { x.beginPath(); x.arc(px + u / 2, py + u / 2, Math.max(1.5, u * 0.42), 0, 2 * Math.PI); x.fill(); continue; } // (small: a dot)
+      x.beginPath(); x.moveTo(px + u * 0.22, py + u * 0.82); x.lineTo(px + u * 0.22, py + u * 0.36); x.stroke();
+      x.beginPath(); x.moveTo(px + u * 0.22, py + u * 0.36); x.lineTo(px + u * 0.56, py + u * 0.48); x.lineTo(px + u * 0.22, py + u * 0.6); x.closePath(); x.fill();
+    }
     // the step being built: the places still to fill, faint, up to its top (no ★ there: taken out, the user's call)
     if (k >= cLo && k <= cHi && !(a && a.to !== undefined && a.to < n)) {
       x.strokeStyle = tone("--muted", "#8e8e93"); x.lineWidth = 1; x.globalAlpha = 0.5;
@@ -15211,11 +15293,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!words.length) { list.hidden = said.hidden = true; list.replaceChildren(); return; }
     const hits = [];
     for (let j = tsumiShown.length - 1; j >= 0; j--) {
-      const b = tsumiShown[j], t = foldText(`${tsumiWords(b)} ${TSUMI_KINDS[b.kind].label}`);
+      const b = tsumiShown[j], t = foldText(`${tsumiWords(b)} ${TSUMI_KINDS[b.kind].label} ${tsNoteOf(b.key)}`); // (a block's ひとこと too)
       if (words.every((w) => t.includes(w))) hits.push(j);
     }
     said.hidden = false;
     said.textContent = !hits.length ? `「${q.trim()}」のブロックは見つかりませんでした` : hits.length > TSUMI_FIND_MAX ? `${fmtN(hits.length)} こ見つかりました（新しい ${TSUMI_FIND_MAX} こ）` : `${fmtN(hits.length)} こ見つかりました`;
+    // all of them in colour on the stairs (the user's call)
+    $("tsumiFindAllRow").hidden = !hits.length;
+    $("tsumiFindAll").textContent = `見つかった ${fmtN(hits.length)} こを階段で光らせる`;
+    $("tsumiFindAll").onclick = () => {
+      tsFoundKeys = new Set(hits.map((j) => tsumiShown[j].key)); tsFoundWords = q.trim();
+      if (tsumiCal) setTsumiCal(false, false);
+      if (tsumiGeo?.big) tsumiView = "all"; // (all of them in sight)
+      setTsumiOnly("found");
+    };
     list.hidden = !hits.length;
     // (its words from a little before the first word found, so that one shows on the line)
     const near = (text) => { const f = foldText(text), at = Math.min(...words.map((w) => { const p = f.indexOf(w); return p < 0 ? Infinity : p; })); return Number.isFinite(at) && at > 14 ? "…" + text.slice(at - 10) : text; };
@@ -16508,7 +16599,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月10日 22:03"; // a50a02ab (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月10日 22:46"; // 2bef5a93 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -18762,6 +18853,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     renderTsumiYearLine(); renderTsumiGear();
     if (tsPending && tab === "tsumi") { const go = tsPending; tsPending = null; go(); }
     setTimeout(tsLetterCheck, 600); // (未来の自分への手紙 whose time has come, once the page is in)
+    setTimeout(tsMonthGoalCheck, 700); // (今月の目標, reached)
   }
   // the page as it is, kept to come back to from a page opened from it (その日をまとめて見る, a year's page)
   function tsKeepBack() { if (tab === "tsumi") tsumiBack = { pick: tsumiShown[shownIndex()]?.key ?? null, only: tsumiOnly, goneOnly: tsumiGoneOnly, anchor: tsumiAnchor, y: scrollY }; }
@@ -18798,7 +18890,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return el("div", { class: "ts-month" },
       el("p", { class: "ts-month-head" }, el("strong", {}, `${m}月${tsumiOnly ? "の" + onlyLabel() : ""}`), `は${now ? "ここまで" : ""} `, el("b", { class: "num" }, fmtN(bs.length)), " こ"),
       el("p", { class: "ts-month-line" }, phrases([vs, bs.length ? `積んだ日 ${per.size} / ${Math.max(1, to - from + 1)} 日` : null, best && best[1] > 1 ? `いちばん多い日 ${fmtMD(best[0])}（${best[1]} こ）` : null])),
-      tsumiOnly ? null : tsMix(bs));
+      tsumiOnly ? null : tsMix(bs),
+      // 今月の目標 and 月のひとこと (the user's calls)
+      tsumiOnly || !tsMonthGoalOf(mo) ? null : el("p", { class: "ts-month-goal" + (bs.length >= tsMonthGoalOf(mo) ? " done" : "") },
+        bs.length >= tsMonthGoalOf(mo) ? `目標の ${fmtN(tsMonthGoalOf(mo))} こに届きました` : `目標の ${fmtN(tsMonthGoalOf(mo))} こまで、あと ${fmtN(tsMonthGoalOf(mo) - bs.length)} こ`),
+      el("p", { class: "ts-month-note" }, el("button", { type: "button", class: "link-btn", "aria-haspopup": "dialog", onclick: () => editMonthNote(mo) }, tsMonthNoteOf(mo) ? `「${tsMonthNoteOf(mo)}」` : `${m}月にひとこと`)));
   }
 
   // ① a year looked back on (the user's call): its own page under つみかさね, from the gear's ふりかえり and, round the turn
@@ -18858,6 +18954,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             el("span", { class: "v" }, c && c === maxM ? fmtN(c) : ""), el("span", { class: "bar" }, el("i", { style: `height: ${c ? Math.max(3, Math.round((c / maxM) * 100)) : 0}%` })), el("span", { class: "m" }, String(i + 1)));
         }))),
       tsMix(yb) ? card("種類ごと", tsMix(yb)) : null,
+      card("月の地層", tsStrata(y, yb, first)), // (the user's call)
+      tsYearNotes(y) ? card("月のひとこと", tsYearNotes(y)) : null,
       timed.length >= 10 ? card("積んだ時間帯", el("p", { class: "ty-line" }, `${TS_TIMES[mostSlot][0]}（${TS_TIMES[mostSlot][1]}）に積むことが、いちばん多い年でした`),
         el("ul", { class: "ty-times" }, TS_TIMES.map(([name, hours], j) => {
           const pct = Math.round((slots[j] / timed.length) * 100);
@@ -18968,6 +19066,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // under the stairs, by the shown block's links: ② its day all together, ④ its photos
   function tsSayMore(b) {
     syncTsumiAgain(b); // (きょうも同じ記録)
+    syncTsumiNote(b); // (ブロックにひとこと)
+    const flag = b && tsFlags().find((f) => tsumiShown[f.i] === b); // (1か月前・1年前の旗)
+    if (flag) $("tsumiTip").querySelector(".when .due-parts")?.append(el("span", { class: "phrase" }, `${flag.words}は、ここがいちばん上`));
     const day = $("tsumiDayAll"), ph = $("tsumiPhoto");
     day.hidden = !b; ph.hidden = true;
     if (!b) return;
@@ -19185,6 +19286,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (rw) lines.push(`あと ${fmtN(num(rw.n) - n)} こで「${rw.text}」だよ`);
     const hs = tsHeights().find((x) => x.n > n);
     lines.push(`いまの高さは ${fmtH(n)}。${hs ? `${hs.name}まで、あと ${fmtN(hs.n - n)} こ` : "どこまで高くなるかな"}`);
+    const mg = tsMonthGoalOf(todayKey.slice(0, 7)), mgn = all.filter((b) => b.day.slice(0, 7) === todayKey.slice(0, 7)).length; // (今月の目標)
+    if (mg && mgn < mg) lines.push(`今月の目標まで、あと ${fmtN(mg - mgn)} こだよ`);
     const pace = tsPace(), mile = tsNextMilestone(n), mileDay = tsWhen(pace.per, mile - n); // (このペースなら)
     if (mileDay) lines.push(`このペースなら、${tsDayWords(mileDay)}に ${fmtN(mile)} こだよ`);
     lines.push("ゴロゴロ…");
@@ -19313,6 +19416,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!force && !(sheetEl.open && settingsFrom && settingsScope === "tsumi")) return;
     renderTsumiYears(); renderTsumiMemos(); renderTsumiRewards(); renderTsumiHeight(); renderNekoCloset(); renderTsumiWeek();
     renderTsumiLetters(); renderTsumiPace(); renderNekoName(); renderTsumiLook(); renderTsumiRest(); // (the user's calls, 2026-11-10)
+    renderTsumiMonthGoal(); renderTsumiSpan(); renderNekoDiary(); renderTsumiDaySum(); // (and the ten after them)
   }
   // ---------- つみかさね, ten more (the user's calls, 2026-11-10) ----------
   // 1 アイコンのしるし: while today has no block yet and isn't お休み, a 1 on the app's icon on the home screen, gone once
@@ -19556,6 +19660,243 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     flash(name ? `つみねこの名前を「${name}」にしました` : "つみねこの名前をはずしました", () => act(() => settings.set(NEKO_NAME_ID, { name: was, updatedAt: Date.now() })));
   });
   $("nekoNameInput").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing && ev.keyCode !== 229) { ev.preventDefault(); ev.currentTarget.blur(); } });
+  // ---------- つみかさね, ten more again (the user's calls, 2026-11-10) ----------
+  // a line of words asked for (a block's ひとこと, a month's): its field, 残す, 消す when there are some, やめる
+  let tsTextDone = null;
+  function askTsText(title, value, max, done) {
+    tsTextDone = done;
+    $("tsTextTitle").textContent = title;
+    const f = $("tsTextInput");
+    f.value = value || ""; f.maxLength = max;
+    $("tsTextClear").hidden = !value;
+    $("tsTextAsk").showModal(); f.focus();
+  }
+  $("tsTextSave").addEventListener("click", () => { const v = oneLine($("tsTextInput").value); $("tsTextAsk").close(); tsTextDone?.(v); });
+  $("tsTextInput").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing && ev.keyCode !== 229) { ev.preventDefault(); $("tsTextSave").click(); } });
+  $("tsTextClear").addEventListener("click", () => { $("tsTextAsk").close(); tsTextDone?.(""); });
+  $("tsTextNo").addEventListener("click", () => $("tsTextAsk").close());
+  $("tsTextAsk").addEventListener("click", (ev) => { if (ev.target === $("tsTextAsk")) $("tsTextAsk").close(); });
+  // words kept by key in a setting of their own (synced), with 元に戻す
+  const tsWordsOf = (id) => { const v = settings.get(id)?.words; return v && typeof v === "object" ? v : {}; };
+  function setTsWords(id, key, text, said) {
+    const was = tsWordsOf(id), now = { ...was };
+    if (text) now[key] = text; else delete now[key];
+    if ((was[key] || "") === (text || "")) return;
+    act(() => settings.set(id, { words: now, updatedAt: Date.now() }));
+    flash(said, () => act(() => settings.set(id, { words: was, updatedAt: Date.now() })));
+  }
+  // 1 1か月前・1年前の旗: the block that was the newest at the end of the same day a month ago (the month's last day
+  // when it has none) and a year ago, while some came after it
+  let tsFlagCache = { of: null, list: [] };
+  function tsFlags() {
+    if (tsFlagCache.of === tsumiShown) return tsFlagCache.list;
+    const n = tsumiShown.length, y = Number(todayKey.slice(0, 4)), mo = Number(todayKey.slice(5, 7)), d = Number(todayKey.slice(8));
+    const dayIn = (yy, mm) => { const last = new Date(yy, mm, 0).getDate(); return ymd(new Date(yy, mm - 1, Math.min(d, last))); };
+    const list = [];
+    for (const [day, colour, words] of [[mo > 1 ? dayIn(y, mo - 1) : dayIn(y - 1, 12), "#0a84ff", "1か月前"], [dayIn(y - 1, mo), "#ff9f0a", "1年前"]]) {
+      const end = Date.parse(addDays(day, 1) + "T00:00:00");
+      let lo = 0, hi = n - 1, i = -1;
+      while (lo <= hi) { const mid = (lo + hi) >> 1; if (tsumiShown[mid].t < end) { i = mid; lo = mid + 1; } else hi = mid - 1; }
+      if (i >= 0 && i < n - 1) list.push({ i, colour, words });
+    }
+    tsFlagCache = { of: tsumiShown, list };
+    return list;
+  }
+  function renderTsumiFlagLine() {
+    const f = tsFlags()[0], line = $("tsumiFlagLine");
+    line.hidden = !f;
+    if (!f) return;
+    $("tsumiFlagBtn").textContent = `${f.words}から ${fmtN(tsumiShown.length - 1 - f.i)} こ積みました`;
+    $("tsumiFlagBtn").onclick = () => { goTsumiBlock(f.i); }; // (the kind pressed let go there, as goTsumiBlock does)
+  }
+  // 2 今月の目標: a count a month (settings tsumiMonthGoal: goals by month, and when each was reached), set in the gear;
+  // its progress there and under the calendar view's month; reached, confetti over つみかさね, once
+  const MGOAL_ID = "tsumiMonthGoal";
+  const tsMonthGoals = () => { const v = settings.get(MGOAL_ID); return { goals: v?.goals && typeof v.goals === "object" ? v.goals : {}, done: v?.done && typeof v.done === "object" ? v.done : {} }; };
+  const tsMonthGoalOf = (mo) => { const n = num(tsMonthGoals().goals[mo]); return n > 0 ? n : 0; };
+  const tsMonthCount = (mo) => tsumiList().filter((b) => b.day.slice(0, 7) === mo).length;
+  function renderTsumiMonthGoal() {
+    const mo = todayKey.slice(0, 7), goal = tsMonthGoalOf(mo), c = tsMonthCount(mo), box = $("tsumiMonthGoal"), m = Number(mo.slice(5));
+    $("tsumiMonthGoalHead").textContent = `今月（${m}月）の目標`;
+    box.hidden = !goal;
+    if (goal) setChildren(box, el("p", {}, `${m}月は `, el("b", {}, fmtN(c)), ` / ${fmtN(goal)} こ`),
+      el("span", { class: "bar-track" }, el("i", { style: `width: ${Math.min(100, Math.floor((c / goal) * 100))}%` })),
+      el("p", {}, c >= goal ? "目標に届きました！" : `あと ${fmtN(goal - c)} こ${tsWhen(tsPace().per, goal - c) && tsWhen(tsPace().per, goal - c).slice(0, 7) === mo ? `（このペースなら${tsDayWords(tsWhen(tsPace().per, goal - c))}）` : ""}`),
+      el("button", { type: "button", class: "link-btn", onclick: () => setMonthGoal(mo, 0) }, "目標をはずす"));
+    const f = $("tsumiMonthGoalN");
+    if (document.activeElement !== f) f.value = goal ? String(goal) : "";
+    f.min = "1";
+  }
+  function setMonthGoal(mo, n) {
+    const was = settings.get(MGOAL_ID) || {}, v = tsMonthGoals(), goals = { ...v.goals }, done = { ...v.done };
+    if (n > 0) goals[mo] = n; else delete goals[mo];
+    delete done[mo]; // (reached again, it says so again)
+    act(() => settings.set(MGOAL_ID, { goals, done, updatedAt: Date.now() }));
+    flash(n > 0 ? `${Number(mo.slice(5))}月の目標を ${fmtN(n)} こにしました` : `${Number(mo.slice(5))}月の目標をはずしました`, () => act(() => settings.set(MGOAL_ID, { goals: was.goals || {}, done: was.done || {}, updatedAt: Date.now() })));
+  }
+  $("tsumiMonthGoalForm").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const n = Math.round(Number($("tsumiMonthGoalN").value));
+    if (!(n > 0)) { $("tsumiMonthGoalFoot").textContent = "1 こ以上の数にしてください。"; return; }
+    $("tsumiMonthGoalFoot").textContent = "月ごとに決めます。届いたら、つみかさねで紙ふぶきが舞います。";
+    $("tsumiMonthGoalN").blur();
+    setMonthGoal(todayKey.slice(0, 7), n);
+  });
+  function tsMonthGoalCheck() {
+    if (tab !== "tsumi" || sheetEl.open || document.querySelector("dialog[open]")) return;
+    const mo = todayKey.slice(0, 7), goal = tsMonthGoalOf(mo), v = tsMonthGoals();
+    if (!goal || v.done[mo] || tsMonthCount(mo) < goal) return;
+    act(() => settings.set(MGOAL_ID, { goals: v.goals, done: { ...v.done, [mo]: Date.now() }, updatedAt: Date.now() }));
+    celebrate();
+    flash(`今月の目標の ${fmtN(goal)} こに届きました！`);
+  }
+  // 3 月のひとこと: a line for a month (settings tsumiMonthNotes), from the calendar view's month; listed on the year's page
+  const MNOTE_ID = "tsumiMonthNotes";
+  const tsMonthNoteOf = (mo) => { const v = tsWordsOf(MNOTE_ID)[mo]; return typeof v === "string" ? v : ""; };
+  function editMonthNote(mo) {
+    const m = Number(mo.slice(5));
+    askTsText(`${Number(mo.slice(0, 4))}年${m}月のひとこと`, tsMonthNoteOf(mo), 40, (text) => setTsWords(MNOTE_ID, mo, text, text ? `${m}月にひとことを残しました` : `${m}月のひとことを消しました`));
+  }
+  function tsYearNotes(y) {
+    const notes = Object.entries(tsWordsOf(MNOTE_ID)).filter(([mo, t]) => mo.slice(0, 4) === y && typeof t === "string" && t).sort();
+    return notes.length ? el("ul", { class: "ty-notes" }, notes.map(([mo, t]) => el("li", {}, el("span", { class: "m" }, `${Number(mo.slice(5))}月`), t))) : null;
+  }
+  // 4 ブロックにひとこと: a short note on a block, by its key (settings tsumiNotes); the button under it says it, and
+  // ことばで探す finds it
+  const NOTE_ID = "tsumiNotes";
+  const tsNoteOf = (key) => { const v = tsWordsOf(NOTE_ID)[key]; return typeof v === "string" ? v : ""; };
+  function syncTsumiNote(b) {
+    const btn = $("tsumiNoteBtn");
+    btn.hidden = !b;
+    if (!b) return;
+    const note = tsNoteOf(b.key);
+    setChildren(btn, note ? `✎「${clip(note, 18)}」` : "ひとことを書く");
+    btn.setAttribute("aria-label", note ? `ひとこと「${note}」を書きかえる` : "このブロックにひとことを書く");
+    btn.onclick = () => askTsText("このブロックにひとこと", note, 60, (text) => setTsWords(NOTE_ID, b.key, text, text ? "ブロックにひとことを残しました" : "ブロックのひとことを消しました"));
+  }
+  // 6 期間をえらんで数える: from the first day of this month to today at first; the count, the days stacked of the days
+  // there were, a day's average, and the kinds' share
+  let tsSpan = null;
+  function renderTsumiSpan() {
+    const all = tsumiList(), first = tsFirstDay(all), from = $("tsumiSpanFrom"), to = $("tsumiSpanTo"), out = $("tsumiSpanOut");
+    tsSpan = tsSpan || { from: todayKey.slice(0, 8) + "01", to: todayKey };
+    for (const f of [from, to]) { f.min = first; f.max = todayKey; }
+    if (document.activeElement !== from) from.value = tsSpan.from;
+    if (document.activeElement !== to) to.value = tsSpan.to;
+    const a = tsSpan.from <= tsSpan.to ? tsSpan.from : tsSpan.to, z = tsSpan.from <= tsSpan.to ? tsSpan.to : tsSpan.from;
+    const bs = all.filter((b) => b.day >= a && b.day <= z), days = new Set(bs.map((b) => b.day)).size, span = daysBetween(a, z) + 1;
+    setChildren(out, el("p", {}, el("b", {}, fmtN(bs.length)), " こ"),
+      el("p", {}, `積んだ日 ${fmtN(days)} / ${fmtN(span)} 日・1日 平均 ${span ? String(Math.round((bs.length / span) * 10) / 10) : "0"} こ`), tsMix(bs));
+  }
+  for (const id of ["tsumiSpanFrom", "tsumiSpanTo"]) $(id).addEventListener("change", (ev) => {
+    if (!isDay(ev.target.value)) return;
+    tsSpan = { ...(tsSpan || {}), [id === "tsumiSpanFrom" ? "from" : "to"]: ev.target.value };
+    renderTsumiSpan();
+  });
+  // 7 1日のまとめのお知らせ: on or off and its time (22:00 at first), kept with the account; at that time today, while
+  // today has blocks, 「きょうは N こ積んだよ（kinds）」 (sent again with every block: pushSig), つみねこの名前 as its sender
+  const DAYSUM_ID = "tsumiDaySum";
+  function tsDaySum() { const v = settings.get(DAYSUM_ID); return { on: !!v?.on, at: /^\d\d:\d\d$/.test(v?.at || "") ? v.at : "22:00" }; }
+  function tsTodayKinds() {
+    const d0 = Date.parse(todayKey + "T00:00:00"), counts = new Map();
+    for (const b of tsumiList()) if (b.t >= d0 || b.day === todayKey) counts.set(b.kind, (counts.get(b.kind) || 0) + 1);
+    return [...counts].sort((p, q) => q[1] - p[1]);
+  }
+  function tsDaySumAlarms(now) {
+    const r = tsDaySum();
+    if (!r.on) return [];
+    const kinds = tsTodayKinds(), n = kinds.reduce((c, [, k]) => c + k, 0);
+    if (!n) return [];
+    const [h, mi] = r.at.split(":").map(Number), p = parseYmd(todayKey), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
+    if (at <= now + 5000) return [];
+    const names = kinds.slice(0, 4).map(([k]) => TSUMI_KINDS[k].label).join("・") + (kinds.length > 4 ? "など" : ""), name = nekoName();
+    return [{ at, title: name ? `${name}より` : "つみかさね・きょうのまとめ", body: `きょうは ${fmtN(n)} こ積んだよ（${names}）`, tag: `tsumi-day:${todayKey}`, url: "./#tsumi" }];
+  }
+  function tsDaySumParts() { const r = tsDaySum(); return r.on ? [["tsumiDay", r.at, tsTodayKinds()]] : []; }
+  function renderTsumiDaySum() {
+    const r = tsDaySum(), st = pushState(), f = $("tsumiDayAt");
+    $("tsumiDayOn").checked = r.on;
+    if (document.activeElement !== f) f.value = r.at;
+    f.disabled = !r.on;
+    $("tsumiDayFoot").textContent = !r.on ? "毎晩決めた時刻に、その日に積んだ数と種類を通知でお知らせします（積んだ日だけ。0 この日は積み忘れのお知らせです）。"
+      : st === "on" ? `毎晩 ${r.at} に、その日に積んでいれば、この端末に届きます。` : pushWords(st).replace("通知アラーム", "お知らせ");
+  }
+  function saveTsDaySum(patch) { act(() => settings.set(DAYSUM_ID, { ...tsDaySum(), ...patch, updatedAt: Date.now() })); renderTsumiDaySum(); }
+  $("tsumiDayOn").addEventListener("change", (ev) => { saveTsDaySum({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderTsumiDaySum); });
+  $("tsumiDayAt").addEventListener("change", (ev) => { if (/^\d\d:\d\d$/.test(ev.target.value)) saveTsDaySum({ at: ev.target.value }); });
+  // 8 再生に音楽: a note of each kind's own (a pentatonic scale), soft and short, at most one in 90 ms
+  const TS_NOTES = { todo: 523.25, journal: 587.33, meal: 659.25, workout: 783.99, study: 880, routine: 1046.5, weight: 1174.66, money: 1318.51, goal: 1567.98 };
+  let tsNoteAt = 0;
+  function tsNote(kind) {
+    const t0 = performance.now();
+    if (t0 - tsNoteAt < 90) return;
+    tsNoteAt = t0;
+    const c = tsAudioReady();
+    if (!c) return;
+    try {
+      const t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(TS_NOTES[kind] || 660, t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.36);
+    } catch {}
+  }
+  // 9 月の地層: the months of the year as layers, the first at the foot, each as thick as its count (thin when none), its
+  // kinds side by side by their share, in their pastel; from the first block's month to this one
+  function tsStrata(y, yb, first) {
+    const order = Object.keys(TSUMI_KINDS), lastMo = y === todayKey.slice(0, 4) ? Number(todayKey.slice(5, 7)) : 12, firstMo = first.slice(0, 4) === y ? Number(first.slice(5, 7)) : 1;
+    const months = [];
+    for (let m = firstMo; m <= lastMo; m++) { const bs = yb.filter((b) => Number(b.day.slice(5, 7)) === m); months.push({ m, n: bs.length, kinds: order.map((k) => [k, bs.filter((b) => b.kind === k).length]).filter(([, c]) => c) }); }
+    const max = Math.max(1, ...months.map((x) => x.n)), Wd = 300, L = 30, thick = (n) => (n ? 6 + 26 * (n / max) : 3);
+    const H = Math.ceil(months.reduce((h, x) => h + thick(x.n) + 2, 0)), svg = svgEl("svg", { viewBox: `0 0 ${Wd} ${H}`, role: "img", "aria-label": `${y}年の月の地層：${months.map((x) => `${x.m}月 ${x.n} こ`).join("、")}` });
+    let yy = H;
+    for (const x of months) {
+      const h = thick(x.n);
+      yy -= h + 2;
+      svg.append(svgEl("text", { x: 0, y: yy + h / 2 + 3.5 }, `${x.m}月`));
+      if (!x.n) { svg.append(svgEl("rect", { x: L, y: yy, width: Wd - L, height: h, rx: 1.5, style: "fill: var(--fill)" })); continue; }
+      let xx = L;
+      for (const [k, c] of x.kinds) {
+        const w = ((Wd - L) * c) / x.n, ink = tsumiInk(k);
+        svg.append(svgEl("rect", { x: xx, y: yy, width: Math.max(0.5, w), height: h, fill: tsumiTint(ink, PASTEL_FACE), stroke: tsumiTint(ink, PASTEL_EDGE), "stroke-width": 0.5 }));
+        xx += w;
+      }
+    }
+    return el("div", { class: "ty-strata" }, svg);
+  }
+  // 10 つみねこの日記: a line a day from つみねこ, from that day's blocks (to yesterday), the same each time it is read:
+  // how many, the kinds most there, a 記念 of that day, お休み, and a word to end on, picked by the day
+  let nekoDiaryAll = false;
+  function nekoDiaryOf(day, bs, memos) {
+    let seed = 0;
+    for (const ch of day) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+    const pick = (xs) => xs[(seed = (seed * 1103515245 + 12345) >>> 0) % xs.length];
+    if (!bs.length) return rtRest(day) ? "お休みの日。ぼくも一日ゴロゴロしてたよ。" : pick(["1こも積まなかった日。そういう日もあるよね。", "きょうは静かな一日だったよ。あしたまた積もうね。", "ブロックはなかったけど、ぼくはてっぺんで待ってたよ。"]);
+    const counts = new Map();
+    for (const b of bs) counts.set(b.kind, (counts.get(b.kind) || 0) + 1);
+    const top = [...counts].sort((p, q) => q[1] - p[1]).slice(0, 2), n = bs.length;
+    const say = { todo: (c) => `ToDoを ${c} こ終わらせてた`, journal: () => "日記を書いてくれた", meal: (c) => `ごはんを ${c} 回記録してた`, workout: () => "運動をがんばってた", study: () => "勉強してた",
+      routine: () => "ルーティーンもこなしてた", weight: () => "からだの記録もつけてた", money: () => "家計簿もつけてた", goal: (c) => `目標のマスを ${c} こ達成してた` };
+    const head = n >= 10 ? `${n} こも積んだよ！` : `${n} こ積んだよ。`;
+    const kinds = top.map(([k, c]) => say[k](c)).join("し、") + "よ。";
+    const memo = memos[0] ? `きょうは「${memos[0].words}」の日！` : "";
+    return head + kinds + memo + pick(["ぼくはてっぺんで見てたよ。", "あしたも楽しみだな。", "階段がまた高くなったね。", "ごほうびにおやつがほしいな。", "いっしょに積めてうれしかった。", "すごくいい一日だったね。"]);
+  }
+  function renderNekoDiary() {
+    const all = tsumiList(), list = $("nekoDiary"), name = nekoName();
+    $("nekoDiaryHead").textContent = name ? `${name}の日記` : "つみねこの日記";
+    if (!all.length) { setChildren(list, el("li", { class: "empty" }, "まだ日記はありません。")); $("nekoDiaryMoreRow").hidden = true; return; }
+    const first = tsFirstDay(all), last = addDays(todayKey, -1), byDay = new Map(), memos = new Map();
+    for (const b of all) (byDay.get(b.day) || byDay.set(b.day, []).get(b.day)).push(b);
+    for (const m of tsMemos()) (memos.get(m.day) || memos.set(m.day, []).get(m.day)).push(m);
+    const days = [];
+    for (let d = last; d >= first && days.length < (nekoDiaryAll ? 30 : 7); d = addDays(d, -1)) days.push(d);
+    setChildren(list, days.length ? days.map((d) => el("li", {}, el("span", { class: "day" }, fmtMDW(d)), el("span", { class: "words" }, nekoDiaryOf(d, byDay.get(d) || [], memos.get(d) || []))))
+      : el("li", { class: "empty" }, "あしたから書きます。"));
+    const more = daysBetween(first, last) + 1 > 7;
+    $("nekoDiaryMoreRow").hidden = !more;
+    $("nekoDiaryMore").textContent = nekoDiaryAll ? "7日だけ表示" : "30日ぶん表示";
+  }
+  $("nekoDiaryMore").addEventListener("click", () => { nekoDiaryAll = !nekoDiaryAll; renderNekoDiary(); });
 
   // ---------- boot ----------
   function renderAll() {
