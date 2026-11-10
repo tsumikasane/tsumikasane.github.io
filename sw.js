@@ -65,6 +65,8 @@ self.addEventListener("push", (event) => {
   let d = {};
   try { d = event.data ? event.data.json() : {}; } catch {}
   const tag = typeof d.tag === "string" && d.tag ? d.tag : undefined;
+  // 積み忘れのお知らせ: the 1 on the app's icon too (アイコンのしるし), gone once the app sees a block today
+  if (tag && tag.startsWith("tsumi-remind:")) { try { self.navigator.setAppBadge?.(1)?.catch?.(() => {}); } catch {} }
   event.waitUntil(self.registration.showNotification(typeof d.title === "string" && d.title ? d.title : "つみかさね", {
     body: typeof d.body === "string" ? d.body : "",
     tag, renotify: !!tag,
