@@ -1461,6 +1461,41 @@ form.add .memo-area { display: none; }
 .home-hol { margin: 0; color: var(--warn); font-size: var(--t-sub); font-weight: 600; line-height: 1.3; }
 .cal-day.out .hol { color: var(--muted); }
 .cal-day .more { font-size: calc(1rem - 6px); line-height: 1.2; color: var(--muted); }
+/* カレンダー ①〜⑩ (2026-11-10): ⑤ a day's weather in its square's top left, ⑦ its records' dots in the top right (two by
+   two, clear of the date), and in 週 a day's weather under its name, in 日 a line over 終日 */
+.cal-day { position: relative; }
+.cal-day .wx { position: absolute; top: 6px; left: 3px; }
+.cal-day .marks { position: absolute; top: 7px; right: 3px; display: grid; grid-template-columns: repeat(2, 4px); gap: 2px; }
+.cal-day .marks i, .mark-legend i { display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--mc); }
+.mark-legend i { width: 8px; height: 8px; margin-inline: 8px 4px; vertical-align: 1px; }
+.tg-day .wxs { display: flex; align-items: center; justify-content: center; gap: 1px; font-size: calc(1rem - 6px); line-height: 1.2; color: var(--muted); }
+.tg-wx { flex: none; display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-bottom: .5px solid var(--separator); font-size: var(--t-foot); color: var(--muted); font-variant-numeric: tabular-nums; }
+/* ① a shift in 家計簿's colour; ④ a block held up and its shadow where it would go; ⑥ a free time, a dashed band */
+.tg-ev { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.tg-ev.lifted { opacity: .3; }
+.tg-ghost { position: absolute; z-index: 5; display: flex; flex-direction: column; min-height: 14px; padding: 1px 4px; overflow: hidden; border-radius: 6px; border-inline-start: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 24%, var(--surface)); box-shadow: 0 8px 20px rgba(0, 0, 0, .25); pointer-events: none; }
+.tg-ghost .t { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: calc(1rem - 5px); line-height: 1.25; font-weight: 600; }
+.tg-ghost .tm { font-size: calc(1rem - 5px); line-height: 1.25; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tg-free { position: absolute; left: 1px; right: 1px; display: block; margin: 0; padding: 2px 4px; overflow: hidden; border: 0; border-radius: 4px; background: color-mix(in srgb, var(--accent) 7%, transparent); color: var(--accent); font: inherit; font-size: calc(1rem - 6px); line-height: 1.25; text-align: start; cursor: pointer; }
+.tg-free.one { left: 2px; right: 2px; border: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 6px; background: color-mix(in srgb, var(--accent) 5%, transparent); }  /* (日: a band with its length) */
+/* ③ the plans made often, ② what the words say: in the form's card on its grey, as chips there are */
+.day-often { margin: var(--space-2) 0 0; }
+.plan-nl .chip-btn, .plan-often .chip-btn { background: var(--fill); box-shadow: none; }
+.plan-often { margin: 0; }
+.nl-pick { min-height: 36px; padding-block: 4px; text-align: start; }
+/* ⑧ the hours by label: a name, a bar in its label's colour, the hours */
+.cal-sum .row-between { margin-bottom: 4px; }
+.sum-rows { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.sum-rows li { display: grid; grid-template-columns: minmax(0, 7.5em) minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: var(--t-sub); }
+.sum-name { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sum-name i { flex: none; width: 10px; height: 10px; border-radius: 3px; background: var(--bc); }
+.sum-bar { height: 8px; overflow: hidden; border-radius: 4px; background: var(--fill); }
+.sum-bar i { display: block; height: 100%; border-radius: 4px; background: var(--bc); }
+.sum-rows .num { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.cal-free-hours select { flex: 0 1 6em; }
+.ics-in { position: relative; cursor: pointer; }
+.ics-in:focus-within { outline: 3px solid var(--focus); outline-offset: -3px; }
+.mark-legend, .wx-where { display: block; }
 
 /* event labels: the user's own categories. Wherever a label is picked or listed its name sits next to the colour, so colour
    is never the only cue (HIG); the month grid writes each plan's title in it and has no legend (the user's call). In the
@@ -2226,6 +2261,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
              deadlines in the 終日 row above; the whole day's hours fit under them, nothing scrolling (renderTimeGrid) -->
         <div class="card tg" id="calTime" hidden>
           <div class="tg-head" id="tgHead"></div>
+          <div class="tg-wx" id="tgWx" hidden></div>
           <div class="tg-allday" id="tgAllDay"></div>
           <div class="tg-fit"><div class="tg-body" id="tgBody"></div></div>
         </div>
@@ -2886,8 +2922,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       </div>
       <div class="card">
         <ul class="list" id="calDayList"></ul>
-        <div class="label-tools"><button type="button" class="link-btn" id="dayAdd"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>予定を追加</button><button type="button" class="link-btn" id="dayTodoAdd"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>ToDoを追加</button></div>
+        <div class="label-tools"><button type="button" class="link-btn" id="dayAdd"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>予定を追加</button><button type="button" class="link-btn" id="dayTodoAdd"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>ToDoを追加</button><button type="button" class="link-btn" id="dayShiftAdd" hidden><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>シフトを追加</button></div>
       </div>
+      <!-- ③ the plans made often, one more on this day at a press; ⑥ the day's free hours, a plan there at a press (the
+           user's calls, 2026-11-10) -->
+      <div class="ex-often day-often" id="dayOften" hidden></div>
+      <div id="dayFree" hidden></div>
     </div>
     <div class="sheet-view" id="editView" hidden>
       <form class="add" id="evEdit" autocomplete="off">
@@ -2937,6 +2977,29 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <button type="button" data-ws="0" aria-pressed="true">日曜</button>
           <button type="button" data-ws="1" aria-pressed="false">月曜</button>
         </div>
+        <!-- ⑤⑥⑦ what the calendar shows besides the plans (the user's calls, 2026-11-10): the weather on its days, the free
+             hours (and the hours they are looked for in), the other records' marks -->
+        <h3 class="group-head">表示</h3>
+        <form class="add" id="calShowForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="calWx">日付に天気</label>
+          <div class="ffield"><input type="checkbox" id="calWx" class="switch" role="switch"></div>
+          <label class="flabel" for="calMarks">記録のしるし</label>
+          <div class="ffield"><input type="checkbox" id="calMarks" class="switch" role="switch"></div>
+          <label class="flabel" for="calFreeOn">空き時間</label>
+          <div class="ffield"><input type="checkbox" id="calFreeOn" class="switch" role="switch"></div>
+          <label class="flabel" for="calFreeFrom">探す時間帯</label>
+          <div class="ffield cal-free-hours"><select id="calFreeFrom" aria-label="空き時間を探す時間帯の始まり"></select><span class="unit">〜</span><select id="calFreeTo" aria-label="空き時間を探す時間帯の終わり"></select></div>
+        </form>
+        <p class="group-foot" id="calShowFoot"></p>
+        <!-- ⑨ 朝の予定のお知らせ (the user's call, 2026-11-10) -->
+        <h3 class="group-head">朝の予定のお知らせ</h3>
+        <form class="add" id="calMorningForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="calMorningOn">お知らせ</label>
+          <div class="ffield"><input type="checkbox" id="calMorningOn" class="switch" role="switch"></div>
+          <label class="flabel" for="calMorningAt">時刻</label>
+          <div class="ffield"><input type="time" id="calMorningAt"></div>
+        </form>
+        <p class="group-foot" id="calMorningFoot"></p>
         <!-- 通知: whether this device gets the plans' 通知アラーム, a test one, and turning them off (renderPushStates) -->
         <h3 class="group-head">通知</h3>
         <ul class="list card" id="pushRows" hidden></ul>
@@ -2946,7 +3009,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <ul class="list" id="labelList"></ul>
           <div class="label-tools"><button type="button" class="link-btn" id="labelAdd"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>ラベルを追加</button></div>
         </div>
-        <!-- (no words under the labels and no iPhoneのカレンダーへ with 予定を書き出す: taken out, the user's call) -->
+        <!-- (no words under the labels: taken out, the user's call) -->
+        <!-- ⑩ another calendar's plans read in, and these written out, as .ics (the user's call, 2026-11-10; 予定を書き出す had
+             been taken out on 11/7, and was asked for again with 読み込む) -->
+        <h3 class="group-head">ほかのカレンダー</h3>
+        <ul class="list card">
+          <li class="btn-row"><label class="row-btn ics-in"><input type="file" id="icsFile" accept=".ics,text/calendar" class="sr-only"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-import"/></svg>.ics の予定を読み込む</label></li>
+          <li class="btn-row"><button type="button" class="row-btn" id="icsExport"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-export"/></svg>予定を .ics で書き出す</button></li>
+        </ul>
+        <p class="group-foot"><span class="phrase">iPhoneやGoogleのカレンダー、時間割などの .ics ファイルから予定を取り込めます。</span><span class="phrase">書き出したファイルは、ほかのカレンダーに取り込めます。</span></p>
       </div>
       <!-- ToDo's lists, the tabs over its list (the user's call: apart from the labels), and its own labels (the user's call:
            they were the calendar's), from ToDo's 編集 -->
@@ -3199,6 +3270,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     <div class="sheet-view" id="planView" hidden>
       <form class="add" id="planForm" autocomplete="off">
         <input type="text" id="planTitle" class="full" placeholder="新しい予定" aria-label="予定の内容" maxlength="100" required>
+        <!-- ② what the words typed say (あした 15時 歯医者), put in at a press; ③ the plans made often, while the name is empty -->
+        <div class="full plan-nl" id="planParse" hidden></div>
+        <div class="full ex-often plan-often" id="planOften" hidden></div>
         <!-- 終日予定, 開始 and 終了 as the iPhone's カレンダー has them (buildWhen), over the plan's own fields under them: its
              first and last days and its start and end times (the user's call). The repeat's end once it repeats -->
         <div class="full when" id="planWhen"></div>
@@ -9035,6 +9109,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         out.push({ at, title: "からだ", body: "きょうの体重がまだです", tag: `weight-remind:${d}`, url: "./#weight" });
       }
     }
+    // ⑨ 朝の予定のお知らせ (the user's call): each morning with plans or shifts, the day's in a line; pressed, the day
+    const cm = calMorning();
+    if (cm.on) {
+      const [h, mi] = cm.at.split(":").map(Number), last = addDays(todayKey, PUSH_AHEAD), tb = turnsByDay(todayKey, last), sb = shiftsByDay(todayKey, last);
+      for (let i = 0; i <= PUSH_AHEAD; i++) {
+        const d = addDays(todayKey, i), p = parseYmd(d), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
+        if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5) continue;
+        const list = dayAgenda(tb.get(d) || [], sb.get(d) || []);
+        if (!list.length) continue;
+        const body = list.join("、");
+        out.push({ at, title: `きょうの予定 ${list.length}件`, body: body.length > 120 ? body.slice(0, 119) + "…" : body, tag: `cal-morning:${d}`, url: `./#calendar:${d}` });
+      }
+    }
     for (const e of events.items) {
       const mins = alarmsOf(e);
       if (!mins.length || typeof e.title !== "string") continue;
@@ -9067,6 +9154,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (mr.on) parts.push(["mealRemind", mr.at, SLOTS.map((s) => meals.items.some((m) => m.date === todayKey && m.slot === s))]);
     const wr = wtRemind(); // (からだ's: today's goes once the day has a weight)
     if (wr.on) parts.push(["weightRemind", wr.at, !!weights.get(todayKey)]);
+    const cm = calMorning(); // (the calendar's morning: what each day's says)
+    if (cm.on) { const last = addDays(todayKey, PUSH_AHEAD), tb = turnsByDay(todayKey, last), sb = shiftsByDay(todayKey, last); parts.push(["calMorning", cm.at, [...new Set([...tb.keys(), ...sb.keys()])].sort().map((d) => d + dayAgenda(tb.get(d) || [], sb.get(d) || []).join("|"))]); }
     for (const g of goals.items) if (!g.done && !g.pausedAt && g.deadline) parts.push(["goal", g.id, g.title, g.deadline]); // (目標の期限の通知)
     for (const e of events.items) { const a = alarmsOf(e); if (a.length) parts.push([e.id, e.title, e.date, e.endDate, e.time, e.endTime, e.repeat, e.repeatUntil, e.skip, a, e.place]); }
     const t = JSON.stringify(parts);
@@ -9698,7 +9787,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function openPlanFromDay() {
     if (!$("planTitle").value.trim()) { clearPlanForm(); freshPlanTimes(); }
     $("planDate").value = calDay; whenOpen.plan = null; syncPlanRows("plan"); remember("plan");
-    planNew = true; planFromDay = true; renderPlanLabels(); syncSheetHead(); syncPlanSave();
+    planNew = true; planFromDay = true; renderPlanLabels(); syncSheetHead(); syncPlanSave(); renderPlanParse(); renderPlanOften();
     sheetEl.scrollTop = 0;
     $("planTitle").focus();
   }
@@ -9875,16 +9964,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const q = foldText($("findText").value.trim()), groups = [];
     const dayHead = (d) => el("h3", { class: "group-head" }, (relLabel(d) ? relLabel(d) + "・" : "") + fmtMDW(d));
     // a day's rows: its plans, then its deadlines
-    const dayGroup = (d, turns, dues) => [dayHead(d), el("ul", { class: "list card" },
-      turns.map((t) => planRow(t, () => openDayFromFind(t.start), "の日を開く")), dues.map(dueRow))];
+    const dayGroup = (d, turns, dues, sh = []) => [dayHead(d), el("ul", { class: "list card" },
+      turns.map((t) => planRow(t, () => openDayFromFind(t.start), "の日を開く")), sh.map((p) => shiftRow(p.x, () => openDayFromFind(d))), dues.map(dueRow))];
     if (!q) {
       // what is coming, by day: the plans (a run once, on its first day or today) and the ToDo and goal deadlines; three
       // months at first, three more each time もっと見る is pressed
-      const end = addDays(todayKey, 92 * findPages - 1), by = turnsByDay(todayKey, end);
+      const end = addDays(todayKey, 92 * findPages - 1), by = turnsByDay(todayKey, end), sb = shiftsByDay(todayKey, end); // (① the shifts too)
       const dues = groupBy(dueItems().filter((x) => x.date >= todayKey && x.date <= end), (x) => x.date);
-      for (const d of [...new Set([...by.keys(), ...dues.keys()])].sort()) {
-        const turns = (by.get(d) || []).filter((t) => t.day === 0 || d === todayKey), dd = dues.get(d) || [];
-        if (turns.length || dd.length) groups.push(...dayGroup(d, turns, dd));
+      for (const d of [...new Set([...by.keys(), ...dues.keys(), ...sb.keys()])].sort()) {
+        const turns = (by.get(d) || []).filter((t) => t.day === 0 || d === todayKey), dd = dues.get(d) || [], sh = (sb.get(d) || []).filter((p) => p.first);
+        if (turns.length || dd.length || sh.length) groups.push(...dayGroup(d, turns, dd, sh));
       }
       const more = anyAfter(end) ? el("div", { class: "card" }, el("button", { type: "button", class: "link-btn sheet-row", id: "findMore", onclick: () => { findPages++; renderFind(); } }, "もっと見る")) : null;
       // the ToDos past their 期限 first, each opening its day, as ToDo's page puts them (the user's call: 予定 showed only
@@ -9892,7 +9981,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const late = todos.items.filter((t) => !t.done && t.due && t.due < todayKey).sort(todoOrder);
       const lateGroup = late.length ? [el("h3", { class: "group-head warn" }, "期限切れの ToDo"), el("ul", { class: "list card" },
         late.map((t) => dueRow({ date: t.due, text: t.text, chip: "ToDo", hue: "var(--c-todo)", sub: `${daysBetween(t.due, todayKey)} 日過ぎています・${fmtDay(t.due)}` })))] : [];
-      setChildren($("findList"), lateGroup, groups.length ? [el("h3", { class: "group-head" }, "これからの予定"), ...groups] : el("div", { class: "card empty" }, findPages > 1 ? "この先の予定はありません。" : "これから3か月の予定はありません。"), more);
+      setChildren($("findList"), sumSection(), lateGroup, groups.length ? [el("h3", { class: "group-head" }, "これからの予定"), ...groups] : el("div", { class: "card empty" }, findPages > 1 ? "この先の予定はありません。" : "これから3か月の予定はありません。"), more);
       return;
     }
     // what was found: each plan once, at its next turn (or its last, if they are all past), and the deadlines; its name,
@@ -9997,7 +10086,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     resetSheet();
     if (!$("planTitle").value.trim()) { clearPlanForm(); $("planDate").value = planDay(); freshPlanTimes(); syncPlanRows("plan"); remember("plan"); }
     whenOpen.plan = null; syncWhen("plan");
-    planNew = true; renderPlanLabels(); syncSheetHead(); syncPlanSave();
+    planNew = true; renderPlanLabels(); syncSheetHead(); syncPlanSave(); renderPlanParse(); renderPlanOften();
     presentSheet(byKey, "plan", $("planTitle"));
   }
   // a new ToDo: its text ready to type in; what was typed stays if the sheet is pulled away, as for a plan. One begun
@@ -11345,6 +11434,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     weight: { title: "からだを記録", what: "からだ", base: () => ({ id: todayKey }), add: async (p) => { await weights.write(todayKey, { date: todayKey, ...p, createdAt: Date.now() }); return todayKey; } },
     study: { title: "勉強を記録", what: "勉強", base: () => ({ date: todayKey }), add: (p) => study.add({ ...p, createdAt: Date.now() }) },
     money: { title: "家計簿に記録", what: "明細", base: () => ({ kind: "out", date: todayKey, method: lastMethod() }), add: (p) => expenses.add({ ...p, createdAt: Date.now() }) },
+    // ① from a day's sheet in the calendar, at the times (and the job) the last one had
+    shift: { title: "シフトを追加", what: "勤務", base: () => { const last = [...shifts.items].sort((a, b) => num(b.createdAt) - num(a.createdAt))[0]; return { date: todayKey, start: last?.start || "17:00", end: last?.end || "22:00", rest: num(last?.rest), jobId: last?.jobId || jobList()[0]?.id }; },
+      add: (p) => shifts.add({ jobId: jobList()[0]?.id, ...p, createdAt: Date.now() }) },
   };
   let homeReturn = ""; // what on きょう opened it, for a keyboard to land back on (a selector: the tiles are drawn anew)
   // base: what to start from (a move of the day's menu, filled in); focus: the field to begin in, else the first
@@ -11369,7 +11461,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const st = spec.store, lv = kind === "workout" ? runLevelOf(runKm()) : 0;
     let id = null;
     act(async () => { id = await nw.add(dropUndef(patch)); });
-    closeSheet();
+    if (recFromDay) backFromRec(); else closeSheet(); // (① a shift added from a day's sheet: back to its list)
     const up = kind === "workout" && runLevelOf(runKm()) > lv ? `。ランレベルが${RUN_LEVELS[runLevelOf(runKm())].name}になりました` : "";
     flash(`${nw.what}を記録しました${up}`, () => act(async () => { if (id) await st.remove(id); flash("元に戻しました"); }));
   }
@@ -11565,11 +11657,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const [d, list] of turnsBy) turnsBy.set(d, list.filter((t) => onCalendar(t.e, hidden)));
     $("tgHead").hidden = n === 1;
     setChildren($("tgHead"), el("span", { class: "tg-gut" }), days.map((d) => {
-      const dt = parseYmd(d), wd = dt.getDay(), hol = holidayName(d);
+      const dt = parseYmd(d), wd = dt.getDay(), hol = holidayName(d), wx = wxMark(d);
       return el("button", { type: "button", class: "tg-day" + (wd === 0 ? " sun" : wd === 6 ? " sat" : "") + (hol ? " hol" : "") + (d === todayKey ? " today" : "") + (d === calDay ? " sel" : ""),
-        "aria-current": d === todayKey ? "date" : null, "aria-label": `${fmtMDW(d)}${hol ? "、" + hol : ""}、日で表示`, onclick: () => setCalView("day", d) },
-        el("span", { class: "n" }, dt.getDate()), el("span", { class: "wd" }, `(${WD[wd]})`));
+        "aria-current": d === todayKey ? "date" : null, "aria-label": `${fmtMDW(d)}${hol ? "、" + hol : ""}${wx ? "、" + wx.say : ""}、日で表示`, onclick: () => setCalView("day", d) },
+        el("span", { class: "n" }, dt.getDate()), el("span", { class: "wd" }, `(${WD[wd]})`),
+        wx ? el("span", { class: "wxs", "aria-hidden": "true" }, el("span", { class: "wx-icon " + wx.icon }, icon(wx.icon, 12)), `${wx.hi}°`) : null); // ⑤
     }));
+    // ⑤ 日: the day's weather over its 終日 row
+    const wx1 = n === 1 ? wxMark(first) : null;
+    $("tgWx").hidden = !wx1;
+    setChildren($("tgWx"), wx1 ? [el("span", { class: "wx-icon " + wx1.icon, "aria-hidden": "true" }, icon(wx1.icon, 16)), el("span", {}, `${wx1.word}　${wx1.hi}° / ${wx1.lo}°　降水確率 ${wx1.rain}%`)] : null);
     // 終日: runs first (the earliest and longest first), then holidays, the day's plans without a time, ToDo's deadlines and
     // 目標's, each in the first lane free across its days; a day with more than the lanes hold says +N, its sheet a press away
     const items = [], seen = new Set();
@@ -11613,14 +11710,26 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren($("tgAllDay"), el("span", { class: "tg-gut" }, "終日"), el("div", { class: "tg-lanes" }, placed.map(bar),
       more.map((k, c) => (k ? el("button", { type: "button", class: "tg-more", style: `grid-column: ${c + 1}; grid-row: ${MAX + 1}`, "aria-label": `${fmtMDW(days[c])}のほかの ${k} 件を見る`, onclick: () => openDay(days[c], false) }, `+${k}`) : null))));
     // the hours: a column a day, its plans with a time as blocks (two at once side by side), now as a line across today's
+    const shiftBy = shiftsByDay(first, last); // ①
     const cols = days.map((d) => {
-      const blocks = (turnsBy.get(d) || []).filter((t) => t.days === 1 && t.e.time).map((t) => {
+      const blocks = [...(turnsBy.get(d) || []).filter((t) => t.days === 1 && t.e.time).map((t) => {
         const s = minOf(t.e.time), end = t.e.endTime && t.e.endTime > t.e.time ? minOf(t.e.endTime) : s;
         return { t, s, end: Math.max(end, s + 30) };
-      });
+      }), ...(shiftBy.get(d) || []).map((p) => ({ p, s: p.s, end: Math.max(p.end, p.s + 30) }))];
       layoutCols(blocks);
+      const free = freeSlots(d, turnsBy.get(d) || [], shiftBy.get(d) || []); // ⑥
       return el("div", { class: "tg-col" + (d === todayKey && n > 1 ? " today" : ""), "data-day": d, role: "group", "aria-label": fmtMDW(d) + (blocks.length ? "" : "、予定なし") },
+        free.map((sl) => el("button", { type: "button", class: "tg-free" + (n === 1 ? " one" : ""), style: `top: ${sl[0] / 14.4}%; height: ${(sl[1] - sl[0]) / 14.4}%`,
+          "aria-label": `${fmtMDW(d)} ${slotText(sl)} は空いています。ここに予定を追加`, onclick: () => openNewPlanAt(d, atMin(sl[0])) }, n === 1 && sl[1] - sl[0] >= 45 ? el("span", {}, `空き ${durText(sl[1] - sl[0])}`) : null)),
         blocks.map((x) => {
+          if (x.p) {
+            // ① a shift (a part past midnight on the next day's, which can't be moved)
+            const sx = x.p.x, name = shiftName(sx);
+            return el("button", { type: "button", class: "tg-ev shift" + (x.end - x.s <= 45 ? " short" : ""),
+              style: `top: ${x.s / 14.4}%; height: ${(Math.min(x.end, 1440) - x.s) / 14.4}%; left: ${(x.c / x.n) * 100}%; width: ${100 / x.n}%; --bc: var(--c-money)`,
+              "data-shift": x.p.first ? sx.id : null, "aria-label": `${name}の勤務（${shiftText(sx)}）を編集`, onclick: (ev) => openRecEdit("shift", sx.id, ev.detail === 0) },
+              el("span", { class: "t" }, name), n >= 5 && x.end - x.s <= 45 ? null : el("span", { class: "tm" }, !x.p.first ? `〜${sx.end}` : n >= 5 ? sx.start : shiftText(sx)));
+          }
           const e = x.t.e, l = labelOf(e), when = turnTimeText(x.t);
           return el("button", { type: "button", class: "tg-ev" + (l ? "" : " plain") + (x.end - x.s <= 45 ? " short" : ""),
             style: `top: ${x.s / 14.4}%; height: ${(Math.min(x.end, 1440) - x.s) / 14.4}%; left: ${(x.c / x.n) * 100}%; width: ${100 / x.n}%; --bc: ${labelHue(l)}`,
@@ -11653,7 +11762,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("planTime").value = hm; $("planEndTime").value = atMin(Math.min(minOf(hm) + 60, 23 * 60 + 59));
     syncPlanRows("plan"); remember("plan");
     whenOpen.plan = null; syncWhen("plan");
-    planNew = true; renderPlanLabels(); syncSheetHead(); syncPlanSave();
+    planNew = true; renderPlanLabels(); syncSheetHead(); syncPlanSave(); renderPlanParse(); renderPlanOften();
     presentSheet(false, "plan", $("planTitle"));
   }
   // a plan pressed in 週 or 日: its edit form straight away, in the sheet of the day it was pressed on; 保存, キャンセル and
@@ -11668,6 +11777,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   function renderCalendar() {
     syncCalView();
+    draw(renderCalShow); draw(renderCalMorning); // (⑤⑥⑦⑨ the settings)
+    if (wxOn() && wxPlace() && tab === "calendar") wxFetch(); // ⑤ (kept for an hour)
     const title = calTitle();
     if ($("calMonthName").textContent !== title) $("calMonthName").textContent = title; // a live region: only a change is read out
     const todoBy = groupBy(todos.items, (t) => t.due);
@@ -11683,6 +11794,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       setChildren($("calWeek"), Array.from({ length: 7 }, (_, i) => { const wd = (i + ws0) % 7; return el("span", { class: wd === 0 ? "sun" : wd === 6 ? "sat" : null }, WD[wd]); }));
       const start = addDays(first, -lead), count = Math.ceil((lead + daysInMonth(calMonth)) / 7) * 7;
       const turnsBy = turnsByDay(start, addDays(start, count - 1)), weeks = count / 7;
+      const shiftBy = shiftsByDay(start, addDays(start, count - 1)), markBy = marksOn() ? marksByDay(start, addDays(start, count - 1)) : new Map(); // ①⑦
       for (const [d, list] of turnsBy) turnsBy.set(d, list.filter((t) => onCalendar(t.e, hidden)));
       // runs of days: in each week, one bar across the days a run covers there, in a lane (a line the squares keep for it),
       // the earliest and longest first; a third run over the same days goes back to a bar a day
@@ -11715,15 +11827,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const own = evs.filter((t) => !drawn.has(w + "|" + t.e.id + "|" + t.start)); // the ones not drawn as a run's bar
         const todosDue = (todoBy.get(d) || []).filter((t) => !t.done);
         const goalsDue = (goalBy.get(d) || []).filter((g) => !g.done && !g.pausedAt);
-        // the day's plans as bars: events by time in their label's colour, then ToDo and goal deadlines; the day's name lists the labels too
+        // the day's plans as bars: events (and ① shifts) by time in their label's colour, then ToDo and goal deadlines; the
+        // day's name lists the labels too
+        const sh = (shiftBy.get(d) || []).filter((p) => p.first), mk = markBy.get(d), wx = wxMark(d);
         const plans = [
-          ...own.map(({ e }) => ({ text: e.title, hue: labelHue(labelOf(e)), plain: !labelOf(e) })),
+          ...[...own.map((t) => ({ k: turnTime(t), text: t.e.title, hue: labelHue(labelOf(t.e)), plain: !labelOf(t.e) })),
+            ...sh.map((p) => ({ k: p.x.start, text: shiftName(p.x), hue: "var(--c-money)" }))].sort((a, b) => a.k.localeCompare(b.k)),
           ...todosDue.map((t) => ({ text: t.text, hue: "var(--c-todo)", due: true })),
           ...goalsDue.map((g) => ({ text: g.title, hue: "var(--c-goal)", due: true })),
         ];
         const hol = holidayName(d);
         const evNames = [...new Set(evs.map(({ e }) => (labelOf(e) || {}).name).filter(Boolean))];
-        const notes = [evs.length ? `予定 ${evs.length} 件` + (evNames.length ? `（${evNames.join("、")}）` : "") : "", todosDue.length ? `ToDo の期限 ${todosDue.length} 件` : "", goalsDue.length ? `目標の期限 ${goalsDue.length} 件` : ""];
+        const notes = [evs.length ? `予定 ${evs.length} 件` + (evNames.length ? `（${evNames.join("、")}）` : "") : "", sh.length ? `バイト ${sh.map((p) => shiftText(p.x)).join("、")}` : "",
+          todosDue.length ? `ToDo の期限 ${todosDue.length} 件` : "", goalsDue.length ? `目標の期限 ${goalsDue.length} 件` : "",
+          mk ? `記録 ${MARKS.filter(([k]) => mk.has(k)).map(([, name]) => name).join("・")}` : "", wx ? wx.say : ""];
         cells.push(el("button", {
           type: "button",
           class: "cal-day" + (monthOf(d) !== calMonth ? " out" : "") + (wd === 0 ? " sun" : wd === 6 ? " sat" : "") + (hol ? " hol" : "") + (d === todayKey ? " today" : "") + (d === calDay ? " sel" : "") + (i >= count - 7 ? " lastweek" : ""),
@@ -11733,6 +11850,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           onclick: (ev) => openDay(d, ev.detail === 0),
         },
           el("span", { class: "n" }, dt.getDate()),
+          wx ? el("span", { class: "wx wx-icon " + wx.icon, "aria-hidden": "true" }, icon(wx.icon, 12)) : null,
+          mk ? el("span", { class: "marks", "aria-hidden": "true" }, MARKS.filter(([k]) => mk.has(k)).map(([, , c]) => el("i", { style: `--mc: var(${c})` }))) : null,
           laneCount || hol || plans.length ? el("span", { class: "bars", "aria-hidden": "true" },
             Array.from({ length: laneCount }, (_, k) => el("span", { class: "lane", "data-lane": k })),
             hol ? el("span", { class: "hol" }, hol) : null,
@@ -11755,13 +11874,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const lateTodos = calDay === todayKey ? todos.items.filter((t) => t.due && t.due < todayKey && (!t.done || doneDay(t) === todayKey)) : [];
     const goalsDue = goalBy.get(calDay) || [];
     const dueCount = lateTodos.length + todosDue.length + goalsDue.length;
+    const dayShifts = (shiftsByDay(calDay, calDay).get(calDay) || []).filter((p) => p.first); // ①
     syncSheetHead();
+    draw(() => renderDayExtras(calDay, evs)); // ③⑥
     const list = $("calDayList");
     list.replaceChildren();
     // the plans of labels hidden from the calendar are counted, so nothing seems lost
     const keptNote = kept ? el("li", { class: "empty" }, `隠しているラベルの予定が ${kept} 件あります。`) : null;
-    if (!evs.length && !dueCount) { list.append(keptNote || el("li", { class: "empty" }, "この日の予定はありません。")); return; }
-    for (const t of evs) list.append(planRow(t, () => editEvent(t.e.id, t.start), "を編集"));
+    if (!evs.length && !dueCount && !dayShifts.length) { list.append(keptNote || el("li", { class: "empty" }, "この日の予定はありません。")); return; }
+    // the plans and the shifts by time (終日 ones first)
+    const rows = [...evs.map((t) => [turnTime(t), () => planRow(t, () => editEvent(t.e.id, t.start), "を編集")]), ...dayShifts.map((p) => [p.x.start, () => shiftRow(p.x, () => openShiftFromDay(p.x.id))])];
+    for (const [, row] of rows.sort((a, b) => a[0].localeCompare(b[0]))) list.append(row());
     // in the order ToDo's page has them (期限切れ first, each part's 重要 ones first, one done today in its place, those
     // done before after), each with its repeat and its memo as there (the user's call: a day's ToDo said only 「ToDo の期限」)
     for (const t of [...lateTodos, ...todosDue].sort(todoOrder)) {
@@ -11786,6 +11909,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     if (keptNote) list.append(keptNote);
   }
+  // ③⑥① under a day's list: the plans made often (one more there at a press), the free hours (a plan there at a press),
+  // and シフトを追加 once a job is set
+  function renderDayExtras(d, evs) {
+    const here = new Set(evs.map((t) => foldText(t.e.title) + "\u0001" + (t.e.time || "")));
+    const often = oftenPlans().filter((e) => !here.has(foldText(e.title) + "\u0001" + (e.time || "")));
+    $("dayOften").hidden = !often.length;
+    setChildren($("dayOften"), often.length ? [el("span", { class: "often-head" }, "よく使う"), ...often.map((e) => oftenChip(e, `${e.title}（${oftenWhen(e)}）を${fmtMDW(d)}に追加`, () => addOftenPlan(e, d)))] : null);
+    const slots = freeSlots(d, evs, shiftsByDay(d, d).get(d) || []);
+    $("dayFree").hidden = !slots.length;
+    setChildren($("dayFree"), slots.length ? [el("h3", { class: "group-head" }, d === todayKey ? "きょうの空き時間" : "空き時間"), el("ul", { class: "list card" }, slots.map((sl) => el("li", { class: "btn-row" },
+      el("button", { type: "button", class: "row-btn nav", "aria-label": `${slotText(sl)}（${durText(sl[1] - sl[0])}）に予定を追加`, onclick: () => openPlanFromDayAt(sl[0], sl[1]) },
+        el("span", { class: "body" }, el("span", { class: "text" }, slotText(sl))), el("span", { class: "num" }, durText(sl[1] - sl[0])), el("span", { class: "chev" }, icon("plus", 16))))))] : null);
+    $("dayShiftAdd").hidden = !jobList().length;
+  }
   // a plan's row in a list: its time, its title, and under it the label, the days a run covers (10/30〜11/2) and the
   // repeat, then its memo
   function planRow(t, onclick, verb) {
@@ -11800,6 +11937,564 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           e.memo ? el("span", { class: "sub ev-memo clamp" }, e.memo) : null),
         el("span", { class: "chev" }, icon("next", 16))));
   }
+
+  // ---------- カレンダー ①〜⑩ (the user's calls, 2026-11-10): バイトのシフト (①), a plan from a few words (②), the plans
+  // made often at a press (③), a plan moved by holding it (④), the weather on its days (⑤), the free hours (⑥), the other
+  // records' marks (⑦), the hours by label (⑧), the morning's plans as a notification (⑨), .ics in and out (⑩) ----------
+  const calSet = () => settings.get("calendar") || {};
+  function saveCalSet(patch) { act(() => settings.set("calendar", { ...calSet(), ...patch, updatedAt: Date.now() })); }
+  const ymdOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  // ① 家計簿's shifts on the calendar, in its colour, under the job's name (バイト when it has none): one past midnight
+  // goes on into the next day's hours. A shift opens its own form, and a day's sheet adds one (once a job is set)
+  const shiftName = (x) => (jobOf(x.jobId)?.name || "").trim() || "バイト";
+  const shiftText = (x) => `${x.start}〜${x.end}`;
+  function shiftParts(x) {
+    const a = clockMin(x.start), b0 = clockMin(x.end);
+    if (a === null || b0 === null || !isDay(x.date)) return [];
+    const b = b0 <= a ? b0 + 1440 : b0;
+    return b > 1440 ? [{ day: x.date, s: a, end: 1440 }, { day: addDays(x.date, 1), s: 0, end: b - 1440 }] : [{ day: x.date, s: a, end: b }];
+  }
+  // the parts on each day from … to, first: whether it is the shift's own day
+  function shiftsByDay(from, to) {
+    const by = new Map(), lo = addDays(from, -1);
+    for (const x of shifts.items) {
+      if (!isDay(x.date) || x.date < lo || x.date > to) continue;
+      for (const p of shiftParts(x)) {
+        if (p.day < from || p.day > to) continue;
+        if (!by.has(p.day)) by.set(p.day, []);
+        by.get(p.day).push({ x, s: p.s, end: p.end, first: p.day === x.date });
+      }
+    }
+    for (const list of by.values()) list.sort((a, b) => a.s - b.s);
+    return by;
+  }
+  function shiftRow(x, onclick) {
+    const m = shiftMinutes(x), name = shiftName(x), sub = [shiftText(x), durText(m.all), num(x.rest) > 0 ? `休憩 ${num(x.rest)} 分` : null].filter(Boolean);
+    return el("li", { class: "btn-row", style: "--lc: var(--c-money)" },
+      el("button", { type: "button", class: "row-btn nav", "aria-label": `${name}の勤務（${sub.join("・")}）を編集`, onclick },
+        el("span", { class: "chip when", style: "--chip-c: var(--c-money)" }, x.start),
+        el("span", { class: "body" }, el("span", { class: "text" }, name), el("span", { class: "sub" }, phrasesOf(sub))),
+        el("span", { class: "chev" }, icon("next", 16))));
+  }
+  const phrasesOf = (parts) => parts.filter(Boolean).map((w, i, a) => el("span", { class: "phrase" }, keepUnits(w + (i < a.length - 1 ? "・" : ""))));
+  // a shift's form in the day's sheet, as a ToDo's opens there, 保存 and 削除 coming back to the list
+  function openShiftFromDay(id) {
+    const x = shifts.get(id);
+    if (!x) return;
+    recEdit = { kind: "shift", id }; recReturnId = id; recFromDay = true;
+    delete $("recForm").dataset.typed;
+    setChildren($("recForm"), REC_EDIT.shift.fields(x).flat(Infinity));
+    recShown = formState($("recForm"));
+    disarmRecDelete(); syncSheetHead();
+    sheetEl.scrollTop = 0;
+    $("sheetTitle").focus();
+  }
+  // a new one there, on the day, at the times the last one had
+  function openNewShiftFromDay() {
+    if (!jobList().length) return;
+    const fresh = { ...REC_NEW.shift.base(), date: calDay, fresh: true };
+    recEdit = { kind: "shift", id: null, fresh }; recReturnId = null; recFromDay = true;
+    delete $("recForm").dataset.typed;
+    setChildren($("recForm"), REC_EDIT.shift.fields(fresh).flat(Infinity));
+    recShown = formState($("recForm"));
+    disarmRecDelete(); syncSheetHead();
+    sheetEl.scrollTop = 0;
+    $("sheetTitle").focus();
+  }
+  $("dayShiftAdd").addEventListener("click", openNewShiftFromDay);
+
+  // ② a plan from a few words (the user's call): きょう・あした・あさって, 3日後, 11/12・11月12日・12日 (a day gone by this
+  // year or month is the next one's), 金曜 (the next one, today too), 今週・来週・再来週の金曜, and 15時・15時半・15:30・午後3時・
+  // 夜8時 (to 17時 after 〜, -, から), the rest the plan's name. A day alone makes it 終日
+  const NL_WD = { 日: 0, 月: 1, 火: 2, 水: 3, 木: 4, 金: 5, 土: 6 };
+  function parsePlan(text, base = todayKey) {
+    let s = " " + String(text || "").normalize("NFKC") + " ";
+    const got = {};
+    const take = (re, f) => {
+      const m = s.match(re);
+      if (!m) return false;
+      const r = f(m);
+      if (r === false) return false;
+      s = s.slice(0, m.index) + " " + s.slice(m.index + m[0].length);
+      return true;
+    };
+    const inYear = (y, m, d) => { const k = `${y}-${pad(m)}-${pad(d)}`; return m >= 1 && m <= 12 && d >= 1 && d <= daysInMonth(k.slice(0, 7)) ? k : null; };
+    const by = Number(base.slice(0, 4)), bm = Number(base.slice(5, 7));
+    // the day
+    take(/(\d{4})[/年.-](\d{1,2})[/月.-](\d{1,2})日?/, (m) => { const k = inYear(+m[1], +m[2], +m[3]); if (!k) return false; got.date = k; })
+      || take(/(\d{1,2})[/月](\d{1,2})日?/, (m) => { let k = inYear(by, +m[1], +m[2]); if (!k) return false; if (k < base) k = inYear(by + 1, +m[1], +m[2]) || k; got.date = k; })
+      || take(/(しあさって|明々後日)/, () => { got.date = addDays(base, 3); })
+      || take(/(あさって|明後日)/, () => { got.date = addDays(base, 2); })
+      || take(/(あした|あす|明日)/, () => { got.date = addDays(base, 1); })
+      || take(/(きょう|今日)/, () => { got.date = base; })
+      || take(/(\d{1,3})日後/, (m) => { got.date = addDays(base, +m[1]); })
+      || take(/(再来週|来週|今週)の?([日月火水木金土])曜日?/, (m) => {
+        const ws = weekStart(), wd = NL_WD[m[2]], start = addDays(base, -((parseYmd(base).getDay() - ws + 7) % 7));
+        got.date = addDays(start, ({ 今週: 0, 来週: 7, 再来週: 14 })[m[1]] + ((wd - ws + 7) % 7));
+      })
+      || take(/([日月火水木金土])曜日?/, (m) => { got.date = addDays(base, (NL_WD[m[1]] - parseYmd(base).getDay() + 7) % 7); })
+      || take(/(来月|今月)?(\d{1,2})日(?!後|間)/, (m) => {
+        let ym = m[1] === "来月" ? addMonths(monthOf(base), 1) : monthOf(base), d = +m[2];
+        if (!m[1] && `${ym}-${pad(d)}` < base) ym = addMonths(ym, 1);
+        if (d < 1 || d > daysInMonth(ym)) return false;
+        got.date = `${ym}-${pad(d)}`;
+      });
+    // the time: 15:30, 15時半, 15時30分, 午後3時, 夜8時; to another after 〜 - から
+    const T = "(午前|午後|朝|昼|夕方|夜)?\\s*(\\d{1,2})(?::(\\d{2})|時(?:(半)|(\\d{1,2})分)?)";
+    const hm = (ap, h, mm, half, mm2) => {
+      let H = +h, M = mm ? +mm : half ? 30 : mm2 ? +mm2 : 0;
+      if ((ap === "午後" || ap === "夜" || ap === "夕方") && H < 12) H += 12;
+      if (ap === "午前" && H === 12) H = 0;
+      return H <= 23 && M <= 59 ? `${pad(H)}:${pad(M)}` : null;
+    };
+    take(new RegExp(T + "\\s*(?:から|〜|~|-|ー|–)\\s*" + T + "(?:まで)?"), (m) => {
+      const a = hm(m[1], m[2], m[3], m[4], m[5]), b = hm(m[6] || (m[1] === "午後" || m[1] === "夜" || m[1] === "夕方" ? "午後" : ""), m[7], m[8], m[9], m[10]);
+      if (!a || !b) return false;
+      got.time = a; got.end = b;
+    }) || take(new RegExp(T + "(?:から)?"), (m) => { const a = hm(m[1], m[2], m[3], m[4], m[5]); if (!a) return false; got.time = a; });
+    // the name: what is left, without the little words around it
+    got.title = s.replace(/\s+/g, " ").trim().replace(/^(?:に|から|は|の|で|、|,)\s*/, "").replace(/\s*(?:に|から|まで|、|,)$/, "").trim();
+    return got.date || got.time ? got : null;
+  }
+  // under the name, as it is typed: what the words say, and a press puts it in the form
+  function renderPlanParse() {
+    const box = $("planParse"), p = planNew ? parsePlan($("planTitle").value) : null;
+    box.hidden = !p || !p.title;
+    if (box.hidden) { box.replaceChildren(); return; }
+    const date = p.date || $("planDate").value, when = p.time ? `${p.time}${p.end ? "〜" + p.end : ""}` : p.date ? "終日" : "";
+    setChildren(box, el("button", { type: "button", class: "chip-btn nl-pick", onclick: () => applyParse(p) },
+      el("span", { class: "phrase" }, `${fmtDayLong(date)} ${when}`), " ", el("span", { class: "phrase" }, `「${p.title}」にする`)));
+  }
+  function applyParse(p) {
+    $("planTitle").value = p.title.slice(0, 100);
+    if (p.date) $("planDate").value = p.date;
+    $("planEndDate").value = "";
+    if (p.time) {
+      $("planTime").value = p.time;
+      const end = p.end || atMin(Math.min(minOf(p.time) + 60, 23 * 60 + 59));
+      $("planEndTime").value = end;
+      if (end <= p.time) $("planEndDate").value = addDays($("planDate").value, 1); // (past midnight: the next day's)
+    } else if (p.date) { $("planTime").value = ""; $("planEndTime").value = ""; }
+    whenOpen.plan = null; syncPlanRows("plan"); syncPlanSave();
+    renderPlanParse(); renderPlanOften();
+    $("planTitle").focus();
+  }
+  $("planTitle").addEventListener("input", () => { renderPlanParse(); renderPlanOften(); });
+
+  // ③ the plans made often: the same name, times and label two times or more in the last half year (a repeat, made
+  // once, not among them), the most made first. In a day's sheet a press adds one there (with 元に戻す); in a new plan's
+  // form, while its name is empty, a press fills the form
+  function oftenPlans() {
+    const since = addDays(todayKey, -183), by = new Map();
+    for (const e of events.items) {
+      if (!isDay(e.date) || e.date < since || e.repeat || extraDays(e) || !e.title) continue;
+      const k = [foldText(e.title), e.time || "", e.endTime || "", labelOf(e) ? e.labelId : ""].join("\u0001");
+      const x = by.get(k) || { e, n: 0, last: "" };
+      x.n++;
+      if (e.date >= x.last) { x.last = e.date; x.e = e; }
+      by.set(k, x);
+    }
+    return [...by.values()].filter((x) => x.n >= 2).sort((a, b) => b.n - a.n || b.last.localeCompare(a.last)).slice(0, 6).map((x) => x.e);
+  }
+  const oftenWhen = (e) => (e.time ? `${e.time}${e.endTime ? "〜" + e.endTime : ""}` : "終日");
+  const oftenChip = (e, label, onclick) => el("button", { type: "button", class: "chip-btn often", "aria-label": label, onclick }, e.title, el("small", {}, ` ${oftenWhen(e)}`));
+  // what a new one takes from it: its name, times, label, place, URL and 通知アラーム (not its memo, nor a repeat)
+  const planFrom = (e, date) => dropUndef({ date, title: e.title, time: e.time || undefined, endTime: e.time && e.endTime ? e.endTime : undefined,
+    labelId: labelOf(e) ? e.labelId : undefined, place: e.place || undefined, url: e.url || undefined, alarms: e.alarms?.length ? [...e.alarms] : undefined, createdAt: Date.now() });
+  function addOftenPlan(e, d) {
+    let id = null;
+    act(async () => { id = await events.add(planFrom(e, d)); });
+    flash(`「${e.title}」を${fmtMDW(d)}に追加しました`, () => { if (id) takeBack(events, [id]); flash("元に戻しました"); });
+  }
+  function renderPlanOften() {
+    const box = $("planOften"), list = planNew && !planCopy && !$("planTitle").value.trim() ? oftenPlans() : [];
+    box.hidden = !list.length;
+    setChildren(box, list.length ? [el("span", { class: "often-head" }, "よく使う"), ...list.map((e) => oftenChip(e, `${e.title}（${oftenWhen(e)}）を入れる`, () => fillOften(e)))] : null);
+  }
+  function fillOften(e) {
+    $("planTitle").value = e.title;
+    $("planEndDate").value = "";
+    $("planTime").value = e.time || ""; $("planEndTime").value = e.time && e.endTime ? e.endTime : "";
+    $("planPlace").value = e.place || ""; $("planUrl").value = e.url || ""; syncUrlOpen("plan");
+    setFormAlarms("plan", e.alarms || []);
+    planLabelChoice = labelOf(e) ? e.labelId : ""; renderPlanLabels();
+    whenOpen.plan = null; syncPlanRows("plan"); syncPlanSave();
+    renderPlanParse(); renderPlanOften();
+  }
+
+  // ⑥ the free hours: the gaps of 30 minutes or more between the plans with a time and the shifts, within the hours set
+  // (8:00〜22:00 at first); none on a day gone by, today's from now. In 週 and 日 a band each (in 日 with its length), a
+  // press making a plan there; in a day's sheet a list
+  function freeHours() {
+    const s = calSet(), ok = (t) => /^([01]\d|2[0-4]):[0-5]\d$/.test(t || "");
+    return { on: s.free !== false, from: ok(s.freeFrom) ? s.freeFrom : "08:00", to: ok(s.freeTo) ? s.freeTo : "22:00" };
+  }
+  function freeSlots(d, turns, parts) {
+    const fh = freeHours();
+    let at = minOf(fh.from);
+    const hi = minOf(fh.to);
+    if (!fh.on || d < todayKey || hi <= at) return [];
+    if (d === todayKey) at = Math.max(at, Math.ceil(nowMinutes() / 15) * 15);
+    const busy = [...turns.map(turnSpan).filter(Boolean), ...parts.map((p) => [p.s, p.end])].sort((a, b) => a[0] - b[0]), out = [];
+    for (const [s, e] of busy) {
+      if (e <= at) continue;
+      if (s >= hi) break;
+      if (s - at >= 30) out.push([at, s]);
+      at = Math.max(at, e);
+    }
+    if (hi - at >= 30) out.push([at, hi]);
+    return out;
+  }
+  const slotText = ([a, b]) => `${atMin(a)}〜${b >= 1440 ? "24:00" : atMin(b)}`;
+  // a free time pressed in a day's sheet: the new plan's form there, at its start, for an hour (or what is left of it)
+  function openPlanFromDayAt(a, b) {
+    openPlanFromDay();
+    $("planTime").value = atMin(a); $("planEndTime").value = atMin(Math.min(a + 60, b, 23 * 60 + 59)); $("planEndDate").value = "";
+    whenOpen.plan = null; syncPlanRows("plan"); syncPlanSave();
+  }
+
+  // ⑦ the day's other records, a dot each in its page's colour (日記, 運動, 勉強, 体重), on the month
+  const MARKS = [["journal", "日記", "--c-journal"], ["workout", "運動", "--c-workout"], ["study", "勉強", "--c-study"], ["weight", "体重", "--c-weight"]];
+  function marksByDay(from, to) {
+    const by = new Map(), put = (d, k) => { if (isDay(d) && d >= from && d <= to) { if (!by.has(d)) by.set(d, new Set()); by.get(d).add(k); } };
+    for (const j of journal.items) if (String(j.text || "").trim()) put(j.date || j.id, "journal");
+    for (const w of workouts.items) put(w.date, "workout");
+    for (const x of study.items) put(x.date, "study");
+    for (const r of weights.items) if (num(r.kg) > 0) put(r.id, "weight");
+    return by;
+  }
+  const marksOn = () => calSet().marks !== false;
+
+  // ⑤ the weather on its days (the next 7, from きょう's 天気 and its place), unless turned off
+  const wxOn = () => calSet().wx !== false;
+  function wxMark(d) {
+    if (!wxOn() || d < todayKey || d > addDays(todayKey, 6) || !wxPlace()) return null;
+    const w = wxDay(d);
+    return w ? { ...w, say: `${w.word}、最高${w.hi}度、最低${w.lo}度、降水確率${w.rain}%` } : null;
+  }
+
+  // ⑧ the hours of the plans with a time, by label, this week or this month (a run of days by its hours on each day),
+  // and the shifts as バイト; in 予定, over what is coming
+  let sumBy = "week";
+  function hoursByLabel(from, to) {
+    const by = new Map(), add = (key, name, hue, m) => { const x = by.get(key) || { name, hue, m: 0 }; x.m += m; by.set(key, x); };
+    for (const list of turnsByDay(from, to).values()) for (const t of list) {
+      const sp = turnSpan(t);
+      if (!sp) continue;
+      const l = labelOf(t.e);
+      add(l ? l.id : "", l ? l.name : "ラベルなし", labelHue(l), sp[1] - sp[0]);
+    }
+    for (const parts of shiftsByDay(from, to).values()) for (const p of parts) add("\u0001shift", "バイト", "var(--c-money)", p.end - p.s);
+    return [...by.values()].filter((x) => x.m > 0).sort((a, b) => b.m - a.m);
+  }
+  function sumSection() {
+    const ws = weekStart(), wFrom = addDays(todayKey, -((parseYmd(todayKey).getDay() - ws + 7) % 7)), ym = monthOf(todayKey);
+    const [from, to] = sumBy === "week" ? [wFrom, addDays(wFrom, 6)] : [`${ym}-01`, `${ym}-${pad(daysInMonth(ym))}`];
+    const rows = hoursByLabel(from, to), max = Math.max(1, ...rows.map((r) => r.m)), total = sum(rows, (r) => r.m);
+    const seg = el("div", { class: "seg", role: "group", "aria-label": "集計の期間" }, [["week", "今週"], ["month", "今月"]].map(([k, w]) =>
+      el("button", { type: "button", "aria-pressed": String(sumBy === k), onclick: () => { sumBy = k; renderFind(); } }, w)));
+    return [el("h3", { class: "group-head" }, "予定の時間"), el("div", { class: "card pad cal-sum" },
+      el("div", { class: "row-between" }, el("span", { class: "sub" }, `${fmtMD(from)}〜${fmtMD(to)}・合計 ${total ? durText(total) : "0分"}`), seg),
+      rows.length ? el("ul", { class: "sum-rows" }, rows.map((r) => el("li", {},
+        el("span", { class: "sum-name" }, el("i", { style: `--bc: ${r.hue}` }), r.name),
+        el("span", { class: "sum-bar", "aria-hidden": "true" }, el("i", { style: `--bc: ${r.hue}; width: ${Math.max(2, Math.round((r.m / max) * 100))}%` })),
+        el("span", { class: "num" }, durText(r.m)))))
+        : el("p", { class: "sub" }, sumBy === "week" ? "今週の時間のある予定はありません。" : "今月の時間のある予定はありません。"))];
+  }
+
+  // ⑨ 朝の予定のお知らせ: on or off and a time (7:00 at first), kept with the account; each morning with plans (or
+  // shifts), the day's in a line comes to the devices that get 通知; pressed, the day opens
+  const CAL_MORNING_ID = "calMorning";
+  function calMorning() {
+    const v = settings.get(CAL_MORNING_ID) || {};
+    return { on: !!v.on, at: /^\d\d:\d\d$/.test(v.at || "") ? v.at : "07:00" };
+  }
+  // a day's plans and shifts in order: 終日 ones first, then by time — 10:00 授業, 17:00 バイト
+  function dayAgenda(turns, parts) {
+    return [...turns.map((t) => ({ k: turnTime(t), text: (turnTime(t) ? turnTime(t) + " " : "") + t.e.title })),
+      ...parts.filter((p) => p.first).map((p) => ({ k: p.x.start, text: `${p.x.start} ${shiftName(p.x)}` }))].sort((a, b) => a.k.localeCompare(b.k)).map((x) => x.text);
+  }
+  function renderCalMorning() {
+    const r = calMorning(), st = pushState(), f = $("calMorningAt");
+    $("calMorningOn").checked = r.on;
+    if (document.activeElement !== f) f.value = r.at;
+    f.disabled = !r.on;
+    $("calMorningFoot").textContent = !r.on ? "毎朝、その日の予定とバイトを1つの通知でお知らせします。予定がない日は届きません。"
+      : st === "on" ? `予定がある日は、毎朝 ${r.at} にこの端末に届きます。` : pushWords(st).replace("通知アラーム", "お知らせ");
+  }
+  function saveCalMorning(patch) { act(() => settings.set(CAL_MORNING_ID, { ...calMorning(), ...patch, updatedAt: Date.now() })); renderCalMorning(); }
+  $("calMorningOn").addEventListener("change", (ev) => { saveCalMorning({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderCalMorning); });
+  $("calMorningAt").addEventListener("change", (ev) => { if (/^\d\d:\d\d$/.test(ev.target.value)) saveCalMorning({ at: ev.target.value }); });
+
+  // ⑤⑥⑦ the switches, the free hours' span, and what the marks' colours are
+  function renderCalShow() {
+    const fh = freeHours();
+    $("calWx").checked = wxOn(); $("calMarks").checked = marksOn(); $("calFreeOn").checked = fh.on;
+    for (const [id, v] of [["calFreeFrom", fh.from], ["calFreeTo", fh.to]]) { const f = $(id); if (document.activeElement !== f) f.value = v; f.disabled = !fh.on; }
+    setChildren($("calShowFoot"),
+      el("span", { class: "mark-legend" }, el("span", { class: "phrase" }, "記録のしるし："), MARKS.map(([, name, c]) => el("span", { class: "phrase" }, el("i", { style: `--mc: var(${c})` }), name))),
+      wxPlace() ? null : el("span", { class: "wx-where" }, el("span", { class: "phrase" }, "天気は、場所を決めると出ます。"),
+        el("button", { type: "button", class: "link-btn", disabled: wxBusy, onclick: wxAsk }, wxBusy ? "調べています…" : "現在地で天気を出す")));
+  }
+  // (the hours on the hour: 0時〜23時 to begin, 1時〜24時 to end)
+  setChildren($("calFreeFrom"), Array.from({ length: 24 }, (_, h) => el("option", { value: `${pad(h)}:00` }, `${h}時`)));
+  setChildren($("calFreeTo"), Array.from({ length: 24 }, (_, h) => el("option", { value: `${pad(h + 1)}:00` }, `${h + 1}時`)));
+  $("calWx").addEventListener("change", (ev) => { saveCalSet({ wx: ev.target.checked }); if (ev.target.checked) wxFetch(); });
+  $("calMarks").addEventListener("change", (ev) => saveCalSet({ marks: ev.target.checked }));
+  $("calFreeOn").addEventListener("change", (ev) => saveCalSet({ free: ev.target.checked }));
+  for (const id of ["calFreeFrom", "calFreeTo"]) $(id).addEventListener("change", () => {
+    const a = $("calFreeFrom").value, b = $("calFreeTo").value;
+    if (/^\d\d:00$/.test(a) && /^\d\d:00$/.test(b) && a < b) saveCalSet({ freeFrom: a, freeTo: b });
+    else { flash("始まりは終わりより前にしてください"); renderCalShow(); }
+  });
+
+  // ④ a plan (or a shift) held in 週 or 日 is lifted and follows the finger: up and down its time (by 15 minutes), sideways
+  // its day; let go, it stays there (a repeat's turn alone moving, as この回だけ does), with 元に戻す. A finger moving
+  // before it is lifted is a swipe or a scroll, as before
+  let gridDrag = null, gridDragged = false;
+  $("tgBody").addEventListener("pointerdown", (ev) => {
+    const b = ev.target.closest(".tg-ev");
+    if (!b || !ev.isPrimary || (ev.pointerType === "mouse" && ev.button !== 0) || !(b.dataset.ev || b.dataset.shift)) return;
+    const r = b.getBoundingClientRect();
+    gridDrag = { b, id: ev.pointerId, x: ev.clientX, y: ev.clientY, grab: ev.clientY - r.top, on: false, timer: setTimeout(() => liftDrag(ev.pointerId), 450) };
+  });
+  function liftDrag(pid) {
+    const g = gridDrag;
+    if (!g || g.id !== pid || !g.b.isConnected) return;
+    g.on = true; swipe = null;
+    try { g.b.setPointerCapture(pid); } catch {}
+    g.b.classList.add("lifted");
+    g.ghost = el("div", { class: "tg-ghost", "aria-hidden": "true" }, el("span", { class: "t" }, g.b.querySelector(".t")?.textContent || ""), el("span", { class: "tm" }));
+    $("tgBody").append(g.ghost);
+    navigator.vibrate?.(10);
+    moveDrag(g.x, g.y);
+  }
+  // where it would go: the day under the finger, its start by 15 minutes, its length kept
+  function dragAt(x, y) {
+    const g = gridDrag, cols = [...$("tgBody").querySelectorAll(".tg-col")], body = $("tgBody").getBoundingClientRect();
+    const col = cols.find((c) => { const r = c.getBoundingClientRect(); return x >= r.left && x < r.right; }) || (x < body.left + 40 ? cols[0] : cols[cols.length - 1]);
+    const h = col.getBoundingClientRect().height, len = g.len;
+    let s = Math.round((((y - g.grab - col.getBoundingClientRect().top) / h) * 1440) / 15) * 15;
+    s = Math.max(0, Math.min(1440 - Math.max(15, Math.min(len, 1440)), s));
+    return { col, day: col.dataset.day, s };
+  }
+  function moveDrag(x, y) {
+    const g = gridDrag;
+    if (g.len === undefined) {
+      if (g.b.dataset.shift) { const sx = shifts.get(g.b.dataset.shift); g.len = sx ? shiftMinutes({ ...sx, rest: 0 }).all : 60; }
+      else { const [id, start] = g.b.dataset.ev.split("|"), e = events.get(id); const sp = e && turnSpan({ e, day: 0, days: 1, start }); g.len = sp ? Math.max(15, sp[1] - sp[0]) : 60; }
+    }
+    const at = dragAt(x, y), body = $("tgBody").getBoundingClientRect(), cr = at.col.getBoundingClientRect();
+    g.to = at;
+    Object.assign(g.ghost.style, { left: `${cr.left - body.left}px`, width: `${cr.width}px`, top: `${(at.s / 1440) * cr.height + (cr.top - body.top)}px`, height: `${(Math.min(g.len, 1440 - at.s) / 1440) * cr.height}px` });
+    g.ghost.querySelector(".tm").textContent = `${atMin(at.s)}〜${atMin((at.s + g.len) % 1440)}${at.day !== (g.b.closest(".tg-col")?.dataset.day) ? "・" + fmtMD(at.day) : ""}`;
+  }
+  $("tgBody").addEventListener("pointermove", (ev) => {
+    const g = gridDrag;
+    if (!g || ev.pointerId !== g.id) return;
+    if (!g.on) {
+      if (Math.abs(ev.clientX - g.x) > 8 || Math.abs(ev.clientY - g.y) > 8) { clearTimeout(g.timer); gridDrag = null; }
+      return;
+    }
+    ev.preventDefault(); ev.stopPropagation();
+    moveDrag(ev.clientX, ev.clientY);
+  });
+  function endGridDrag(ev) {
+    const g = gridDrag;
+    if (!g || ev.pointerId !== g.id) return;
+    clearTimeout(g.timer); gridDrag = null;
+    if (!g.on) return;
+    ev.stopPropagation();
+    g.b.classList.remove("lifted"); g.ghost.remove();
+    gridDragged = true; setTimeout(() => { gridDragged = false; }, 400); // (the lift opens nothing)
+    if (ev.type === "pointerup" && g.to) dropAt(g, g.to);
+  }
+  $("tgBody").addEventListener("pointerup", endGridDrag);
+  $("tgBody").addEventListener("pointercancel", endGridDrag);
+  $("tgBody").addEventListener("click", (ev) => { if (gridDragged) { ev.stopPropagation(); ev.preventDefault(); gridDragged = false; } }, true);
+  $("tgBody").addEventListener("contextmenu", (ev) => { if (ev.target.closest(".tg-ev")) ev.preventDefault(); });
+  function dropAt(g, to) {
+    const from = g.b.closest(".tg-col")?.dataset.day;
+    if (g.b.dataset.shift) {
+      const x = shifts.get(g.b.dataset.shift);
+      if (!x) return;
+      const len = clockMin(x.end) <= clockMin(x.start) ? clockMin(x.end) + 1440 - clockMin(x.start) : clockMin(x.end) - clockMin(x.start);
+      const patch = { date: to.day, start: atMin(to.s), end: atMin((to.s + len) % 1440) };
+      if (patch.date === x.date && patch.start === x.start) return;
+      const before = JSON.parse(JSON.stringify(x));
+      act(() => shifts.update(x.id, patch));
+      flash(`${shiftName(x)}の勤務を${fmtMDW(to.day)} ${patch.start}〜${patch.end}に移しました`, () => act(async () => { await shifts.set(before.id, before); flash("元に戻しました"); }));
+      return;
+    }
+    const [id, start] = g.b.dataset.ev.split("|"), e = events.get(id);
+    if (!e) return;
+    const s0 = minOf(e.time), len = e.endTime && e.endTime > e.time ? minOf(e.endTime) - s0 : null, time = atMin(to.s);
+    if (to.day === from && time === e.time) return;
+    const fields = { date: to.day, time, endTime: len === null ? undefined : atMin(Math.min(to.s + len, 23 * 60 + 59)) };
+    const before = JSON.parse(JSON.stringify(e)), made = [];
+    const said = `「${e.title}」を${fmtMDW(to.day)} ${time}に移しました`;
+    if (e.repeat) {
+      // a repeat's turn: taken out of it, and kept as a plan of its own where it was put (as この回だけ)
+      const { id: _id, repeat, repeatUntil, skip, createdAt, updatedAt, ...rest } = e;
+      act(async () => { await events.update(e.id, { skip: [...new Set([...(e.skip || []), start])] }); made.push(await events.add(dropUndef({ ...rest, ...fields, createdAt: Date.now() }))); });
+      flash(said + "（この回だけ）", () => act(async () => { if (made.length) takeBack(events, made); await events.set(before.id, before); flash("元に戻しました"); }));
+    } else {
+      act(() => events.update(e.id, fields));
+      flash(said, () => act(async () => { await events.set(before.id, before); flash("元に戻しました"); }));
+    }
+    noteHidden(e.labelId);
+  }
+
+  // ⑩ another calendar's plans read in from an .ics file (iPhone's カレンダー, Google カレンダー, a school's timetable):
+  // each VEVENT a plan with its days and times (a time in UTC turned to this phone's, others as written), place, memo,
+  // URL, and its repeat when it is one of the calendar's own (others: the first turn alone), turns taken out kept out.
+  // One already here (the same UID, or the same name, day and time) isn't read twice. 元に戻す takes them all back
+  const icsText = (v) => String(v || "").replace(/\\n/gi, "\n").replace(/\\([,;\\])/g, "$1");
+  function parseIcs(text) {
+    const lines = String(text).replace(/\r?\n[ \t]/g, "").split(/\r?\n/), out = [];
+    let cur = null, depth = 0;
+    for (const line of lines) {
+      if (/^BEGIN:VEVENT$/i.test(line)) { cur = {}; depth = 0; continue; }
+      if (/^END:VEVENT$/i.test(line)) { if (cur) out.push(cur); cur = null; continue; }
+      if (!cur) continue;
+      if (/^BEGIN:/i.test(line)) { depth++; continue; } // (a VALARM inside)
+      if (/^END:/i.test(line)) { depth--; continue; }
+      if (depth > 0) continue;
+      const m = line.match(/^([A-Za-z-]+)((?:;[^:]*)?):(.*)$/);
+      if (m) (cur[m[1].toUpperCase()] ||= []).push({ params: m[2].toUpperCase(), value: m[3] });
+    }
+    return out;
+  }
+  function icsWhen(v) {
+    let m = String(v || "").trim().match(/^(\d{4})(\d{2})(\d{2})$/);
+    if (m) return { date: `${m[1]}-${m[2]}-${m[3]}`, time: "" };
+    m = String(v || "").trim().match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})?(Z?)$/);
+    if (!m) return null;
+    if (m[7]) { const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0))); return { date: ymdOf(d), time: `${pad(d.getHours())}:${pad(d.getMinutes())}` }; }
+    return { date: `${m[1]}-${m[2]}-${m[3]}`, time: `${m[4]}:${m[5]}` };
+  }
+  function icsToPlan(v) {
+    const get = (k) => v[k]?.[0], text = (k) => icsText(get(k)?.value).trim();
+    if (get("RECURRENCE-ID") || /^CANCELLED$/i.test(text("STATUS"))) return null; // (a turn changed elsewhere, or called off)
+    const st = icsWhen(get("DTSTART")?.value);
+    if (!st || !isDay(st.date)) return null;
+    const p = { date: st.date, title: text("SUMMARY").slice(0, 100) || "（無題）" };
+    const en = icsWhen(get("DTEND")?.value);
+    if (st.time) {
+      p.time = st.time;
+      let end = en;
+      const dur = String(get("DURATION")?.value || "").match(/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$/);
+      if (!end && dur) { const mins = minOf(st.time) + (+(dur[1] || 0)) * 1440 + (+(dur[2] || 0)) * 60 + (+(dur[3] || 0)); end = { date: addDays(st.date, Math.floor(mins / 1440)), time: atMin(mins % 1440) }; }
+      if (end && end.time) {
+        if (end.date > st.date) { if (!(end.date === addDays(st.date, 1) && end.time === "00:00")) p.endDate = end.date; p.endTime = end.date === addDays(st.date, 1) && end.time === "00:00" ? "23:59" : end.time; }
+        else if (end.time > st.time) p.endTime = end.time;
+      }
+    } else if (en && en.date > addDays(st.date, 1)) p.endDate = addDays(en.date, -1); // (its end is the day after)
+    const place = text("LOCATION"), memo = text("DESCRIPTION"), url = text("URL"), uid = text("UID");
+    if (place) p.place = place.slice(0, 200);
+    if (memo) p.memo = memo.slice(0, 5000);
+    if (/^https?:\/\//i.test(url)) p.url = url.slice(0, 1000);
+    if (uid) p.icsUid = uid.slice(0, 300);
+    const rr = get("RRULE")?.value;
+    if (rr) {
+      const r = Object.fromEntries(rr.toUpperCase().split(";").map((kv) => kv.split("="))), iv = Number(r.INTERVAL || 1), by = (r.BYDAY || "").split(",").filter(Boolean).sort();
+      const wd = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][parseYmd(st.date).getDay()];
+      const rep = r.FREQ === "DAILY" && iv === 1 ? "daily"
+        : r.FREQ === "WEEKLY" && iv === 1 && by.join() === "FR,MO,TH,TU,WE" ? "weekdays"
+        : r.FREQ === "WEEKLY" && iv <= 2 && (!by.length || by.join() === wd) ? (iv === 2 ? "biweekly" : "weekly")
+        : r.FREQ === "MONTHLY" && iv === 1 && !by.length ? "monthly"
+        : r.FREQ === "MONTHLY" && iv === 1 && by.length === 1 && by[0] === `${nthOf(st.date)}${wd}` ? "monthlyNth"
+        : r.FREQ === "YEARLY" && iv === 1 ? "yearly" : null;
+      if (rep) {
+        p.repeat = rep;
+        const skip = (v.EXDATE || []).flatMap((x) => x.value.split(",")).map((x) => icsWhen(x)?.date).filter((d) => d && isDay(d));
+        if (skip.length) p.skip = [...new Set(skip)];
+        if (r.UNTIL) { const u = icsWhen(r.UNTIL); if (u) p.repeatUntil = u.date; }
+        else if (Number(r.COUNT) > 0) { const all = turnStarts({ ...p, skip: [] }, p.date, addDays(p.date, 3660 * 3)); if (all[Number(r.COUNT) - 1]) p.repeatUntil = all[Number(r.COUNT) - 1]; }
+      } else p.partly = true;
+    }
+    return p;
+  }
+  async function importIcs(file) {
+    let text = "";
+    try { text = await file.text(); } catch { flash("ファイルを読めませんでした"); return; }
+    if (!/BEGIN:VCALENDAR/i.test(text)) { flash(".ics のファイルではないようです"); return; }
+    const key = (p) => [foldText(p.title), p.date, p.time || ""].join("\u0001");
+    const have = new Set(events.items.map(key)), uids = new Set(events.items.map((e) => e.icsUid).filter(Boolean)), list = [];
+    let dup = 0, partly = 0;
+    for (const v of parseIcs(text)) {
+      const p = icsToPlan(v);
+      if (!p) continue;
+      const own = /^(.+)@tsumikasane$/.exec(p.icsUid || "")?.[1];
+      if ((p.icsUid && uids.has(p.icsUid)) || (own && events.get(own)) || have.has(key(p))) { dup++; continue; }
+      if (p.icsUid) uids.add(p.icsUid);
+      have.add(key(p));
+      if (p.partly) partly++;
+      delete p.partly;
+      list.push({ ...p, createdAt: Date.now() });
+    }
+    if (!list.length) { flash(dup ? "読み込む予定はありませんでした（どれもすでにあります）" : "読み込める予定がありませんでした"); return; }
+    let ids = [];
+    act(async () => { ids = await events.addMany(list); });
+    flash([`${list.length} 件の予定を読み込みました`, dup ? `すでにある ${dup} 件は読み込んでいません` : "", partly ? `繰り返しの ${partly} 件は1回目だけです` : ""].filter(Boolean).join("。"),
+      () => { takeBack(events, ids); flash("元に戻しました"); }, 10000);
+  }
+  $("icsFile").addEventListener("change", (ev) => { const f = ev.target.files?.[0]; ev.target.value = ""; if (f) importIcs(f); });
+  // the plans out as an .ics file the iPhone's カレンダー (and the others) take in: repeats as RRULE, turns taken out as
+  // EXDATE, the place, memo, URL and label too. Times carry no zone, so they stay the clock times they were written in;
+  // one with a start and no end lasts an hour there. One read in from another keeps its UID, so it isn't made twice there
+  function icsOf() {
+    const esc = (t) => String(t).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+    const day = (d) => d.replace(/-/g, ""), at = (d, t) => `${day(d)}T${t.replace(":", "")}00`;
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+    const RULES = { daily: "FREQ=DAILY", weekdays: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", weekly: "FREQ=WEEKLY", biweekly: "FREQ=WEEKLY;INTERVAL=2", monthly: "FREQ=MONTHLY", yearly: "FREQ=YEARLY" };
+    const DAYS = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//tsumikasane//calendar//JA", "CALSCALE:GREGORIAN", "X-WR-CALNAME:つみかさね"];
+    for (const e of events.items) {
+      if (!isDay(e.date) || !e.title || (e.repeat && !turnStarts(e, e.date, addDays(e.date, 3660)).length)) continue; // (every turn taken out)
+      let first = e.date;
+      if (e.repeat === "weekdays") while ([0, 6].includes(parseYmd(first).getDay())) first = addDays(first, 1);
+      const last = addDays(first, extraDays(e));
+      lines.push("BEGIN:VEVENT", `UID:${esc(e.icsUid || e.id + "@tsumikasane")}`, `DTSTAMP:${stamp}`, `SUMMARY:${esc(e.title)}`);
+      if (e.time) {
+        lines.push(`DTSTART:${at(first, e.time)}`);
+        if (e.endTime && (last > first || e.endTime > e.time)) lines.push(`DTEND:${at(last, e.endTime)}`);
+        else lines.push(last > first ? `DTEND:${at(addDays(last, 1), "00:00")}` : "DURATION:PT1H");
+      } else lines.push(`DTSTART;VALUE=DATE:${day(first)}`, `DTEND;VALUE=DATE:${day(addDays(last, 1))}`);
+      const rule = e.repeat === "monthlyNth" ? `FREQ=MONTHLY;BYDAY=${nthOf(e.date)}${DAYS[parseYmd(e.date).getDay()]}` : RULES[e.repeat];
+      if (rule) {
+        lines.push(`RRULE:${rule}${e.repeatUntil ? ";UNTIL=" + day(e.repeatUntil) + (e.time ? "T235959" : "") : ""}`);
+        for (const d of e.skip || []) lines.push(e.time ? `EXDATE:${at(d, e.time)}` : `EXDATE;VALUE=DATE:${day(d)}`);
+      }
+      if (e.place) lines.push(`LOCATION:${esc(e.place)}`);
+      if (e.memo) lines.push(`DESCRIPTION:${esc(e.memo)}`);
+      if (e.url) lines.push(`URL:${esc(e.url)}`);
+      if (labelOf(e)) lines.push(`CATEGORIES:${esc(labelOf(e).name)}`);
+      lines.push("END:VEVENT");
+    }
+    lines.push("END:VCALENDAR");
+    return lines.map(foldIcs).join("\r\n") + "\r\n";
+  }
+  // a line over 75 bytes goes on in lines that start with a space (RFC 5545), never splitting a character
+  function foldIcs(line) {
+    const enc = new TextEncoder();
+    if (enc.encode(line).length <= 75) return line;
+    const out = [];
+    let cur = "", n = 0;
+    for (const ch of line) {
+      const b = enc.encode(ch).length;
+      if (n + b > (out.length ? 74 : 75)) { out.push(cur); cur = ""; n = 0; }
+      cur += ch; n += b;
+    }
+    out.push(cur);
+    return out.join("\r\n ");
+  }
+  $("icsExport").addEventListener("click", async () => {
+    if (!events.items.length) { flash("書き出す予定がありません"); return; }
+    const name = `tsumikasane-calendar-${todayKey}.ics`, how = await handOut(new Blob([icsOf()], { type: "text/calendar" }), name);
+    if (how) flash(how === "shared" ? "予定を書き出しました" : `「${name}」を書き出しました`);
+  });
 
   // ---------- ホーム ----------
   // a tile shows today, so the page it opens starts at today too: a record page left on another day comes back to today
@@ -11936,7 +12631,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑦ (the user's call): the day's weather where the phone is, from Open-Meteo (free, no key): its place asked for once
   // (the browser's location, to about 1 km) and kept on this device alone, the forecast kept for an hour. Rain likely
   // with a run still to do today, it says the run can be エアロバイク 30分, as the menu's メモ has it for a day it hurts
-  const WX_PLACE = LS_PREFIX + "wxPlace", WX_DATA = LS_PREFIX + "wxData";
+  const WX_PLACE = LS_PREFIX + "wxPlace", WX_DATA = LS_PREFIX + "wxData", WX_DAYS = 7; // (7 days: the calendar's ⑤ too)
   const lsJson = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
   const lsJsonPut = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch {} };
   let wxBusy = false, wxError = "", wxFailedAt = 0; // (after a failure, not asked again for 5 minutes but by もう一度)
@@ -11958,20 +12653,22 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   async function wxFetch(force = false) {
     const place = wxPlace(), kept = lsJson(WX_DATA);
     if (!place || wxBusy) return;
-    if (!force && kept && kept.day === todayKey && Date.now() - kept.at < 3600000 && kept.lat === place.lat && kept.lon === place.lon) return;
+    // (a forecast kept from before the calendar wanted 7 days is got afresh once: asked for, not by what came, so a shorter
+    // answer isn't asked for again and again)
+    if (!force && kept && kept.day === todayKey && Date.now() - kept.at < 3600000 && kept.lat === place.lat && kept.lon === place.lon && kept.days === WX_DAYS) return;
     if (!navigator.onLine) { wxError = "インターネットにつながっていないので、天気を取得できません"; return; }
     if (!force && Date.now() - wxFailedAt < 300000) return;
     wxBusy = true;
     try {
-      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.lat}&longitude=${place.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&hourly=precipitation_probability&timezone=auto&forecast_days=2`);
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.lat}&longitude=${place.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&hourly=precipitation_probability&timezone=auto&forecast_days=${WX_DAYS}`);
       if (!res.ok) throw new Error(String(res.status));
       const j = await res.json();
       if (!Array.isArray(j?.daily?.time)) throw new Error("no daily");
-      lsJsonPut(WX_DATA, { day: todayKey, at: Date.now(), lat: place.lat, lon: place.lon, daily: j.daily, hourly: j.hourly });
+      lsJsonPut(WX_DATA, { day: todayKey, at: Date.now(), lat: place.lat, lon: place.lon, days: WX_DAYS, daily: j.daily, hourly: j.hourly });
       wxError = ""; wxFailedAt = 0;
     } catch { wxError = "天気を取得できませんでした"; wxFailedAt = Date.now(); }
     wxBusy = false;
-    if (tab === "home") renderHome();
+    if (tab === "home") renderHome(); else if (tab === "calendar") renderCalendar(); // (⑤ the calendar's days too)
   }
   // a day's weather from the forecast kept: { word, icon, hi, lo, rain (%), wet, rainAt (the first hour from now with rain
   // likely, today) }, or null
@@ -14894,7 +15591,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月10日 14:47"; // fdb13380 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月10日 15:36"; // ca2c162e (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
