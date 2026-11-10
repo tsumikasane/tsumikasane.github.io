@@ -1833,6 +1833,35 @@ ul.list > li.btn-row { padding: 0; }
 .rest-label { font-size: var(--t-sub); }
 .rest-left { min-width: 3.2em; font-size: var(--t-title3); font-weight: 700; }
 .rest-btn { min-height: 36px; padding: 0 12px; border: 0; border-radius: 18px; background: rgba(255, 255, 255, .16); color: #ffffff; font: inherit; font-size: var(--t-sub); cursor: pointer; }
+/* 食事 ①〜⑩ (2026-11-10): ④⑤ the day against its 目安 and its PFC; ⑥ the dishes offered under the name; ⑤ P・F・C in a row */
+.meal-goal .card-head { padding: 0; }
+.meal-goal .num { font-weight: 700; font-variant-numeric: tabular-nums; }
+.meal-goal .bar-track { flex: none; margin: 8px 0 6px; }
+.meal-goal .bar-track i { background: var(--c-meal); }
+.meal-goal .sub { margin: 0; }
+.meal-pfc { margin-top: 10px; padding-top: 8px; border-top: .5px solid var(--separator); }
+.meal-pfc-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: var(--t-sub); }
+.meal-pfc-row .bar-track { margin: 0; }
+.meal-pfc-row .bar-track i { background: var(--c-workout); }
+.meal-pfc-row .bar-track i.done { background: var(--accent); }
+.meal-pfc .sub { margin: 4px 0 0; }
+.meal-suggest { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-btn.meal-pick { min-height: 36px; display: inline-flex; align-items: baseline; gap: 6px; }
+.chip-btn.meal-pick small { color: var(--muted); font-variant-numeric: tabular-nums; }
+.meal-fill { margin: -4px 0 0; font-size: var(--t-sub); color: var(--accent); }
+/* ⑤ the three grams: the row's name above them, as three fields beside it would be too narrow for a 3-figure gram */
+.meal-pfc-in { display: grid; gap: 6px; }
+.meal-pfc-fields { display: flex; gap: 12px; }
+.meal-pfc-fields label { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.meal-pfc-fields input { flex: 1 1 0; width: 0; min-width: 0; text-align: right; font-variant-numeric: tabular-nums; }
+#mealOften .chip-btn small, #mealYesterday .chip-btn small { color: var(--muted); }
+/* ⑦ the week: bars in 食事's colour (4.5:1 on cards), the 目安 a dashed line across */
+.chart .meal-bar { fill: var(--c-meal); }
+.chart .meal-goal { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart .meal-goal-word { fill: var(--muted); font-size: 12px; }
+.chart .axis-text.cur { fill: var(--fg); font-weight: 700; }
+#mealWeekChart { touch-action: pan-y; }
+.meal-week-note { margin: 0; padding: 0 var(--space-2) 4px; }
 .wo-notes { padding: 0 var(--space-2) 4px; font-size: var(--t-sub); line-height: 1.5; }
 .wo-notes summary { display: flex; align-items: center; min-height: 44px; color: var(--accent); cursor: pointer; list-style: none; }
 .wo-notes summary::-webkit-details-marker { display: none; }
@@ -2347,9 +2376,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </div>
         <div class="diet-part" id="part-meal" style="--sec-c: var(--c-meal)" hidden>
           <h3 class="sr-only">食事</h3>
+          <!-- ④⑤ the day against its 目安, and its PFC (the user's calls, 2026-11-10) -->
+          <div class="card pad meal-goal" id="mealGoalCard"></div>
+          <!-- ② what is eaten often, ③ the day before's, each put in with a press -->
+          <div class="ex-often" id="mealOften" hidden></div>
+          <div class="ex-often" id="mealYesterday" hidden></div>
           <form class="add" id="mealForm" autocomplete="off">
             <input type="text" id="mealText" class="full" list="mealHints" placeholder="食べたもの" aria-label="食べたもの" maxlength="200" required>
             <datalist id="mealHints"></datalist>
+            <!-- ⑥ what was eaten before and common dishes with the words typed, with their kcal; ① what was put in -->
+            <div class="full meal-suggest" id="mealSuggest" hidden></div>
+            <p class="full field-note meal-fill" id="mealFillNote" hidden></p>
             <span class="flabel" id="mealSlotLabel">区分</span>
             <div class="ffield">
               <div class="seg seg-radio" role="radiogroup" aria-labelledby="mealSlotLabel">
@@ -2361,10 +2398,34 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             </div>
             <label class="flabel" for="mealKcal">カロリー<span class="sr-only">（kcal）</span> <span class="opt">任意</span></label>
             <div class="ffield"><input type="number" id="mealKcal" min="0" max="9999" inputmode="numeric"><span class="unit">kcal</span></div>
+            <!-- ⑤ たんぱく質・脂質・炭水化物 (g), ⑧ when, ⑨ what it cost (into 家計簿 as 食費 too) -->
+            <div class="full meal-pfc-in" role="group" aria-labelledby="mealPfcLabel">
+              <span class="flabel" id="mealPfcLabel">PFC（g） <span class="opt">任意</span></span>
+              <div class="meal-pfc-fields">
+                <label>P<input type="number" id="mealP" min="0" max="999" step="any" inputmode="decimal" aria-label="たんぱく質（g）"></label>
+                <label>F<input type="number" id="mealF" min="0" max="999" step="any" inputmode="decimal" aria-label="脂質（g）"></label>
+                <label>C<input type="number" id="mealC" min="0" max="999" step="any" inputmode="decimal" aria-label="炭水化物（g）"></label>
+              </div>
+            </div>
+            <label class="flabel" for="mealAt">時刻 <span class="opt">任意</span></label>
+            <div class="ffield"><input type="time" id="mealAt"></div>
+            <label class="flabel" for="mealPrice">値段 <span class="opt">任意</span></label>
+            <div class="ffield"><input type="number" id="mealPrice" min="1" max="999999" inputmode="numeric"><span class="unit">円</span></div>
+            <p class="full field-note muted small" id="mealPriceNote" hidden>家計簿にも「食費」として入ります。</p>
             <div class="actions"><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
           </form>
           <ul class="list card" id="mealList"></ul>
           <div class="muted small" id="mealTotal"></div>
+          <!-- ⑦ the 7 days up to the day shown against the 目安 -->
+          <div class="card" id="mealWeekCard" hidden>
+            <div class="card-head">この1週間</div>
+            <div class="chart-wrap" id="mealWeekWrap">
+              <svg class="chart" id="mealWeekChart" role="img" tabindex="0"></svg>
+              <div class="tip" id="mealWeekTip" hidden></div>
+            </div>
+            <p class="sub meal-week-note" id="mealWeekNote"></p>
+            <details class="ch-table"><summary>数字で見る</summary><div class="ch-scroll"><table id="mealWeekTable"></table></div></details>
+          </div>
         </div>
         <div class="diet-part" id="part-workout" style="--sec-c: var(--c-workout)" hidden>
           <h3 class="sr-only">運動</h3>
@@ -2902,6 +2963,29 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield"><select id="restSec"><option value="60">60秒</option><option value="90">90秒</option><option value="120">2分</option><option value="180">3分</option></select></div>
         </form>
         <p class="group-foot"><span class="phrase">メニューの「＋1」を押すと、この時間を数えます。</span><span class="phrase">終わると音と振動で知らせます</span><span class="phrase">（iPhoneは音だけで、マナーモードでは鳴りません）。</span></p>
+      </div>
+      <!-- 食事の設定 (the gear while 食事 shows, the user's calls, 2026-11-10): the 目安 (からだ's own), ⑤ the protein goal, ⑩ お知らせ -->
+      <div class="sheet-view" id="mealSetGroup" hidden>
+        <h3 class="group-head">目安</h3>
+        <form class="add" id="mealGoalForm" autocomplete="off">
+          <label class="flabel" for="mealKcalGoal">摂取カロリーの目安<span class="sr-only">（kcal）</span></label>
+          <div class="ffield"><input type="number" id="mealKcalGoal" step="1" min="500" max="9999" placeholder="2500" inputmode="numeric"><span class="unit">kcal</span><button class="btn ghost sm" type="submit">保存</button></div>
+          <label class="flabel" for="proteinGoal">たんぱく質の目標<span class="sr-only">（g）</span></label>
+          <div class="ffield"><input type="number" id="proteinGoal" step="1" min="1" max="500" inputmode="numeric"><span class="unit">g</span><button class="btn ghost sm" type="submit">保存</button></div>
+        </form>
+        <p class="group-foot" id="proteinFoot"></p>
+        <h3 class="group-head">記録し忘れのお知らせ</h3>
+        <form class="add" id="mealRemindForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="mealRemindOn">お知らせ</label>
+          <div class="ffield"><input type="checkbox" id="mealRemindOn" class="switch" role="switch"></div>
+          <label class="flabel" for="mealRemindB">朝食</label>
+          <div class="ffield"><input type="time" id="mealRemindB"></div>
+          <label class="flabel" for="mealRemindL">昼食</label>
+          <div class="ffield"><input type="time" id="mealRemindL"></div>
+          <label class="flabel" for="mealRemindD">夕食</label>
+          <div class="ffield"><input type="time" id="mealRemindD"></div>
+        </form>
+        <p class="group-foot" id="mealRemindFoot"></p>
       </div>
       <div class="sheet-view" id="subjectsGroup" hidden>
         <h3 class="group-head">科目</h3>
@@ -3949,7 +4033,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function syncDietPart() {
     for (const p of DIET_PARTS) $("part-" + p.key).hidden = p.key !== dietPart;
     $("dietParts").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.part === dietPart)));
-    $("wtSettings").setAttribute("aria-label", dietPart === "workout" ? "運動の設定" : "ダイエットの設定");
+    $("wtSettings").setAttribute("aria-label", dietPart === "workout" ? "運動の設定" : dietPart === "meal" ? "食事の設定" : "ダイエットの設定");
     if (tab === "diet" && dietPart === "weight") draw(renderWeightChart);
   }
   $("dietParts").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
@@ -4842,8 +4926,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const item = { date: viewDate, slot: checkedValue("mealSlot") || SLOTS[0], text, createdAt: Date.now() };
     const kcalRaw = $("mealKcal").value;
     if (kcalRaw !== "") item.kcal = Math.max(0, Math.round(Number(kcalRaw)));
-    act(() => meals.add(item));
-    $("mealText").value = ""; $("mealKcal").value = ""; $("mealText").focus();
+    // ⑤ PFC (g), ⑧ the time eaten, ⑨ its price, put in 家計簿 as 食費 too
+    for (const [k, id] of [["p", "mealP"], ["f", "mealF"], ["c", "mealC"]]) { const v = $(id).value; if (v !== "" && Number(v) >= 0) item[k] = Math.min(999, Math.round(Number(v) * 10) / 10); }
+    if (/^\d\d:\d\d$/.test($("mealAt").value)) item.at = $("mealAt").value;
+    const price = Math.round(Number($("mealPrice").value));
+    act(async () => {
+      const id = await meals.add(item);
+      if (price >= 1 && price <= 999999) { const eid = await expenses.add(mealExpense({ ...item, id }, price)); await meals.update(id, { exId: eid }); }
+    });
+    if (price >= 1) flash(`「${text}」を記録して、家計簿に食費 ${fmtYen(price)} を入れました`);
+    for (const id of ["mealText", "mealKcal", "mealP", "mealF", "mealC", "mealPrice"]) $(id).value = "";
+    mealFilled = null; $("mealFillNote").hidden = true; $("mealSuggest").hidden = true; $("mealPriceNote").hidden = true;
+    syncMealAt(true);
+    $("mealText").focus();
   });
   // what was typed before comes back as suggestions under the field (the user's call): the foods eaten and the 筋トレ moves
   // done, the most often typed first, then the latest; up to 30
@@ -4868,16 +4963,270 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const m of items) {
       list.append(el("li", {},
         el("span", { class: "chip", style: "--chip-c: var(--c-meal)" }, m.slot || "食事"),
-        el("span", { class: "body" }, editLink("meal", m.id, m.text)),
+        el("span", { class: "body" }, editLink("meal", m.id, m.text), mealSub(m)),
         typeof m.kcal === "number" ? el("span", { class: "num" }, `${fmtN(m.kcal)} kcal`) : null,
-        delButton(() => removeWithUndo(meals, m.id), "削除", m.text)
+        delButton(() => removeMeal(m), "削除", m.text)
       ));
     }
     const withK = items.filter((m) => typeof m.kcal === "number");
     const total = sum(withK, (m) => m.kcal);
     setChildren($("mealTotal"), items.length
       ? dotParts([`${items.length} 回`, `合計 ${fmtN(total)} kcal` + (withK.length < items.length ? `（kcal 未入力 ${items.length - withK.length} 件）` : "")]) : null);
+    // ①〜⑩ (the user's calls, 2026-11-10)
+    draw(() => renderMealGoal(items)); draw(renderMealOften); draw(renderMealYesterday); draw(renderMealWeek); draw(() => syncMealAt());
   }
+  // a row's line under its name: ⑧ when (21時以降 said), ⑤ its PFC, ⑨ what it cost in 家計簿
+  function mealSub(m) {
+    const at = mealAt(m), ex = m.exId && expenses.get(m.exId), pf = pfcOf(m);
+    const parts = [at ? at + (mealLate(m) ? "（21時以降）" : "") : null, hasPfc(m) ? ["P", "F", "C"].map((l, i) => { const v = [pf.p, pf.f, pf.c][i]; return v === null ? null : `${l} ${fmtG(v)}`; }).filter(Boolean).join("・") : null,
+      ex ? `家計簿 ${fmtYen(ex.amount)}` : null].filter(Boolean);
+    return parts.length ? el("span", { class: "sub" }, parts.flatMap((w) => w.split("・")).map((w, i, a) => el("span", { class: "phrase" }, keepUnits(w + (i < a.length - 1 ? "・" : ""))))) : null; // (each kept whole)
+  }
+
+  // ---------- 食事 ①〜⑩ (the user's calls, 2026-11-10): the last time's kcal put in (①), what is eaten often at a press (②),
+  // yesterday's again (③), the day against its 目安 (④), PFC (⑤), common dishes' kcal (⑥), the week in a chart (⑦), the
+  // time eaten and late ones (⑧), its price into 家計簿 too (⑨), and a word when one hasn't been recorded (⑩) ----------
+  // ⑥ common dishes, each its usual kcal and PFC (g), from 日本食品標準成分表 and the chains' own figures, rounded: a 目安
+  const MEAL_FOODS = [
+    ["ごはん（茶わん1杯 150g）", 234, 3.8, 0.5, 55.7], ["ごはん（大盛り 250g）", 390, 6.3, 0.8, 92.8], ["ごはん（小盛り 100g）", 156, 2.5, 0.3, 37.1],
+    ["食パン（6枚切り1枚）", 149, 5.3, 2.5, 27.8], ["食パン（8枚切り1枚）", 112, 4.0, 1.9, 20.9], ["ロールパン（1個）", 93, 3.0, 2.7, 14.6],
+    ["クロワッサン（1個）", 179, 3.2, 10.7, 17.6], ["メロンパン（1個）", 400, 7, 13, 65], ["あんパン（1個）", 280, 7, 4, 52],
+    ["おにぎり（鮭）", 180, 5.5, 1.5, 37], ["おにぎり（梅）", 170, 3.5, 0.5, 38], ["おにぎり（ツナマヨ）", 230, 5.5, 7.5, 37], ["おにぎり（昆布）", 170, 3.5, 0.5, 38],
+    ["納豆（1パック）", 86, 7.4, 4.5, 5.4], ["卵（1個）", 71, 6.1, 5.1, 0.2], ["ゆで卵（1個）", 67, 6.3, 4.7, 0.2], ["目玉焼き（1個）", 90, 6.2, 7.0, 0.2],
+    ["卵焼き（2切れ）", 100, 6, 6, 4], ["みそ汁（1杯）", 40, 2.5, 1.2, 4.5], ["豚汁（1杯）", 120, 6, 6, 9], ["冷ややっこ（1/2丁）", 84, 7.4, 5.3, 1.7],
+    ["ヨーグルト（無糖 100g）", 56, 3.6, 3.0, 4.9], ["ヨーグルト（加糖 1個）", 80, 3.5, 1.5, 13], ["牛乳（200ml）", 126, 6.8, 7.8, 9.9],
+    ["豆乳（調製 200ml）", 130, 6.7, 7.6, 9.5], ["プロテイン（1杯 30g）", 115, 22, 1.5, 3], ["サラダチキン（1個）", 110, 24, 1.2, 0.5],
+    ["バナナ（1本）", 93, 1.1, 0.2, 22.5], ["りんご（1/2個）", 80, 0.2, 0.3, 21], ["みかん（1個）", 39, 0.6, 0.1, 9.6], ["グラノーラ（50g）", 220, 4, 7, 35],
+    ["サラダ（ドレッシングなし）", 20, 1, 0.1, 4], ["サラダ（ドレッシングつき）", 100, 1.5, 8, 6], ["野菜炒め", 200, 6, 14, 12],
+    ["牛丼（並）", 650, 20, 23, 90], ["牛丼（大盛り）", 870, 27, 31, 120], ["親子丼", 650, 28, 15, 95], ["かつ丼", 900, 32, 30, 115], ["天丼", 800, 22, 25, 115],
+    ["海鮮丼", 600, 30, 8, 95], ["中華丼", 650, 18, 20, 95], ["カレーライス", 750, 18, 25, 110], ["カツカレー", 1000, 30, 40, 125],
+    ["オムライス", 750, 22, 28, 95], ["チャーハン", 700, 18, 25, 95], ["ラーメン（しょうゆ）", 500, 20, 12, 72], ["ラーメン（とんこつ）", 650, 25, 25, 75],
+    ["ラーメン（みそ）", 600, 22, 18, 80], ["つけ麺", 700, 28, 18, 100], ["カップラーメン", 350, 10.5, 14.6, 44.5], ["うどん（かけ）", 320, 9, 1.5, 66],
+    ["天ぷらうどん", 500, 14, 18, 72], ["そば（かけ）", 330, 13, 2.5, 62], ["ざるそば", 300, 12, 2, 58], ["焼きそば", 550, 15, 20, 75],
+    ["冷やし中華", 550, 20, 15, 80], ["スパゲッティ（ミートソース）", 600, 20, 18, 85], ["スパゲッティ（カルボナーラ）", 800, 25, 35, 90],
+    ["スパゲッティ（ペペロンチーノ）", 550, 14, 18, 80], ["ハンバーグ定食", 850, 32, 35, 95], ["から揚げ定食", 900, 35, 40, 95], ["しょうが焼き定食", 800, 30, 30, 95],
+    ["とんかつ定食", 950, 35, 45, 95], ["焼き魚定食（さけ）", 600, 30, 12, 90], ["さばのみそ煮定食", 750, 30, 25, 95], ["コンビニ弁当（幕の内）", 700, 22, 22, 100],
+    ["から揚げ弁当", 850, 30, 35, 100], ["のり弁当", 750, 20, 28, 100], ["サンドイッチ（たまご）", 280, 10, 15, 26], ["サンドイッチ（ハム・野菜）", 250, 10, 11, 27],
+    ["ハンバーガー", 256, 12.8, 9.4, 30.3], ["チーズバーガー", 307, 15.8, 13.4, 30.8], ["フライドポテト（M）", 409, 5.3, 20.6, 51.6], ["ピザ（1切れ）", 230, 10, 10, 25],
+    ["お好み焼き", 550, 18, 25, 60], ["たこ焼き（6個）", 300, 10, 13, 35], ["ぎょうざ（6個）", 300, 10, 16, 28], ["から揚げ（3個）", 280, 17, 18, 10],
+    ["肉じゃが", 250, 10, 8, 30], ["麻婆豆腐", 300, 15, 20, 12], ["さけの塩焼き（1切れ）", 130, 18, 6, 0.1], ["鶏むね肉（皮なし 100g）", 105, 23.3, 1.9, 0.1],
+    ["鶏もも肉（皮つき 100g）", 190, 16.6, 14.2, 0], ["すし（10貫）", 550, 25, 8, 90], ["肉まん（1個）", 250, 8, 6, 40],
+    ["シュークリーム（1個）", 230, 5, 12, 25], ["ショートケーキ（1個）", 330, 6, 18, 38], ["プリン（1個）", 120, 4, 5, 15], ["アイスクリーム（カップ）", 230, 4, 14, 23],
+    ["チョコレート（25g）", 140, 1.8, 8.5, 14], ["ポテトチップス（1袋 60g）", 340, 2.8, 21, 33], ["ナッツ（25g）", 150, 5, 13, 4],
+    ["コーヒー（ブラック）", 8, 0.4, 0, 1.4], ["カフェラテ（M）", 150, 7, 8, 11], ["オレンジジュース（200ml）", 90, 1.5, 0.2, 21], ["コーラ（500ml）", 225, 0, 0, 56],
+    ["スポーツドリンク（500ml）", 105, 0, 0, 26], ["ビール（350ml）", 140, 1, 0, 11],
+  ].map(([name, kcal, p, f, c]) => ({ name, kcal, p, f, c }));
+  // (katakana as hiragana: かれー, as typed before it is turned into カレー, finds カレーライス)
+  const mealKey = (s) => String(s || "").normalize("NFKC").replace(/\s+/g, "").toLowerCase().replace(/[\u30a1-\u30f6]/g, (k) => String.fromCharCode(k.charCodeAt(0) - 0x60));
+  const pfcOf = (m) => ({ p: typeof m.p === "number" ? m.p : null, f: typeof m.f === "number" ? m.f : null, c: typeof m.c === "number" ? m.c : null });
+  const hasPfc = (m) => typeof m.p === "number" || typeof m.f === "number" || typeof m.c === "number";
+  const fmtG = (g) => `${Math.round(g * 10) / 10} g`;
+  // ① the last time something of that name was recorded with its kcal (and PFC), else ⑥ a common dish of that name
+  function mealLastOf(text) {
+    const k = mealKey(text);
+    if (!k) return null;
+    const m = meals.items.filter((x) => mealKey(x.text) === k && typeof x.kcal === "number").sort((a, b) => b.date.localeCompare(a.date) || num(b.createdAt) - num(a.createdAt))[0];
+    if (m) return { name: m.text, kcal: m.kcal, ...pfcOf(m), from: "last" };
+    const f = MEAL_FOODS.find((x) => mealKey(x.name) === k);
+    return f ? { ...f, from: "food" } : null;
+  }
+  // what ① put in, so another name typed takes it away again (unless it was changed by hand since)
+  let mealFilled = null;
+  const MEAL_NUMS = [["kcal", "mealKcal"], ["p", "mealP"], ["f", "mealF"], ["c", "mealC"]];
+  function fillMeal(x, said = true) {
+    for (const [k, id] of MEAL_NUMS) $(id).value = typeof x[k] === "number" ? x[k] : "";
+    mealFilled = Object.fromEntries(MEAL_NUMS.map(([k, id]) => [k, $(id).value]));
+    setChildren($("mealFillNote"), said ? (x.from === "food" ? `料理の目安 約 ${fmtN(x.kcal)} kcal を入れました` : `前回の ${fmtN(x.kcal)} kcal を入れました`) : null);
+    $("mealFillNote").hidden = !said;
+  }
+  function onMealText() {
+    if (mealFilled && MEAL_NUMS.every(([k, id]) => $(id).value === mealFilled[k])) { for (const [, id] of MEAL_NUMS) $(id).value = ""; }
+    mealFilled = null; $("mealFillNote").hidden = true;
+    const x = $("mealKcal").value === "" ? mealLastOf($("mealText").value) : null;
+    if (x) fillMeal(x);
+    renderMealSuggest();
+  }
+  $("mealText").addEventListener("input", onMealText);
+  for (const [, id] of MEAL_NUMS) $(id).addEventListener("input", () => { mealFilled = null; $("mealFillNote").hidden = true; });
+  // ⑥ under the name, as it is typed: what was eaten before and the common dishes with those words, with their kcal; one
+  // pressed puts its name, kcal and PFC in
+  function renderMealSuggest() {
+    const q = mealKey($("mealText").value), box = $("mealSuggest");
+    if (!q) { box.hidden = true; box.replaceChildren(); return; }
+    const seen = new Set(), out = [];
+    const past = [...meals.items].filter((m) => typeof m.kcal === "number").sort((a, b) => b.date.localeCompare(a.date) || num(b.createdAt) - num(a.createdAt));
+    for (const m of past) { const k = mealKey(m.text); if (k.includes(q) && !seen.has(k)) { seen.add(k); out.push({ name: m.text, kcal: m.kcal, ...pfcOf(m), from: "last" }); } if (out.length >= 3) break; }
+    for (const f of MEAL_FOODS) { const k = mealKey(f.name); if (out.length >= 6) break; if (k.includes(q) && !seen.has(k)) { seen.add(k); out.push({ ...f, from: "food" }); } }
+    const exact = out.length === 1 && mealKey(out[0].name) === q;
+    box.hidden = !out.length || exact;
+    setChildren(box, out.map((x) => el("button", { type: "button", class: "chip-btn meal-pick", "aria-label": `${x.name} ${x.from === "food" ? "約 " : "前回 "}${fmtN(x.kcal)} kcal を入れる`,
+      onclick: () => { $("mealText").value = x.name; fillMeal(x); box.hidden = true; $("mealKcal").focus({ preventScroll: true }); } },
+      el("span", { class: "meal-pick-name" }, x.name), el("small", {}, `${x.from === "food" ? "約 " : ""}${fmtN(x.kcal)} kcal`))));
+  }
+  // ⑧ when it was eaten, as put in (none for one from before: when it was recorded needn't be when it was eaten, a day's
+  // meals often being put in at night)
+  const mealAt = (m) => (/^\d\d:\d\d$/.test(m.at || "") ? m.at : "");
+  // late: 夕食 or 間食 from 21時 (a 朝食 or 昼食 at that hour is one put in late, not eaten then)
+  const mealLate = (m) => { const at = mealAt(m); return !!at && (m.slot === "夕食" || m.slot === "間食" || !m.slot) && (at >= "21:00" || at < "04:00"); };
+  const nowHM = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  // the form's time: now while the day shown is today (put back after each one added), else none
+  function syncMealAt(force = false) {
+    const f = $("mealAt");
+    if (force || (f.dataset.auto !== "0" && document.activeElement !== f)) { f.value = viewDate === todayKey ? nowHM() : ""; f.dataset.auto = "1"; }
+  }
+  $("mealAt").addEventListener("input", () => { $("mealAt").dataset.auto = "0"; });
+  // ② what has been eaten twice or more in the last 90 days, with the same kcal: the 6 most often, a press adding it to
+  // the day shown under the 区分 picked
+  function mealOftenList() {
+    const since = addDays(todayKey, -90), by = new Map();
+    for (const m of meals.items) {
+      if (!isDay(m.date) || m.date < since || typeof m.kcal !== "number") continue;
+      const k = mealKey(m.text) + "\u0001" + m.kcal, x = by.get(k) || { text: m.text, kcal: m.kcal, ...pfcOf(m), n: 0, last: "" };
+      x.n++; if (m.date >= x.last) { x.last = m.date; Object.assign(x, { text: m.text, ...pfcOf(m) }); }
+      by.set(k, x);
+    }
+    return [...by.values()].filter((x) => x.n >= 2).sort((a, b) => b.n - a.n || b.last.localeCompare(a.last)).slice(0, 6);
+  }
+  function renderMealOften() {
+    const list = mealOftenList(), box = $("mealOften");
+    box.hidden = !list.length;
+    setChildren(box, list.length ? [el("span", { class: "often-head" }, "よく食べる"), ...list.map((x) => el("button", { type: "button", class: "chip-btn often",
+      "aria-label": `${x.text} ${fmtN(x.kcal)} kcal を${checkedValue("mealSlot") || "食事"}に追加`, onclick: () => addMeals([{ text: x.text, kcal: x.kcal, ...pfcClean(x) }], checkedValue("mealSlot") || SLOTS[0]) },
+      x.text, el("small", {}, ` ${fmtN(x.kcal)} kcal`)))] : null);
+  }
+  const pfcClean = (x) => Object.fromEntries(["p", "f", "c"].filter((k) => typeof x[k] === "number").map((k) => [k, x[k]]));
+  // ②③ several put in at once on the day shown, with 元に戻す
+  function addMeals(list, slot = null) {
+    const date = viewDate, at = date === todayKey ? nowHM() : undefined;
+    act(async () => {
+      const ids = await meals.addMany(list.map((x) => { const t = x.at !== undefined ? x.at : at; return { date, slot: slot || x.slot || SLOTS[0], text: x.text, ...(typeof x.kcal === "number" ? { kcal: x.kcal } : {}), ...pfcClean(x), ...(t ? { at: t } : {}), createdAt: Date.now() }; }));
+      flash(list.length === 1 ? `「${list[0].text}」を${slot || list[0].slot}に追加しました` : `${list[0].slot}の ${list.length} 品を追加しました`, () => { takeBack(meals, ids); flash("元に戻しました"); });
+    });
+  }
+  // ③ the day before's, a 区分 at a time (one already on the day shown left out of the offer)
+  function renderMealYesterday() {
+    const y = addDays(viewDate, -1), was = meals.items.filter((m) => m.date === y), box = $("mealYesterday");
+    const slots = SLOTS.filter((s) => was.some((m) => m.slot === s) && !meals.items.some((m) => m.date === viewDate && m.slot === s));
+    box.hidden = !slots.length;
+    setChildren(box, slots.length ? [el("span", { class: "often-head" }, viewDate === todayKey ? "きのうと同じ" : "前の日と同じ"), ...slots.map((s) => {
+      const xs = was.filter((m) => m.slot === s).sort((a, b) => num(a.createdAt) - num(b.createdAt));
+      return el("button", { type: "button", class: "chip-btn often", "aria-label": `${fmtMD(y)}の${s}（${xs.map((m) => m.text).join("・")}）を同じく追加`,
+        onclick: () => addMeals(xs.map((m) => ({ text: m.text, slot: s, kcal: m.kcal, ...pfcClean(m), at: mealAt(m) }))) }, s, el("small", {}, ` ${xs.length}品`)); // (at the same time as then, or none)
+    })] : null);
+  }
+  // ④⑤ the day against its 目安 (からだ's 摂取カロリーの目安, 2,500 kcal till set), and its PFC against the protein goal
+  const proteinGoal = () => num((settings.get("pfcGoal") || {}).p);
+  function renderMealGoal(items) {
+    const withK = items.filter((m) => typeof m.kcal === "number"), total = sum(withK, (m) => m.kcal), goal = kcalGoal(), left = goal - total, pct = Math.min(100, Math.round((total / goal) * 100));
+    const pf = { p: sum(items, (m) => num(m.p)), f: sum(items, (m) => num(m.f)), c: sum(items, (m) => num(m.c)) }, anyPfc = items.some(hasPfc), pg = proteinGoal();
+    setChildren($("mealGoalCard"),
+      el("div", { class: "card-head row-between" }, el("span", {}, viewDate === todayKey ? "きょうの食事" : `${fmtMDW(viewDate)}の食事`), el("span", { class: "num" }, `${fmtN(total)} / ${fmtN(goal)} kcal`)),
+      el("div", { class: "bar-track", role: "img", "aria-label": `目安の ${pct}%` }, el("i", { class: left < 0 ? "over" : "", style: `width:${pct}%` })),
+      el("p", { class: "sub" }, el("span", { class: "phrase" }, left >= 0 ? `あと ${fmtN(left)} kcal` : `目安を ${fmtN(-left)} kcal 超えています`),
+        withK.length < items.length ? el("span", { class: "phrase" }, `（カロリー未入力 ${items.length - withK.length} 件）`) : null),
+      anyPfc || pg ? el("div", { class: "meal-pfc" },
+        el("div", { class: "meal-pfc-row" }, el("span", {}, "たんぱく質"), pg ? el("div", { class: "bar-track" }, el("i", { class: pf.p >= pg ? "done" : "", style: `width:${Math.min(100, Math.round((pf.p / pg) * 100))}%` })) : el("span"),
+          el("span", { class: "num" }, pg ? `${fmtG(pf.p)} / ${pg} g` : fmtG(pf.p))),
+        el("p", { class: "sub" }, `脂質 ${fmtG(pf.f)}・炭水化物 ${fmtG(pf.c)}`)) : null);
+  }
+  // ⑦ the 7 days up to the day shown, a bar each against the 目安's line, with the average, the days over it, the late ones
+  // and the PFC's average; a bar pointed at says its numbers, and a table has them all
+  function renderMealWeek() {
+    const days = Array.from({ length: 7 }, (_, i) => addDays(viewDate, i - 6)), goal = kcalGoal();
+    const data = days.map((d) => { const ms = meals.items.filter((m) => m.date === d), k = ms.filter((m) => typeof m.kcal === "number"); return { d, kcal: k.length ? sum(k, (m) => m.kcal) : null, n: ms.length, late: ms.filter(mealLate).length, p: sum(ms, (m) => num(m.p)) }; });
+    const had = data.filter((x) => x.kcal !== null), avg = had.length ? Math.round(sum(had, (x) => x.kcal) / had.length) : 0, over = had.filter((x) => x.kcal > goal).length, late = sum(data, (x) => x.late);
+    $("mealWeekCard").hidden = !data.some((x) => x.n);
+    if ($("mealWeekCard").hidden) return;
+    setChildren($("mealWeekNote"), [had.length ? `平均 ${fmtN(avg)} kcal` : "カロリーの記録なし", `目安超え ${over} 日`, `21時以降の食事 ${late} 回`, ...(data.some((x) => x.p) ? [`たんぱく質 平均 ${fmtG(sum(data, (x) => x.p) / Math.max(1, data.filter((x) => x.n).length))}`] : [])]
+      .map((w, i, a) => el("span", { class: "phrase" }, keepUnits(w + (i < a.length - 1 ? "・" : "")))));
+    setChildren($("mealWeekTable"), el("tbody", {}, [...data].reverse().map((x) => el("tr", {}, el("th", { scope: "row" }, fmtShort(x.d)), el("td", {}, x.kcal === null ? "—" : `${fmtN(x.kcal)} kcal`)))));
+    const wrap = $("mealWeekWrap"), svg = $("mealWeekChart");
+    if (!wrap.clientWidth) return;
+    const W = Math.max(280, Math.round(wrap.clientWidth - 16)), H = 190, padL = 6, padR = 54, padT = 12, padB = 26, pw = W - padL - padR, ph = H - padT - padB, base = padT + ph;
+    const hi = Math.max(goal, ...had.map((x) => x.kcal)), step = yenStep(hi / 4), top = Math.ceil((hi * 1.05) / step) * step, y = (v) => base - (v / top) * ph, gw = pw / 7, bw = Math.min(26, gw - 8);
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H); svg.replaceChildren(); $("mealWeekTip").hidden = true;
+    for (let v = 0; v <= top + step / 2; v += step) { svg.append(svgEl("line", { class: "gridline", x1: padL, x2: W - padR, y1: y(v), y2: y(v) }), svgEl("text", { class: "axis-text", x: W - padR + 6, y: y(v) + 4 }, fmtN(v))); }
+    svg._pts = data.map((x, i) => {
+      const cx = padL + gw * (i + 0.5);
+      if (x.kcal > 0) svg.append(svgEl("path", { class: "meal-bar" + (x.kcal > goal ? " over" : ""), d: barPath(cx - bw / 2, y(x.kcal), bw, base - y(x.kcal)) }));
+      svg.append(svgEl("text", { class: "axis-text" + (x.d === viewDate ? " cur" : ""), x: cx, y: H - 7, "text-anchor": "middle" }, WD[parseYmd(x.d).getDay()]));
+      return { ...x, cx, cy: x.kcal ? y(x.kcal) : base };
+    });
+    svg.append(svgEl("line", { class: "meal-goal", x1: padL, x2: W - padR, y1: y(goal), y2: y(goal) }), svgEl("text", { class: "axis-text meal-goal-word", x: padL + 2, y: y(goal) - 5 }, `目安 ${fmtN(goal)}`),
+      svgEl("line", { class: "ch-base", x1: padL, x2: W - padR, y1: base, y2: base }));
+    svg._W = W;
+    svg.setAttribute("aria-label", `${fmtMD(days[0])}〜${fmtMD(days[6])}の摂取カロリーのグラフ。目安は ${fmtN(goal)} kcal、` + (had.length ? `平均 ${fmtN(avg)} kcal、目安を超えた日は ${over} 日。` : "カロリーの記録はありません。") + "数字は下の表にもあります。");
+  }
+  {
+    const svg = $("mealWeekChart"), tip = $("mealWeekTip");
+    const show = (i) => {
+      for (const c of svg.querySelectorAll(".ch-hl")) c.remove();
+      const p = svg._pts?.[i];
+      if (!p) { tip.hidden = true; svg._at = -1; return; }
+      const gw = svg._pts.length > 1 ? svg._pts[1].cx - svg._pts[0].cx : 40;
+      svg.prepend(svgEl("rect", { class: "ch-hl", x: p.cx - gw / 2 + 1, y: 2, width: gw - 2, height: Number(svg.getAttribute("height")) - 4, rx: 8 }));
+      tip.replaceChildren(el("strong", {}, p.kcal === null ? "記録なし" : `${fmtN(p.kcal)} kcal`), " " + fmtShort(p.d) + (p.late ? `・21時以降 ${p.late} 回` : ""));
+      tip.style.left = Math.min(Math.max(p.cx + 8, 80), svg._W - 70) + "px"; tip.style.top = Math.max(30, p.cy) + "px"; tip.hidden = false; svg._at = i;
+    };
+    const near = (ev) => { const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * ((svg._W || r.width) / r.width); let best = -1, bd = Infinity; (svg._pts || []).forEach((p, i) => { const d = Math.abs(p.cx - px); if (d < bd) { bd = d; best = i; } }); return best; };
+    svg.addEventListener("pointermove", (ev) => show(near(ev)));
+    svg.addEventListener("pointerleave", () => show(-1));
+    svg.addEventListener("blur", () => show(-1));
+    svg.addEventListener("keydown", (ev) => {
+      const n = svg._pts?.length || 0, i = svg._at ?? -1;
+      if (!n) return;
+      if (ev.key === "ArrowLeft") show(i < 0 ? n - 1 : Math.max(0, i - 1)); else if (ev.key === "ArrowRight") show(i < 0 ? n - 1 : Math.min(n - 1, i + 1)); else if (ev.key === "Escape") show(-1); else return;
+      ev.preventDefault();
+    });
+    if ("ResizeObserver" in window) { let last = 0; new ResizeObserver(() => { const w = $("mealWeekWrap").clientWidth; if (!w) { last = 0; return; } if (w !== last) { last = w; renderMealWeek(); } }).observe($("mealWeekWrap")); }
+  }
+  // ⑨ a meal with its price is in 家計簿 too, as 食費 (its 支払い the one last picked there); deleted, both go, with 元に戻す
+  function mealExpense(m, price) {
+    return { date: m.date, kind: "out", category: "食費", amount: price, memo: m.text, ...(lastMethod() ? { method: lastMethod() } : {}), meal: m.id, createdAt: Date.now() };
+  }
+  function removeMeal(m) {
+    const ex = m.exId && expenses.get(m.exId);
+    if (!ex) { removeWithUndo(meals, m.id); return; }
+    const mb = JSON.parse(JSON.stringify(m)), eb = JSON.parse(JSON.stringify(ex));
+    act(async () => { await meals.removeMany([m.id]); await expenses.removeMany([ex.id]); });
+    flash("食事を削除しました。家計簿の食費も消しました", () => act(async () => { await meals.putBack([mb]); await expenses.putBack([eb]); flash("元に戻しました"); }));
+  }
+  // ⑩ 記録し忘れのお知らせ (the user's call): on or off and a time for 朝食・昼食・夕食 each (none: not that one), kept with the
+  // account; each day at that time, a 区分 with nothing yet comes to the devices that get 通知, as plans' alarms do
+  const MEAL_REMIND_ID = "mealRemind", MEAL_REMIND_AT = { 朝食: "", 昼食: "14:00", 夕食: "21:00" };
+  function mealRemind() {
+    const v = settings.get(MEAL_REMIND_ID) || {}, at = {};
+    for (const s of ["朝食", "昼食", "夕食"]) at[s] = typeof v.at?.[s] === "string" ? (/^\d\d:\d\d$/.test(v.at[s]) ? v.at[s] : "") : MEAL_REMIND_AT[s];
+    return { on: !!v.on, at };
+  }
+  function renderMealSettings() {
+    const r = mealRemind(), st = pushState();
+    if (document.activeElement !== $("mealKcalGoal")) $("mealKcalGoal").value = num((settings.get("kcalGoal") || {}).target) || "";
+    const kg = bodyKgOn(todayKey);
+    if (document.activeElement !== $("proteinGoal")) $("proteinGoal").value = proteinGoal() || "";
+    $("proteinGoal").placeholder = kg > 0 ? String(Math.round(kg * 1.6)) : "未設定";
+    $("proteinFoot").textContent = kg > 0 ? `筋トレをしている人の目安は、体重 1 kg あたり 1.6 g ほど（${fmtN(Math.round(kg * 1.6))} g）です。` : "体重を記録すると、目安が出ます。";
+    $("mealRemindOn").checked = r.on;
+    for (const [s, id] of [["朝食", "mealRemindB"], ["昼食", "mealRemindL"], ["夕食", "mealRemindD"]]) { const f = $(id); if (document.activeElement !== f) f.value = r.at[s]; f.disabled = !r.on; }
+    $("mealRemindFoot").textContent = !r.on ? "決めた時刻になっても、その区分の食事がまだなら、通知でお知らせします。空にした区分はお知らせしません。"
+      : st === "on" ? `その区分の食事がまだなら、${["朝食", "昼食", "夕食"].filter((s) => r.at[s]).map((s) => `${s}は ${r.at[s]}`).join("、") || "（時刻なし）"} にこの端末に届きます。` : pushWords(st).replace("通知アラーム", "お知らせ");
+  }
+  function saveMealRemind(patch) { act(() => settings.set(MEAL_REMIND_ID, { ...mealRemind(), ...patch, updatedAt: Date.now() })); renderMealSettings(); }
+  $("mealRemindOn").addEventListener("change", (ev) => { saveMealRemind({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderMealSettings); });
+  for (const [s, id] of [["朝食", "mealRemindB"], ["昼食", "mealRemindL"], ["夕食", "mealRemindD"]]) $(id).addEventListener("change", (ev) => {
+    const v = ev.target.value;
+    if (v !== "" && !/^\d\d:\d\d$/.test(v)) return;
+    saveMealRemind({ at: { ...mealRemind().at, [s]: v } });
+  });
+  function saveMealGoals() {
+    saveBodyTarget("kcalGoal", $("mealKcalGoal"), 500, 9999);
+    const raw = $("proteinGoal").value, v = raw === "" ? 0 : Math.round(Number(raw));
+    if (raw !== "" && !(v >= 1 && v <= 500)) return;
+    if (v !== proteinGoal()) act(() => (v ? settings.set("pfcGoal", { p: v, updatedAt: Date.now() }) : settings.remove("pfcGoal")));
+  }
+  $("mealGoalForm").addEventListener("submit", (ev) => { ev.preventDefault(); saveMealGoals(); if (ev.currentTarget.contains(document.activeElement)) document.activeElement.blur(); });
+  for (const id of ["mealKcalGoal", "proteinGoal"]) $(id).addEventListener("change", saveMealGoals);
+  $("mealPrice").addEventListener("input", () => { $("mealPriceNote").hidden = !(Number($("mealPrice").value) >= 1); });
 
   // ---------- 運動 ----------
   // the kind is picked from a menu (the user's call): ランニング and ウォーキング take 距離・時間・消費カロリー, 筋トレ takes
@@ -6462,7 +6811,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the period's first day (全部: the first record's) and how many days it spans
   const rangeStart = () => (wtRange ? addDays(todayKey, -(wtRange - 1)) : sortedWeights()[0]?.id || todayKey);
   const rangeDays = () => daysBetween(rangeStart(), todayKey) + 1;
-  $("wtSettings").addEventListener("click", (ev) => openSettings(ev.detail === 0, dietPart === "workout" ? "workout" : "weight")); // (運動's own while it shows: ⑧⑨)
+  $("wtSettings").addEventListener("click", (ev) => openSettings(ev.detail === 0, dietPart === "workout" ? "workout" : dietPart === "meal" ? "meal" : "weight")); // (運動's and 食事's own while they show)
 
   function renderWeight() {
     const entry = weights.get(viewDate);
@@ -8158,6 +8507,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         out.push({ at, title: "ルーティーン", body: i === 0 ? `まだの項目：${left.map((r) => oneLine(r.name)).join("・")}`.slice(0, 280) : "きょうのルーティーンは、ぜんぶできましたか？", tag: `rt-remind:${d}`, url: "./#routine" });
       }
     }
+    // ⑩ 食事の記録し忘れのお知らせ (the user's call): each 区分 with a time, each day, today's not once that 区分 has one;
+    // pressed, 食事
+    const mr = mealRemind();
+    if (mr.on) for (const s of ["朝食", "昼食", "夕食"]) {
+      if (!mr.at[s]) continue;
+      const [h, mi] = mr.at[s].split(":").map(Number), has = meals.items.some((m) => m.date === todayKey && m.slot === s);
+      for (let i = 0; i <= PUSH_AHEAD; i++) {
+        const d = addDays(todayKey, i), p = parseYmd(d), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
+        if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5 || (i === 0 && has)) continue;
+        out.push({ at, title: "食事", body: `${s}の記録がまだです`, tag: `meal-remind:${s}:${d}`, url: "./#meal" });
+      }
+    }
     for (const e of events.items) {
       const mins = alarmsOf(e);
       if (!mins.length || typeof e.title !== "string") continue;
@@ -8186,6 +8547,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (rm.on) parts.push(["remind", rm.at, tsumiBlocks(false, "tally").today > 0]); // (today's goes once a block is on)
     const rr = rtRemind(); // (ルーティーン's: today's goes once all are done or it is お休み, and says what is left)
     if (rr.on) parts.push(["rtRemind", rr.at, rtRest(todayKey), rtItemsOn(todayKey).filter((r) => !rtDoneOn(r, todayKey)).map((r) => r.name)]);
+    const mr = mealRemind(); // (食事's: a 区分's today goes once it has one)
+    if (mr.on) parts.push(["mealRemind", mr.at, SLOTS.map((s) => meals.items.some((m) => m.date === todayKey && m.slot === s))]);
     for (const g of goals.items) if (!g.done && !g.pausedAt && g.deadline) parts.push(["goal", g.id, g.title, g.deadline]); // (目標の期限の通知)
     for (const e of events.items) { const a = alarmsOf(e); if (a.length) parts.push([e.id, e.title, e.date, e.endDate, e.time, e.endTime, e.repeat, e.repeatUntil, e.skip, a, e.place]); }
     const t = JSON.stringify(parts);
@@ -8296,6 +8659,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a notification pressed: the app at the plan's day (#calendar:2026-11-13), its plans in the sheet
   function openLink(url) {
     if (/#home$/.test(String(url || ""))) { if (sheetEl.open) closeSheet(true); setTab("home"); return true; } // 積み忘れのお知らせ: きょう, to record
+    // a page's own (ルーティーン's and 食事's お知らせ): that page, 食事 and the like in ダイエット
+    const pg = /#([a-z]+)$/.exec(String(url || ""))?.[1];
+    if (pg && (isDietPart(pg) || PAGES.some((x) => x.key === pg))) { if (sheetEl.open) closeSheet(true); if (isDietPart(pg)) { setDietPart(pg); setTab("diet"); } else setTab(pg); return true; }
     const gid = /#goal:([\w-]+)$/.exec(String(url || ""))?.[1]; // 目標の期限の通知: the goal's chart
     if (gid) { if (sheetEl.open) closeSheet(true); setTab("goal"); if (goals.get(gid)) openChart(gid, false); return true; }
     const d = /#calendar:(\d{4}-\d{2}-\d{2})$/.exec(String(url || ""))?.[1];
@@ -8778,7 +9144,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const mode = sheetMode(), adding = mode === "goal" || mode === "plan" || mode === "todo", changing = mode === "edit" || mode === "rec";
     for (const [m, id] of Object.entries(SHEET_VIEWS)) $(id).hidden = m !== mode;
     sheetEl.classList.toggle("compact", mode === "month");
-    $("labelsGroup").hidden = settingsScope !== "calendar"; $("todoLabelsGroup").hidden = settingsScope !== "todo"; $("subjectsGroup").hidden = settingsScope !== "study"; $("tilesGroup").hidden = settingsScope !== "home"; $("bodyGroup").hidden = settingsScope !== "weight"; $("moneyGroup").hidden = settingsScope !== "money"; $("woMenuGroup").hidden = settingsScope !== "woMenu"; $("jobGroup").hidden = settingsScope !== "job"; $("backupGroup").hidden = settingsScope !== "records"; $("tsumiGroup").hidden = settingsScope !== "tsumi"; $("rtGroup").hidden = settingsScope !== "routine"; $("woSetGroup").hidden = settingsScope !== "workout";
+    $("labelsGroup").hidden = settingsScope !== "calendar"; $("todoLabelsGroup").hidden = settingsScope !== "todo"; $("subjectsGroup").hidden = settingsScope !== "study"; $("tilesGroup").hidden = settingsScope !== "home"; $("bodyGroup").hidden = settingsScope !== "weight"; $("moneyGroup").hidden = settingsScope !== "money"; $("woMenuGroup").hidden = settingsScope !== "woMenu"; $("jobGroup").hidden = settingsScope !== "job"; $("backupGroup").hidden = settingsScope !== "records"; $("tsumiGroup").hidden = settingsScope !== "tsumi"; $("rtGroup").hidden = settingsScope !== "routine"; $("woSetGroup").hidden = settingsScope !== "workout"; $("mealSetGroup").hidden = settingsScope !== "meal";
     $("sheetDone").hidden = changing || adding || mode === "alarm"; $("sheetSave").hidden = mode !== "edit"; $("recSave").hidden = mode !== "rec";
     $("recSave").textContent = mode === "rec" && recEdit.fresh ? "追加" : "保存"; // (a new one from きょう)
     $("goalSave").hidden = mode !== "goal"; $("planSave").hidden = mode !== "plan"; $("todoSave").hidden = mode !== "todo";
@@ -9082,6 +9448,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (scope === "money") { renderCatBudgets(); renderCatEditor(); renderFixedForms(); renderSaveForms(); } // 家計簿's 費目ごとの予算, 費目, 固定費 and 貯金の目標
     if (scope === "routine") { renderRtOrder(); renderRtRemind(); } // ルーティーン's order (④) and its お知らせ (⑥)
     if (scope === "workout") renderWoSettings(); // 運動's month's goal (⑧) and rest (⑨)
+    if (scope === "meal") renderMealSettings(); // 食事's 目安, protein goal (⑤) and お知らせ (⑩)
     // (バイト: one blank job to fill in when there is none yet, its 時給 ready to type)
     if (scope === "job") {
       if (!jobList().length) act(() => settings.set("jobs", { ...jobSet(), items: [newJob()], updatedAt: Date.now() }));
@@ -9178,6 +9545,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     commitChartText(); saveGoalEdit(); // what was typed last is saved now, not when the close event comes (it can come late)
     if (settingsFrom && settingsScope === "weight") { saveBodyTargets(); saveBodyProfile(); } // ダイエット's goals and 身長・年齢 too, as 完了 says
     if (settingsFrom && settingsScope === "workout") saveRunGoal(); // and 運動's month's goal
+    if (settingsFrom && settingsScope === "meal") saveMealGoals(); // and 食事's 目安 and protein goal
     if (settingsFrom && settingsScope === "money") { saveBudget(); saveFixed(); runFixed(); saveSavings(); } // and 家計簿's budget, 固定費 (put in now) and 貯金の目標
     if (settingsFrom && settingsScope === "woMenu") { saveWoMenu(); woDraft = null; } // and 運動のメニュー
     if (settingsFrom && settingsScope === "job") saveJobs(); // and バイトの設定
@@ -10176,14 +10544,31 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("input", { type: "text", id: "reText", class: "full", list: "mealHints", value: m.text, placeholder: "食べたもの", "aria-label": "食べたもの", maxlength: 200, required: true }),
         recSeg("reSlot", "区分", SLOTS.map((s) => [s, s]), m.slot),
         recRow("カロリー", el("input", { type: "number", id: "reKcal", value: typeof m.kcal === "number" ? m.kcal : "", min: 0, max: 9999, inputmode: "numeric" }), { unit: "kcal", opt: true }),
+        // ⑤ PFC, ⑧ the time eaten, ⑨ its price (in 家計簿 as 食費)
+        el("div", { class: "full meal-pfc-in", role: "group", "aria-labelledby": "rePfcLabel" }, el("span", { class: "flabel", id: "rePfcLabel" }, "PFC（g） ", el("span", { class: "opt" }, "任意")),
+          el("div", { class: "meal-pfc-fields" }, ["p", "f", "c"].map((k, i) => el("label", {}, ["P", "F", "C"][i],
+            el("input", { type: "number", id: "re" + k.toUpperCase(), value: typeof m[k] === "number" ? m[k] : "", min: 0, max: 999, step: "any", inputmode: "decimal", "aria-label": ["たんぱく質", "脂質", "炭水化物"][i] + "（g）" }))))),
+        recRow("時刻", el("input", { type: "time", id: "reAt", value: mealAt(m) }), { opt: true }),
+        recRow("値段", el("input", { type: "number", id: "rePrice", value: (m.exId && expenses.get(m.exId)?.amount) || "", min: 1, max: 999999, inputmode: "numeric" }), { unit: "円", opt: true }),
         recRow("日付", recDate(m.date, todayKey)),
       ],
       read: (m) => {
         const text = $("reText").value.trim(), kcal = $("reKcal").value, date = recDay();
         if (!text) return recBad("reText");
         if (!date || date > todayKey) return recBad("reDate");
+        const g = (id) => { const v = $(id).value; return v === "" || !(Number(v) >= 0) ? undefined : Math.min(999, Math.round(Number(v) * 10) / 10); };
+        const at = $("reAt").value, price = Math.round(Number($("rePrice").value));
         // an entry from before the 区分 keeps having none until one is picked
-        return { text, slot: checkedValue("reSlot") || m.slot, kcal: kcal === "" ? undefined : Math.max(0, Math.round(Number(kcal))), date };
+        return { text, slot: checkedValue("reSlot") || m.slot, kcal: kcal === "" ? undefined : Math.max(0, Math.round(Number(kcal))), date,
+          p: g("reP"), f: g("reF"), c: g("reC"), at: /^\d\d:\d\d$/.test(at) ? at : undefined, price: price >= 1 ? Math.min(999999, price) : 0 };
+      },
+      // ⑨ its 家計簿's 食費 kept with it: changed with it, made for a price put in, taken away with one emptied
+      save: (m, patch) => {
+        const { price, ...rest } = patch, ex = m.exId && expenses.get(m.exId), jobs = [meals.update(m.id, rest)];
+        if (price && ex) jobs.push(expenses.update(ex.id, { amount: price, memo: rest.text, date: rest.date, updatedAt: Date.now() }));
+        else if (price) jobs.push(expenses.add(mealExpense({ ...m, ...rest }, price)).then((eid) => meals.update(m.id, { exId: eid })));
+        else if (ex) { jobs.push(expenses.remove(ex.id)); jobs.push(meals.update(m.id, { exId: undefined })); }
+        return Promise.all(jobs);
       },
     },
     workout: {
@@ -10536,6 +10921,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     const { kind, id } = recEdit, x = REC_EDIT[kind].store.get(id);
     if (recFromDay) backFromRec(); else closeSheet();
+    if (kind === "meal" && x) { removeMeal(x); return; } // (⑨ its 家計簿's 食費 with it)
     removeWithUndo(REC_EDIT[kind].store, id, kind === "todo" && x?.repeat && !x.done ? `「${x.text}」を繰り返しごと削除しました` : undefined);
   });
   recSkip.addEventListener("click", () => {
@@ -13985,7 +14371,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月10日 12:49"; // f786110a (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月10日 13:28"; // 9e70f1bd (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
