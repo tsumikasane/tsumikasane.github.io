@@ -1041,6 +1041,15 @@ button.cat-row:active { background: var(--fill-press); }
 @media (prefers-reduced-motion: reduce) { .m-cell.spot { animation: none; box-shadow: inset 0 0 0 3px var(--accent); } }
 /* a cell in ToDo: 「ToDo」 in small words, by its check */
 .m-todo { font-size: var(--t-foot); color: var(--muted); white-space: nowrap; }
+/* a cell put in ルーティーン: how many days it was done there */
+.m-rt { display: inline-flex; align-items: center; gap: 2px; font-size: var(--t-foot); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* over a cell's words: its 期限 (red once past) and the mark of its memo */
+.m-top { flex: none; display: flex; align-items: center; gap: 4px; min-height: 16px; font-size: var(--t-foot); line-height: 1.2; color: var(--muted); font-variant-numeric: tabular-nums; }
+.m-top[hidden] { display: none; }
+.m-top .m-memo-mark { margin-inline-start: auto; width: 16px; height: 16px; }
+.m-due { white-space: nowrap; }
+.m-due.warn { color: var(--warn); }
+.m-cell[data-k] { min-height: 0; }  /* square with that line too: the words give way (fitCells), as the row would grow otherwise */
 /* the day a cell was checked, between its check and its › */
 .m-date { font-size: var(--t-foot); color: var(--muted); font-variant-numeric: tabular-nums; }
 .m-cell.done .m-date { color: var(--fg); }
@@ -1050,6 +1059,9 @@ button.cat-row:active { background: var(--fill-press); }
 .m-menu button { display: block; width: 100%; min-height: 44px; padding: 0 16px; border: 0; background: transparent; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
 .m-menu button + button { border-top: .5px solid var(--separator); }
 .m-menu button:disabled { color: var(--muted); cursor: default; }
+/* a cell's 期限 on a day picked, in its 長押し menu */
+.m-menu-date { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; padding: 0 10px 0 16px; border-top: .5px solid var(--separator); }
+.m-menu-date input { min-height: 34px; padding: 2px 8px; border: 0; border-radius: 8px; background: var(--fill); color: var(--fg); font: inherit; font-size: 16px; }
 /* an empty cell: a faint ＋ in its middle, gone while it is being written in; taps go through it to the cell */
 .m-cell[data-k] { position: relative; cursor: text; }
 .m-plus { position: absolute; inset: 0; display: none; place-items: center; color: var(--muted); opacity: .6; pointer-events: none; }
@@ -1086,6 +1098,16 @@ button.cat-row:active { background: var(--fill-press); }
 .m-mini.done { background: color-mix(in srgb, var(--c-goal) 16%, var(--surface)); }
 .m-mini.mid { background: color-mix(in srgb, var(--c-goal) 26%, var(--surface)); font-weight: 700; }
 .m-mini.mid.done { background: color-mix(in srgb, var(--c-goal) 40%, var(--surface)); }
+/* a goal's own colour (the user's call: to tell goals apart): its block tinted and its bar, its chart's tints; lighter on
+   a dark ground, as the app's own colours are there */
+.goal.tinted { --c-goal: var(--goal-c); --sec-c: var(--goal-c); background: color-mix(in srgb, var(--goal-c) 13%, var(--surface)); }
+#mandalaView.tinted { --c-goal: var(--goal-c); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.goal.tinted, #mandalaView.tinted) { --c-goal: color-mix(in srgb, var(--goal-c) 70%, #fff); --sec-c: color-mix(in srgb, var(--goal-c) 70%, #fff); } }
+:root[data-theme="dark"] :is(.goal.tinted, #mandalaView.tinted) { --c-goal: color-mix(in srgb, var(--goal-c) 70%, #fff); --sec-c: color-mix(in srgb, var(--goal-c) 70%, #fff); }
+.goal-palette { padding: 12px var(--space-2); }
+.goal-palette .pal { display: flex; flex-wrap: wrap; gap: 10px; }
+.goal-palette .pal-c { width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: var(--k); cursor: pointer; }
+.goal-palette .pal-c[aria-pressed="true"] { outline: 3px solid var(--k); outline-offset: 2px; }
 /* 家計簿's バイト (the user's call): 家計簿 or バイト under the month; a job's month with its pay big, its days and hours
    under it, then the form, the shifts and the year's pay against its mark */
 .money-parts { margin-bottom: var(--space-2); }
@@ -3766,6 +3788,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield"><textarea id="mMemo" class="grow memo" rows="1" maxlength="2000"></textarea></div>
         </form>
         <p class="group-foot">書きかえると、そのまま保存されます。</p>
+        <!-- the goal's colour (the user's call: to tell goals apart) -->
+        <h3 class="group-head" id="mColourHead">色</h3>
+        <div class="card goal-palette"><div class="pal" role="group" aria-labelledby="mColourHead" id="mColours"></div></div>
+        <p class="group-foot">目標のブロックとマンダラチャートが、この色になります。</p>
         <!-- ① joined to the app's records, its progress worked out from them -->
         <h3 class="group-head">記録とつなぐ</h3>
         <form class="add" id="mLink" autocomplete="off" onsubmit="return false">
@@ -8866,7 +8892,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const day = g.done ? (g.doneAt ? doneText(g) : "") : g.pausedAt ? pausedText(g) : "";
       const when = day ? el("span", { class: "sub" }, el("span", { class: "phrase" }, day)) : g.done ? null : deadlineText(g);
       const ex = goalBlockExtras(g); // ⑧ its photo, ① its records, ② its pace
-      list.append(el("div", { class: "goal" + (g.done ? " done" : g.pausedAt ? " paused" : "") },
+      const gc = goalColour(g); // (its own colour: the block tinted, its bar)
+      list.append(el("div", { class: "goal" + (g.done ? " done" : g.pausedAt ? " paused" : "") + (gc ? " tinted" : ""), style: gc ? `--goal-c: ${gc}` : null },
         el("button", { type: "button", class: "goal-open", "data-goal": g.id, onclick: (ev) => openChart(g.id, ev.detail === 0) },
           el("span", { class: "goal-body" }, ex.photo,
             el("span", { class: "row-between" },
@@ -10405,7 +10432,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the ToDo and goal deadlines still to do, as items of 予定 (the calendar shows these too): { date, text, … }
   const dueItems = () => [
     ...todos.items.filter((t) => !t.done && t.due).map((t) => ({ date: t.due, text: t.text, chip: "ToDo", hue: "var(--c-todo)", sub: "ToDo の期限" })),
-    ...goals.items.filter((g) => !g.done && !g.pausedAt && g.deadline).map((g) => ({ date: g.deadline, text: g.title, chip: "目標", hue: "var(--c-goal)", sub: "目標の期限" })),
+    ...goals.items.filter((g) => !g.done && !g.pausedAt && g.deadline).map((g) => ({ date: g.deadline, text: g.title, chip: "目標", hue: goalHue(g), sub: "目標の期限" })),
+    ...cellDues().map((x) => ({ date: x.deadline, text: x.title, chip: "目標", hue: goalHue(x), sub: `マスの期限・${x.cell.goal}` })),
   ];
   // anything after a day: a plan's turn (five years ahead) or a deadline, for もっと見る
   const anyAfter = (d) => dueItems().some((x) => x.date > d) || events.items.some((e) => turnStarts(e, addDays(d, 1), addDays(d, 1830)).some((s) => s > d));
@@ -10699,6 +10727,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       // an empty cell shows only a faint ＋ (the user's call: the written ones stand out); the placeholder is a blank, there
       // only so CSS can tell the cell is empty. Its name for screen readers stays 要素 1 and so on
       : el("div", { class: "m-cell", "data-k": k },
+        el("span", { class: "m-top", hidden: true }),
         el("div", { class: "m-write" },
           el("textarea", { "data-k": k, rows: 3, maxlength: 40, placeholder: " ", enterkeyhint: "next", "aria-label": `${word} ${k + 1}` }),
           el("span", { class: "m-text", "aria-hidden": "true" })),
@@ -10714,6 +10743,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const g = goals.get(mandalaGoal), node = g && nodeAt(g, mPath);
     if (!node) { mandalaGoal = null; closeSheet(true); return; }
     const depth = goalDepth(g), left = depth - mPath.length; // the levels that may still open below the middle
+    // the goal's own colour, through the chart's tints (the user's call)
+    const gc = goalColour(g), view = $("mandalaView");
+    view.classList.toggle("tinted", !!gc);
+    if (gc) view.style.setProperty("--goal-c", gc); else view.style.removeProperty("--goal-c");
     // 全体 wherever two levels lie below: the goal's own, and inside a cell of a goal split three times (the user's call:
     // the third level was out of sight)
     const canWhole = left >= 2;
@@ -10733,6 +10766,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const midAt = mPath.length ? node.at : g.doneAt;
       mid.querySelector(".m-pct").textContent = !kids.length ? (midDone && midAt ? `${fmtMD(ymd(new Date(midAt)))} 達成` : "") : midDone && !mPath.length ? "達成" : `${Math.floor(cellProgress(node, left) * 100)}%`;
       setChildren(mid.querySelector(".m-tools"), kids.length ? null : chartCheck(name, midDone, toggleMiddle));
+      const rtTally = routineTally(); // (the cells put in ルーティーン: how many days each was done)
       for (const box of mGrid.querySelectorAll(".m-cell[data-k]")) {
         const k = Number(box.dataset.k), cell = node.c?.[k] || null, text = cell?.t || "", filled = !!text.trim(), cname = oneLine(text);
         const ta = box.querySelector("textarea");
@@ -10740,13 +10774,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         ta.nextElementSibling.textContent = ta.value;
         const inner = kidsOf(cell, left - 1), done = filled && cellDone(cell, left - 1);
         box.classList.toggle("done", done);
+        // over its words: its 期限 while it is still to do, red once past (the user's call), and the mark of its memo (⑦)
+        const dueOn = filled && !done && isDay(cell.due || "") ? cell.due : null, memo = filled && !!cell.m, top = box.querySelector(".m-top");
+        top.hidden = !dueOn && !memo;
+        setChildren(top, dueOn ? el("span", { class: "m-due" + (dueOn < todayKey ? " warn" : "") }, `期限 ${fmtMD(dueOn)}`) : null,
+          memo ? el("span", { class: "m-memo-mark", role: "img", "aria-label": "メモあり" }, icon("journal", 14)) : null);
         setChildren(box.querySelector(".m-tools"),
           !filled ? null : inner.length ? el("span", { class: "m-count" }, `${inner.filter((x) => cellDone(x, left - 2)).length}/${inner.length}`) : chartCheck(cname, done, () => toggleCell(k)),
-          // the day it was checked (the user's call: when each was done was kept nowhere); none for one checked before
-          filled && !inner.length && done && cell.at ? el("span", { class: "m-date" }, fmtMD(ymd(new Date(cell.at)))) : null,
-          // in ToDo (the user's call): said in small words while the cell is still to do (its 期限 is on the ToDo)
-          filled && !done && cell.todo && todos.get(cell.todo) ? el("span", { class: "m-todo" }, "ToDo") : null,
-          filled && cell.m ? el("span", { class: "m-memo-mark", role: "img", "aria-label": "メモあり" }, icon("journal", 14)) : null, // ⑦
+          // the day it was checked (the user's call: when each was done was kept nowhere; none for one checked before);
+          // else, put in ルーティーン, how many days it was done there (the user's call); else, in ToDo, said in small words
+          // while still to do (its 期限 is on the ToDo). (The memo's mark is over the words, with the 期限)
+          filled && !inner.length && done && cell.at ? el("span", { class: "m-date" }, fmtMD(ymd(new Date(cell.at))))
+            : filled && rtTally.has(cname) ? el("span", { class: "m-rt" }, icon("routine", 12), `${rtTally.get(cname)}回`)
+            : filled && !done && cell.todo && todos.get(cell.todo) ? el("span", { class: "m-todo" }, "ToDo") : null,
           filled && left > 1 ? (cell.x
             ? el("button", { type: "button", class: "m-open m-closed", "data-role": "open", "aria-label": `「${cname}」は×で閉じています。押すと、また分けられます`, onclick: () => setCellClosed(k, false) }, icon("close", 16))
             : el("button", { type: "button", class: "m-open", "data-role": "open", "aria-label": inner.length ? `「${cname}」の中を開く` : `「${cname}」を8つに分ける`, onclick: () => openCell(k) }, icon("next", 16))) : null);
@@ -10765,8 +10805,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("mHint").textContent = mSwap !== null ? "入れ替える先のマスを押してください。同じマスを押すとやめます。" : mOverview
       ? `かたまりを押すと、その${cellWord(mPath.length)}の8マスを開きます。＋からは新しい${cellWord(mPath.length)}を書けます。`
       : left > 1
-        ? "› で8つに分けられます。長押しすると、入れ替えやToDoへの追加、×で閉じることができます。"
-        : "○ で達成にします。長押しすると、入れ替えやToDoへの追加ができます。";
+        ? "› で8つに分けられます。長押しすると、メモ・期限・入れ替え・ToDo・×で閉じる、などができます。"
+        : "○ で達成にします。長押しすると、メモ・期限・入れ替え・ToDo、などができます。";
     $("mRoot").hidden = !!mPath.length;
     if (!mPath.length) {
       // a field being typed in keeps its text when the same goal is drawn again, but another goal always fills it: focus
@@ -10788,6 +10828,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       note.textContent = deadlineNote(g);
       note.classList.toggle("warn", !g.done && !g.pausedAt && !!g.deadline && daysUntil(g.deadline) < 0);
       $("mSplitValue").textContent = `${depth}回`; $("mSplitMinus").disabled = depth <= 1; $("mSplitPlus").disabled = depth >= GOAL_MAX_DEPTH;
+      paintGoalColours(g);
       draw(() => renderGoalExtras(g)); // ①②③④⑧
     }
   }
@@ -10848,7 +10889,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const x = canvas.getContext("2d");
     x.scale(SCALE, SCALE);
     // the mint of 目標, mixed with white as the tints on the screen are
-    const tint = (a) => `rgb(${[0, 133, 117].map((v) => Math.round(v * a + 255 * (1 - a))).join(",")})`;
+    const tint = (a) => `rgb(${goalRgb(g).map((v) => Math.round(v * a + 255 * (1 - a))).join(",")})`;
     const lines = (text, width, max) => {
       const out = [""];
       for (const ch of text) {
@@ -11109,6 +11150,61 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (done) { r.cell.d = true; r.cell.at = Date.now(); } else { delete r.cell.d; delete r.cell.at; }
     saveChart(g, r.chart);
   }
+  // ルーティーンに入れたマス (the user's call): how many days each routine was done, by its name (a cell is in ルーティーン
+  // when a routine has its name, as its menu says)
+  function routineTally() {
+    const byId = new Map();
+    for (const x of routineDays.items) for (const id of x.done || []) byId.set(id, (byId.get(id) || 0) + 1);
+    return new Map(routines.items.map((r) => [oneLine(r.name), byId.get(r.id) || 0]));
+  }
+  // マスの期限 (the user's call: 要素 and 行動 too, on the calendar): set from its 長押し menu, with 元に戻す
+  function setCellDue(k, due) {
+    commitChartText();
+    const g = goals.get(mandalaGoal), chart = g && editChart(g), cell = chart && slotsAt(chart, mPath)[k];
+    if (!cell?.t?.trim() || (cell.due || null) === (due || null)) return;
+    const id = g.id, path = [...mPath], was = cell.due || null, name = oneLine(cell.t);
+    if (due) cell.due = due; else delete cell.due;
+    saveChart(g, chart, { said: due ? `「${clip(name, 30)}」の期限を ${fmtDay(due)} にしました` : `「${clip(name, 30)}」の期限をはずしました`, undo: () => putCellDue(id, path, k, was) });
+  }
+  function putCellDue(id, path, k, due) {
+    const g = goals.get(id), chart = g && editChart(g), cell = chart && slotsAt(chart, path)[k];
+    if (!cell?.t?.trim()) return;
+    if (due) cell.due = due; else delete cell.due;
+    saveChart(g, chart);
+  }
+  // the cells given a 期限, still to do, of the goals under way, as the calendar takes goals' own 期限: { id (the goal's),
+  // title (the cell's words), deadline, colour, cell: { path, k, goal (its name) } }; within 分割, none under an ×
+  function cellDues() {
+    const out = [];
+    for (const g of goals.items) {
+      if (g.done || g.pausedAt || !Array.isArray(g.mandala)) continue;
+      const walk = (cells, path, left) => (cells || []).forEach((c, k) => {
+        if (!c?.t?.trim()) return;
+        if (isDay(c.due || "") && !cellDone(c, left - 1)) out.push({ id: g.id, title: oneLine(c.t), deadline: c.due, colour: g.colour, cell: { path, k, goal: oneLine(g.title) } });
+        if (left > 1 && !c.x) walk(c.c, [...path, k], left - 1);
+      });
+      walk(g.mandala, [], goalDepth(g));
+    }
+    return out;
+  }
+  // 目標ごとの色 (the user's call: to tell goals apart): twelve, as つみかさね's kinds have; ミント, 目標's own, is none
+  const GOAL_MINT = "#008575";
+  function goalColour(g) { return /^#[0-9a-f]{6}$/i.test(g?.colour || "") ? g.colour : null; }
+  function goalHue(g) { return goalColour(g) || "var(--c-goal)"; }
+  const goalRgb = (g) => (goalColour(g) || GOAL_MINT).slice(1).match(/../g).map((h) => parseInt(h, 16));
+  function paintGoalColours(g) {
+    const now = (goalColour(g) || GOAL_MINT).toLowerCase();
+    setChildren($("mColours"), TSUMI_PALETTE.map(([hex, name]) => el("button", { type: "button", class: "pal-c", style: `--k: ${hex}`, "aria-label": name,
+      "aria-pressed": String(now === hex.toLowerCase()), onclick: () => setGoalColour(g.id, hex) })));
+  }
+  function setGoalColour(id, hex) {
+    const g = goals.get(id);
+    if (!g) return;
+    const was = goalColour(g), colour = hex.toLowerCase() === GOAL_MINT ? null : hex;
+    if ((was || null) === colour) return;
+    act(() => goals.update(id, { colour: colour || undefined }));
+    flash("目標の色を変えました", () => act(() => goals.update(id, { colour: was || undefined })));
+  }
   function toggleMiddle() {
     commitChartText();
     const g = goals.get(mandalaGoal);
@@ -11136,10 +11232,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // a goal falling due on the day opens its chart in place of the day's list (the user's call: straight to it, rather
   // than to 目標's page); 戻る comes back to the list, as from settings reached from a day
-  function openChartFromDay(id) {
+  function openChartFromDay(id, path = [], spot = null) {
     if (!goals.get(id)) return;
-    mandalaGoal = id; mPath = []; chartFromDay = true; mOverview = false; mWholeFrom = [];
+    mandalaGoal = id; mPath = path; chartFromDay = true; mOverview = false; mWholeFrom = [];
     showChartLevel();
+    if (spot !== null) spotCell(spot); // a cell's 期限 (the user's call): that cell, lit
   }
   // 戻る over a chart: out of the cell walked into, or from the goal's own eight back to the day's list it came from
   function chartBack() {
@@ -11275,6 +11372,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const cell = nodeAt(g, mPath).c[k], left = goalDepth(g) - mPath.length, closable = left > 1 && (!!cell.x || !kidsOf(cell, left - 1).length);
     // ToDoに入れる: one with nothing written inside it, not yet checked; its 期限 picked next, in the same place (the user's call)
     const todoNow = cell.todo && todos.get(cell.todo), canTodo = !todoNow && !cell.d && !kidsOf(cell, left - 1).length;
+    // 期限 (the user's call): picked next, in the same place, as ToDo's
+    const dueNow = isDay(cell.due || "") ? cell.due : null;
+    const pickCellDue = () => {
+      const day = el("input", { type: "date", value: dueNow || "", "aria-label": "期限の日付", onchange: (ev) => { if (isDay(ev.target.value)) { closeMenu(); setCellDue(k, ev.target.value); } } });
+      setChildren(menu, [["期限：きょう", todayKey], ["期限：あした", addDays(todayKey, 1)], ["期限：1週間後", addDays(todayKey, 7)]]
+        .map(([words, due]) => el("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); setCellDue(k, due); } }, words)),
+        el("label", { class: "m-menu-date" }, el("span", {}, "日付を選ぶ"), day),
+        dueNow ? el("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); setCellDue(k, null); } }, "期限をはずす") : null);
+      menu.querySelector("button").focus({ preventScroll: true });
+    };
     const pickDue = () => {
       setChildren(menu, ...[["期限：きょう", todayKey], ["期限：あした", addDays(todayKey, 1)], ["期限：1週間後", addDays(todayKey, 7)], ["期限なし", null]]
         .map(([words, due]) => el("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); addCellTodo(k, due); } }, words)));
@@ -11283,7 +11390,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren(menu,
       el("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); pickCell(k); } }, "ほかのマスと入れ替える"),
       el("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); openCellNote(k); } }, cell.m ? "メモを見る・書く" : "メモを書く"), // ⑦
-      el("button", { type: "button", role: "menuitem", disabled: inRoutine, onclick: () => { closeMenu(); addToRoutine(name); } }, inRoutine ? "ルーティーンに入っています" : "ルーティーンに入れる"),
+      el("button", { type: "button", role: "menuitem", onclick: pickCellDue }, dueNow ? `期限を変える（${fmtMD(dueNow)}）` : "期限をつける"),
+      el("button", { type: "button", role: "menuitem", disabled: inRoutine, onclick: () => { closeMenu(); addToRoutine(name); } }, inRoutine ? `ルーティーンに入っています（${routineTally().get(name) || 0}回）` : "ルーティーンに入れる"),
       todoNow ? el("button", { type: "button", role: "menuitem", disabled: true }, todoNow.done ? "ToDoで完了にしています" : "ToDoに入っています")
         : canTodo ? el("button", { type: "button", role: "menuitem", onclick: pickDue }, "ToDoに入れる") : null,
       closable ? el("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); setCellClosed(k, !cell.x); } }, cell.x ? "×をはずす（また分けられるように）" : "×で閉じる（この先は分けない）") : null);
@@ -12164,8 +12272,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         return el("button", { type: "button", class: "tg-bar" + (it.from ? " from" : "") + (it.on ? " on" : "") + (l ? "" : " plain"), style: `${at}; --bc: ${labelHue(l)}`, "data-ev": e.id + "|" + it.t.start,
           "aria-label": `「${e.title}」を編集（${when}${l ? "・" + l.name : ""}）`, onclick: (ev) => editFromGrid(e.id, it.t.start, it.day, ev.detail === 0) }, e.title);
       }
-      const name = it.todo ? it.todo.text : it.goal.title, kind = it.todo ? "ToDo" : "目標";
-      return el("button", { type: "button", class: "tg-bar due", style: `${at}; --bc: ${it.todo ? "var(--c-todo)" : "var(--c-goal)"}`,
+      const name = it.todo ? it.todo.text : it.goal.title, kind = it.todo ? "ToDo" : it.goal.cell ? "マス" : "目標";
+      return el("button", { type: "button", class: "tg-bar due", style: `${at}; --bc: ${it.todo ? "var(--c-todo)" : goalHue(it.goal)}`,
         "aria-label": `「${name}」（${kind}の期限）、${fmtMDW(it.day)}を開く`, onclick: () => openDay(it.day, false) }, name);
     };
     setChildren($("tgAllDay"), el("span", { class: "tg-gut" }, "終日"), el("div", { class: "tg-lanes" }, placed.map(bar),
@@ -12243,7 +12351,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const title = calTitle();
     if ($("calMonthName").textContent !== title) $("calMonthName").textContent = title; // a live region: only a change is read out
     const todoBy = groupBy(todos.items, (t) => t.due);
-    const goalBy = groupBy(goals.items, (g) => g.deadline);
+    const goalBy = groupBy([...goals.items, ...cellDues()], (g) => g.deadline); // (the cells' 期限 too, the user's call)
     const hidden = calHidden(), ws0 = weekStart();
     for (const b of $("weekStart").children) b.setAttribute("aria-pressed", String(Number(b.dataset.ws) === ws0));
     if (calView !== "month") draw(() => renderTimeGrid(todoBy, goalBy, hidden));
@@ -12295,7 +12403,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           ...[...own.map((t) => ({ k: turnTime(t), text: t.e.title, hue: labelHue(labelOf(t.e)), plain: !labelOf(t.e) })),
             ...sh.map((p) => ({ k: p.x.start, text: shiftName(p.x), hue: "var(--c-money)" }))].sort((a, b) => a.k.localeCompare(b.k)),
           ...todosDue.map((t) => ({ text: t.text, hue: "var(--c-todo)", due: true })),
-          ...goalsDue.map((g) => ({ text: g.title, hue: "var(--c-goal)", due: true })),
+          ...goalsDue.map((g) => ({ text: g.title, hue: goalHue(g), due: true })),
         ];
         const hol = holidayName(d);
         const evNames = [...new Set(evs.map(({ e }) => (labelOf(e) || {}).name).filter(Boolean))];
@@ -12359,13 +12467,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           !t.done && t.memo ? el("span", { class: "sub ev-memo td-memo clamp" }, linkedText(t.memo)) : null)
       ));
     }
-    // a goal falling due opens its chart right here, as an event opens its form
+    // a goal falling due opens its chart right here, as an event opens its form; a cell's 期限, the chart at that cell
     for (const g of goalsDue) {
-      const state = g.done ? "達成" : g.pausedAt ? "保留" : "";
+      const state = g.done ? "達成" : g.pausedAt ? "保留" : "", c = g.cell;
       list.append(el("li", { class: "btn-row" + (state ? " done" : "") },
-        el("button", { type: "button", class: "row-btn nav", "aria-label": `「${g.title}」のマンダラチャートを開く（目標の期限${state ? "・" + state : ""}）`, onclick: () => openChartFromDay(g.id) },
-          el("span", { class: "chip", style: "--chip-c: var(--c-goal)" }, state || "目標"),
-          el("span", { class: "body" }, el("span", { class: "text" }, g.title), el("span", { class: "sub" }, "目標の期限")),
+        el("button", { type: "button", class: "row-btn nav", "aria-label": c ? `「${g.title}」のマスを開く（${c.goal}のマスの期限）` : `「${g.title}」のマンダラチャートを開く（目標の期限${state ? "・" + state : ""}）`,
+          onclick: () => (c ? openChartFromDay(g.id, c.path, c.k) : openChartFromDay(g.id)) },
+          el("span", { class: "chip", style: `--chip-c: ${goalHue(g)}` }, state || "目標"),
+          el("span", { class: "body" }, el("span", { class: "text" }, g.title), el("span", { class: "sub" }, c ? `マスの期限・${c.goal}` : "目標の期限")),
           el("span", { class: "chev" }, icon("next", 16)))));
     }
     if (keptNote) list.append(keptNote);
@@ -16058,7 +16167,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月10日 19:36"; // 20155ae5 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月10日 20:44"; // 26f039ab (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
