@@ -1039,6 +1039,18 @@ button.cat-row:active { background: var(--fill-press); }
 #mGrid textarea:focus { -webkit-touch-callout: default; -webkit-user-select: text; user-select: text; }
 .mandala.swapping .m-tools { pointer-events: none; }
 .m-cell.picked { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* (the user's call, 2026-11-11) an empty cell filled with ×, not to be used: grey, a large × across it in place of the ＋
+   (gone while it is written in, and for good once something is); in 全体 an × in its square */
+.m-cell.crossed { background: var(--fill); }
+.m-cell.crossed:has(textarea:placeholder-shown):not(:focus-within) .m-plus { display: none; }
+.m-cell.crossed:not(:focus-within)::before { content: ""; position: absolute; inset: 24%; pointer-events: none; opacity: .5;
+  background: linear-gradient(45deg, transparent calc(50% - 1.5px), var(--muted) calc(50% - 1.5px), var(--muted) calc(50% + 1.5px), transparent calc(50% + 1.5px)),
+    linear-gradient(-45deg, transparent calc(50% - 1.5px), var(--muted) calc(50% - 1.5px), var(--muted) calc(50% + 1.5px), transparent calc(50% + 1.5px)); }
+.m-mini.crossed, .m-mini.mid.crossed { background: var(--fill); color: var(--muted); font-size: 15px; font-weight: 400; }
+.m-block.crossed .m-mini:not(.mid) { visibility: hidden; }
+.m-cross-row { display: flex; justify-content: center; margin: -6px 0 4px; }
+.m-cross-row[hidden] { display: none; }
+.m-cross-row .link-btn { min-height: 40px; }
 /* the cell a block of つみかさね was checked in, lit for a moment as its chart opens (the user's call: it didn't stand out) */
 .m-cell.spot { animation: m-spot 1.8s ease-out; }
 @keyframes m-spot { 0%, 55% { box-shadow: inset 0 0 0 3px var(--accent); } 100% { box-shadow: inset 0 0 0 3px transparent; } }
@@ -4412,6 +4424,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       </div>
       <div class="mandala" id="mGrid"></div>
       <p class="group-foot" id="mHint"></p>
+      <!-- (the user's call, 2026-11-11) the empty cells of the eight showing, filled with × at once -->
+      <div class="m-cross-row" id="mCrossRow" hidden><button type="button" class="link-btn" id="mCrossAll"></button></div>
       <!-- 全体 as a picture, to keep or show (the user's call) -->
       <div class="card" id="mImageCard" hidden><button type="button" class="link-btn sheet-del" id="mImage">画像で保存</button></div>
       <div class="m-menu" id="mMenu" role="menu" hidden></div>
@@ -11513,6 +11527,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         ta.nextElementSibling.textContent = ta.value;
         const inner = kidsOf(cell, left - 1), done = filled && cellDone(cell, left - 1);
         box.classList.toggle("done", done);
+        box.classList.toggle("crossed", !filled && !!cell?.x); // (使わないマス, ×で埋めた)
+        ta.setAttribute("aria-label", `${cellWord(mPath.length)} ${k + 1}${!filled && cell?.x ? "（×で埋めています）" : ""}`);
         // over its words: its 期限 while it is still to do, red once past (the user's call), and the mark of its memo (⑦)
         const dueOn = filled && !done && isDay(cell.due || "") ? cell.due : null, memo = filled && !!cell.m, top = box.querySelector(".m-top");
         top.hidden = !dueOn && !memo;
@@ -11546,6 +11562,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       : left > 1
         ? "› で8つに分けられます。長押しすると、メモ・期限・入れ替え・ToDo・×で閉じる、などができます。"
         : "○ で達成にします。長押しすると、メモ・期限・入れ替え・ToDo、などができます。";
+    paintCrossRow(); // (使わないマスを×で埋める)
     $("mRoot").hidden = !!mPath.length;
     if (!mPath.length) {
       // a field being typed in keeps its text when the same goal is drawn again, but another goal always fills it: focus
@@ -11578,13 +11595,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // (the user's call: it couldn't be pressed)
   function paintWhole(g, node, left) {
     const word = cellWord(mPath.length);
-    const mini = (cell, mid, l, done = cell?.t?.trim() && cellDone(cell, l)) => el("span", { class: "m-mini" + (mid ? " mid" : "") + (done ? " done" : "") },
-      el("span", {}, oneLine(cell?.t)));
+    const mini = (cell, mid, l, done = cell?.t?.trim() && cellDone(cell, l)) => el("span", { class: "m-mini" + (mid ? " mid" : "") + (done ? " done" : "") + (!oneLine(cell?.t) && cell?.x ? " crossed" : "") },
+      el("span", {}, oneLine(cell?.t) || (cell?.x ? "×" : ""))); // (×で埋めたマス)
     mGrid.replaceChildren(...GRID_ORDER.map((k) => {
       const centre = k < 0, cell = centre ? node : node.c?.[k] || null, name = oneLine(cell?.t), l = centre ? left : left - 1;
       const shut = !centre && !!name && !!cell.x; // closed with ×: pressed, back to this level's 8マス, where its × is
       return el("button", {
-        type: "button", class: "m-block" + (name ? "" : " empty") + (shut ? " closed" : ""),
+        type: "button", class: "m-block" + (name ? "" : " empty") + (shut ? " closed" : "") + (!centre && !name && cell?.x ? " crossed" : ""),
         "aria-label": centre ? `「${name}」の8マスに戻る` : shut ? `「${name}」は×で閉じています` : name ? `「${name}」の8マスを開く` : `${word} ${k + 1} を書く`,
         onclick: () => {
           mOverview = false;
@@ -11593,7 +11610,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           if (!name) mGrid.querySelector(`textarea[data-k="${k}"]`)?.focus();
         },
       }, GRID_ORDER.map((j) => (j < 0
-        ? (name ? mini(cell, true, l, centre && !mPath.length ? !!g.done : undefined) : el("span", { class: "m-mini mid" }, icon("plus", 14)))
+        ? (name ? mini(cell, true, l, centre && !mPath.length ? !!g.done : undefined) : cell?.x ? el("span", { class: "m-mini mid crossed" }, "×") : el("span", { class: "m-mini mid" }, icon("plus", 14)))
         : mini(name ? cell.c?.[j] || null : null, false, l - 1))));
     }));
   }
@@ -11651,7 +11668,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const cx = bx + (mi % 3) * (CELL + GAP), cy = by + Math.floor(mi / 3) * (CELL + GAP);
         x.fillStyle = mid ? tint(done ? 0.4 : 0.26) : done ? tint(0.16) : "#ffffff";
         x.beginPath(); if (x.roundRect) x.roundRect(cx, cy, CELL, CELL, 10); else x.rect(cx, cy, CELL, CELL); x.fill();
-        if (!text) continue;
+        if (!text) {
+          if (cell?.x) { // (×で埋めたマス)
+            const m = CELL * 0.32;
+            x.strokeStyle = "#c7c7cc"; x.lineWidth = 3; x.lineCap = "round";
+            x.beginPath(); x.moveTo(cx + m, cy + m); x.lineTo(cx + CELL - m, cy + CELL - m); x.moveTo(cx + CELL - m, cy + m); x.lineTo(cx + m, cy + CELL - m); x.stroke();
+          }
+          continue;
+        }
         x.fillStyle = "#000000"; x.font = `${mid ? 700 : 400} 16px ${font}`;
         const ls = lines(text, CELL - 14, 5), lh = 20, top = cy + CELL / 2 - ((ls.length - 1) * lh) / 2;
         ls.forEach((s, i) => x.fillText(s, cx + CELL / 2, top + i * lh));
@@ -12115,7 +12139,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function cellMenu(k) {
     closeMenu(); // (another cell's, held before: its outline went with it no more)
     const g = goals.get(mandalaGoal), name = oneLine(g && nodeAt(g, mPath)?.c?.[k]?.t);
-    if (!name) { pickCell(k); return; }
+    if (!name) { crossMenu(k); return; } // (×で埋める, the user's call; 入れ替え is in it)
     const inRoutine = routines.items.some((r) => oneLine(r.name) === name), menu = $("mMenu");
     // ×: a cell that could still be split, with nothing written inside it, closed (the user's call); a closed one opened
     const cell = nodeAt(g, mPath).c[k], left = goalDepth(g) - mPath.length, closable = left > 1 && (!!cell.x || !kidsOf(cell, left - 1).length);
@@ -17011,7 +17035,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月11日 11:25"; // ec4692d5 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月11日 11:55"; // 3ae2062e (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -21904,6 +21928,68 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (editingId && sheetEl.open) calRenderEditCards();
   }
   calTwo = true;
+  // ---------- 目標: 使わないマスを×で埋める (the user's call, 2026-11-11: a chart can't always be filled in whole; its empty
+  // squares crossed out so it reads as finished). An empty cell crossed is { t: "", x: true }: still empty to all that
+  // counts (progress, 要素, 期限), shown grey with a large ×; written in, it is a cell as any other. From the button under
+  // the eight (all the empty ones at once) or an empty cell held (that one, all, or 入れ替え), with 元に戻す ----------
+  // the eight showing: the empty ones plain and crossed, and how many are written
+  function crossSlots(g = goals.get(mandalaGoal)) {
+    const node = g && nodeAt(g, mPath), plain = [], crossed = [];
+    let written = 0;
+    if (!node) return { plain, crossed, written };
+    for (let k = 0; k < 8; k++) { const c = node.c?.[k]; if (c?.t?.trim()) written++; else if (c?.x) crossed.push(k); else plain.push(k); }
+    return { plain, crossed, written };
+  }
+  function setCellsCrossed(ks, on) {
+    commitChartText();
+    const g = goals.get(mandalaGoal);
+    if (!g || !ks.length) return;
+    const id = g.id, at = [...mPath], chart = editChart(g), slots = slotsAt(chart, at), was = [];
+    for (const k of ks) {
+      const c = slots[k];
+      if (c?.t?.trim() || !!c?.x === on) continue;
+      was.push([k, c ? JSON.parse(JSON.stringify(c)) : null]);
+      if (on) slots[k] = { ...(c || {}), t: "", x: true };
+      else { const { x: _x, ...rest } = c; slots[k] = Object.keys(rest).some((key) => key !== "t") ? rest : null; }
+    }
+    if (!was.length) return;
+    const n = was.length;
+    saveChart(g, chart, { said: on ? (n > 1 ? `空いていた ${n} マスを×で埋めました` : "このマスを×で埋めました") : n > 1 ? `${n} マスの×をはずしました` : "×をはずしました",
+      undo: () => { // (those still empty go back as they were)
+        const x = goals.get(id);
+        if (!x) return;
+        const ch = editChart(x), sl = slotsAt(ch, at);
+        for (const [k, c] of was) if (!sl[k]?.t?.trim()) sl[k] = c;
+        saveChart(x, ch);
+      } });
+  }
+  // the button under the eight: while some are written and some are empty (not in 全体, nor while one is picked up)
+  function paintCrossRow() {
+    const row = $("mCrossRow");
+    if (!row) return;
+    const { plain, written } = crossSlots();
+    row.hidden = mOverview || mSwap !== null || !written || !plain.length;
+    if (!row.hidden) $("mCrossAll").textContent = `空いている ${plain.length} マスを×で埋める`;
+  }
+  $("mCrossAll").addEventListener("click", () => setCellsCrossed(crossSlots().plain, true));
+  // an empty cell held down: ×で埋める (or ×をはずす), all the empty ones, or 入れ替え as before
+  function crossMenu(k) {
+    const g = goals.get(mandalaGoal), on = !!(g && nodeAt(g, mPath)?.c?.[k]?.x), { plain, crossed } = crossSlots(g), menu = $("mMenu");
+    const item = (words, f) => el("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); f(); } }, words);
+    setChildren(menu,
+      item(on ? "×をはずす" : "×で埋める（このマスは使わない）", () => setCellsCrossed([k], !on)),
+      !on && plain.length > 1 ? item(`空いているマスをぜんぶ×で埋める（${plain.length}マス）`, () => setCellsCrossed(plain, true)) : null,
+      on && crossed.length > 1 ? item(`×をぜんぶはずす（${crossed.length}マス）`, () => setCellsCrossed(crossed, false)) : null,
+      item("ほかのマスと入れ替える", () => pickCell(k)));
+    const box = mGrid.querySelector(`.m-cell[data-k="${k}"]`), b = box.getBoundingClientRect(), v = $("mandalaView").getBoundingClientRect();
+    menu.hidden = false;
+    menu.style.left = Math.max(8, Math.min(b.left - v.left, v.width - menu.offsetWidth - 8)) + "px";
+    menu.style.top = b.bottom - v.top + 6 + "px";
+    box.classList.add("picked");
+    menuFor = k;
+    navigator.vibrate?.(15);
+  }
+
   // ---------- boot ----------
   function renderAll() {
     tsumiTallied = null; tsumiStale = true; tsumiGen++; rtIdx = null; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)
