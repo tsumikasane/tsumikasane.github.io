@@ -67,6 +67,9 @@ self.addEventListener("push", (event) => {
   const tag = typeof d.tag === "string" && d.tag ? d.tag : undefined;
   // 積み忘れのお知らせ: the 1 on the app's icon too (アイコンのしるし), gone once the app sees a block today
   if (tag && tag.startsWith("tsumi-remind:")) { try { self.navigator.setAppBadge?.(1)?.catch?.(() => {}); } catch {} }
+  // ToDo's number (the app's ToDo その3 ④): 朝のまとめ and 夜のお知らせ say how many are 期限切れ or due きょう at their tag's end
+  const tdN = tag && /^td-(?:morning|evening):[^:]+:n(\d{1,3})$/.exec(tag);
+  if (tdN) { try { const n = Number(tdN[1]); (n ? self.navigator.setAppBadge?.(n) : self.navigator.clearAppBadge?.())?.catch?.(() => {}); } catch {} }
   event.waitUntil(self.registration.showNotification(typeof d.title === "string" && d.title ? d.title : "つみかさね", {
     body: typeof d.body === "string" ? d.body : "",
     tag, renotify: !!tag,
