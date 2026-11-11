@@ -2661,6 +2661,42 @@ ul.list.td5-risk > li .sub { margin: 0; }
 /* ⑩ the day a set is put by, asked where its chips are */
 .td5-set-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .td5-set-ask input[type="date"] { min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background-color: var(--surface); color: var(--fg); font: inherit; }
+/* ToDo その6 ①〜⑩ (2026-11-11). ① いまやるなら: its card over the list, the name large, why it is the one, 始める */
+#td6NowCard { background: color-mix(in srgb, var(--c-todo) 9%, var(--surface)); }
+.td6-now-mark, .td6-week-mark { display: grid; color: var(--c-todo); }
+.td6-now-name { justify-self: start; max-width: 100%; padding: 2px 0; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: 19px; font-weight: 700; line-height: 1.35; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.td6-now-name .todo-flag { margin-inline-start: 4px; vertical-align: -1px; }
+.td6-now-why { display: block; overflow: hidden; margin: -2px 0 0; color: var(--muted); font-size: var(--t-sub); line-height: 1.45; }  /* (its parts as a 期限's: no line starts with a ・) */
+.td6-now-next { font-variant-numeric: tabular-nums; }
+/* ② 今週やる: its card's bar; in its sheet, this week's free time against what is picked */
+.td6-week-bar { display: block; height: 6px; }
+.td6-week-bar i { background: var(--c-todo); }
+.group-foot.td6-week-free { margin-top: 4px; }  /* (under the count, not into it as a foot's own margin would have it) */
+.td6-week-free.warn { color: var(--warn); }
+/* ③④⑤② on a row: when it is back, its rest, how far along (a thin bar), 今週 */
+.td-x.td6-snooze, .td-x.td6-rest { color: var(--muted); }
+.td-x.td6-pct { font-variant-numeric: tabular-nums; }
+.td6-pct-bar { position: relative; display: inline-block; width: 38px; height: 5px; margin-inline-end: 5px; vertical-align: 2px; border-radius: 999px; background: var(--fill); overflow: hidden; }
+.td6-pct-bar i { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--c-todo); }
+.td-x.td6-week { color: var(--c-todo); font-weight: 700; }
+/* ⑤ 進み具合 in a row's menu: 10〜90% three by three */
+.td6-pct-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px var(--space-2); }
+.td6-pct-opt { min-height: 48px; border: 0; border-radius: 12px; background: var(--fill); color: var(--accent); font: inherit; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; }
+.td6-pct-opt[aria-pressed="true"] { background: var(--accent-fill); color: var(--accent-ink); }
+/* ⑨ the time it really took last time, under かかる時間 */
+.td-note.td6-last { display: flex; flex-wrap: wrap; align-items: center; gap: 0 12px; }
+.td-note.td6-last[hidden] { display: none; }
+.td-note.td6-last .link-btn { min-height: 36px; font-size: var(--t-sub); }
+/* ⑩ ほかのアプリから取り込む: the lines pasted, what was read, and the first of them */
+.td6-imp-box { display: grid; gap: 4px; padding: 10px var(--space-2) 6px; }
+.td6-imp-ta { width: 100%; min-height: 9.5em; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--fg); font: inherit; font-size: 16px; line-height: 1.5; resize: vertical; }
+.td6-imp-tools { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 16px; }
+.td6-imp-tools .link-btn { min-height: 40px; }
+.td6-imp-out { display: grid; gap: 8px; }
+.td6-imp-out:empty { display: none; }
+.td6-imp-out .group-foot { margin: 0; }
+.td6-imp-list .sub { margin: 0; }
+.td6-imp-list li.td6-imp-more { justify-content: center; min-height: 40px; color: var(--muted); font-size: var(--t-sub); }
 /* event labels: the user's own categories. Wherever a label is picked or listed its name sits next to the colour, so colour
    is never the only cue (HIG); the month grid writes each plan's title in it and has no legend (the user's call). In the
    forms they are one-tap chips; a chosen chip fills with its colour and white text. */
@@ -3510,6 +3546,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="card td4-card" id="td4RepCard" hidden></div>
         <!-- (その5 ⑥) a 期限 the free time won't do for -->
         <div class="card td4-card" id="td5RiskCard" hidden></div>
+        <!-- (ToDo その6 ②) 今週やる: how many of the week's are done, and what is left; ① いまやるなら, the one to do now -->
+        <div class="card td4-card" id="td6WeekCard" hidden></div>
+        <div class="card td4-card" id="td6NowCard" hidden></div>
         <ul class="list card" id="todoList"></ul>
         <!-- on a touch screen, until a row has been swiped: that they can be (the user's call: nothing said so) -->
         <p class="group-foot swipe-hint" id="todoSwipeHint" hidden><span class="phrase">行を左にスワイプすると、</span><span class="phrase">期限を「きょう」「あした」「来週」に移せます。</span></p>
@@ -4402,6 +4441,24 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield"><input type="checkbox" id="tdBadgeOn" class="switch" role="switch"></div>
         </form>
         <p class="group-foot" id="tdBadgeFoot"></p>
+        <!-- (その6 ⑧) the hours ToDo's お知らせ keep quiet, sent at their end all in one (the user's call, 2026-11-11) -->
+        <h3 class="group-head">通知の静かな時間</h3>
+        <form class="add" id="td6QuietForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="td6QuietOn">静かにする</label>
+          <div class="ffield"><input type="checkbox" id="td6QuietOn" class="switch" role="switch"></div>
+          <label class="flabel" for="td6QuietFrom">はじまり</label>
+          <div class="ffield"><input type="time" id="td6QuietFrom" value="23:00"></div>
+          <label class="flabel" for="td6QuietTo">おわり</label>
+          <div class="ffield"><input type="time" id="td6QuietTo" value="07:00"></div>
+        </form>
+        <p class="group-foot" id="td6QuietFoot"></p>
+        <!-- (その6 ①) the one to do now, over the list (kept on this device) -->
+        <h3 class="group-head">いまやるなら</h3>
+        <form class="add" id="td6NowForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="td6NowOn">一覧の上に出す</label>
+          <div class="ffield"><input type="checkbox" id="td6NowOn" class="switch" role="switch" checked></div>
+        </form>
+        <p class="group-foot"><span class="phrase">期限・重要・きょうやる・今週やると、</span><span class="phrase">次の予定までの時間から、</span><span class="phrase">いまやるとよいToDoを1つ出します。</span></p>
         <!-- the focus timer's lengths (the user's call, 2026-11-10) -->
         <h3 class="group-head">集中タイマー</h3>
         <form class="add" id="focusForm" autocomplete="off" onsubmit="return false">
@@ -4960,6 +5017,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- ④ how long it takes -->
         <label class="flabel" for="todoMins">かかる時間 <span class="opt">任意</span></label>
         <div class="ffield"><select id="todoMins"></select></div>
+        <!-- (その6 ⑨) the time it really took the last time one of this name was done -->
+        <p class="full td-note td6-last" id="todoLastFocus" hidden></p>
         <!-- (その2) ④ its 勉強の科目 (while there are 科目), ⑤ its 金額 and, once it has one, its 費目 -->
         <div class="form-rows" id="todoSubjectRow" hidden>
           <label class="flabel" for="todoSubject">勉強の科目 <span class="opt">任意</span></label>
@@ -6545,6 +6604,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       item("きょうの時間割を作る", () => openTdPanel("plan", false)), // (その3 ⑧)
       todoFour ? td4MoreItems(item) : null, // (その4 ② すき間時間, ⑨ やったこと, ⑩ 日記, ⑥ 買い物リスト)
       todoFive ? td5MoreItems(item) : null, // (その5 ① 重要と急ぎ, ⑥ 間に合うか, ⑤ チェックリスト)
+      todoSix ? td6MoreItems(item) : null, // (その6 ② 今週やる, ⑩ 取り込む)
       item("完了のふりかえり", () => openTdReview(false)), // ⑦
       (() => { const n = tdStaleList().length; return n ? item(`手つかずのToDoを見直す（${n} 件）`, () => openTdPanel("stale", false)) : null; })(), // (その2 ⑧)
       item(name ? `「${name}」を文字で送る` : "ToDoを文字で送る", () => tdShare()), // (その2 ⑩)
@@ -6568,6 +6628,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     renderTodoBadge(); renderTodoTabs();
     if (todoFour) draw(td4Paint); // (その4 ①⑤⑥⑧ over the list)
     if (todoFive) draw(td5Paint); // (その5 ⑦ すっきり, ⑤⑥ over the list)
+    if (todoSix) draw(td6Paint); // (その6 ②① over the list, ③ back at its time)
     if (!tdPhotosRead) loadTdPhotos(); // ⑩ (read once; the list drawn again once they are)
     draw(renderTdSettings); draw(renderTdReview); draw(renderTdPanel); // (ToDo's 編集, ⑦, その2 ⑧⑨, should they be open)
     const held = todoHeldBack(), picking = !!tdSel && tab === "todo";
@@ -6892,9 +6953,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren($("todoMenuGroup"), el("p", { class: "ask-msg", id: "todoMenuMsg" }, n > 1 ? `${t.text}（完了 ${n} 件）` : t.text),
       t.done ? item(t.cancelled ? "やめたのを取り消す" : "未完了に戻す", () => { const x = todos.get(t.id); if (x?.done) toggleTodo(x); }) : item(t.flag ? "重要をはずす" : "重要にする", () => setFlag(t, !t.flag)),
       t.done ? null : item(tdToday(t) ? "きょうやるから外す" : "きょうやるに入れる", () => tdSetToday(t, !tdToday(t))), // (その3 ①)
+      todoSix ? td6HoldWeek(t, item) : null, // (その6 ② 今週やる)
       t.done ? null : [[0, "きょう"], [1, "あした"], [7, "来週"]].filter(([d]) => t.due !== addDays(todayKey, d)).map(([d, name]) => item(`${name}に移す`, () => putOff(t, d))),
       t.done ? null : item("集中タイマーを始める", () => focusStart(t.id)), // (the user's call, 2026-11-10)
       t.done ? null : item(tdWaiting(t) ? "返事待ちをやめる" : "返事待ちにする", () => tdSetWait(t, !tdWaiting(t))), // (その2 ⑥)
+      todoSix ? td6HoldItems(t, item) : null, // (その6 ③ あとで, ⑥ 人に頼む, ⑤ 進み具合, ④ 繰り返しを休む)
       todoFour ? td4HoldItems(t, item) : null, // (その4 ③ 日に分ける)
       t.done ? null : item("このあとにやるToDoを追加", (byKey) => tdAddAfter(t, byKey)), // (その3 ⑦)
       t.done ? null : item("やめる（削除しないで残す）", () => tdCancel(t)), // (その3 ⑤)
@@ -11097,6 +11160,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...tdPreAlarms(now), ...tdEveningAlarms(now)); // (ToDo その3 ② 前もって, ③ 夜のお知らせ)
     out.push(...td4SlotAlarms(now)); // (ToDo その4 ④ 朝・昼・夜)
     out.push(...td5NagAlarms(now)); // (ToDo その5 ③ 完了するまで)
+    out.push(...td6SnoozeAlarms(now)); // (ToDo その6 ③ あとで)
     out.push(...bd2WeekAlarms(now)); // (からだ その2 ⑨ 週のまとめ)
     out.push(...goalReviewAlarms(now)); // 目標 ⑤ 見直しのお知らせ
     out.push(...tsWeekAlarms(now)); // つみかさね ⑩ 週のまとめのお知らせ
@@ -11105,7 +11169,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...calTwoAlarms(now)); // (カレンダー その2 ② 出発, ③ 前の晩)
     out.push(...goalTwoAlarms(now)); // (目標 その2 ⑩ しばらく進めていないお知らせ)
     out.push(...goalFourAlarms(now)); // (目標 その4 ⑤ 取り組む時間のお知らせ)
-    return out.sort((a, b) => a.at - b.at).slice(0, 400);
+    return (todoSix ? td6Hold(out) : out).sort((a, b) => a.at - b.at).slice(0, 400); // (ToDo その6 ③ held while put aside, ⑧ 静かな時間)
   }
   function alarmBody(e, start, at) {
     const day = ymd(new Date(at)), extra = extraDays(e);
@@ -11135,6 +11199,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...tdTenPush()); // (ToDo その3 ②③④)
     if (todoFour) parts.push(...td4Push()); // (ToDo その4 ④⑤)
     if (todoFive) parts.push(...td5Push()); // (ToDo その5 ③)
+    if (todoSix) parts.push(...td6Push()); // (ToDo その6 ③⑧)
     if (bodyTwo) parts.push(...bd2Push()); // (からだ その2 ⑨)
     parts.push(...goalReviewParts()); // (目標 ⑤)
     parts.push(...tsWeekParts()); // (つみかさね ⑩)
@@ -11753,7 +11818,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("sheetCancel").hidden = !(changing || adding || mode === "month" || mode === "alarm" || (mode === "chart" && (mPath.length || chartFromDay)) || (mode === "settings" && settingsFrom === "day") || (mode === "day" && dayFromFind));
     $("sheetCancel").textContent = mode === "todo" && todoAdded ? "閉じる" : changing || adding || mode === "month" ? "キャンセル" : "戻る";
     const rel = mode === "day" ? relLabel(calDay) : "";
-    $("sheetTitle").textContent = mode === "calpanel" ? "授業の時間割" : mode === "tdpanel" ? (tdPanel === "week" ? (todoFive && td5Month() ? "期限カレンダー" : "週の見通し") : todoFive && tdPanel === "matrix" ? "重要と急ぎ" : todoFive && tdPanel === "risk" ? "間に合うかチェック" : tdPanel === "plan" ? "きょうの時間割" : tdPanel === "pick" ? "きょうやるを選ぶ" : tdPanel === "view" ? "絞り込みと並べ方" : tdPanel === "gap" ? "すき間時間" : tdPanel === "split" ? "日に分ける" : tdPanel === "shop" ? "買い物を終える" : "手つかずのToDo") : mode === "tdreview" ? "完了のふりかえり" : mode === "alarm" ? "通知アラーム" : mode === "find" ? "予定" : mode === "month" ? "月を選ぶ" : mode === "goal" ? "新しい目標" : mode === "plan" ? (planCopy ? "予定を複製" : "新しい予定") : mode === "todo" ? "新しいToDo" : mode === "chart" ? chartTitle()
+    $("sheetTitle").textContent = mode === "calpanel" ? "授業の時間割" : mode === "tdpanel" ? (tdPanel === "week" ? (todoFive && td5Month() ? "期限カレンダー" : "週の見通し") : todoSix && tdPanel === "week6" ? "今週やる" : todoSix && tdPanel === "import" ? "ToDoを取り込む" : todoFive && tdPanel === "matrix" ? "重要と急ぎ" : todoFive && tdPanel === "risk" ? "間に合うかチェック" : tdPanel === "plan" ? "きょうの時間割" : tdPanel === "pick" ? "きょうやるを選ぶ" : tdPanel === "view" ? "絞り込みと並べ方" : tdPanel === "gap" ? "すき間時間" : tdPanel === "split" ? "日に分ける" : tdPanel === "shop" ? "買い物を終える" : "手つかずのToDo") : mode === "tdreview" ? "完了のふりかえり" : mode === "alarm" ? "通知アラーム" : mode === "find" ? "予定" : mode === "month" ? "月を選ぶ" : mode === "goal" ? "新しい目標" : mode === "plan" ? (planCopy ? "予定を複製" : "新しい予定") : mode === "todo" ? "新しいToDo" : mode === "chart" ? chartTitle()
       : mode === "settings" ? (settingsScope === "woMenu" ? "運動のメニュー" : settingsScope === "job" ? "バイトの設定" : "設定") : mode === "rec" ? (recEdit.fresh ? REC_NEW[recEdit.kind].title : REC_EDIT[recEdit.kind].title) : mode === "edit" ? "予定を編集" : (rel ? rel + "・" : "") + fmtMDW(calDay) + (holidayName(calDay) ? "・" + holidayName(calDay) : "");
     // a plan's メモ on its own page: 完了 alone on the bar, back to the form
     $("memoDone").hidden = !memoFor;
@@ -11829,6 +11894,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     todoLabelChoice = todoLabelOf(t) ? t.labelId : ""; todoListChoice = todoListOf(t) ? t.listId : ""; renderTodoLabels();
     if (todoFour) td4FillNew(t); // (その4 ④⑤⑥)
     if (todoFive) td5FillNew(t); // (その5 ③④)
+    if (todoSix) td6SyncNewLast(); // (その6 ⑨)
     syncTodoDue(); syncTodoSave(); tdSyncNew();
   }
   // このToDoを複製: that form in the same sheet (the user's call: plans had この予定を複製); from a row's menu, it opens
@@ -12065,7 +12131,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (scope === "workout") renderWoSettings(); // 運動's month's goal (⑧) and rest (⑨)
     if (scope === "meal") renderMealSettings(); // 食事's 目安, protein goal (⑤) and お知らせ (⑩)
     if (scope === "goal") renderGoalSettings(); // 目標's ⑤ 見直しのお知らせ
-    if (scope === "todo") { renderTdMorning(); renderTdEvening(); renderTdBadge(); if (todoFour) renderTd4Slots(); } // (ToDo その2 ① 朝のまとめのお知らせ, その3 ③④)
+    if (scope === "todo") { renderTdMorning(); renderTdEvening(); renderTdBadge(); if (todoFour) renderTd4Slots(); if (todoSix) renderTd6Quiet(); } // (ToDo その2 ① 朝のまとめのお知らせ, その3 ③④)
     // (バイト: one blank job to fill in when there is none yet, its 時給 ready to type)
     if (scope === "job") {
       if (!jobList().length) act(() => settings.set("jobs", { ...jobSet(), items: [newJob()], updatedAt: Date.now() }));
@@ -12109,6 +12175,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (todayTwo && opener === "todo" && tdFocusOn() && !$("todoText").value.trim()) $("todoToday").checked = true; // (きょうやるだけ: a new one into it)
     todoNew = true; renderTodoLabels(); syncSheetHead(); syncTodoSave(); syncTodoDue(); tdSyncNew(); renderTodoParse(); renderTodoSetPick(); tdFillNewMore();
     if (todoFour) { td4SyncShopRows(); td4RenderSug(); td4SyncDoneRow(); } // (その4 ⑥⑦⑨)
+    if (todoSix) td6SyncNewLast(); // (その6 ⑨)
     presentSheet(byKey, opener, $("todoText"));
     growField($("todoText")); growField($("todoMemo")); // what was kept from before, at its height now it shows
   }
@@ -13267,7 +13334,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         // ① its time and お知らせ, ⑨ 開始日, ④ かかる時間, ② its steps, ⑩ its photos, the time focused on it, and ⑧ what to do
         // with one put off again and again (the user's calls, 2026-11-10)
         const mo = tdEditRows(t, due);
-        return [text, mo.moved, recRow("期限", due, { opt: true, after: [quick, clear], below: true }), mo.time, mo.by, repeatRow, untilRow, mo.remind, mo.nag, mo.pre, mo.start, mo.after, mo.mins, mo.more, turnsRow, mo.run, recRow("重要", flag), mo.today, mo.slot, mo.wx, mo.reward, mo.place, labelRow, mo.shop, mo.steps, mo.photos, mo.focus, madeRow, memo, mo.log]; // (その3 ②⑦⑨①⑩⑥, その4 ④⑤⑥)
+        return [text, mo.moved, recRow("期限", due, { opt: true, after: [quick, clear], below: true }), mo.time, mo.by, repeatRow, untilRow, mo.remind, mo.nag, mo.pre, mo.start, mo.after, mo.mins, mo.last, mo.prog, mo.more, turnsRow, mo.run, recRow("重要", flag), mo.today, mo.slot, mo.wx, mo.reward, mo.place, labelRow, mo.shop, mo.steps, mo.photos, mo.focus, madeRow, memo, mo.log]; // (その3 ②⑦⑨①⑩⑥, その4 ④⑤⑥)
       },
       // a 期限 changed here is the repeat's new day; left as it was, the day its turns count from stays too. A done one's
       // sheet has no repeat or 重要 to read: they stay as they were. A label or list deleted since stays on it, so its
@@ -17831,7 +17898,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月11日 21:25"; // 5873ce65 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月11日 22:38"; // 9d9ed6f8 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -18751,8 +18818,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a 期限 moved (a row's swipe or menu, きょうに移す, several at once): a repeat keeps the day its turns count from, ⑧ one
   // put later is counted as put off, ⑨ a 開始日 after it comes back to it; emptied, its repeat, time and お知らせ go
   function tdDuePatch(x, due) {
-    if (!due) return { due: "", repeat: undefined, repeatDays: undefined, repeatUntil: undefined, repeatFrom: undefined, time: undefined, remind: undefined, moved: undefined };
-    return { due, ...(x.repeat && x.due ? { repeatFrom: repeatBase(x) } : {}), ...(x.due && due > x.due ? { moved: num(x.moved) + 1 } : {}), ...(x.start && x.start > due ? { start: due } : {}) };
+    if (!due) return { due: "", repeat: undefined, repeatDays: undefined, repeatUntil: undefined, repeatFrom: undefined, time: undefined, remind: undefined, moved: undefined, rest: undefined }; // (その6 ④ its rest too)
+    return { due, ...(x.rest ? { rest: undefined } : {}), ...(x.repeat && x.due ? { repeatFrom: repeatBase(x) } : {}), ...(x.due && due > x.due ? { moved: num(x.moved) + 1 } : {}), ...(x.start && x.start > due ? { start: due } : {}) };
   }
   function tdSetDue(list, due) {
     const go = list.filter((x) => !x.done && x.due !== due);
@@ -18773,7 +18840,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const list = tdPicked();
     if (!list.length) return;
     const day = el("input", { type: "date", value: addDays(todayKey, 1), "aria-label": "期限の日" });
-    tdAsk(`${list.length} 件の期限`, [["きょう", () => tdSetDue(list, todayKey)], ["あした", () => tdSetDue(list, addDays(todayKey, 1))], ["来週", () => tdSetDue(list, addDays(todayKey, 7))],
+    tdAsk(`${list.length} 件の期限`, [["きょう", () => tdSetDue(list, todayKey)], ["あした", () => tdSetDue(list, addDays(todayKey, 1))], ["来週", () => tdSetDue(list, addDays(todayKey, 7))], todoSix ? ["間隔はそのままでずらす", () => td6ShiftAsk(list)] : null, // (その6 ⑦)
       el("div", { class: "ask-field" }, day, el("button", { type: "button", class: "ask-go", onclick: () => { if (!isDay(day.value)) { day.focus(); return; } todoMenu.close(); tdSetDue(list, day.value); } }, "この日にする")),
       ["期限なしにする", () => tdSetDue(list, "")]]);
   });
@@ -18999,7 +19066,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ⑨ the day a ToDo starts (開始日): until then it is out of the list, under あとで at its foot (folded; a press opens it),
   // and out of the counts and きょう's tile; looked for, it is found as any other
-  const tdLater = (t) => !t.done && ((isDay(t.start || "") && t.start > todayKey) || !!tdBlockedBy(t)); // (その3 ⑦ or waiting for the one before it)
+  const tdLater = (t) => !t.done && ((isDay(t.start || "") && t.start > todayKey) || !!tdBlockedBy(t) || (todoSix && (td6Snoozed(t) || td6Resting(t)))); // (その6 ③ あとで, ④ 休み) // (その3 ⑦ or waiting for the one before it)
   let tdLaterOpen = false;
 
   // ①④⑧⑨ and the timer's minutes on a ToDo's 期限 line: its time (red once gone by today) with お知らせ's bell, the day
@@ -19011,7 +19078,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const moved = tdMoved(t);
     const before = tdBlockedBy(t); // (その3 ⑦)
     return { time, rest: [!t.done && isDay(t.start || "") && t.start > todayKey ? x("td-start", `${fmtDay(t.start)}から`) : null, before ? x("td-after", `「${clip(oneLine(before.text), 14)}」のあと`) : null, num(t.mins) > 0 ? x("td-mins", icon("timer", 13), " ", keepUnits(durText(num(t.mins)))) : null,
-      moved >= 2 ? x("td-moved" + (moved >= 3 ? " many" : ""), `${moved}回先送り`) : null, num(t.focus) >= 1 ? x("td-focus", `集中 ${keepUnits(durText(Math.round(num(t.focus))))}`) : null, ...tdMoreParts(t, x), ...tdRowTen(t, x), ...(todoFour ? td4RowParts(t, x) : []), ...(todoFive ? td5RowParts(t, x) : [])] }; // (その2 ④⑤⑥, その3 ⑨⑩, その4 ③④⑤⑥)
+      moved >= 2 ? x("td-moved" + (moved >= 3 ? " many" : ""), `${moved}回先送り`) : null, num(t.focus) >= 1 ? x("td-focus", `集中 ${keepUnits(durText(Math.round(num(t.focus))))}`) : null, ...tdMoreParts(t, x), ...tdRowTen(t, x), ...(todoFour ? td4RowParts(t, x) : []), ...(todoFive ? td5RowParts(t, x) : []), ...(todoSix ? td6RowParts(t, x) : [])] }; // (その6 ③④⑤②) // (その2 ④⑤⑥, その3 ⑨⑩, その4 ③④⑤⑥)
   }
 
   // ⑩ a ToDo's photos (the user's call): kept on this device only, in 体型の写真's store with the ToDo's id in place of a
@@ -19285,14 +19352,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       ...tdTenRows(t, due, time, timeClear), // (その3 ①②⑥⑦⑨⑩)
       ...(todoFour ? td4EditRows(t) : {}), // (その4 ④⑤⑥)
       ...(todoFive ? td5EditRows(t, due, time, remind) : {}), // (その5 ②③④)
+      ...(todoSix ? td6EditRows(t, mins) : {}), // (その6 ⑤⑨)
     };
   }
   function tdEditRead(t, due) {
     const steps = $("reSteps")?.read() || [];
     const out = { mins: $("reMins") ? tdMinsOf($("reMins")) : t.mins, steps: steps.length ? steps : undefined };
-    if (!$("reTime")) return { ...out, ...tdMoreRead(t), ...tdTenRead(t, due), ...(todoFour ? td4EditRead(t) : {}), ...(todoFive ? td5EditRead(t) : {}) }; // (a done one's: no time, お知らせ or 開始日 to read)
+    if (!$("reTime")) return { ...out, ...tdMoreRead(t), ...tdTenRead(t, due), ...(todoFour ? td4EditRead(t) : {}), ...(todoFive ? td5EditRead(t) : {}), ...(todoSix ? td6EditRead(t) : {}) }; // (a done one's: no time, お知らせ or 開始日 to read)
     const time = $("reTime").value;
-    return { ...out, ...tdMoreRead(t), ...tdTenRead(t, due), ...(todoFour ? td4EditRead(t) : {}), ...(todoFive ? td5EditRead(t) : {}), time: due && isHm(time) ? time : undefined, remind: due && $("reRemind").checked ? true : undefined, start: tdStartOf($("reStart").value, due) || undefined,
+    return { ...out, ...tdMoreRead(t), ...tdTenRead(t, due), ...(todoFour ? td4EditRead(t) : {}), ...(todoFive ? td5EditRead(t) : {}), ...(todoSix ? td6EditRead(t) : {}), time: due && isHm(time) ? time : undefined, remind: due && $("reRemind").checked ? true : undefined, start: tdStartOf($("reStart").value, due) || undefined,
       moved: !t.done && t.due && due && due > t.due ? num(t.moved) + 1 : !due ? undefined : t.moved };
   }
 
@@ -21691,7 +21759,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     presentSheet(byKey, kind === "week" ? "tdweek" : "tdstale");
     renderTdPanel();
   }
-  function renderTdPanel() { if (!sheetEl.open || !tdPanel) return; if (tdPanel === "stale") renderTdStale(); else if (tdPanel === "plan") renderTdPlan(); else if (tdPanel === "pick") renderTdPick(); else if (todoFour && tdPanel === "view") renderTd4View(); else if (todoFour && tdPanel === "gap") renderTd4Gap(); else if (todoFour && tdPanel === "split") renderTd4Split(); else if (todoFour && tdPanel === "shop") renderTd4Shop(); else if (todoFive && tdPanel === "matrix") renderTd5Matrix(); else if (todoFive && tdPanel === "risk") renderTd5Risk(); else if (todoFive && td5Month()) renderTd5Cal(); else renderTdWeek(); }
+  function renderTdPanel() { if (!sheetEl.open || !tdPanel) return; if (tdPanel === "stale") renderTdStale(); else if (tdPanel === "plan") renderTdPlan(); else if (tdPanel === "pick") renderTdPick(); else if (todoFour && tdPanel === "view") renderTd4View(); else if (todoFour && tdPanel === "gap") renderTd4Gap(); else if (todoFour && tdPanel === "split") renderTd4Split(); else if (todoFour && tdPanel === "shop") renderTd4Shop(); else if (todoSix && tdPanel === "week6") renderTd6Week(); else if (todoSix && tdPanel === "import") renderTd6Import(); else if (todoFive && tdPanel === "matrix") renderTd5Matrix(); else if (todoFive && tdPanel === "risk") renderTd5Risk(); else if (todoFive && td5Month()) renderTd5Cal(); else renderTdWeek(); }
   // a ToDo pressed there: its own sheet
   function tdPanelEdit(id) { closeSheet(true); openRecEdit("todo", id, false); }
   // ⑧ still to do and not looked at for a long while: past its 期限 two weeks and more, put off three times and more, or
@@ -23573,8 +23641,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // きょうやるを選ぶ: everything still to do (not 待ち nor あとで), under its 期限 as in the list, each pressed in or out of
   // きょうやる at once; those due by today in one press, those left from a day before in another. One can be written in
   // there too, straight into きょうやる. Its button at the foot shows them alone
-  const TD_PICK_SECTIONS = ["期限切れ", "きょう", "あした", "これから", "期限なし"];
-  const tdPickSection = (t) => (!t.due ? "期限なし" : t.due < todayKey ? "期限切れ" : t.due === todayKey ? "きょう" : t.due === addDays(todayKey, 1) ? "あした" : "これから");
+  const TD_PICK_SECTIONS = ["今週やる", "期限切れ", "きょう", "あした", "これから", "期限なし"]; // (その6 ② 今週やる first)
+  const tdPickSection = (t) => (todoSix && td6InWeek(t) ? "今週やる" : !t.due ? "期限なし" : t.due < todayKey ? "期限切れ" : t.due === todayKey ? "きょう" : t.due === addDays(todayKey, 1) ? "あした" : "これから");
   function tdPickList() {
     const base = (t) => ({ ...t, today: undefined });
     return todos.items.filter((t) => !t.done && typeof t.text === "string" && !tdLater(t) && !tdWaiting(t)).sort((a, b) => todoOrder(base(a), base(b)));
@@ -23614,7 +23682,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       onkeydown: (ev) => { if (ev.key === "Enter" && !ev.isComposing && ev.keyCode !== 229) { ev.preventDefault(); tdPickAdd(ev.target); } } });
     setChildren(body,
       el("p", { class: "group-foot td-panel-lead" }, el("span", { class: "phrase" }, "きょうやるToDoを選んでください。"), el("span", { class: "phrase" }, "選んだものは一覧から「きょうやる」に移り、それだけを表示して集中できます。")),
-      byToday.length || carry.length || picked.length ? el("div", { class: "td-pick-quick" },
+      byToday.length || carry.length || picked.length || (todoSix && list.some((t) => !tdToday(t) && td6InWeek(t))) ? el("div", { class: "td-pick-quick" },
+        todoSix ? td6PickChip(list) : null, // (その6 ②)
         byToday.length ? el("button", { type: "button", class: "chip-btn", onclick: () => tdPickMany(byToday.map((t) => t.id), true) }, `期限がきょうまでの ${byToday.length} 件を選ぶ`) : null,
         carry.length ? el("button", { type: "button", class: "chip-btn", onclick: () => tdPickMany(carry.map((t) => t.id), true) }, `前の日の残り ${carry.length} 件を選ぶ`) : null,
         picked.length ? el("button", { type: "button", class: "chip-btn", onclick: () => tdPickMany(picked.map((t) => t.id), false) }, "選んだのをぜんぶ外す") : null) : null,
@@ -24585,7 +24654,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // today that it took, in their places); an order other than the usual puts those to do under one heading in that order,
   // 待ち・あとで・完了 after them as ever. While either is on, a line over the list says so, each taken off at a press
   const TD4_VIEW_KEY = LS_PREFIX + "td4View";
-  const TD4_FILTERS = [["", "すべて"], ["flag", "重要だけ"], ["late", "期限切れだけ"], ["today", "きょうまで"], ["nodue", "期限なしだけ"], ["wait", "返事待ちだけ"]];
+  const TD4_FILTERS = [["", "すべて"], ["flag", "重要だけ"], ["late", "期限切れだけ"], ["today", "きょうまで"], ["nodue", "期限なしだけ"], ["wait", "返事待ちだけ"], ["week", "今週やるだけ"]]; // (その6 ②)
   const TD4_SORTS = [["", "いつもの順（期限ごと）"], ["due", "期限が近い順"], ["flag", "重要を先に"], ["new", "新しく追加した順"], ["mins", "かかる時間が短い順"]];
   function td4View() {
     const v = lsJson(TD4_VIEW_KEY) || {};
@@ -24602,7 +24671,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (p.cancelled || (p.done && doneDay(p) !== todayKey)) return false;
     const x = p.done ? { ...p, done: false } : p;
     return f === "flag" ? !!x.flag : f === "late" ? isDay(x.due || "") && x.due < todayKey : f === "today" ? (isDay(x.due || "") && x.due <= todayKey) || x.today === todayKey
-      : f === "nodue" ? !x.due : f === "wait" ? tdWaiting(x) : true;
+      : f === "nodue" ? !x.due : f === "wait" ? tdWaiting(x) : f === "week" ? todoSix && td6InWeek(x) : true;
   }
   const TD4_GROUPS = ["並び", "待ち", "あとで", "完了"];
   const td4Group = (p) => { const s = todoSection(p); return s === "待ち" || s === "あとで" || s === "完了" ? s : "並び"; };
@@ -25668,7 +25737,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // 8:00〜22:00 at first, less the plans and バイト), every list together. The first day it falls short is said over the
   // list (× puts that away for the day), all of them in its sheet
   const TD5_RISK_KEY = LS_PREFIX + "td5RiskOff";
-  const td5Est = (t) => (num(t.mins) > 0 ? Math.round(num(t.mins)) : 30);
+  const td5Est = (t) => (todoSix ? td6Left(t) : num(t.mins) > 0 ? Math.round(num(t.mins)) : 30); // (その6 ⑤ what is left of it)
   function td5Risk() {
     const to = addDays(todayKey, 13);
     const live = todos.items.filter((t) => !t.done && typeof t.text === "string" && !tdWaiting(t) && isDay(t.due || "") && t.due <= to && !(todoFour && (td4ShopList(t) || td4Parts(t).length)) && !td5CheckList(t));
@@ -25905,6 +25974,594 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     td5CheckCard(); td5RiskCard();
   }
   todoFive = true;
+  // ---------- ToDo その6 ①〜⑩ (the user's calls, 2026-11-11): the one to do now (①), the week's own (②), one put aside a
+  // while (③), a repeat let rest (④), how far along one is (⑤), one asked of someone (⑥), 期限 moved all together
+  // keeping their spacing (⑦), quiet hours for ToDo's お知らせ (⑧), the time it really took the last time (⑨), and ToDos
+  // brought in from another app (⑩) ----------
+  // (what was there calls in here as it draws; before this part has run, as the page opens, these do nothing)
+  var todoSix = false;
+  // those that can be done now: to do, not waiting (開始日, the one before it, ③ あとで, ④ 休み, 返事待ち), not a 買い物
+  // or a checklist's, nor one split over days (its parts are)
+  const td6Open = (t) => !t.done && typeof t.text === "string" && !tdLater(t) && !tdWaiting(t) && !(todoFour && (td4ShopList(t) || td4Parts(t).length)) && !(todoFive && td5CheckList(t));
+
+  // ⑤ 進み具合: one with no steps (they say it themselves) is so far along, 10〜90%; on its row a thin bar, and what is
+  // left of its かかる時間 is what counts (いまやるなら, 今週やる, 間に合うかチェック)
+  const TD6_PCTS = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+  const td6Pct = (t) => { const v = Math.round(num(t?.pct) / 10) * 10; return v >= 10 && v <= 90 && !tdStepCount(t) ? v : 0; };
+  const td6Left = (t) => Math.max(5, Math.round(((num(t.mins) > 0 ? num(t.mins) : 30) * (100 - td6Pct(t))) / 100));
+  function td6SetPct(t, v) {
+    const x = todos.get(t.id);
+    if (!x || x.done) return;
+    const was = x.pct;
+    act(() => todos.update(x.id, { pct: v || undefined }));
+    flash(v ? `「${clip(x.text, 30)}」の進み具合を ${v}% にしました` : `「${clip(x.text, 30)}」の進み具合を消しました`, () => act(() => todos.update(x.id, { pct: was })));
+  }
+  function td6PctAsk(t) {
+    const x = todos.get(t.id);
+    if (!x || x.done) return;
+    const cur = td6Pct(x);
+    const btn = (v) => el("button", { type: "button", class: "td6-pct-opt", "aria-pressed": String(cur === v), onclick: () => { todoMenu.close(); td6SetPct(x, v); } }, `${v}%`);
+    tdAsk(`「${clip(oneLine(x.text), 30)}」は、どこまで進みましたか？`, [el("div", { class: "td6-pct-pick", role: "group", "aria-label": "進み具合" }, TD6_PCTS.map(btn)), cur ? ["進み具合を消す", () => td6SetPct(x, 0)] : null]);
+  }
+
+  // ① いまやるなら: one of those to do in the list showing, the best for now: past its 期限 or due soon, 重要, in きょうやる
+  // or ② 今週やる, ⑤ begun, of the time of day it is for (その4 ④), and what is left of it fitting the time to the next
+  // plan. Not one with a time later today (it has its own), nor while the focus timer runs. 始める starts the timer on it,
+  // ほかの候補 the next of the five best, × lets it be for today; ToDo's 編集 turns it off (both kept on this device)
+  const TD6_NOW_KEY = LS_PREFIX + "td6Now";
+  const td6NowSet = () => lsJson(TD6_NOW_KEY) || {};
+  const td6NowOn = () => !td6NowSet().off;
+  let td6NowAt = 0;
+  // the minutes to the next plan (0 in one; null when that can't be told: no calendar's, or the free hours over)
+  function td6FreeNow() {
+    if (!todoFour) return null;
+    const nx = td4Next(), end = minOf(freeHours().to) - nowMinutes();
+    return nx.now ? 0 : nx.left !== null ? nx.left : end > 0 ? end : null;
+  }
+  function td6SlotNow() {
+    if (!todoFour) return "";
+    const r = td4Slots(), m = nowMinutes();
+    return m >= minOf(r.pm) ? "pm" : m >= minOf(r.noon) ? "noon" : m >= minOf(r.am) ? "am" : "";
+  }
+  function td6NowList() {
+    const free = td6FreeNow(), now = nowMinutes(), slot = td6SlotNow(), out = [];
+    for (const t of todos.items) {
+      if (!td6Open(t) || !inTodoTab(t) || (isHm(t.time) && t.due === todayKey && minOf(t.time) > now + 30)) continue;
+      let s = 0;
+      const why = [], d = isDay(t.due || "") ? daysBetween(todayKey, t.due) : null, left = td6Left(t), pct = td6Pct(t);
+      if (d !== null && d < 0) { s += 60 + Math.min(-d, 7) * 2; why.push("期限切れ"); }
+      else if (d === 0) { s += 50; why.push("期限はきょう"); }
+      else if (d === 1) { s += 32; why.push("期限はあした"); }
+      else if (d !== null && d <= 3) { s += 20; why.push(`期限まで ${d} 日`); }
+      else if (d !== null && d <= 7) s += 8;
+      if (t.flag) { s += 25; why.push("重要"); }
+      if (t.today === todayKey) { s += 35; why.push("きょうやる"); }
+      else if (td6InWeek(t)) { s += 12; why.push("今週やる"); }
+      if (pct) { s += 6; why.push(`${pct}%まで進んでいる`); }
+      if (slot && td4SlotOf(t) === slot) s += 8;
+      if (free !== null) { if (left <= free) s += 10; else if (free < 60) s -= 15; }
+      out.push({ t, s, why, left });
+    }
+    return out.sort((a, b) => b.s - a.s || todoOrder(a.t, b.t)).slice(0, 5);
+  }
+  function td6NowCard() {
+    const box = $("td6NowCard"), set = td6NowSet();
+    const away = !td6NowOn() || set.day === todayKey || td4Looking() || (todoFive && td5CheckTab()) || (todoFour && (td4ShopTab() || td4View().filter)) || !!focusNow();
+    const list = away ? [] : td6NowList();
+    if (list.length < 2) { box.hidden = true; box.replaceChildren(); return; }
+    if (td6NowAt >= list.length) td6NowAt = 0;
+    const { t, why, left } = list[td6NowAt], free = td6FreeNow();
+    const time = num(t.mins) > 0 ? (td6Pct(t) ? `のこり ${durText(left)}` : durText(left)) : "", fit = free !== null && free > 0 && free < 600 ? `次の予定まで ${durText(free)}` : "";
+    setChildren(box, el("div", { class: "td-fc-head" }, el("span", { class: "td6-now-mark", "aria-hidden": "true" }, icon("play", 18)), el("h3", { class: "td-fc-title" }, "いまやるなら"),
+        el("button", { type: "button", class: "icon-btn td5-x", "aria-label": "きょうは出さない", onclick: td6NowAway }, icon("close", 18))),
+      el("button", { type: "button", class: "td6-now-name", "aria-haspopup": "dialog", onclick: (ev) => openRecEdit("todo", t.id, ev.detail === 0) }, oneLine(t.text), t.flag ? el("span", { class: "todo-flag", "aria-hidden": "true" }, icon("flag", 14)) : null),
+      el("p", { class: "td6-now-why" }, el("span", { class: "due-parts" }, [...why.slice(0, 3), time, fit].filter(Boolean).map((w) => el("span", { class: "phrase" }, keepUnits(w))))),
+      el("div", { class: "td-fc-acts" }, el("button", { type: "button", class: "btn sm", onclick: () => { focusStart(t.id); td6NowCard(); } }, "始める"),
+        el("button", { type: "button", class: "link-btn td6-now-next", onclick: () => { td6NowAt = (td6NowAt + 1) % list.length; td6NowCard(); $("td6NowCard").querySelector(".td6-now-next")?.focus(); } }, `ほかの候補（${td6NowAt + 1}/${list.length}）`)));
+    box.hidden = false;
+  }
+  function td6NowAway() {
+    lsJsonPut(TD6_NOW_KEY, { ...td6NowSet(), day: todayKey });
+    td6NowCard();
+    flash("「いまやるなら」は、きょうは出しません。ToDoの「編集」で、ずっと出さないこともできます", () => { lsJsonPut(TD6_NOW_KEY, { ...td6NowSet(), day: undefined }); td6NowCard(); });
+  }
+
+  // ② 今週やる: ToDos picked for this week (week: the day it starts, by the calendar's 週のはじまり). Over the list, how
+  // many of them are done and what is left, and a filter of their own; its sheet picks them (last week's left over offered
+  // at once), with how long they take against this week's free time; on a row, 今週; first in きょうやるを選ぶ
+  const td6WeekKey = (d = todayKey) => addDays(d, -((parseYmd(d).getDay() - weekStart() + 7) % 7));
+  const td6InWeek = (t) => !!t && t.week === td6WeekKey();
+  function td6WeekItems() { return todos.items.filter((t) => typeof t.text === "string" && td6InWeek(t) && !t.cancelled && inTodoTab(t)); }
+  function td6WeekCard() {
+    const box = $("td6WeekCard"), xs = td4Looking() || (todoFive && td5CheckTab()) || (todoFour && td4ShopTab()) ? [] : td6WeekItems();
+    if (!xs.length) { box.hidden = true; box.replaceChildren(); return; }
+    const n = xs.length, done = xs.filter((t) => t.done).length, left = xs.filter((t) => !t.done).sort(todoOrder), only = todoFour && td4View().filter === "week";
+    setChildren(box, el("div", { class: "td-fc-head" }, el("span", { class: "td6-week-mark", "aria-hidden": "true" }, icon("cal-week", 20)), el("h3", { class: "td-fc-title" }, "今週やる"), el("span", { class: "td-fc-n" }, `${done} / ${n}`)),
+      el("span", { class: "bar-track td6-week-bar", role: "img", "aria-label": `${n} 件のうち ${done} 件完了` }, el("i", { style: `width:${Math.round((done / n) * 100)}%` })),
+      el("p", { class: "td-fc-text" }, left.length ? [el("span", { class: "phrase" }, "のこり："), ...left.slice(0, 3).map((t) => el("span", { class: "phrase" }, `「${clip(oneLine(t.text), 16)}」`)), left.length > 3 ? el("span", { class: "phrase" }, `ほか ${left.length - 3} 件`) : null]
+        : "今週やるToDoを、ぜんぶ終えました！"),
+      el("div", { class: "td-fc-acts" }, el("button", { type: "button", class: "btn sm", "aria-haspopup": "dialog", onclick: (ev) => openTdPanel("week6", ev.detail === 0) }, "選ぶ"),
+        todoFour ? el("button", { type: "button", class: "link-btn", "aria-pressed": String(only), onclick: () => td4SetView({ filter: only ? "" : "week" }) }, only ? "すべてを表示" : "今週やるだけを表示") : null));
+    box.hidden = false;
+  }
+  function td6SetWeek(t, on) {
+    const x = todos.get(t.id);
+    if (!x || x.done) return;
+    const was = x.week;
+    act(() => todos.update(x.id, { week: on ? td6WeekKey() : undefined }));
+    flash(on ? `「${clip(x.text, 40)}」を今週やるに入れました` : `「${clip(x.text, 40)}」を今週やるから外しました`, () => act(() => todos.update(x.id, { week: was })));
+  }
+  function td6WeekMany(list, on) {
+    const xs = list.map((t) => todos.get(t.id)).filter((t) => t && !t.done && td6InWeek(t) !== on);
+    if (!xs.length) return;
+    const was = xs.map((t) => [t.id, { week: t.week }]), wk = td6WeekKey();
+    act(() => todos.updateMany(xs.map((t) => [t.id, { week: on ? wk : undefined }])));
+    flash(on ? `${xs.length} 件を今週やるに入れました` : `${xs.length} 件を今週やるから外しました`, () => act(() => todos.updateMany(was)));
+  }
+  // this week's free time from now: the calendar's free hours, less the plans and the shifts (as 間に合うかチェック counts)
+  function td6WeekFree() {
+    const end = addDays(td6WeekKey(), 6), tb = turnsByDay(todayKey, end), sb = shiftsByDay(todayKey, end);
+    let free = 0;
+    for (let d = todayKey; d <= end; d = addDays(d, 1)) free += sum(freeSlots(d, tb.get(d) || [], sb.get(d) || [], true), ([a, b]) => b - a);
+    return free;
+  }
+  const TD6_WEEK_SECTIONS = ["期限切れ", "きょう", "あした", "これから", "期限なし"];
+  const td6WeekSection = (t) => (!t.due ? "期限なし" : t.due < todayKey ? "期限切れ" : t.due === todayKey ? "きょう" : t.due === addDays(todayKey, 1) ? "あした" : "これから");
+  function renderTd6Week() {
+    const body = $("tdPanelBody"), was = document.activeElement?.closest?.("#tdPanelBody [data-wk]")?.dataset.wk;
+    const wk = td6WeekKey(), end = addDays(wk, 6), last = addDays(wk, -7);
+    const list = todos.items.filter((t) => !t.done && typeof t.text === "string" && (td6Open(t) || td6InWeek(t))).sort((a, b) => todoOrder({ ...a, today: undefined }, { ...b, today: undefined }));
+    const picked = list.filter(td6InWeek), done = todos.items.filter((t) => t.done && td6InWeek(t) && !t.cancelled && typeof t.text === "string"), carry = list.filter((t) => !td6InWeek(t) && t.week === last);
+    const mins = sum(picked, td6Left), free = td6WeekFree();
+    const row = (t) => {
+      const on = td6InWeek(t), lst = todoListOf(t);
+      const sub = [t.due ? `期限 ${fmtDay(t.due)}${isHm(t.time) ? " " + t.time : ""}` : "", num(t.mins) > 0 ? keepUnits(durText(td6Left(t))) : "", lst ? lst.name : "", t.week === last ? "先週の残り" : ""].filter(Boolean).join("・");
+      return el("li", { class: "td-pick-row" + (on ? " on" : "") }, el("button", { type: "button", class: "td-pick-btn", role: "checkbox", "aria-checked": String(on), "data-wk": t.id, onclick: () => td6WeekToggle(t.id) },
+        el("span", { class: "check", "aria-hidden": "true" }, checkMark()),
+        el("span", { class: "body" }, el("span", { class: "text" }, t.text, t.flag ? el("span", { class: "todo-flag", "aria-hidden": "true" }, icon("flag", 14)) : null), sub ? el("span", { class: "sub" }, sub) : null)));
+    };
+    const count = picked.length + done.length;
+    setChildren(body,
+      el("p", { class: "group-foot td-panel-lead" }, el("span", { class: "phrase" }, `今週（${fmtDay(wk)}〜${fmtDay(end)}）に`), el("span", { class: "phrase" }, "やるToDoを選んでください。"),
+        el("span", { class: "phrase" }, "一覧の上の「今週やる」に、"), el("span", { class: "phrase" }, "終えた数と、のこりが出ます。")),
+      carry.length || picked.length ? el("div", { class: "td-pick-quick" },
+        carry.length ? el("button", { type: "button", class: "chip-btn", onclick: () => td6WeekMany(carry, true) }, `先週の残り ${carry.length} 件を入れる`) : null,
+        picked.length ? el("button", { type: "button", class: "chip-btn", onclick: () => td6WeekMany(picked, false) }, "選んだのをぜんぶ外す") : null) : null,
+      el("p", { class: "td-pick-count", role: "status" }, count ? `${count} 件を選んでいます` + (done.length ? `（${done.length} 件完了）` : "") : "まだ選んでいません"),
+      el("p", { class: "group-foot td6-week-free" + (mins > free ? " warn" : "") }, mins ? el("span", { class: "phrase" }, keepUnits(`のこり ${durText(mins)}、`)) : null,
+        el("span", { class: "phrase" }, keepUnits(`今週の空き時間は ${free ? durText(free) : "0分"}です`)), el("span", { class: "phrase" }, "（予定・バイトを除く）。"), mins > free ? el("span", { class: "phrase" }, "入りきらないかもしれません。") : null),
+      TD6_WEEK_SECTIONS.flatMap((sec) => {
+        const rs = list.filter((t) => td6WeekSection(t) === sec);
+        return rs.length ? [el("h3", { class: "group-head" + (sec === "期限切れ" ? " warn" : "") }, `${sec}（${rs.length}）`), el("ul", { class: "list card td-pick" }, rs.map(row))] : [];
+      }),
+      !list.length ? el("div", { class: "card empty" }, "選べるToDoがありません。") : null);
+    if (was) body.querySelector(`[data-wk="${was}"]`)?.focus({ preventScroll: true });
+  }
+  function td6WeekToggle(id) {
+    const t = todos.get(id);
+    if (!t || t.done) return;
+    act(() => todos.update(id, { week: td6InWeek(t) ? undefined : td6WeekKey() }));
+  }
+  // in きょうやるを選ぶ: those of the week first (their own heading), and all of them at a press
+  function td6PickChip(list) {
+    const xs = list.filter((t) => !tdToday(t) && td6InWeek(t));
+    return xs.length ? el("button", { type: "button", class: "chip-btn", onclick: () => tdPickMany(xs.map((t) => t.id), true) }, `今週やるの ${xs.length} 件を選ぶ`) : null;
+  }
+
+  // ③ あとで: one put aside till a time (1時間後, 今夜, あしたの朝, 週末, or one picked): under あとで meanwhile (folded,
+  // saying when it is back), its own お知らせ held till then, and at that time a notification and back in the list. Kept
+  // with it (snooze, the time), so another device does the same
+  const td6Snoozed = (t) => !!t && !t.done && num(t.snooze) > Date.now();
+  function td6When(at) {
+    const d = new Date(at), day = ymd(d), hm = atMin(d.getHours() * 60 + d.getMinutes());
+    return (day === todayKey ? "" : day === addDays(todayKey, 1) ? "あした " : fmtDay(day) + " ") + hm;
+  }
+  function td6SnoozeTimes() {
+    const now = Date.now(), am = tdRemindAt(), out = [[Math.ceil((now + 3600e3) / 300e3) * 300e3, "1時間後"]];
+    if (nowMinutes() < 19 * 60 + 30) out.push([dayAt(todayKey, "20:00"), "今夜（20:00）"]);
+    out.push([dayAt(addDays(todayKey, 1), am), `あしたの朝（${am}）`]);
+    const sat = addDays(todayKey, (6 - parseYmd(todayKey).getDay() + 7) % 7 || 7);
+    if (sat !== addDays(todayKey, 1)) out.push([dayAt(sat, am), `週末（${fmtDay(sat)} ${am}）`]);
+    return out;
+  }
+  function td6SnoozeAsk(t) {
+    const x = todos.get(t.id);
+    if (!x || x.done) return;
+    const pick = el("input", { type: "datetime-local", value: `${addDays(todayKey, 1)}T${tdRemindAt()}`, min: `${todayKey}T00:00`, "aria-label": "一覧に戻す日時" });
+    const go = () => { const at = Date.parse(pick.value); if (!(at > Date.now() + 60e3)) { pick.focus(); return; } todoMenu.close(); td6Snooze(x, at); };
+    tdAsk(`「${clip(oneLine(x.text), 30)}」を、いつまであとでにしますか？`, [...td6SnoozeTimes().map(([at, words]) => [words, () => td6Snooze(x, at)]),
+      el("div", { class: "ask-field" }, pick, el("button", { type: "button", class: "ask-go", onclick: go }, "この時刻まで"))]);
+  }
+  function td6Snooze(t, at) {
+    const x = todos.get(t.id);
+    if (!x || x.done) return;
+    const was = x.snooze;
+    act(() => todos.update(x.id, { snooze: at || undefined }));
+    flash(at ? `「${clip(x.text, 30)}」を${td6When(at)}まで「あとで」に入れました。その時刻にお知らせします` : `「${clip(x.text, 30)}」を一覧に戻しました`, () => act(() => todos.update(x.id, { snooze: was })));
+  }
+  function td6SnoozeAlarms(now) {
+    if (!todoSix) return [];
+    return todos.items.filter((t) => !t.done && typeof t.text === "string" && num(t.snooze) > now + 5000 && num(t.snooze) <= now + PUSH_AHEAD * 864e5)
+      .map((t) => ({ at: num(t.snooze), title: oneLine(t.text).slice(0, 100) || "ToDo", body: (isDay(t.due || "") ? `期限 ${fmtDay(t.due)}・` : "") + "あとでにしていたToDoです", tag: `todo-snooze:${t.id}:${num(t.snooze)}`, url: `./#todo:${t.id}` }));
+  }
+  // back in the list at its time: drawn again then (the next one within the day)
+  let td6WakeTimer = null;
+  function td6Wake() {
+    clearTimeout(td6WakeTimer);
+    const now = Date.now(), next = Math.min(...todos.items.filter((t) => !t.done && num(t.snooze) > now).map((t) => num(t.snooze)));
+    if (Number.isFinite(next) && next - now < 864e5) td6WakeTimer = setTimeout(() => renderTodos(), next - now + 1000);
+  }
+
+  // ④ 繰り返しを休む: a repeat let be for a while (1週間, 2週間, 1か月, or to a day picked): its 期限 goes on to its first
+  // turn from the day it starts again, and till then it is under あとで, saying that day. What it was is kept (rest), so
+  // 休みをやめる puts it on its first turn from today
+  const td6Resting = (t) => !!t && !t.done && !!t.rest && isDay(t.rest.until || "") && t.rest.until > todayKey;
+  function td6IsTurn(t, d) {
+    if (t.repeatUntil && d > t.repeatUntil) return false;
+    if (t.repeat === "weekly" && t.repeatDays?.length) return t.repeatDays.includes(parseYmd(d).getDay());
+    return turnStarts({ date: repeatBase(t), repeat: t.repeat, toEnd: true }, d, d).includes(d);
+  }
+  // its first turn on or after a day after today (null: the repeat ends before it)
+  function td6TurnFrom(t, from) {
+    if (afterDone(t.repeat)) return t.repeatUntil && from > t.repeatUntil ? null : from;
+    let d = t.due;
+    for (let i = 0; i < 2000 && d && d < from; i++) d = nextDue({ ...t, due: d });
+    return d || null;
+  }
+  function td6RestAsk(t) {
+    const x = todos.get(t.id);
+    if (!x || x.done || !x.repeat || !x.due) return;
+    const day = el("input", { type: "date", value: addDays(todayKey, 14), min: addDays(todayKey, 1), "aria-label": "再開する日" });
+    const go = () => { if (!isDay(day.value) || day.value <= todayKey) { day.focus(); return; } todoMenu.close(); td6Rest(x, day.value); };
+    tdAsk(`「${clip(oneLine(x.text), 30)}」の繰り返しを、どのくらい休みますか？`, [["1週間", () => td6Rest(x, addDays(todayKey, 7))], ["2週間", () => td6Rest(x, addDays(todayKey, 14))], ["1か月", () => td6Rest(x, addMonthsDay(todayKey, 1))],
+      el("div", { class: "ask-field" }, day, el("button", { type: "button", class: "ask-go", onclick: go }, "この日から再開"))]);
+  }
+  function td6Rest(t, until) {
+    const x = todos.get(t.id);
+    if (!x || x.done || !x.repeat || !x.due) return;
+    const due = td6TurnFrom(x, until);
+    if (!due) { flash(`「${clip(x.text, 30)}」の繰り返しは、${fmtDay(until)}より前に終わります`); return; }
+    const was = { due: x.due, repeatFrom: x.repeatFrom, start: x.start, rest: x.rest };
+    act(() => todos.update(x.id, { due, repeatFrom: turnBase(x, due), rest: { until, due: x.due, ...(x.repeatFrom ? { from: x.repeatFrom } : {}) }, ...(isDay(x.start || "") && x.start <= x.due ? { start: addDays(due, -daysBetween(x.start, x.due)) } : {}) }));
+    flash(`「${clip(x.text, 30)}」の繰り返しを休みます。${fmtDay(due)}の回から戻ります`, () => act(() => todos.update(x.id, was)));
+  }
+  function td6Unrest(t) {
+    const x = todos.get(t.id), r = x?.rest;
+    if (!x || x.done || !r || !isDay(r.due || "")) return;
+    const y = { ...x, due: r.due, repeatFrom: r.from };
+    const due = afterDone(x.repeat) || r.due >= todayKey ? (r.due >= todayKey ? r.due : todayKey) : td6IsTurn(y, todayKey) ? todayKey : nextDue(y) || r.due;
+    const was = { due: x.due, repeatFrom: x.repeatFrom, start: x.start, rest: x.rest };
+    act(() => todos.update(x.id, { due, repeatFrom: turnBase(y, due), rest: undefined, ...(isDay(x.start || "") && x.start <= x.due ? { start: addDays(due, -daysBetween(x.start, x.due)) } : {}) }));
+    flash(`「${clip(x.text, 30)}」の休みをやめました。次は ${fmtDay(due)}です`, () => act(() => todos.update(x.id, was)));
+  }
+
+  // ⑥ 人に頼む: what it is (its name, 期限, place, memo and steps still to do) sent from the share sheet (LINE and the
+  // like; copied where there is none), and it is 返事待ち on whom it was asked of, told to look in 3 days
+  function td6AskText(t) {
+    const p = todoFive ? td5PlaceOf(t) : "";
+    return [`「${oneLine(t.text)}」をお願いできますか？`, isDay(t.due || "") ? `期限：${fmtDay(t.due)}${isHm(t.time) ? " " + t.time : ""}` : "", p ? `場所：${oneLine(p)}` : "", t.memo ? `メモ：${String(t.memo).trim()}` : "",
+      ...(Array.isArray(t.steps) ? t.steps : []).filter((s) => s && s.text && !s.done).map((s) => `・${oneLine(s.text)}`)].filter(Boolean).join("\n");
+  }
+  async function td6Copy(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch {
+      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
+      document.body.append(ta); ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch {}
+      ta.remove();
+      return ok;
+    }
+  }
+  function td6AskAsk(t) {
+    const x = todos.get(t.id);
+    if (!x || x.done) return;
+    const who = el("input", { type: "text", maxlength: 40, placeholder: "だれに（田中さん など）", "aria-label": "頼む相手" });
+    const go = () => { todoMenu.close(); td6AskSend(x, oneLine(who.value).slice(0, 40)); };
+    who.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing && ev.keyCode !== 229) { ev.preventDefault(); go(); } });
+    tdAsk(`「${clip(oneLine(x.text), 30)}」を人に頼みます。内容を送って、返事待ちにします`, [el("div", { class: "ask-field" }, who, el("button", { type: "button", class: "ask-go", onclick: go }, "送る"))]);
+    who.focus();
+  }
+  async function td6AskSend(t, who) {
+    const text = td6AskText(t);
+    let how = "";
+    if (navigator.share) {
+      try { await navigator.share({ text }); how = "sent"; } catch (e) { if (e?.name === "AbortError") return; }
+    }
+    if (!how) how = (await td6Copy(text)) ? "copied" : "";
+    if (!how) { flash("頼む文を送れませんでした（コピーもできませんでした）"); return; }
+    const x = todos.get(t.id);
+    if (!x || x.done) return;
+    const was = x.wait;
+    act(() => todos.update(x.id, { wait: { since: todayKey, ...(who ? { who } : {}), days: 3 } }));
+    flash(`「${clip(x.text, 30)}」を${who ? `${who}に` : ""}頼んで、返事待ちにしました` + (how === "copied" ? "（頼む文をコピーしました。LINEなどに貼り付けてください）" : "") + "。3日後に確認のお知らせが届きます", () => act(() => todos.update(x.id, { wait: was })));
+  }
+
+  // ⑦ 期限をまとめてずらす: those picked with a 期限, each the same days later (or earlier), so they keep their spacing; those
+  // with none stay as they are. As any 期限 moved: a repeat keeps its days, one put later is counted as put off
+  function td6ShiftAsk(list) {
+    const dated = list.filter((x) => !x.done && isDay(x.due || ""));
+    if (!dated.length) { tdSelEnd(); flash("選んだToDoに、期限のあるものがありません"); return; }
+    const rest = list.length - dated.length;
+    tdAsk(`期限のある ${dated.length} 件を、間隔はそのままでずらします` + (rest ? `（期限なしなどの ${rest} 件はそのまま）` : ""), [["1日あとへ", () => td6Shift(dated, 1)], ["2日あとへ", () => td6Shift(dated, 2)], ["1週間あとへ", () => td6Shift(dated, 7)],
+      dated.every((x) => x.due > todayKey) ? ["1日まえへ", () => td6Shift(dated, -1)] : null]);
+  }
+  function td6Shift(list, n) {
+    tdSelEnd();
+    const go = list.map((x) => todos.get(x.id)).filter((x) => x && !x.done && isDay(x.due || ""));
+    if (!go.length) return;
+    const undo = tdUndoOf(go);
+    act(() => todos.updateMany(go.map((x) => [x.id, tdDuePatch(x, addDays(x.due, n))])));
+    flash(`${go.length} 件の期限を${n === 7 ? "1週間" : `${Math.abs(n)}日`}${n > 0 ? "あと" : "まえ"}にずらしました`, undo);
+  }
+
+  // ⑧ 通知の静かな時間: ToDo's お知らせ due in the hours set (23:00〜7:00 at first) come at their end instead, those coming
+  // then all in one; 再通知 is not sent in them. The focus timer's are not ToDo's. Kept with the account
+  const TD6_QUIET_ID = "todoQuiet";
+  function td6Quiet() { const v = settings.get(TD6_QUIET_ID) || {}; return { on: !!v.on, from: isHm(v.from) ? v.from : "23:00", to: isHm(v.to) ? v.to : "07:00" }; }
+  const td6Mins = (at) => { const d = new Date(at); return d.getHours() * 60 + d.getMinutes(); };
+  function td6InQuiet(at, q) { const m = td6Mins(at), a = minOf(q.from), b = minOf(q.to); return a === b ? false : a < b ? m >= a && m < b : m >= a || m < b; }
+  function td6QuietEnd(at, q) { const day = ymd(new Date(at)), a = minOf(q.from), b = minOf(q.to); return dayAt(a > b && td6Mins(at) >= a ? addDays(day, 1) : day, q.to); }
+  // the alarms as they go: ③ one put aside, its own held till its time; ⑧ those in the quiet hours moved to their end
+  function td6Hold(out) {
+    const held = new Map(todos.items.filter(td6Snoozed).map((t) => [t.id, num(t.snooze)]));
+    const xs = held.size ? out.filter((a) => { const m = /^(?:todo|todo-nag|td-pre):([^:]+):/.exec(a.tag || ""); return !(m && held.get(m[1]) > a.at); }) : out;
+    const q = td6Quiet();
+    if (!q.on) return xs;
+    const keep = [], moved = new Map();
+    for (const a of xs) {
+      if (!/^(?:todo[-:]|td-)/.test(a.tag || "") || !td6InQuiet(a.at, q)) { keep.push(a); continue; }
+      if (/^todo-nag:/.test(a.tag)) continue;
+      const at = td6QuietEnd(a.at, q);
+      if (/^td-(?:morning|evening):/.test(a.tag)) { keep.push({ ...a, at }); continue; } // (a sum of its own, with the icon's number)
+      if (!moved.has(at)) moved.set(at, []);
+      moved.get(at).push(a);
+    }
+    for (const [at, list] of moved) {
+      if (list.length === 1) { keep.push({ ...list[0], at }); continue; }
+      const names = list.map((a) => (/^(?:todo-day|td-slot):/.test(a.tag) ? a.body : a.title)).join("、");
+      keep.push({ at, title: `ToDoのお知らせ ${list.length}件`, body: names.length > 120 ? names.slice(0, 119) + "…" : names, tag: `todo-quiet:${at}`, url: "./#todo" });
+    }
+    return keep;
+  }
+  function renderTd6Quiet() {
+    const q = td6Quiet(), st = pushState();
+    $("td6QuietOn").checked = q.on;
+    for (const [id, v] of [["td6QuietFrom", q.from], ["td6QuietTo", q.to]]) { const f = $(id); if (document.activeElement !== f) f.value = v; f.disabled = !q.on; }
+    $("td6QuietFoot").textContent = !q.on ? "決めた時間に入るToDoのお知らせ（時刻・前もって・返事待ち・朝のまとめなど）を、終わりの時刻にまとめて届けます。その間の再通知はしません。"
+      : st === "on" ? `${q.from}〜${q.to} に入るToDoのお知らせは、${q.to} にまとめて届きます。その間の再通知はしません。` : pushWords(st).replace("通知アラーム", "お知らせ");
+    $("td6NowOn").checked = td6NowOn();
+  }
+  function saveTd6Quiet(patch) { act(() => settings.set(TD6_QUIET_ID, { ...td6Quiet(), ...patch, updatedAt: Date.now() })); renderTd6Quiet(); }
+  $("td6QuietOn").addEventListener("change", (ev) => { saveTd6Quiet({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderTd6Quiet); });
+  for (const [id, k] of [["td6QuietFrom", "from"], ["td6QuietTo", "to"]]) $(id).addEventListener("change", (ev) => { if (isHm(ev.target.value)) saveTd6Quiet({ [k]: ev.target.value }); });
+  $("td6NowOn").addEventListener("change", (ev) => { lsJsonPut(TD6_NOW_KEY, { ...td6NowSet(), off: !ev.target.checked || undefined, day: undefined }); renderTodos(); });
+
+  // ⑨ 前回の実際の時間: the last one done of the same name with the focus timer's time on it, said under かかる時間 (the new
+  // ToDo's form and a ToDo's own), with that time (to 5 minutes) put in at a press
+  function td6LastFocus(text, notId = null) {
+    const k = foldText(oneLine(text || "")).trim();
+    if (!k) return null;
+    let best = null;
+    for (const t of todos.items) if (t.done && !t.cancelled && t.id !== notId && num(t.focus) >= 1 && typeof t.text === "string" && foldText(oneLine(t.text)).trim() === k && (!best || num(t.doneAt) > num(best.doneAt))) best = t;
+    return best ? { mins: Math.round(num(best.focus)), day: doneDay(best) } : null;
+  }
+  // its words and the button (hidden while かかる時間 is that already); live: it follows the select as it changes
+  function td6LastPart(last, sel, live = false) {
+    const v = Math.min(1440, Math.max(5, Math.round(last.mins / 5) * 5));
+    const btn = el("button", { type: "button", class: "link-btn", hidden: Number(sel.value) === v, onclick: () => { setChildren(sel, tdMinsOptions(v)); sel.value = String(v); btn.hidden = true; sel.dispatchEvent(new Event("change", { bubbles: true })); sel.focus(); } }, `${keepUnits(durText(v))}にする`);
+    if (live) sel.addEventListener("change", () => { btn.hidden = Number(sel.value) === v; });
+    return [el("span", { class: "phrase" }, keepUnits(`前回は実際に ${durText(last.mins)}かかりました`) + (last.day ? `（${fmtDay(last.day)}）` : "")), " ", btn];
+  }
+  function td6SyncNewLast() {
+    const box = $("todoLastFocus"), lines = todoLines(), last = lines.length === 1 ? td6LastFocus(lines[0]) : null;
+    box.hidden = !last;
+    if (!last) { box.replaceChildren(); return; }
+    setChildren(box, td6LastPart(last, $("todoMins")));
+  }
+  $("todoText").addEventListener("input", td6SyncNewLast);
+  $("todoMins").addEventListener("change", td6SyncNewLast);
+  $("todoForm").addEventListener("reset", () => setTimeout(td6SyncNewLast, 0));
+
+  // ⑩ ほかのアプリから取り込む: lines pasted (or a .csv / .txt file): a line each, read as ひとことで追加 reads one (レポート提出
+  // 11/20, 毎週月曜 ゴミ出し), its bullet or check box taken off and the checked ones left out; or a CSV (or tab) table,
+  // by its heading (名前・期限・メモ・重要・完了, or title, due date, notes…; Todoist's TYPE too) or as 名前,期限,メモ.
+  // How many it read and the first of them, before they go in; into the list picked, those of a name still to do left out
+  // if asked, with 元に戻す
+  const TD6_HEADS = { text: ["名前", "タイトル", "todo", "タスク", "件名", "内容", "やること", "title", "name", "task", "content", "subject", "summary"],
+    due: ["期限", "締め切り", "締切", "期日", "日付", "due", "due date", "duedate", "date", "deadline"], memo: ["メモ", "説明", "備考", "ノート", "notes", "note", "description", "memo", "details"],
+    flag: ["重要", "important", "flag", "flagged", "starred", "star", "priority", "優先度"], done: ["完了", "done", "completed", "complete", "status", "状態"], type: ["type"] };
+  const TD6_YES = /^(?:1|true|yes|y|はい|○|◯|●|★|!+|x|✓|✔|high|高|重要|important|flagged|starred|済|済み|完了|done|completed)$/i;
+  function td6Csv(text, sep) {
+    const rows = [];
+    let row = [], cell = "", q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; continue; }
+      if (c === '"' && !cell) q = true;
+      else if (c === sep) { row.push(cell); cell = ""; }
+      else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+      else if (c !== "\r") cell += c;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter((r) => r.some((x) => x.trim()));
+  }
+  function td6DayOf(v) {
+    const s = String(v || "").normalize("NFKC").trim();
+    if (!s) return { due: "" };
+    const m = s.match(/^(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})日?(?:[ T]+(\d{1,2}):(\d{2}))?/);
+    if (m) { const d = `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`; if (isDay(d)) return { due: d, time: m[4] && +m[4] < 24 ? `${pad(+m[4])}:${m[5]}` : "" }; }
+    const p = parseTodo("x " + s);
+    return p?.date ? { due: p.date, time: p.time || "" } : { due: "", bad: true };
+  }
+  const td6Bullet = /^\s*(?:[-*+・•●○◯□■☐▢]\s*)?(?:\[( |x|X|✓)?\]\s*)?(?:\d{1,3}[.)、]\s+)?/;
+  function td6ReadLines(text) {
+    const out = [];
+    let skipped = 0;
+    for (const raw of text.split("\n")) {
+      const line = raw.replace(/\r/g, "").trim();
+      if (!line) continue;
+      const m = line.match(td6Bullet), done = /^[☑✅✔✓]/.test(line) || (m && /[xX✓]/.test(m[1] || ""));
+      const s = line.slice(m ? m[0].length : 0).replace(/^[☑✅✔✓]\s*/, "").trim();
+      if (!s) continue;
+      if (done) { skipped++; continue; }
+      const p = parseTodo(s);
+      out.push(p ? { text: p.title, due: p.date || "", time: p.time || "", repeat: p.repeat || "", repeatDays: p.repeatDays, flag: !!p.flag } : { text: s, due: "" });
+    }
+    return { items: out, skipped };
+  }
+  function td6ReadTable(rows) {
+    const head = rows[0].map((x) => x.normalize("NFKC").trim().toLowerCase());
+    const col = (k) => head.findIndex((h) => TD6_HEADS[k].includes(h));
+    let c = { text: col("text"), due: col("due"), memo: col("memo"), flag: col("flag"), done: col("done"), type: col("type") }, body = rows.slice(1);
+    if (c.text < 0) { c = { text: 0, due: 1, memo: 2, flag: -1, done: -1, type: -1 }; body = rows; } // (名前,期限,メモ with no heading)
+    const out = [];
+    let skipped = 0;
+    for (const r of body) {
+      const text = oneLine(r[c.text] || "").trim();
+      if (!text || (c.type >= 0 && r[c.type] && !/^task$/i.test(r[c.type].trim()))) continue;
+      if (c.done >= 0 && TD6_YES.test(String(r[c.done] || "").trim())) { skipped++; continue; }
+      const d = c.due >= 0 ? td6DayOf(r[c.due]) : { due: "" };
+      out.push({ text, due: d.due, time: d.time || "", memo: c.memo >= 0 ? String(r[c.memo] || "").trim() : "", flag: c.flag >= 0 && /^(?:1|true|yes|y|はい|○|◯|●|★|!+|x|✓|✔|high|高|重要|important|flagged|starred|p1)$/i.test(String(r[c.flag] || "").trim()) });
+    }
+    return { items: out, skipped };
+  }
+  function td6ReadImport(text) {
+    const s = String(text || "").replace(/^﻿/, "");
+    const first = s.split("\n").find((l) => l.trim()) || "", sep = first.includes("\t") ? "\t" : first.includes(",") ? "," : "";
+    if (sep) {
+      const rows = td6Csv(s, sep), head = rows[0]?.map((x) => x.normalize("NFKC").trim().toLowerCase()) || [];
+      const headed = head.some((h) => TD6_HEADS.text.includes(h));
+      // with no heading, a table only when the second of each row is a day (else they are lines with a comma in them)
+      if (headed || (rows.length && rows.every((r) => r.length >= 2 && !td6DayOf(r[1]).bad && td6DayOf(r[1]).due))) return { ...td6ReadTable(rows), table: true };
+    }
+    return { ...td6ReadLines(s), table: false };
+  }
+  let td6Imp = null; // its fields while its sheet is open (kept as the sheet is drawn again, with what was typed)
+  function td6ImportOpen(byKey) { td6Imp = null; openTdPanel("import", byKey); }
+  function renderTd6Import() {
+    const body = $("tdPanelBody");
+    if (!td6Imp || !body.contains(td6Imp.ta)) {
+      const ta = el("textarea", { class: "td6-imp-ta", rows: 7, spellcheck: "false", placeholder: "レポート提出 11/20\n牛乳を買う あした\n毎週月曜 ゴミ出し\n\nCSV（名前,期限,メモ）も読めます", "aria-label": "取り込むToDo（1行に1件）" });
+      const sel = el("select", { id: "td6ImpList" }, el("option", { value: "" }, "リストなし"), sortedTodoLists().map((l) => el("option", { value: l.id }, l.name)));
+      sel.value = todoTab && todoLists.get(todoTab) ? todoTab : "";
+      const same = el("input", { type: "checkbox", id: "td6ImpSame", class: "switch", role: "switch", checked: true });
+      const file = el("input", { type: "file", accept: ".csv,.tsv,.txt,text/csv,text/plain", hidden: true });
+      const out = el("div", { class: "td6-imp-out" });
+      file.addEventListener("change", async () => {
+        const f = file.files?.[0];
+        file.value = "";
+        if (!f) return;
+        if (f.size > 2e6) { flash("ファイルが大きすぎます（2MBまで）"); return; }
+        ta.value = (await f.text()).slice(0, 200000);
+        td6ImportPreview();
+      });
+      for (const x of [ta, sel, same]) x.addEventListener(x === ta ? "input" : "change", td6ImportPreview);
+      td6Imp = { ta, sel, same, out };
+      setChildren(body, el("p", { class: "group-foot td-panel-lead" }, el("span", { class: "phrase" }, "ほかのアプリのToDoを、"), el("span", { class: "phrase" }, "1行に1件で貼り付けてください。"),
+          el("span", { class: "phrase" }, "「レポート提出 11/20」のように書くと、"), el("span", { class: "phrase" }, "期限も入ります。"), el("span", { class: "phrase" }, "CSV（名前・期限・メモの列）も読めます。")),
+        el("div", { class: "card td6-imp-box" }, ta, el("div", { class: "td6-imp-tools" }, el("button", { type: "button", class: "link-btn", onclick: () => file.click() }, "ファイルから読む（.csv・.txt）"), file,
+          el("button", { type: "button", class: "link-btn", onclick: () => { ta.value = ""; td6ImportPreview(); ta.focus(); } }, "消す"))),
+        el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, el("label", { class: "flabel", for: "td6ImpList" }, "入れるリスト"), el("div", { class: "ffield" }, sel),
+          el("label", { class: "flabel", for: "td6ImpSame" }, "同じ名前は入れない"), el("div", { class: "ffield" }, same)),
+        out);
+    }
+    td6ImportPreview();
+  }
+  function td6ImportPlan() {
+    const r = td6ReadImport(td6Imp.ta.value), have = new Set(todos.items.filter((t) => !t.done && typeof t.text === "string").map((t) => foldText(oneLine(t.text)).trim())), seen = new Set();
+    const items = [];
+    let same = 0;
+    for (const x of r.items) {
+      const k = foldText(x.text).trim();
+      if (td6Imp.same.checked && (have.has(k) || seen.has(k))) { same++; continue; }
+      seen.add(k);
+      items.push(x);
+    }
+    return { ...r, items: items.slice(0, 500), same, cut: Math.max(0, items.length - 500) };
+  }
+  function td6ImportPreview() {
+    if (!td6Imp) return;
+    const p = td6ImportPlan(), n = p.items.length, dated = p.items.filter((x) => x.due).length, rep = p.items.filter((x) => x.due && x.repeat).length;
+    const say = (x) => [x.due ? `期限 ${fmtDay(x.due)}${x.time ? " " + x.time : ""}` : "期限なし", x.due && x.repeat ? repeatName(x.repeat, x.due, false, true, x.repeatDays) : "", x.flag ? "重要" : "", x.memo ? "メモあり" : ""].filter(Boolean).join("・");
+    const notes = [p.skipped ? `完了の ${p.skipped} 件` : "", p.same ? `同じ名前のまだのToDo ${p.same} 件` : "", p.cut ? `500 件をこえる ${p.cut} 件` : ""].filter(Boolean);
+    setChildren(td6Imp.out, !td6Imp.ta.value.trim() ? null : [
+      el("p", { class: "td-pick-count", role: "status" }, n ? [el("span", { class: "phrase" }, `${n} 件を読みました`), dated ? el("span", { class: "phrase" }, `（期限つき ${dated} 件${rep ? `・繰り返し ${rep} 件` : ""}）`) : null] : "取り込めるToDoがありません"),
+      p.table || notes.length ? el("p", { class: "group-foot" }, p.table ? el("span", { class: "phrase" }, "CSVの表として読みました。") : null,
+        notes.map((x, i) => el("span", { class: "phrase" }, x + (i < notes.length - 1 ? "、" : "は入れません。")))) : null,
+      n ? el("ul", { class: "list card td6-imp-list" }, p.items.slice(0, 8).map((x) => el("li", {}, el("span", { class: "body" }, el("span", { class: "text" }, x.text), el("span", { class: "sub" }, say(x))))),
+        n > 8 ? el("li", { class: "td6-imp-more" }, `ほか ${n - 8} 件`) : null) : null,
+      n ? el("div", { class: "td-pick-go" }, el("button", { type: "button", class: "btn", onclick: td6ImportGo }, `${n} 件を追加`)) : null]);
+  }
+  function td6ImportGo() {
+    const p = td6ImportPlan(), listId = todoLists.get(td6Imp.sel.value) ? td6Imp.sel.value : "";
+    if (!p.items.length) return;
+    const now = Date.now();
+    const recs = p.items.map((x, i) => dropUndef({ text: x.text.slice(0, TODO_NAME), done: false, due: x.due || "", time: x.due && x.time ? x.time : undefined, remind: x.due && x.time ? true : undefined,
+      repeat: x.due && x.repeat ? x.repeat : undefined, repeatDays: x.due && x.repeat === "weekly" && x.repeatDays?.length ? x.repeatDays : undefined, memo: x.memo ? x.memo.slice(0, 2000) : undefined,
+      flag: x.flag ? true : undefined, listId: listId || undefined, createdAt: now + i }));
+    closeSheet();
+    act(async () => {
+      const ids = await todos.addMany(recs);
+      todoNewIds.push(...ids);
+      flash(`ToDoを ${ids.length} 件取り込みました` + (listId ? `（「${clip(todoLists.get(listId)?.name || "", 20)}」）` : ""), () => takeBack(todos, ids));
+    });
+  }
+
+  // its parts of a row's menu (held down): ② 今週やる, by きょうやる's; ③ あとで, ⑥ 人に頼む, ⑤ 進み具合 and ④ 休む, by
+  // 返事待ち's
+  const td6Plain = (t) => !(todoFour && td4ShopList(t)) && !(todoFive && td5CheckList(t)); // (not a 買い物 nor a checklist's)
+  function td6HoldWeek(t, item) { return t.done || !(td6Plain(t) || td6InWeek(t)) ? [] : [item(td6InWeek(t) ? "今週やるから外す" : "今週やるに入れる", () => td6SetWeek(t, !td6InWeek(t)))]; }
+  function td6HoldItems(t, item) {
+    if (t.done) return [];
+    const plain = td6Plain(t); // (a 買い物 or a checklist's: no あとで nor 進み具合)
+    return [plain || td6Snoozed(t) ? item(td6Snoozed(t) ? "あとでをやめる（いま出す）" : "あとでにする（しばらく隠す）", () => (td6Snoozed(t) ? td6Snooze(t, 0) : td6SnoozeAsk(t))) : null,
+      item("人に頼む（送って返事待ちに）", () => td6AskAsk(t)),
+      !plain || tdStepCount(t) ? null : item(td6Pct(t) ? `進み具合を変える（${td6Pct(t)}%）` : "進み具合を入れる", () => td6PctAsk(t)),
+      t.repeat && t.due ? item(td6Resting(t) ? "繰り返しの休みをやめる" : "繰り返しを休む", () => (td6Resting(t) ? td6Unrest(t) : td6RestAsk(t))) : null];
+  }
+  // its parts of ToDo's その他
+  function td6MoreItems(item) {
+    return [todos.items.some((t) => !t.done) ? item("今週やるを選ぶ", () => openTdPanel("week6", false)) : null, item("ほかのアプリから取り込む", () => td6ImportOpen(false))];
+  }
+  // on its row: ③ when it is back, ④ its rest, ⑤ how far along, ② 今週
+  function td6RowParts(t, x) {
+    if (t.done) return [];
+    const pct = td6Pct(t);
+    return [td6Snoozed(t) ? x("td6-snooze", `${td6When(num(t.snooze))}に戻る`) : null,
+      td6Resting(t) ? x("td6-rest", `休み中（${fmtDay(t.rest.until)}から）`) : null,
+      pct ? x("td6-pct", el("span", { class: "td6-pct-bar", "aria-hidden": "true" }, el("i", { style: `width:${pct}%` })), el("span", { class: "sr-only" }, "進み具合 "), `${pct}%`) : null,
+      td6InWeek(t) && t.today !== todayKey ? x("td6-week", "今週") : null];
+  }
+  // in a ToDo's own sheet (one to do): ⑤ 進み具合 (no steps), ⑨ the time it really took last time, under かかる時間
+  function td6EditRows(t, mins) {
+    if (t.done) return {};
+    const out = {};
+    if (!tdStepCount(t)) {
+      const sel = el("select", { id: "reProg" }, el("option", { value: "" }, "—"), TD6_PCTS.map((v) => el("option", { value: v }, `${v}%`)));
+      sel.value = td6Pct(t) ? String(td6Pct(t)) : "";
+      out.prog = recRow("進み具合", sel, { opt: true });
+    }
+    const last = td6LastFocus(t.text, t.id);
+    if (last) out.last = el("p", { class: "full td-note td6-last", id: "reLastFocus" }, td6LastPart(last, mins, true));
+    return out;
+  }
+  function td6EditRead(t) {
+    const out = t.rest && $("reDue") && $("reDue").value !== t.due ? { rest: undefined } : {}; // (④ its 期限 changed by hand: its rest is over)
+    if (!$("reProg")) return out;
+    const v = Number($("reProg").value), steps = $("reSteps")?.read() || [];
+    return { ...out, pct: !steps.length && TD6_PCTS.includes(v) ? v : undefined };
+  }
+  // what its notifications are made from (pushSig): ③ those put aside, ⑧ the quiet hours
+  function td6Push() {
+    const parts = [], q = td6Quiet(), xs = todos.items.filter(td6Snoozed);
+    if (q.on) parts.push(["td6Quiet", q.from, q.to]);
+    if (xs.length) parts.push(["td6Snooze", xs.map((t) => [t.id, num(t.snooze), t.text, t.due || ""])]);
+    return parts;
+  }
+  // as ToDo's list is drawn: the cards of ②① over it, and ③ the one put aside back at its time
+  function td6Paint() { td6WeekCard(); td6NowCard(); td6Wake(); }
+  todoSix = true;
+
   // ---------- boot ----------
   function renderAll() {
     tsumiTallied = null; tsumiStale = true; tsumiGen++; rtIdx = null; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)
