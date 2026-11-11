@@ -1042,8 +1042,9 @@ button.cat-row:active { background: var(--fill-press); }
 /* (the user's call, 2026-11-11) an empty cell filled with ×, not to be used: grey, a large × across it in place of the ＋
    (gone while it is written in, and for good once something is); in 全体 an × in its square */
 .m-cell.crossed { background: var(--fill); }
+.m-cell[data-k].crossed { cursor: default; } /* (no writing in it: the user's call, held alone) */
 .m-cell.crossed:has(textarea:placeholder-shown):not(:focus-within) .m-plus { display: none; }
-.m-cell.crossed:not(:focus-within)::before { content: ""; position: absolute; inset: 24%; pointer-events: none; opacity: .5;
+.m-cell.crossed::before { content: ""; position: absolute; inset: 24%; pointer-events: none; opacity: .5;
   background: linear-gradient(45deg, transparent calc(50% - 1.5px), var(--muted) calc(50% - 1.5px), var(--muted) calc(50% + 1.5px), transparent calc(50% + 1.5px)),
     linear-gradient(-45deg, transparent calc(50% - 1.5px), var(--muted) calc(50% - 1.5px), var(--muted) calc(50% + 1.5px), transparent calc(50% + 1.5px)); }
 .m-mini.crossed, .m-mini.mid.crossed { background: var(--fill); color: var(--muted); font-size: 15px; font-weight: 400; }
@@ -11528,6 +11529,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const inner = kidsOf(cell, left - 1), done = filled && cellDone(cell, left - 1);
         box.classList.toggle("done", done);
         box.classList.toggle("crossed", !filled && !!cell?.x); // (使わないマス, ×で埋めた)
+        ta.readOnly = !filled && !!cell?.x; // (nothing written in it: the user's call; held, ×をはずす)
         ta.setAttribute("aria-label", `${cellWord(mPath.length)} ${k + 1}${!filled && cell?.x ? "（×で埋めています）" : ""}`);
         // over its words: its 期限 while it is still to do, red once past (the user's call), and the mark of its memo (⑦)
         const dueOn = filled && !done && isDay(cell.due || "") ? cell.due : null, memo = filled && !!cell.m, top = box.querySelector(".m-top");
@@ -11607,7 +11609,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           mOverview = false;
           if (!centre && name && !shut) { mWholeFrom.push(mPath.length); mPath = [...mPath, k]; }
           showChartLevel();
-          if (!name) mGrid.querySelector(`textarea[data-k="${k}"]`)?.focus();
+          if (!name && !cell?.x) mGrid.querySelector(`textarea[data-k="${k}"]`)?.focus(); // (×で埋めたマス: no writing)
         },
       }, GRID_ORDER.map((j) => (j < 0
         ? (name ? mini(cell, true, l, centre && !mPath.length ? !!g.done : undefined) : cell?.x ? el("span", { class: "m-mini mid crossed" }, "×") : el("span", { class: "m-mini mid" }, icon("plus", 14)))
@@ -12067,7 +12069,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!ta || ev.key !== "Enter" || ev.isComposing || ev.keyCode === 229) return;
     ev.preventDefault();
     const all = [...mGrid.querySelectorAll("textarea")], i = all.indexOf(ta);
-    const next = [...all.slice(i + 1), ...all.slice(0, i)].find((x) => !x.value.trim());
+    const next = [...all.slice(i + 1), ...all.slice(0, i)].find((x) => !x.value.trim() && !x.readOnly); // (not one filled with ×)
     if (next) next.focus(); else ta.blur();
   });
   // a tap anywhere on a cell, its foot too, starts writing in it, at the character pressed (caretAt; after the text when
@@ -12084,7 +12086,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       endSwap();
       return;
     }
-    if (box && !ev.target.closest("button, textarea")) {
+    if (box && !box.classList.contains("crossed") && !ev.target.closest("button, textarea")) { // (×で埋めたマス: nothing, the user's call)
       const ta = box.querySelector("textarea"), at = ev.detail ? caretAt(box, ev.clientX, ev.clientY) : ta.value.length;
       ta.focus(); ta.setSelectionRange(at, at);
     }
@@ -12114,7 +12116,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   mGrid.addEventListener("pointerdown", (ev) => {
     swallowClick = false;
     const box = ev.target.closest(".m-cell[data-k]");
-    if (!box || mOverview || mSwap !== null || ev.button !== 0 || box.contains(document.activeElement)) return; // (its check and › too)
+    if (!box || mOverview || mSwap !== null || ev.button !== 0 || (box.contains(document.activeElement) && !box.classList.contains("crossed"))) return; // (its check and › too)
     clearTimeout(holdTimer);
     holdFrom = { x: ev.clientX, y: ev.clientY };
     holdTimer = setTimeout(() => { holdTimer = null; swallowClick = true; cellMenu(Number(box.dataset.k)); }, 500);
@@ -12128,7 +12130,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!box) return;
     ev.preventDefault();
     // a right click (or a phone's own long press saying so first) opens the menu at once
-    if (mOverview || mSwap !== null || box.contains(document.activeElement) || menuFor === Number(box.dataset.k)) return;
+    if (mOverview || mSwap !== null || (box.contains(document.activeElement) && !box.classList.contains("crossed")) || menuFor === Number(box.dataset.k)) return;
     clearTimeout(holdTimer); holdTimer = null;
     cellMenu(Number(box.dataset.k));
   });
@@ -17035,7 +17037,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月11日 11:55"; // 3ae2062e (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月11日 13:53"; // 0efc7b65 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
