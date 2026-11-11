@@ -1033,6 +1033,10 @@ button.cat-row:active { background: var(--fill-press); }
    or called up by holding it, and its check and › are out of reach meanwhile */
 .m-cell[data-k] { -webkit-touch-callout: none; }
 .m-tools, .m-text { -webkit-user-select: none; user-select: none; }
+/* (the user's call, 2026-11-11: on iPhone a cell held down had its words picked, and the menu never came) the whole chart:
+   only the cell being written in can have its words picked */
+#mGrid, #mGrid * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+#mGrid textarea:focus { -webkit-touch-callout: default; -webkit-user-select: text; user-select: text; }
 .mandala.swapping .m-tools { pointer-events: none; }
 .m-cell.picked { outline: 2px solid var(--accent); outline-offset: -2px; }
 /* the cell a block of つみかさね was checked in, lit for a moment as its chart opens (the user's call: it didn't stand out) */
@@ -12086,7 +12090,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   mGrid.addEventListener("pointerdown", (ev) => {
     swallowClick = false;
     const box = ev.target.closest(".m-cell[data-k]");
-    if (!box || mOverview || mSwap !== null || ev.button !== 0 || ev.target.closest("button") || box.contains(document.activeElement)) return;
+    if (!box || mOverview || mSwap !== null || ev.button !== 0 || box.contains(document.activeElement)) return; // (its check and › too)
     clearTimeout(holdTimer);
     holdFrom = { x: ev.clientX, y: ev.clientY };
     holdTimer = setTimeout(() => { holdTimer = null; swallowClick = true; cellMenu(Number(box.dataset.k)); }, 500);
@@ -12095,7 +12099,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (holdTimer && Math.hypot(ev.clientX - holdFrom.x, ev.clientY - holdFrom.y) > 10) { clearTimeout(holdTimer); holdTimer = null; }
   });
   for (const type of ["pointerup", "pointercancel", "pointerleave"]) mGrid.addEventListener(type, () => { clearTimeout(holdTimer); holdTimer = null; });
-  mGrid.addEventListener("contextmenu", (ev) => { if (ev.target.closest(".m-cell[data-k]")) ev.preventDefault(); });
+  mGrid.addEventListener("contextmenu", (ev) => {
+    const box = ev.target.closest(".m-cell[data-k]");
+    if (!box) return;
+    ev.preventDefault();
+    // a right click (or a phone's own long press saying so first) opens the menu at once
+    if (mOverview || mSwap !== null || box.contains(document.activeElement) || menuFor === Number(box.dataset.k)) return;
+    clearTimeout(holdTimer); holdTimer = null;
+    cellMenu(Number(box.dataset.k));
+  });
+  // the check or › held down: the press that ends the hold neither checks nor opens
+  mGrid.addEventListener("click", (ev) => { if (swallowClick && ev.target.closest(".m-cell[data-k] button")) { swallowClick = false; ev.stopPropagation(); ev.preventDefault(); } }, true);
   // 長押し on a written cell opens its menu (the user's call: an action done every day had no way into ルーティーン): swap it
   // with another cell, or put it into ルーティーン. An empty one has only its place to give, so it is picked up at once
   function cellMenu(k) {
@@ -16997,7 +17011,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月11日 11:07"; // 1f0fcb65 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月11日 11:25"; // ec4692d5 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
