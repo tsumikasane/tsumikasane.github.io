@@ -1261,6 +1261,16 @@ ul.list > li.wo-edit-note { display: grid; grid-template-columns: minmax(0, 1fr)
 .wx-rain { color: var(--muted); font-size: var(--t-sub); }
 .wx-note { margin: 2px 0 0; font-size: var(--t-sub); line-height: 1.35; }
 .wx-ask { align-self: flex-start; margin-top: 4px; }
+/* 1週間の天気予報 (2026-11-12): the 7 days from today, a column each, under the day's weather */
+.wx-week { list-style: none; margin: 10px 0 0; padding: 8px 0 0; border-top: .5px solid var(--separator); display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; font-variant-numeric: tabular-nums; }
+.wx-week li { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; text-align: center; }
+.tile .wx-week li::before { content: none; display: none; }  /* (not the tiles' lists' ・) */
+.wx-week .wx-d { font-size: var(--t-foot); color: var(--muted); white-space: nowrap; }
+.wx-week .wx-d.sun { color: var(--warn); }
+.wx-week .wx-d.sat { color: var(--sat); }
+.wx-week .wx-hi { font-size: var(--t-sub); font-weight: 600; }
+.wx-week .wx-lo { font-size: var(--t-foot); color: var(--muted); }
+.wx-week .wx-p { font-size: var(--t-foot); color: var(--sat); }
 
 /* calendar: a Sunday-first month grid of thin gray lines (between weeks and between days, as the user asked) with each
    day's plans written in coloured bars, after the iPhone Calendar's month view the user showed. Today's date is in the
@@ -1503,12 +1513,9 @@ form.add .memo-area { display: none; }
 /* カレンダー ①〜⑩ (2026-11-10): ⑤ a day's weather in its square's top left, ⑦ its records' dots in the top right (two by
    two, clear of the date), and in 週 a day's weather under its name, in 日 a line over 終日 */
 .cal-day { position: relative; }
-.cal-day .wx { position: absolute; top: 6px; left: 3px; }
 .cal-day .marks { position: absolute; top: 7px; right: 3px; display: grid; grid-template-columns: repeat(2, 4px); gap: 2px; }
 .cal-day .marks i, .mark-legend i { display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--mc); }
 .mark-legend i { width: 8px; height: 8px; margin-inline: 8px 4px; vertical-align: 1px; }
-.tg-day .wxs { display: flex; align-items: center; justify-content: center; gap: 1px; font-size: calc(1rem - 6px); line-height: 1.2; color: var(--muted); }
-.tg-wx { flex: none; display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-bottom: .5px solid var(--separator); font-size: var(--t-foot); color: var(--muted); font-variant-numeric: tabular-nums; }
 /* ① a shift in 家計簿's colour; ④ a block held up and its shadow where it would go; ⑥ a free time, a dashed band */
 .tg-ev { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .tg-ev.lifted { opacity: .3; }
@@ -1534,7 +1541,7 @@ form.add .memo-area { display: none; }
 .cal-free-hours select { flex: 0 1 6em; }
 .ics-in { position: relative; cursor: pointer; }
 .ics-in:focus-within { outline: 3px solid var(--focus); outline-offset: -3px; }
-.mark-legend, .wx-where { display: block; }
+.mark-legend { display: block; }
 /* ToDo ①〜⑩ と集中タイマー (2026-11-10). ① the note under お知らせ; ③ what the words say and ⑥ いつものセット, as chips
    on the form's grey */
 .td-note { margin: -4px 0 0; font-size: var(--t-foot); line-height: 1.4; color: var(--muted); }
@@ -3646,7 +3653,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
              deadlines in the 終日 row above; the whole day's hours fit under them, nothing scrolling (renderTimeGrid) -->
         <div class="card tg" id="calTime" hidden>
           <div class="tg-head" id="tgHead"></div>
-          <div class="tg-wx" id="tgWx" hidden></div>
           <div class="tg-allday" id="tgAllDay"></div>
           <div class="tg-fit"><div class="tg-body" id="tgBody"></div></div>
         </div>
@@ -4476,12 +4482,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <button type="button" data-ws="0" aria-pressed="true">日曜</button>
           <button type="button" data-ws="1" aria-pressed="false">月曜</button>
         </div>
-        <!-- ⑤⑥⑦ what the calendar shows besides the plans (the user's calls, 2026-11-10): the weather on its days, the free
-             hours (and the hours they are looked for in), the other records' marks -->
+        <!-- ⑥⑦ what the calendar shows besides the plans (the user's calls, 2026-11-10): the free hours (and the hours they are
+             looked for in), the other records' marks. (⑤ the weather on its days taken off, 2026-11-12: きょう's 天気 has the week) -->
         <h3 class="group-head">表示</h3>
         <form class="add" id="calShowForm" autocomplete="off" onsubmit="return false">
-          <label class="flabel" for="calWx">日付に天気</label>
-          <div class="ffield"><input type="checkbox" id="calWx" class="switch" role="switch"></div>
           <label class="flabel" for="calMarks">記録のしるし</label>
           <div class="ffield"><input type="checkbox" id="calMarks" class="switch" role="switch"></div>
           <label class="flabel" for="calFreeOn">空き時間</label>
@@ -14076,16 +14080,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const [d, list] of turnsBy) turnsBy.set(d, list.filter((t) => onCalendar(t.e, hidden)));
     $("tgHead").hidden = n === 1;
     setChildren($("tgHead"), el("span", { class: "tg-gut" }), days.map((d) => {
-      const dt = parseYmd(d), wd = dt.getDay(), hol = holidayName(d), wx = wxMark(d);
+      const dt = parseYmd(d), wd = dt.getDay(), hol = holidayName(d);
       return el("button", { type: "button", class: "tg-day" + (wd === 0 ? " sun" : wd === 6 ? " sat" : "") + (hol ? " hol" : "") + (d === todayKey ? " today" : "") + (d === calDay ? " sel" : ""),
-        "aria-current": d === todayKey ? "date" : null, "aria-label": `${fmtMDW(d)}${hol ? "、" + hol : ""}${wx ? "、" + wx.say : ""}、日で表示`, onclick: () => setCalView("day", d) },
-        el("span", { class: "n" }, dt.getDate()), el("span", { class: "wd" }, `(${WD[wd]})`),
-        wx ? el("span", { class: "wxs", "aria-hidden": "true" }, el("span", { class: "wx-icon " + wx.icon }, icon(wx.icon, 12)), `${wx.hi}°`) : null); // ⑤
+        "aria-current": d === todayKey ? "date" : null, "aria-label": `${fmtMDW(d)}${hol ? "、" + hol : ""}、日で表示`, onclick: () => setCalView("day", d) },
+        el("span", { class: "n" }, dt.getDate()), el("span", { class: "wd" }, `(${WD[wd]})`));
     }));
-    // ⑤ 日: the day's weather over its 終日 row
-    const wx1 = n === 1 ? wxMark(first) : null;
-    $("tgWx").hidden = !wx1;
-    setChildren($("tgWx"), wx1 ? [el("span", { class: "wx-icon " + wx1.icon, "aria-hidden": "true" }, icon(wx1.icon, 16)), el("span", {}, `${wx1.word}　${wx1.hi}° / ${wx1.lo}°　降水確率 ${wx1.rain}%`)] : null);
     // 終日: runs first (the earliest and longest first), then holidays, the day's plans without a time, ToDo's deadlines and
     // 目標's, each in the first lane free across its days; a day with more than the lanes hold says +N, its sheet a press away
     const items = [], seen = new Set();
@@ -14199,7 +14198,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderCalendar() {
     syncCalView();
     draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); // (⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open)
-    if (wxOn() && wxPlace() && tab === "calendar") wxFetch(); // ⑤ (kept for an hour)
     const title = calTitle();
     if ($("calMonthName").textContent !== title) $("calMonthName").textContent = title; // a live region: only a change is read out
     const todoBy = groupBy(todos.items, (t) => t.due);
@@ -14251,7 +14249,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const goalsDue = (goalBy.get(d) || []).filter((g) => !g.done && !g.pausedAt);
         // the day's plans as bars: events (and ① shifts) by time in their label's colour, then ToDo and goal deadlines; the
         // day's name lists the labels too
-        const sh = (shiftBy.get(d) || []).filter((p) => p.first), mk = markBy.get(d), wx = wxMark(d);
+        const sh = (shiftBy.get(d) || []).filter((p) => p.first), mk = markBy.get(d);
         const plans = [
           ...[...own.map((t) => ({ k: turnTime(t), text: t.e.title, hue: labelHue(labelOf(t.e)), plain: !labelOf(t.e), ten: !!t.e.ten })),
             ...sh.map((p) => ({ k: p.x.start, text: shiftName(p.x), hue: "var(--c-money)" }))].sort((a, b) => a.k.localeCompare(b.k)),
@@ -14262,7 +14260,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const evNames = [...new Set(evs.map(({ e }) => (labelOf(e) || {}).name).filter(Boolean))];
         const notes = [evs.length ? `予定 ${evs.length} 件` + (evNames.length ? `（${evNames.join("、")}）` : "") : "", sh.length ? `バイト ${sh.map((p) => shiftText(p.x)).join("、")}` : "",
           todosDue.length ? `ToDo の期限 ${todosDue.length} 件` : "", goalsDue.length ? `目標の期限 ${goalsDue.length} 件` : "",
-          mk ? `記録 ${MARKS.filter(([k]) => mk.has(k)).map(([, name]) => name).join("・")}` : "", wx ? wx.say : ""];
+          mk ? `記録 ${MARKS.filter(([k]) => mk.has(k)).map(([, name]) => name).join("・")}` : ""];
         cells.push(el("button", {
           type: "button",
           class: "cal-day" + (monthOf(d) !== calMonth ? " out" : "") + (wd === 0 ? " sun" : wd === 6 ? " sat" : "") + (hol ? " hol" : "") + (d === todayKey ? " today" : "") + (d === calDay ? " sel" : "") + (i >= count - 7 ? " lastweek" : ""),
@@ -14272,7 +14270,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           onclick: (ev) => openDay(d, ev.detail === 0),
         },
           el("span", { class: "n" }, dt.getDate()),
-          wx ? el("span", { class: "wx wx-icon " + wx.icon, "aria-hidden": "true" }, icon(wx.icon, 12)) : null,
           mk ? el("span", { class: "marks", "aria-hidden": "true" }, MARKS.filter(([k]) => mk.has(k)).map(([, , c]) => el("i", { style: `--mc: var(${c})` }))) : null,
           laneCount || hol || plans.length ? el("span", { class: "bars", "aria-hidden": "true" },
             Array.from({ length: laneCount }, (_, k) => el("span", { class: "lane", "data-lane": k })),
@@ -14590,13 +14587,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   const marksOn = () => calSet().marks !== false;
 
-  // ⑤ the weather on its days (the next 7, from きょう's 天気 and its place), unless turned off
-  const wxOn = () => calSet().wx !== false;
-  function wxMark(d) {
-    if (!wxOn() || d < todayKey || d > addDays(todayKey, 6) || !wxPlace()) return null;
-    const w = wxDay(d);
-    return w ? { ...w, say: `${w.word}、最高${w.hi}度、最低${w.lo}度、降水確率${w.rain}%` } : null;
-  }
 
   // ⑧ the hours of the plans with a time, by label, this week or this month (a run of days by its hours on each day),
   // and the shifts as バイト; in 予定, over what is coming
@@ -14654,17 +14644,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑤⑥⑦ the switches, the free hours' span, and what the marks' colours are
   function renderCalShow() {
     const fh = freeHours();
-    $("calWx").checked = wxOn(); $("calMarks").checked = marksOn(); $("calFreeOn").checked = fh.on;
+    $("calMarks").checked = marksOn(); $("calFreeOn").checked = fh.on;
     for (const [id, v] of [["calFreeFrom", fh.from], ["calFreeTo", fh.to]]) { const f = $(id); if (document.activeElement !== f) f.value = v; f.disabled = !fh.on; }
     setChildren($("calShowFoot"),
-      el("span", { class: "mark-legend" }, el("span", { class: "phrase" }, "記録のしるし："), MARKS.map(([, name, c]) => el("span", { class: "phrase" }, el("i", { style: `--mc: var(${c})` }), name))),
-      wxPlace() ? null : el("span", { class: "wx-where" }, el("span", { class: "phrase" }, "天気は、場所を決めると出ます。"),
-        el("button", { type: "button", class: "link-btn", disabled: wxBusy, onclick: wxAsk }, wxBusy ? "調べています…" : "現在地で天気を出す")));
+      el("span", { class: "mark-legend" }, el("span", { class: "phrase" }, "記録のしるし："), MARKS.map(([, name, c]) => el("span", { class: "phrase" }, el("i", { style: `--mc: var(${c})` }), name))));
   }
   // (the hours on the hour: 0時〜23時 to begin, 1時〜24時 to end)
   setChildren($("calFreeFrom"), Array.from({ length: 24 }, (_, h) => el("option", { value: `${pad(h)}:00` }, `${h}時`)));
   setChildren($("calFreeTo"), Array.from({ length: 24 }, (_, h) => el("option", { value: `${pad(h + 1)}:00` }, `${h + 1}時`)));
-  $("calWx").addEventListener("change", (ev) => { saveCalSet({ wx: ev.target.checked }); if (ev.target.checked) wxFetch(); });
   $("calMarks").addEventListener("change", (ev) => saveCalSet({ marks: ev.target.checked }));
   $("calFreeOn").addEventListener("change", (ev) => saveCalSet({ free: ev.target.checked }));
   for (const id of ["calFreeFrom", "calFreeTo"]) $(id).addEventListener("change", () => {
@@ -15055,7 +15042,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑦ (the user's call): the day's weather where the phone is, from Open-Meteo (free, no key): its place asked for once
   // (the browser's location, to about 1 km) and kept on this device alone, the forecast kept for an hour. Rain likely
   // with a run still to do today, it says the run can be エアロバイク 30分, as the menu's メモ has it for a day it hurts
-  const WX_PLACE = LS_PREFIX + "wxPlace", WX_DATA = LS_PREFIX + "wxData", WX_DAYS = 7; // (7 days: the calendar's ⑤ too)
+  const WX_PLACE = LS_PREFIX + "wxPlace", WX_DATA = LS_PREFIX + "wxData", WX_DAYS = 7; // (7 days: 天気's 1週間の天気予報, the user's call 2026-11-12)
   const lsJson = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
   const lsJsonPut = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch {} };
   let wxBusy = false, wxError = "", wxFailedAt = 0; // (after a failure, not asked again for 5 minutes but by もう一度)
@@ -15092,7 +15079,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       wxError = ""; wxFailedAt = 0;
     } catch { wxError = "天気を取得できませんでした"; wxFailedAt = Date.now(); }
     wxBusy = false;
-    if (tab === "home") renderHome(); else if (tab === "calendar") renderCalendar(); // (⑤ the calendar's days too)
+    if (tab === "home") renderHome();
   }
   // a day's weather from the forecast kept: { word, icon, hi, lo, rain (%), wet, rainAt (the first hour from now with rain
   // likely, today) }, or null
@@ -15125,7 +15112,22 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("span", { class: "wx-temp" }, `${w.hi}° / ${w.lo}°`), el("span", { class: "wx-rain" }, `降水確率 ${w.rain}%`)),
       w.rainAt !== null ? el("p", { class: "wx-note" }, w.rainAt <= h ? "いま雨の予報です" : `${w.rainAt}時ごろから雨の予報です`) : null,
       w.wet && runLeft ? el("p", { class: "wx-note" }, "ランはエアロバイク30分に替えても") : null,
+      wxWeek(), // 1週間の天気予報
     ]);
+  }
+  // 1週間の天気予報 (the user's call, 2026-11-12: in place of the weather on the calendar's days): the 7 days from today
+  // in a row under the day's, each its day (a Sunday or holiday red, a Saturday blue), mark, highest and lowest, and 降水確率
+  function wxWeek() {
+    const days = Array.from({ length: WX_DAYS }, (_, i) => addDays(todayKey, i)).map((d) => [d, wxDay(d)]).filter(([, w]) => w);
+    if (days.length < 2) return null;
+    return el("ul", { class: "wx-week", "aria-label": "1週間の天気予報" }, days.map(([d, w]) => {
+      const wd = parseYmd(d).getDay(), today = d === todayKey, red = !today && (wd === 0 || !!holidayName(d));
+      return el("li", {}, el("span", { class: "sr-only" }, `${today ? "きょう" : fmtMDW(d)}、${w.word}、最高${w.hi}度、最低${w.lo}度、降水確率${w.rain}%`),
+        el("span", { class: "wx-d" + (red ? " sun" : !today && wd === 6 ? " sat" : ""), "aria-hidden": "true" }, today ? "きょう" : WD[wd]),
+        el("span", { class: "wx-icon " + w.icon, "aria-hidden": "true" }, icon(w.icon, 20)),
+        el("span", { class: "wx-hi", "aria-hidden": "true" }, `${w.hi}°`), el("span", { class: "wx-lo", "aria-hidden": "true" }, `${w.lo}°`),
+        el("span", { class: "wx-p", "aria-hidden": "true" }, `${w.rain}%`));
+    }));
   }
   // the place in the tiles' settings: asked again, or forgotten with the forecast
   function syncWxSettings() {
@@ -18108,7 +18110,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月12日 15:06"; // aa99b4c1 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月12日 15:15"; // a770ca40 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
