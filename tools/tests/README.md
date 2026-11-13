@@ -62,7 +62,7 @@ suites/todo9/
 `suite.txt` の中身（`#` の行は説明で、`--list` に出ます）：
 
 ```
-# ToDo その9 ①〜⑩
+# ToDo その12 ①〜⑩
 port	8820
 chat	ToDo
 tests	t1.js t2.js
@@ -74,7 +74,7 @@ tests	t1.js t2.js
 
 ## テストを足すとき
 
-1. `suites/<名前>/` を作ります。名前はページの英字に番号を付けます（例：`todo9`、`cal3`、`home2`、`goal5`、`tsumi2`、`diet3`、`money2`、`life2`）。
+1. `suites/<名前>/` を作ります。名前は、ページの英字とその回の番号です（例：「ToDo その12」なら `todo12`、「カレンダー その4」なら `cal4`。ほかに `home`・`weather`・`goal`・`tsumi`・`rec`・`diet`・`body`・`money`・`baito`・`journal`・`study`・`routine`）。
 2. `lib.js` は `suites/r38/lib.js` をコピーします。例のデータは `data.js`、テストは `t1.js`（`t2.js` …）に書きます。どれも `suites/r38/` が手本です。
 3. アプリの中身を使うときは `hook.js` を置きます。1行目に `// insert before: <index.html の中の1行（1か所だけのもの）>` を書き、2行目からに差し込むコードを書きます。手本は `suites/r38/hook.js` です。1行目を書かなければ、起動の行（`// ---------- boot ----------`）の前に入ります。
 4. `suite.txt` を書きます（上）。
