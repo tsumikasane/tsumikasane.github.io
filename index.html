@@ -19592,7 +19592,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月13日 22:11"; // b96e5608 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月13日 22:13"; // 2010b977 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -32159,11 +32159,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       .filter((x) => x.at >= now - 15).sort((a, b) => a.at - b.at)[0] : null;
     if (!(now >= w.am && now < w.amTo) && !(leave && leave.at - now <= 120)) return null;
     const wx = wxPlace() ? wxDay(todayKey) : null, wear = wx ? wxWear(todayKey) : null;
+    // (the umbrella while rain is still to come today: none once it is over; the day's word alone where no hours were kept)
+    const rainW = wx ? wxRainWords(todayKey) || (wx.wet && !wxHours(todayKey + "T00:00", 1).length ? (wx.icon === "snow" ? "雪の予報です" : "雨の予報です") : "") : "";
     const sh = shifts.items.filter((x) => x.date === todayKey).sort((a, b) => String(a.start).localeCompare(String(b.start)));
     const list = [
       leave ? ["出発", [`${atMin(Math.max(0, leave.at))} に出発（${leave.t.e.time} ${oneLine(leave.t.e.title)}）`, leave.at > now ? leftWords(leave.at - now) : "いま"], "、"] : null,
       sh.length ? ["バイト", sh.map((x) => `${x.start}〜${x.end}` + (shiftName(x) !== "バイト" ? ` ${shiftName(x)}` : "")), "、"] : null,
-      wx && wx.wet ? ["傘", [wxRainWords(todayKey) || (wx.icon === "snow" ? "雪の予報です" : "雨の予報です"), "傘を持っていこう"], "。"] : null,
+      rainW ? ["傘", [rainW, "傘を持っていこう"], "。"] : null,
       wear ? ["服装", wear.main] : null,
     ].filter(Boolean);
     const checks = [];
