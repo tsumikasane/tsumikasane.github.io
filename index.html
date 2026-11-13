@@ -904,6 +904,39 @@ span.stc-d { background: transparent; color: var(--muted); cursor: default; }
 .row-between { display: flex; justify-content: space-between; align-items: center; gap: var(--space-1) var(--space-2); flex-wrap: wrap; }
 .row-tail { display: flex; align-items: center; gap: var(--space-2); }
 .label { font-weight: 600; }
+/* 日記 ①〜⑩: the day's question over the field, the entry's tags and the tools under it, the run of days written, and the
+   cards below (読み返す, 日記カレンダー in four steps of 日記's brown, タグ) */
+.jn-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0 0 10px; padding: 10px 12px; border-radius: 10px;
+  background: color-mix(in srgb, var(--c-journal) 12%, var(--surface)); }
+.jn-ask-q { flex: 1 1 14em; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.jn-ask-q small { display: block; font-weight: 400; color: var(--muted); font-size: var(--t-foot); }
+.jn-ask-acts { display: flex; gap: 6px; }
+.jn-tags, .jn-tools, .jn-tag-all { display: flex; flex-wrap: wrap; gap: 6px; }
+.jn-tags { margin: 8px 0 0; }
+.jn-tools { margin: 8px 0 4px; }
+.jn-tag { border: 0; border-radius: 999px; padding: 4px 10px; min-height: 32px; font: inherit; font-size: var(--t-sub); cursor: pointer;
+  background: color-mix(in srgb, var(--c-journal) 16%, var(--surface)); color: var(--fg); }
+.jn-tag[aria-pressed="true"] { background: var(--c-journal); color: #ffffff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .jn-tag[aria-pressed="true"] { color: #000000; } }
+:root[data-theme="dark"] .jn-tag[aria-pressed="true"] { color: #000000; }
+.jn-tag small { margin-inline-start: 4px; color: inherit; opacity: .75; font-variant-numeric: tabular-nums; }
+.jn-tag-all { padding: 0 var(--space-2) 12px; }
+.jn-streak { margin: 8px var(--space-2) 0; font-size: var(--t-sub); color: var(--muted); }
+ul.list.jn-back > li, ul.list.jn-tag-list > li { flex-direction: column; align-items: stretch; gap: 4px; padding: 10px var(--space-2); }
+.jn-back-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: var(--t-sub); color: var(--muted); }
+.jn-back-head strong { color: var(--fg); }
+.jn-snip { margin: 0; overflow-wrap: anywhere; white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.jn-back-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.jnc-d.lv1, .jnc-sw.lv1 { background: color-mix(in srgb, var(--c-journal) 35%, var(--surface)); }
+.jnc-d.lv2, .jnc-sw.lv2 { background: color-mix(in srgb, var(--c-journal) 55%, var(--surface)); }
+.jnc-d.lv3, .jnc-sw.lv3 { background: color-mix(in srgb, var(--c-journal) 78%, var(--surface)); }
+.jnc-d.lv4, .jnc-sw.lv4 { background: var(--c-journal); }
+.jnc-d.lv4 { color: #ffffff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .jnc-d.lv4 { color: #000000; } }
+:root[data-theme="dark"] .jnc-d.lv4 { color: #000000; }
+.jnc-sw { flex: none; width: 14px; height: 14px; border-radius: 4px; }
+#jnTpl { width: 100%; }
+.jn-tools .chip-btn, .jn-back-acts .chip-btn { background: var(--fill); box-shadow: none; }
 
 /* stats (weight, money): Health-style summary cards */
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
@@ -4710,17 +4743,44 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
       <!-- 日記: the writing only, under 「ひとこと」 (the user's call: no mood scale of つらい … 最高) -->
       <section id="sec-journal" style="--sec-c: var(--c-journal)" hidden>
-        <div class="sec-head"><h2><span class="page-mark" role="img" aria-label="日記" style="--mark-c: var(--c-journal)"><svg class="icon" width="40" height="40" aria-hidden="true" focusable="false"><use href="#i-journal"/></svg></span></h2><div class="datenav"></div></div>
+        <div class="sec-head">
+          <div class="title-row"><h2><span class="page-mark" role="img" aria-label="日記" style="--mark-c: var(--c-journal)"><svg class="icon" width="40" height="40" aria-hidden="true" focusable="false"><use href="#i-journal"/></svg></span></h2><button type="button" class="icon-btn" id="jnSettings" aria-label="日記の設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button></div>
+          <div class="datenav"></div>
+        </div>
         <div class="card pad">
+          <!-- (日記 ① きょうの問いかけ) -->
+          <div class="jn-ask" id="jnAsk" hidden></div>
           <div class="row-between"><label class="label" for="journalText">ひとこと</label><span class="row-tail"><span class="muted small" id="journalState"></span><button type="button" class="link-btn small" id="journalRevert" hidden>書き直す前に戻す</button></span></div>
           <textarea id="journalText" rows="6"></textarea>
+          <!-- (日記 ⑥ the entry's #タグ, ② 時刻, ③ テンプレート, ④ その日の記録) -->
+          <div class="jn-tags" id="jnTags" hidden></div>
+          <div class="jn-tools" id="jnTools"></div>
           <div class="row-between">
-            <span class="muted small">書くと自動で保存されます</span>
+            <span class="muted small"><span class="phrase">書くと自動で保存されます</span><span class="phrase" id="jnCount"></span></span>
             <button type="button" class="link-btn danger" id="journalDelete">この日の記録を削除</button>
           </div>
         </div>
+        <!-- (日記 ⑤ 続けて書いた日) -->
+        <p class="jn-streak" id="jnStreak" hidden></p>
         <div id="td4JnTodos" hidden></div><!-- (ToDo その4 ⑩ the day's done ToDos, written in at a press) -->
         <div id="jnPlanNotes" hidden></div><!-- (カレンダー その2 ⑩ the day's plans' ふりかえり) -->
+        <!-- (日記 ⑦ 1か月前・1年前のきょう, ⑩ ランダムに読み返す) -->
+        <div class="card" id="jnBackCard" hidden>
+          <div class="card-head">読み返す</div>
+          <ul class="list jn-back" id="jnBack"></ul>
+        </div>
+        <!-- (日記 ⑧ 日記カレンダー) -->
+        <div class="card" id="jnCalCard" hidden>
+          <div class="card-head row-between"><span>日記カレンダー</span><span class="rt-cal-nav" id="jnCalNav"></span></div>
+          <div class="excal" id="jnCal"></div>
+          <div class="excal-key" id="jnCalKey"></div>
+        </div>
+        <!-- (日記 ⑥ タグ) -->
+        <div class="card" id="jnTagCard" hidden>
+          <div class="card-head">タグ</div>
+          <div class="jn-tag-all" id="jnTagAll"></div>
+          <ul class="list jn-tag-list" id="jnTagList" hidden></ul>
+        </div>
       </section>
 
       <!-- ダイエット: からだ・食事・運動 in one page (the user's call), one of them showing at a time, picked from the bar at
@@ -6034,6 +6094,30 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield"><input type="time" id="rtRemindAt" value="21:00"></div>
         </form>
         <p class="group-foot" id="rtRemindFoot"></p>
+      </div>
+      <!-- 日記の設定 (its gear): ③ テンプレート, ⑨ 書く時間のお知らせ, ① 問いかけ -->
+      <div class="sheet-view" id="jnSetGroup" hidden>
+        <h3 class="group-head">テンプレート</h3>
+        <div class="card pad">
+          <label class="sr-only" for="jnTpl">テンプレート</label>
+          <textarea id="jnTpl" rows="5" maxlength="1000" placeholder="例：よかったこと："></textarea>
+          <div class="row-between"><span class="muted small" id="jnTplState"></span><button type="button" class="link-btn small" id="jnTplSample">例を入れる</button></div>
+        </div>
+        <p class="group-foot">日記の下の「テンプレート」を押すと、ここに書いた文が入ります。</p>
+        <h3 class="group-head">書く時間のお知らせ</h3>
+        <form class="add" id="jnRemindForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="jnRemindOn">お知らせ</label>
+          <div class="ffield"><input type="checkbox" id="jnRemindOn" class="switch" role="switch"></div>
+          <label class="flabel" for="jnRemindAt">時刻</label>
+          <div class="ffield"><input type="time" id="jnRemindAt" value="21:30"></div>
+        </form>
+        <p class="group-foot" id="jnRemindFoot"></p>
+        <h3 class="group-head">きょうの問いかけ</h3>
+        <form class="add" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="jnAskOn">問いかけを出す</label>
+          <div class="ffield"><input type="checkbox" id="jnAskOn" class="switch" role="switch"></div>
+        </form>
+        <p class="group-foot">日記の上に、書き出しのヒントになる問いを1日1つ出します。</p>
       </div>
       <!-- 運動の設定 (the gear while 運動 shows): ⑧ the month's distance goal and ⑨ the rest's time (the user's calls, 2026-11-10) -->
       <div class="sheet-view" id="woSetGroup" hidden>
@@ -8626,6 +8710,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!journalDirty) loadJournalForm();
     draw(renderJnPlanNotes); // (カレンダー その2 ⑩ the day's ふりかえり)
     if (todoFour) draw(td4RenderJn); // (ToDo その4 ⑩ the day's done ToDos)
+    draw(renderJnMore); // (日記 ①〜⑩)
     $("journalDelete").hidden = !journal.get(viewDate);
     $("journalRevert").hidden = !(journalBase && journalBase.date === viewDate && journalBase.text && (journal.get(viewDate)?.text || "") !== journalBase.text);
   }
@@ -13200,6 +13285,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...goalTwoAlarms(now)); // (目標 その2 ⑩ しばらく進めていないお知らせ)
     out.push(...goalFiveAlarms(now)); // (目標 その5 ⑧ マスの期限のお知らせ)
     out.push(...goalFourAlarms(now)); // (目標 その4 ⑤ 取り組む時間のお知らせ)
+    out.push(...jnAlarms(now)); // (日記 ⑨ 書く時間のお知らせ)
     if (todoEight) td8Hold(out); // (ToDo その8 ②⑧ none for いつかやる nor a list put away)
     return (todoSix ? td6Hold(out) : out).sort((a, b) => a.at - b.at).slice(0, 400); // (ToDo その6 ③ held while put aside, ⑧ 静かな時間)
   }
@@ -13247,6 +13333,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...goalTwoPush()); // (目標 その2 ⑩)
     parts.push(...goalFiveParts()); // (目標 その5 ⑧)
     parts.push(...goalFourPush()); // (目標 その4 ⑤)
+    parts.push(...jnPushParts()); // (日記 ⑨)
     parts.push(...wxPushParts()); // (天気 その1 ⑩ 朝の天気のお知らせ, this device's and the others')
     const t = JSON.stringify(parts);
     let h = 2166136261;
@@ -13859,7 +13946,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const mode = sheetMode(), adding = mode === "goal" || mode === "plan" || mode === "todo", changing = mode === "edit" || mode === "rec";
     for (const [m, id] of Object.entries(SHEET_VIEWS)) $(id).hidden = m !== mode;
     sheetEl.classList.toggle("compact", mode === "month");
-    $("labelsGroup").hidden = settingsScope !== "calendar"; $("todoLabelsGroup").hidden = settingsScope !== "todo"; $("subjectsGroup").hidden = settingsScope !== "study"; $("tilesGroup").hidden = settingsScope !== "home"; $("bodyGroup").hidden = settingsScope !== "weight"; $("moneyGroup").hidden = settingsScope !== "money"; $("woMenuGroup").hidden = settingsScope !== "woMenu"; $("jobGroup").hidden = settingsScope !== "job"; $("backupGroup").hidden = settingsScope !== "records"; $("tsumiGroup").hidden = settingsScope !== "tsumi"; $("rtGroup").hidden = settingsScope !== "routine"; $("woSetGroup").hidden = settingsScope !== "workout"; $("mealSetGroup").hidden = settingsScope !== "meal"; $("goalSetGroup").hidden = settingsScope !== "goal";
+    $("labelsGroup").hidden = settingsScope !== "calendar"; $("todoLabelsGroup").hidden = settingsScope !== "todo"; $("subjectsGroup").hidden = settingsScope !== "study"; $("tilesGroup").hidden = settingsScope !== "home"; $("bodyGroup").hidden = settingsScope !== "weight"; $("moneyGroup").hidden = settingsScope !== "money"; $("woMenuGroup").hidden = settingsScope !== "woMenu"; $("jobGroup").hidden = settingsScope !== "job"; $("backupGroup").hidden = settingsScope !== "records"; $("tsumiGroup").hidden = settingsScope !== "tsumi"; $("rtGroup").hidden = settingsScope !== "routine"; $("woSetGroup").hidden = settingsScope !== "workout"; $("mealSetGroup").hidden = settingsScope !== "meal"; $("goalSetGroup").hidden = settingsScope !== "goal"; $("jnSetGroup").hidden = settingsScope !== "journal"; // (日記の設定)
     $("sheetDone").hidden = changing || adding || mode === "alarm"; $("sheetSave").hidden = mode !== "edit"; $("recSave").hidden = mode !== "rec";
     $("recSave").textContent = mode === "rec" && recEdit.fresh ? "追加" : "保存"; // (a new one from きょう)
     $("goalSave").hidden = mode !== "goal"; $("planSave").hidden = mode !== "plan"; $("todoSave").hidden = mode !== "todo";
@@ -14184,6 +14271,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (scope === "workout") renderWoSettings(); // 運動's month's goal (⑧) and rest (⑨)
     if (scope === "meal") renderMealSettings(); // 食事's 目安, protein goal (⑤) and お知らせ (⑩)
     if (scope === "goal") renderGoalSettings(); // 目標's ⑤ 見直しのお知らせ
+    if (scope === "journal") renderJnSettings(); // (日記 ③⑨①)
     if (scope === "todo") { renderTd9Settings(); renderTdMorning(); renderTdEvening(); renderTdBadge(); if (todoFour) renderTd4Slots(); if (todoSix) renderTd6Quiet(); if (todoSeven) renderTd7Settings(); if (todoEight) renderTd8Settings(); } // (ToDo その2 ① 朝のまとめのお知らせ, その3 ③④)
     // (バイト: one blank job to fill in when there is none yet, its 時給 ready to type)
     if (scope === "job") {
@@ -20031,7 +20119,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月14日 3:51"; // cb17d44f (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月14日 4:16"; // 5c3d1338 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -36390,6 +36478,248 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren(box, mo3Phr(`今週（${fmtShort(from)}〜）の支出は ${fmtYen(out)}`, aim ? "・" : ""),
       aim ? el("span", { class: "phrase" + (out > aim ? " warn" : "") }, keepUnits(out > aim ? `週の目安 ${fmtYen(aim)} を ${fmtYen(out - aim)} 超えています` : `週の目安 ${fmtYen(aim)} まで あと ${fmtYen(aim - out)}`)) : null);
   }
+
+  // ---------- 日記 ①〜⑩ (the user's calls, 2026-11-13): the day's question to start from (①), the time put in (②), a
+  // テンプレート of one's own (③), the day's records put in (④), the letters and the days written in a row (⑤), #タグ (⑥),
+  // a month and a year ago (⑦), 日記カレンダー (⑧), a reminder to write (⑨) and a day picked at random to read again (⑩) ----------
+  const jnDays = () => { const m = new Map(); for (const j of journal.items) { const d = j.date || j.id, t = (j.text || "").trim(); if (t && isDay(d)) m.set(d, t); } return m; };
+  const jnLen = (t) => [...String(t || "").trim()].length;
+  // a part drawn again only once what it shows has changed: a press on it as the field is left (which saves, and draws the
+  // page again) lands on the same button
+  const jnSigs = new Map();
+  const jnSame = (k, v) => { const t = JSON.stringify(v); if (jnSigs.get(k) === t) return true; jnSigs.set(k, t); return false; };
+  const keepFocus = (ev) => ev.preventDefault(); // (pressed, the field keeps the keyboard and its caret)
+  // ① the questions, one a day (the same all day, another the next), ほかの問い going on to the next
+  const JN_ASKS = ["きょう、いちばんうれしかったことは？", "きょう、がんばったことは？", "きょう、ありがとうと思ったことは？", "きょう、笑ったことは？",
+    "きょう、はじめてしたことは？", "きょう、おいしかったものは？", "きょう、気づいたことは？", "きょう、すこし疲れたことは？",
+    "きょう、だれと話した？", "きょう、もっとこうすればよかったと思うことは？", "あした、楽しみなことは？", "あした、やりたいことは？",
+    "きょうの自分に、ひとこと言うなら？", "きょうの天気と気分は？", "きょう、心が動いたことは？", "最近、ハマっていることは？",
+    "きょう、学んだことは？", "きょう、できるようになったことは？", "きょう、ほっとした時間は？", "きょう、印象に残った言葉は？",
+    "きょう、自分をほめるとしたら？", "いま、気になっていることは？", "きょう、見た景色で覚えていることは？", "きょう、体の調子はどうだった？",
+    "きょう、だれかの役に立てたことは？", "今週、いちばんよかったことは？", "いま、会いたい人は？", "きょう、時間をいちばん使ったことは？",
+    "1年後の自分に伝えたいことは？", "きょうを一言で表すと？"];
+  let jnAskShift = 0, jnAskFor = null;
+  const jnAskOn = () => settings.get("jnAsk")?.off !== true;
+  function jnAskOf(d, shift = 0) { const n = Math.round(parseYmd(d).getTime() / 864e5); return JN_ASKS[(((n + shift) % JN_ASKS.length) + JN_ASKS.length) % JN_ASKS.length]; }
+  function renderJnAsk() {
+    const box = $("jnAsk");
+    if (jnAskFor !== viewDate) { jnAskFor = viewDate; jnAskShift = 0; }
+    box.hidden = !jnAskOn();
+    if (box.hidden) return;
+    const q = jnAskOf(viewDate, jnAskShift);
+    if (jnSame("ask", [q, viewDate === todayKey])) return;
+    setChildren(box, el("p", { class: "jn-ask-q" }, el("small", {}, viewDate === todayKey ? "きょうの問いかけ" : "この日の問いかけ"), q),
+      el("span", { class: "jn-ask-acts" },
+        el("button", { type: "button", class: "chip-btn", onclick: () => { jnPut(`【${q}】\n`, "end"); journalText.focus(); } }, "書く"),
+        el("button", { type: "button", class: "chip-btn", onclick: () => { jnAskShift++; renderJnAsk(); } }, "ほかの問い")));
+  }
+  // what is put in (②③④①): at the caret when the field was last in use, else after what is there, on a line of its own;
+  // the field saves as when typed in
+  let jnCaret = null;
+  journalText.addEventListener("focus", () => { jnCaret = viewDate; });
+  journalText.addEventListener("input", () => requestAnimationFrame(() => draw(renderJnLive)));
+  function jnPut(add, where = "caret") {
+    const ta = journalText, cur = ta.value, caret = where === "caret" && jnCaret === viewDate && typeof ta.selectionStart === "number";
+    let before, after = "";
+    if (caret) { before = cur.slice(0, ta.selectionStart); after = cur.slice(ta.selectionEnd); if (before && !/\n$/.test(before) && /\n$/.test(add)) before += "\n"; }
+    else { before = cur.replace(/\s+$/, ""); if (before) before += where === "end" ? "\n\n" : "\n"; }
+    ta.value = before + add + after;
+    const pos = (before + add).length;
+    try { ta.setSelectionRange(pos, pos); } catch {}
+    markJournalDirty();
+    renderJnLive();
+    return cur;
+  }
+  const jnBack = (cur, d) => () => { if (viewDate !== d) return; journalText.value = cur; markJournalDirty(); renderJnLive(); };
+  // ② the time, ③ テンプレート, ④ その日の記録
+  function renderJnTools() {
+    const tpl = jnTpl();
+    if (jnSame("tools", tpl)) return;
+    setChildren($("jnTools"),
+      el("button", { type: "button", class: "chip-btn", "aria-label": "いまの時刻を入れる", onpointerdown: keepFocus, onclick: () => {
+        const n = new Date(), t = `${pad(n.getHours())}:${pad(n.getMinutes())} `;
+        jnPut(t); journalText.focus();
+      } }, "いまの時刻"),
+      el("button", { type: "button", class: "chip-btn", onpointerdown: keepFocus, onclick: () => {
+        if (!tpl) { openSettings(false, "journal", $("jnTpl")); return; }
+        const d = viewDate, cur = jnPut(tpl.replace(/\s+$/, "") + "\n", "end");
+        flash("テンプレートを入れました", jnBack(cur, d));
+      } }, tpl ? "テンプレート" : "テンプレートを作る"),
+      el("button", { type: "button", class: "chip-btn", onpointerdown: keepFocus, onclick: () => {
+        const lines = jnDayLines(viewDate), d = viewDate;
+        if (!lines.length) { flash(`${relLabel(d) || fmtMDW(d)}の記録は、まだありません`); return; }
+        const cur = jnPut(["― この日の記録 ―", ...lines].join("\n") + "\n", "end");
+        flash("この日の記録を書き足しました", jnBack(cur, d));
+      } }, "その日の記録を入れる"));
+  }
+  // ④ the day's records in words, a line a kind: 予定・バイト, 勉強, 運動, 食事, からだ, ルーティーン, 家計簿
+  function jnDayLines(d) {
+    const out = [];
+    try { const ag = dayAgenda(turnsByDay(d, d).get(d) || [], shiftsByDay(d, d).get(d) || []); if (ag.length) out.push("予定：" + ag.join("、")); } catch {}
+    const st = study.items.filter((x) => x.date === d);
+    if (st.length) { const subs = [...new Set(st.map((x) => subjectOf(x)?.name).filter(Boolean))]; out.push(`勉強：${durText(sum(st, (x) => x.minutes))}` + (subs.length ? `（${subs.join("・")}）` : "")); }
+    const wo = workouts.items.filter((w) => w.date === d);
+    if (wo.length) out.push("運動：" + byCreated(wo).map((w) => [w.exercise || w.type, w.exercise ? "" : workoutDetail(w)].filter(Boolean).join(" ")).filter((v, i, a) => a.indexOf(v) === i).join("、"));
+    const ml = meals.items.filter((m) => m.date === d);
+    if (ml.length) { const ks = ml.filter((m) => typeof m.kcal === "number"); out.push("食事：" + [...ml].sort((a, b) => SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot)).map((m) => m.text).join("、") + (ks.length ? `（${fmtN(sum(ks, (m) => m.kcal))} kcal）` : "")); }
+    const w = weights.get(d);
+    if (w && num(w.kg) > 0) out.push(`体重：${fmtKg(w.kg)} kg` + (num(w.fat) > 0 ? `（体脂肪率 ${fmtFat(w.fat)}%）` : ""));
+    const rd = routineDays.items.find((x) => x.date === d && x.done?.length);
+    if (rd) { const names = rd.done.map((id) => routines.get(id)?.name).filter(Boolean); if (names.length) out.push("ルーティーン：" + names.join("・")); }
+    const ex = expenses.items.filter((e) => e.date === d);
+    if (ex.length) { const t = RECORD_LISTS.money.total(ex); if (t) out.push("家計簿：" + t); }
+    return out;
+  }
+  // ③ テンプレート, kept with the account
+  const jnTpl = () => { const t = settings.get("jnTemplate")?.text; return typeof t === "string" && t.trim() ? t : ""; };
+  const JN_TPL_SAMPLE = "よかったこと：\nがんばったこと：\nあしたやりたいこと：";
+  function saveJnTpl(text) {
+    act(() => settings.set("jnTemplate", { text: String(text).slice(0, 1000), updatedAt: Date.now() }));
+    $("jnTplState").textContent = "保存しました";
+    renderJnTools();
+  }
+  $("jnTpl").addEventListener("change", (ev) => saveJnTpl(ev.target.value));
+  $("jnTplSample").addEventListener("click", () => { const f = $("jnTpl"); f.value = (f.value.trim() ? f.value.replace(/\s+$/, "") + "\n" : "") + JN_TPL_SAMPLE; saveJnTpl(f.value); });
+  // ⑥ #タグ: words after # (or ＃) up to a space or a mark, as many as there are
+  const JN_TAG = /[#＃]([^\s#＃、。，．,.!！?？「」『』()（）\[\]【】]{1,20})/gu;
+  const jnTagsOf = (t) => [...new Set([...String(t || "").matchAll(JN_TAG)].map((m) => m[1]))];
+  let jnTagSel = null;
+  // ⑤ the letters, written as it is typed; and ⑥ the entry's tags under the field
+  function renderJnLive() {
+    const t = journalText.value, n = jnLen(t);
+    $("jnCount").textContent = n ? `・${fmtN(n)} 字` : "";
+    const tags = jnTagsOf(t);
+    $("jnTags").hidden = !tags.length;
+    if (jnSame("tags", [tags, jnTagSel])) return;
+    setChildren($("jnTags"), tags.map((g) => el("button", { type: "button", class: "jn-tag", "aria-pressed": String(g === jnTagSel), "aria-label": `#${g} の日記を見る`,
+      onclick: () => { jnTagSel = g; renderJnTagCard(); $("jnTagCard").scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" }); } }, "#" + g)));
+  }
+  // ⑤ the days written in a row (up to today, or up to yesterday while today's isn't yet), this month's and all of them
+  function jnRun(days, end) { let n = 0, d = end; while (days.has(d)) { n++; d = addDays(d, -1); } return n; }
+  function renderJnStreak(days) {
+    const p = $("jnStreak");
+    p.hidden = !days.size;
+    if (!days.size) return;
+    const run = jnRun(days, days.has(todayKey) ? todayKey : addDays(todayKey, -1)), mo = monthOf(todayKey);
+    const month = [...days.keys()].filter((d) => monthOf(d) === mo).length;
+    let best = 0;
+    for (const d of days.keys()) if (!days.has(addDays(d, -1))) { let k = 0, x = d; while (days.has(x)) { k++; x = addDays(x, 1); } best = Math.max(best, k); }
+    setChildren(p, dotParts([run ? `${run} 日続けて書いています` + (days.has(todayKey) ? "" : "（きょうはまだ）") : "きょうから、また続けましょう",
+      `今月 ${month} 日`, `これまで ${fmtN(days.size)} 日`, best > 1 ? `最長 ${best} 日` : null].filter(Boolean)));
+  }
+  // ⑦ a month and a year ago (and each year before), and ⑩ a day picked at random
+  let jnPick = null;
+  function jnAgo(d, months) { const p = parseYmd(d), t = new Date(p.getFullYear(), p.getMonth() - months, 1), last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate(); return ymd(new Date(t.getFullYear(), t.getMonth(), Math.min(p.getDate(), last))); }
+  function jnRow(label, d, text, acts = []) {
+    return el("li", {}, el("div", { class: "jn-back-head" }, el("strong", {}, label), el("span", {}, fmtMDW(d) + (parseYmd(d).getFullYear() !== parseYmd(todayKey).getFullYear() ? `・${parseYmd(d).getFullYear()}年` : ""))),
+      el("p", { class: "jn-snip" }, text),
+      el("div", { class: "jn-back-acts" }, el("button", { type: "button", class: "chip-btn", onclick: () => jnGo(d) }, "この日を開く"), acts));
+  }
+  function jnGo(d) { setViewDate(d); window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" }); }
+  function renderJnBack(days) {
+    const rows = [], seen = new Set([viewDate]);
+    if (jnPick && (!days.has(jnPick) || jnPick === viewDate)) jnPick = null;
+    if (jnSame("back", [viewDate, jnPick, jnPick && days.get(jnPick), days.size, [addDays(viewDate, -7), jnAgo(viewDate, 1), ...Array.from({ length: 10 }, (_, i) => jnAgo(viewDate, 12 * (i + 1)))].map((d) => days.get(d) || null)])) return;
+    const put = (label, d) => { if (days.has(d) && !seen.has(d)) { seen.add(d); rows.push(jnRow(label, d, days.get(d))); } };
+    put("1週間前", addDays(viewDate, -7));
+    put("1か月前", jnAgo(viewDate, 1));
+    for (let y = 1; y <= 10; y++) put(`${y}年前`, jnAgo(viewDate, 12 * y));
+    const others = [...days.keys()].filter((d) => d !== viewDate);
+    const random = () => { const pool = others.filter((d) => d !== jnPick); if (!pool.length) return; jnPick = pool[Math.floor(Math.random() * pool.length)]; renderJnBack(jnDays()); };
+    if (jnPick) rows.push(jnRow("思い出す", jnPick, days.get(jnPick), [el("button", { type: "button", class: "chip-btn", onclick: random }, "ほかの日")]));
+    else if (others.length >= 3) rows.push(el("li", {}, el("div", { class: "jn-back-acts" }, el("button", { type: "button", class: "chip-btn", onclick: random }, "ランダムに1日読む")),
+      el("span", { class: "muted small" }, `これまでの ${fmtN(others.length)} 日の日記から、1日を選んで出します。`)));
+    $("jnBackCard").hidden = !rows.length;
+    setChildren($("jnBack"), rows);
+  }
+  // ⑧ 日記カレンダー: the month's days by how much was written (〜50字, 〜150字, 〜300字, それ以上); pressed, that day
+  let jnCalMonth = null, jnCalFor = null;
+  const jnLevel = (n) => (!(n > 0) ? 0 : n <= 50 ? 1 : n <= 150 ? 2 : n <= 300 ? 3 : 4);
+  function renderJnCal(days) {
+    $("jnCalCard").hidden = !days.size;
+    if (!days.size) return;
+    const first = [...days.keys()].sort()[0];
+    if (jnCalFor !== monthOf(viewDate)) { jnCalFor = monthOf(viewDate); jnCalMonth = jnCalFor; }
+    const ym = jnCalMonth < monthOf(first) ? monthOf(first) : jnCalMonth > monthOf(todayKey) ? monthOf(todayKey) : jnCalMonth, n = daysInMonth(ym), ws = weekStart(), lead = (parseYmd(ym + "-01").getDay() - ws + 7) % 7;
+    if (jnSame("cal", [ym, viewDate, todayKey, first, weekStart(), [...days].filter(([d]) => monthOf(d) === ym).map(([d, t]) => [d, jnLen(t)])])) return;
+    const step = (by) => { jnCalMonth = addMonths(ym, by); renderJnCal(jnDays()); };
+    setChildren($("jnCalNav"),
+      el("button", { type: "button", class: "icon-btn", "aria-label": "前の月", disabled: ym <= monthOf(first), onclick: () => step(-1) }, icon("prev", 20)),
+      el("span", { class: "rt-cal-mo" }, fmtMonth(ym)),
+      el("button", { type: "button", class: "icon-btn", "aria-label": "次の月", disabled: ym >= monthOf(todayKey), onclick: () => step(1) }, icon("next", 20)));
+    const cells = [...Array.from({ length: 7 }, (_, i) => el("span", { class: "excal-wd", "aria-hidden": "true" }, WD[(ws + i) % 7])),
+      ...Array.from({ length: lead }, () => el("span", { class: "excal-pad" }))];
+    let wrote = 0, letters = 0;
+    for (let i = 1; i <= n; i++) {
+      const d = `${ym}-${pad(i)}`;
+      if (d > todayKey) { cells.push(el("span", { class: "stc-d bare" }, el("span", { class: "dn" }, String(i)))); continue; }
+      const c = jnLen(days.get(d));
+      if (c) { wrote++; letters += c; }
+      cells.push(el("button", { type: "button", class: `stc-d jnc-d lv${jnLevel(c)}` + (d === todayKey ? " today" : "") + (d === viewDate ? " on" : ""),
+        "aria-label": `${fmtMDW(d)}${d === todayKey ? "（きょう）" : ""} ${c ? `${fmtN(c)} 字` : "日記なし"}`, onclick: () => jnGo(d) },
+        el("span", { class: "dn" }, String(i)), el("span", { class: "da" }, c ? (c >= 1000 ? `${Math.floor(c / 1000)}千` : String(c)) : "")));
+    }
+    setChildren($("jnCal"), cells);
+    setChildren($("jnCalKey"), el("span", { class: "excal-steps" }, [["〜50字", 1], ["〜150字", 2], ["〜300字", 3], ["300字〜", 4]].map(([w, lv]) => el("span", { class: "excal-step" }, el("i", { class: `jnc-sw lv${lv}` }), w))),
+      el("p", { class: "sub" }, wrote ? dotParts([`書いた日 ${wrote} 日`, `${fmtN(letters)} 字`]) : `${fmtMonth(ym)}の日記はまだありません。`));
+  }
+  // ⑥ タグ: every tag with how many days have it, the most first; one pressed lists its days, the latest first
+  function renderJnTagCard(days = jnDays()) {
+    const count = new Map(), last = new Map();
+    for (const [d, t] of days) for (const g of jnTagsOf(t)) { count.set(g, (count.get(g) || 0) + 1); if (!last.has(g) || d > last.get(g)) last.set(g, d); }
+    $("jnTagCard").hidden = !count.size;
+    if (jnTagSel && !count.has(jnTagSel)) jnTagSel = null;
+    if (!count.size) return;
+    if (jnSame("tagcard", [[...days].filter(([, t]) => /[#＃]/.test(t)), jnTagSel, todayKey])) return;
+    const tags = [...count.keys()].sort((a, b) => count.get(b) - count.get(a) || last.get(b).localeCompare(last.get(a))).slice(0, 40);
+    if (jnTagSel && !tags.includes(jnTagSel)) tags.push(jnTagSel);
+    setChildren($("jnTagAll"), tags.map((g) => el("button", { type: "button", class: "jn-tag", "aria-pressed": String(g === jnTagSel),
+      onclick: () => { jnTagSel = jnTagSel === g ? null : g; renderJnTagCard(); renderJnLive(); } }, "#" + g, el("small", {}, String(count.get(g))))));
+    const list = $("jnTagList");
+    list.hidden = !jnTagSel;
+    if (!jnTagSel) { list.replaceChildren(); return; }
+    const hits = [...days].filter(([, t]) => jnTagsOf(t).includes(jnTagSel)).sort((a, b) => b[0].localeCompare(a[0]));
+    setChildren(list, hits.slice(0, 30).map(([d, t]) => jnRow(relLabel(d) || `${daysBetween(d, todayKey)} 日前`, d, t)),
+      hits.length > 30 ? el("li", { class: "muted small" }, `ほかに ${hits.length - 30} 日あります（記録の「探す」で #${jnTagSel} と探せます）`) : null);
+  }
+  function renderJnMore() {
+    const days = jnDays();
+    draw(renderJnAsk); draw(renderJnTools); draw(renderJnLive);
+    draw(() => renderJnStreak(days)); draw(() => renderJnBack(days)); draw(() => renderJnCal(days)); draw(() => renderJnTagCard(days));
+  }
+  // ⑨ 書く時間のお知らせ: on or off and its time (21:30 at first), kept with the account, coming to the devices that get
+  // 通知 as plans' alarms do: each day at that time while the day has no 日記, saying the day's question; pressed, 日記
+  const JN_REMIND_ID = "jnRemind";
+  function jnRemind() { const v = settings.get(JN_REMIND_ID) || {}; return { on: !!v.on, at: /^\d\d:\d\d$/.test(v.at || "") ? v.at : "21:30" }; }
+  function jnAlarms(now) {
+    const r = jnRemind(), out = [];
+    if (!r.on) return out;
+    const [h, mi] = r.at.split(":").map(Number), has = !!(journal.get(todayKey)?.text || "").trim();
+    for (let i = 0; i <= PUSH_AHEAD; i++) {
+      const d = addDays(todayKey, i), p = parseYmd(d), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
+      if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5 || (i === 0 && has)) continue;
+      out.push({ at, title: "日記", body: `きょうの日記がまだです。${jnAskOn() ? jnAskOf(d) : ""}`.trim(), tag: `jn-remind:${d}`, url: "./#journal" });
+    }
+    return out;
+  }
+  function jnPushParts() { const r = jnRemind(); return r.on ? [["jnRemind", r.at, !!(journal.get(todayKey)?.text || "").trim(), jnAskOn()]] : []; }
+  function renderJnSettings() {
+    const f = $("jnTpl");
+    if (document.activeElement !== f) f.value = settings.get("jnTemplate")?.text || "";
+    $("jnTplState").textContent = "";
+    const r = jnRemind(), st = pushState(), at = $("jnRemindAt");
+    $("jnRemindOn").checked = r.on;
+    if (document.activeElement !== at) at.value = r.at;
+    at.disabled = !r.on;
+    $("jnRemindFoot").textContent = !r.on ? "決めた時刻になっても、その日の日記がまだなら、通知でお知らせします。"
+      : st === "on" ? `その日の日記がまだなら、毎日 ${r.at} にこの端末に届きます。` : pushWords(st).replace("通知アラーム", "お知らせ");
+    $("jnAskOn").checked = jnAskOn();
+  }
+  function saveJnRemind(patch) { act(() => settings.set(JN_REMIND_ID, { ...jnRemind(), ...patch, updatedAt: Date.now() })); renderJnSettings(); }
+  $("jnRemindOn").addEventListener("change", (ev) => { saveJnRemind({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderJnSettings); });
+  $("jnRemindAt").addEventListener("change", (ev) => { if (/^\d\d:\d\d$/.test(ev.target.value)) saveJnRemind({ at: ev.target.value }); });
+  $("jnAskOn").addEventListener("change", (ev) => { act(() => settings.set("jnAsk", { off: !ev.target.checked, updatedAt: Date.now() })); draw(renderJnAsk); });
+  $("jnSettings").addEventListener("click", (ev) => openSettings(ev.detail === 0, "journal"));
 
   // ---------- boot ----------
   function renderAll() {
