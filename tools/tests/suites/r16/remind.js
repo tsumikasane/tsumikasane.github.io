@@ -1,0 +1,24 @@
+process.env.URL0 = "http://localhost:8768/";
+const { chromium } = require("playwright");
+const { at, phone, seed } = require("./lib");
+let fails = 0;
+const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
+const today = "2026-11-10", T = (d, h = 9) => Date.parse(`${d}T${String(h).padStart(2, "0")}:00:00+09:00`);
+const base = { settings: [{ id: "mealRemind", on: true, at: { 朝食: "", 昼食: "14:00", 夕食: "21:00" }, updatedAt: T("2026-11-01") }], meals: [{ id: "a", date: today, slot: "朝食", text: "パン", kcal: 150, createdAt: T(today, 8) }] };
+(async () => {
+  const b = await chromium.launch();
+  const p = await phone(b, at("12:00", today));
+  await seed(p, base, "diet");
+  let a = await p.evaluate(() => window.__alarmTimes(Date.now()).filter((x) => x.tag.startsWith("meal-remind")));
+  ok(a.length === 80 && a[0].tag === "meal-remind:昼食:2026-11-10" && a[0].body === "昼食の記録がまだです" && a[0].url === "./#meal" && new Date(a[0].at).toISOString() === "2026-11-10T05:00:00.000Z" && a[1].tag === "meal-remind:夕食:2026-11-10", "⑩ 昼食 and 夕食 each day, 40 days: " + a.length + " " + JSON.stringify(a.slice(0, 2)));
+  ok(!a.some((x) => x.tag.includes("朝食")), "⑩ 朝食 with no time: none");
+  const sig1 = await p.evaluate(() => window.__pushSig());
+  await p.evaluate(({ T, today }) => { const k = "tsumikasane:meals", list = JSON.parse(localStorage.getItem(k)); list.push({ id: "b", date: today, slot: "昼食", text: "うどん", kcal: 320, createdAt: T }); localStorage.setItem(k, JSON.stringify(list)); }, { T: T(today, 12), today });
+  await p.reload(); await p.waitForTimeout(700);
+  a = await p.evaluate(() => window.__alarmTimes(Date.now()).filter((x) => x.tag.startsWith("meal-remind")));
+  const sig2 = await p.evaluate(() => window.__pushSig());
+  ok(a.length === 79 && a[0].tag === "meal-remind:夕食:2026-11-10" && sig1 !== sig2, "⑩ 昼食 recorded: today's 昼食 gone, sent again: " + a[0].tag);
+  ok(!p.errs.length, "no page errors: " + p.errs.join(" | "));
+  await b.close();
+  console.log(fails ? `${fails} FAILED` : "ALL OK");
+})();

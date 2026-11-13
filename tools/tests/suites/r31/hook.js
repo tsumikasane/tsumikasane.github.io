@@ -1,0 +1,2 @@
+// insert before:   // ---------- boot ----------
+  window.__g3 = { at: (id, d) => progressAt(goals.get(id), d), fc: (id) => goalForecast(goals.get(id)), streak: (id) => goalStreak(goals.get(id)), spread: (id) => spreadPlan(goals.get(id)).list.map((x) => [x.name, x.due]), reach: (id) => [...linkReach(id)], stats: () => goalStatsData(goals.items.filter((g) => g.done)), week: (id) => weekSummary(goals.get(id)), pct: (id) => goalPct(goals.get(id)), next: () => goalNextAll().map((x) => [x.g.id, x.name]) };

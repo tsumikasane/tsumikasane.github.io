@@ -1,0 +1,2 @@
+// insert before:   // ---------- boot ----------
+  window.__g4 = { alarms: (n) => alarmTimes(n), sig: () => pushSig(), neko: () => nekoLines(), checks: (o) => goalChecks(o), time: (id) => { const t = goalTime(goals.get(id)); return { all: t.all, week: t.week }; }, focus: () => focusNow(), tick: () => focusTick(), pct: (id) => goalPct(goals.get(id)), photos: () => cellPhotos ? [...cellPhotos.values()].flat().length : -1 };

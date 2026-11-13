@@ -1,0 +1,2 @@
+// insert before:   // ---------- boot ----------
+  window.__td4 = { view: () => td4View(), sugs: (q) => td4Sugs(q).map((x) => x.t.text), rep: () => { const s = td4RepFind(); return s ? { k: s.k, repeat: s.repeat, wds: s.wds, n: s.dates.length, next: td4RepNext(s) } : null; }, alarms: (n) => alarmTimes(n), slot: (n) => td4SlotAlarms(n), morning: (n) => tdMorningAlarms(n), sig: () => pushSig(), plan: (a, b, c) => td4SplitPlan(a, b, c), next: () => td4Next(), jn: (d) => td4JnText(d), gap: (m) => td4GapList(m).map((t) => t.text) };

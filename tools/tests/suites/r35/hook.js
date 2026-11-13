@@ -1,0 +1,2 @@
+// insert before:   // ---------- boot ----------
+  window.__td5 = { quads: () => Object.fromEntries(Object.entries(td5Quads()).map(([k, xs]) => [k, xs.map((t) => t.id)])), risk: () => td5Risk().map((x) => ({ d: x.d, n: x.n, work: x.work, free: x.free, short: x.short })), nag: (n) => td5NagAlarms(n), by: () => td5ByChoices(), hours: () => td5HoursData(), parse: (l) => td5ParseSetLine(l), made: (ids) => td5MadeItems(ids.map((id) => todos.get(id))), sig: () => pushSig(), section: (id) => todoSection(todos.get(id)) };

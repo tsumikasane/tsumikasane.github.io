@@ -1,0 +1,2 @@
+// insert before:   // ---------- boot ----------
+  window.__goal = { alarms: (n) => alarmTimes(n), sig: () => pushSig(), next: () => goalNextAll().map((x) => [x.g.id, x.name, x.rank, x.why]), text: (id) => goalText(goals.get(id)), moves: (id) => [...moveDays(goals.get(id))], sug: (id, path) => cellSuggest(goals.get(id), path), pct: (id) => goalPct(goals.get(id)), steps: (id) => goalSteps(goals.get(id)).map((s) => s.name), nudge: (id) => nudgeDays(goals.get(id), 3) };
