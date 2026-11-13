@@ -1603,6 +1603,33 @@ details.mo2-want-done > summary { color: var(--accent); font-weight: 400; }
 .mo2-bill-body > .sub { margin: -4px 0 0; }
 .mo2-bill-acts { display: flex; flex-wrap: wrap; gap: 8px; }
 .mo2-bill-acts .btn:disabled { opacity: .45; cursor: default; }  /* (no total yet: nothing to put in) */
+/* 家計簿 その3 */
+.mo3-week { margin: calc(-1 * var(--space-1)) 0 0; font-size: var(--t-sub); line-height: 1.45; color: var(--muted); }
+.mo3-week .warn { color: var(--warn); font-weight: 600; }
+.mo3-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 0 var(--space-2) 8px; }
+.mo3-tools select, .mo3-sel-acts select { flex: 0 1 auto; min-width: 0; min-height: 40px; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); font-size: var(--t-sub); }
+.mo3-tools .link-btn { min-height: 36px; }
+.mo3-tools .link-btn[aria-pressed="true"] { font-weight: 600; }
+.mo3-sel { display: grid; gap: 8px; margin: 0 var(--space-2) 8px; padding: 10px 12px; border-radius: 12px; background-color: var(--fill); font-size: var(--t-sub); }
+.mo3-sel-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.mo3-sel-acts select { flex: 1 1 9em; min-width: 0; min-height: 40px; }
+.mo3-sel-acts .btn:disabled, .mo3-sel-acts select:disabled { opacity: .45; cursor: default; }
+#exList li.mo3-pick { cursor: pointer; }
+#exList li.mo3-pick.on { background-color: color-mix(in srgb, var(--c-money) 12%, transparent); }
+.mo3-box-in { position: relative; z-index: 1; flex: none; width: 22px; height: 22px; margin: 0 4px 0 0; accent-color: var(--c-money); }
+.mo3-box { padding: 0 0 10px; }
+.mo3-box > p { margin: 0; padding: 4px var(--space-2) 6px; font-size: var(--t-sub); line-height: 1.5; color: var(--muted); }
+.mo3-box .warn { color: var(--warn); }
+.mo3-box .good { color: var(--accent); }
+.mo3-box .amount.warn { color: var(--warn); }
+.mo3-box .amount.good { color: var(--accent); }
+.mo3-wd.on .cat { font-weight: 600; }
+#mo3SelDel { color: var(--warn); }
+.mo3-box ul.list > li { align-items: flex-start; }
+.mo3-note { padding: 4px var(--space-2) 14px; }
+.mo3-note textarea { width: 100%; min-height: 5.5em; padding: 10px 12px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 12px; line-height: 1.5; resize: vertical; }
+.mo3-bud-row .cat { min-width: 3.2em; }
+.mo3-bud-row .cat-bar.over { background-color: var(--warn); }
 
 /* calendar: a Sunday-first month grid of thin gray lines (between weeks and between days, as the user asked) with each
    day's plans written in coloured bars, after the iPhone Calendar's month view the user showed. Today's date is in the
@@ -5051,6 +5078,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <!-- (家計簿 その2 ⑤) 月末の見込み, and ⑥ a day with nothing spent said so -->
           <p class="mo2-fore" id="mo2Fore" hidden></p>
           <div class="mo2-zero" id="mo2Zero" hidden></div>
+          <!-- (家計簿 その3 ⑩) 今週の支出, against the week's share of the budget -->
+          <p class="mo3-week" id="mo3Week" hidden></p>
         </div>
         <!-- (家計簿 その2 ①) ひとことで追加: メモ and amount in a line, put in as it is; what it reads as under it -->
         <form class="mo2-quick" id="mo2Quick" autocomplete="off">
@@ -5094,12 +5123,23 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="card-head">明細</div>
           <!-- ⑥ (the user's call, 2026-11-10): words looked for in every month, or one 費目 pressed above -->
           <div class="ex-find"><input type="search" id="exFind" placeholder="メモや費目で探す（すべての月）" aria-label="明細を探す" enterkeyhint="search"></div>
+          <!-- (家計簿 その3 ③) 並べ方, kept on this device; ④ 選ぶ: several 明細 at once (費目を変える・削除) -->
+          <div class="mo3-tools">
+            <select id="mo3Sort" aria-label="明細の並べ方"><option value="">日付の新しい順</option><option value="amt">金額の大きい順</option></select>
+            <button type="button" class="link-btn" id="mo3Pick" aria-pressed="false">選ぶ</button>
+          </div>
+          <div class="mo3-sel" id="mo3Sel" hidden></div>
           <div class="ex-filter" id="exFilter" hidden></div>
           <ul class="list" id="exList"></ul>
         </div>
         </div>
         <!-- まとめ (the user's calls, 2026-11-10): the month by how it was paid, the fixed ones, and more -->
         <div id="moneyStats" hidden>
+          <!-- (家計簿 その3 ⑨) ふりかえりメモ: a few words on the month shown, kept with the account -->
+          <div class="card" id="mo3NoteCard">
+            <div class="card-head"><label for="mo3NoteText" id="mo3NoteHead">ふりかえりメモ</label></div>
+            <div class="mo3-note"><textarea id="mo3NoteText" rows="3" maxlength="2000" placeholder="この月のお金のこと（よかったこと、次の月に気をつけることなど）"></textarea></div>
+          </div>
           <!-- ③ 月ごとの推移 (the user's call, 2026-11-10): 支出 and 収入 a month each, 収支 under them; a month pressed is shown -->
           <div class="card" id="trendCard">
             <div class="card-head">月ごとの推移</div>
@@ -5111,12 +5151,35 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <div class="trend-notes" id="trendNotes"></div>
             <details class="ch-table"><summary>数字で見る</summary><div class="ch-scroll"><table id="trendTable"></table></div></details>
           </div>
+          <!-- (家計簿 その3 ①) いつもとくらべる: each 費目 against the 6 months before -->
+          <div class="card" id="mo3UsualCard">
+            <div class="card-head">いつもとくらべる</div>
+            <div class="mo3-box" id="mo3Usual"></div>
+          </div>
+          <!-- (家計簿 その3 ⑧) 予算を守れた月: the 6 months to the one shown -->
+          <div class="card" id="mo3BudCard">
+            <div class="card-head">予算を守れた月</div>
+            <div class="mo3-box" id="mo3Bud"></div>
+          </div>
           <!-- ⑦ 支出のカレンダー (the user's call): each day by how much went, pressed its 明細 under it -->
           <div class="card" id="exCalCard">
             <div class="card-head">支出のカレンダー</div>
             <div class="excal" id="exCal"></div>
             <div class="excal-key" id="exCalKey"></div>
             <div class="excal-day" id="exCalDay"></div>
+          </div>
+          <!-- (家計簿 その3 ⑦) 大きな支出, ⑥ 曜日ごとの支出, ⑤ タグごとの支出 -->
+          <div class="card" id="mo3BigCard">
+            <div class="card-head">大きな支出</div>
+            <div class="mo3-box" id="mo3Big"></div>
+          </div>
+          <div class="card" id="mo3WdCard">
+            <div class="card-head">曜日ごとの支出</div>
+            <div class="mo3-box" id="mo3Wd"></div>
+          </div>
+          <div class="card" id="mo3TagCard">
+            <div class="card-head">タグごとの支出</div>
+            <div class="mo3-box" id="mo3Tags"></div>
           </div>
           <!-- (家計簿 その2 ⑦) ムダづかいチェック: the last 30 days' 支出 looked back on one at a time, and the month's -->
           <div class="card" id="mo2FeelCard">
@@ -12121,6 +12184,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     syncExCats(); // (the 費目 as the settings have them now)
     const m = monthSummary(viewMonth);
     draw(() => renderMo2(m)); // (家計簿 その2 ①〜⑩)
+    draw(() => renderMo3(m)); // (家計簿 その3 ①〜⑩)
     renderMoneyStats(m);
     const net = m.inn - m.out;
     $("moneySum").replaceChildren(
@@ -12180,17 +12244,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     list.replaceChildren();
     let items = q ? expenses.items.filter((e) => [expenseCat(e) || "", e.memo || "", payName(e.method)].join(" ").toLowerCase().includes(q))
       : moneyCat ? m.outs.filter((e) => (expenseCat(e) || "未分類") === moneyCat) : m.items;
-    items = [...items].sort((a, b) => b.date.localeCompare(a.date) || num(b.createdAt) - num(a.createdAt));
+    items = mo3Sort([...items].sort((a, b) => b.date.localeCompare(a.date) || num(b.createdAt) - num(a.createdAt))); // (その3 ③)
     const found = items.length, foundOut = sum(items.filter((e) => e.kind !== "in"), (e) => num(e.amount)), foundIn = sum(items.filter((e) => e.kind === "in"), (e) => num(e.amount));
     if (q) items = items.slice(0, 200);
     $("exFilter").hidden = !q && !moneyCat;
     setChildren($("exFilter"), q || moneyCat ? [el("span", { class: "ex-filter-words" }, q ? `「${moneyQuery.trim()}」${found} 件` : `${moneyCat}だけ ${found} 件`,
         found ? `・${[foundOut ? `支出 ${fmtYen(foundOut)}` : null, foundIn ? `収入 ${fmtYen(foundIn)}` : null].filter(Boolean).join("・")}` : ""),
       el("button", { type: "button", class: "link-btn", onclick: () => { moneyCat = null; moneyQuery = ""; $("exFind").value = ""; renderMoney(); } }, "すべて表示")] : null);
+    mo3SelSync(items); // (その3 ④)
     if (!items.length) { list.append(el("li", { class: "empty" }, q ? "見つかりませんでした。" : `${fmtMonth(viewMonth)}の記録はまだありません。上の欄から追加できます。`)); return; }
     let curDate = null;
     for (const e of items) {
-      if (e.date !== curDate) {
+      if (!mo3ByAmt() && e.date !== curDate) { // (その3 ③: in order of amount, each says its day instead)
         curDate = e.date;
         const dayOut = sum(items.filter((x) => x.date === e.date && x.kind !== "in"), (x) => x.amount);
         const dayIn = sum(items.filter((x) => x.date === e.date && x.kind === "in"), (x) => x.amount);
@@ -12198,13 +12263,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           el("span", {}, e.date === todayKey ? "きょう " + fmtShort(e.date) : q && monthOf(e.date) !== viewMonth ? fmtDayLong(e.date) : fmtShort(e.date)),
           el("span", {}, (dayOut ? `支出 ${fmtYen(dayOut)}` : "") + (dayOut && dayIn ? "・" : "") + (dayIn ? `収入 ${fmtYen(dayIn)}` : ""))));
       }
-      const isIn = e.kind === "in";
-      list.append(el("li", {},
+      const isIn = e.kind === "in", subs = [mo3ByAmt() ? fmtShort(e.date) : null, e.fixed ? "固定費" : null, payName(e.method), e.feel === "bad" ? "ムダだった" : null].filter(Boolean); // (その2 ⑦, その3 ③)
+      list.append(el("li", { "data-ex": e.id, class: mo3Picking ? "mo3-pick" + (mo3Picked.has(e.id) ? " on" : "") : null },
+        mo3Picking ? mo3Box(e) : null, // (その3 ④)
         el("span", { class: "chip", style: `--chip-c: ${isIn ? "var(--accent)" : "var(--c-money)"}`, title: expenseCat(e) || "" }, expenseCat(e) || (isIn ? "収入" : "支出")),
         el("span", { class: "body" }, editLink("money", e.id, e.memo || (isIn ? "収入" : "支出"), `${expenseCat(e) || (isIn ? "収入" : "支出")} ${fmtYen(e.amount)}`),
-          e.fixed || payName(e.method) || e.feel === "bad" ? el("span", { class: "sub" }, [e.fixed ? "固定費" : null, payName(e.method), e.feel === "bad" ? "ムダだった" : null].filter(Boolean).join("・")) : null), // (家計簿 その2 ⑦)
+          subs.length ? el("span", { class: "sub" }, subs.join("・")) : null),
         el("span", { class: "amount" + (isIn ? " in" : "") }, (isIn ? "+" : "") + fmtYen(e.amount)),
-        delButton(() => removeWithUndo(expenses, e.id), "削除", `${expenseCat(e) || (isIn ? "収入" : "支出")} ${fmtYen(e.amount)}`)
+        mo3Picking ? null : delButton(() => removeWithUndo(expenses, e.id), "削除", `${expenseCat(e) || (isIn ? "収入" : "支出")} ${fmtYen(e.amount)}`)
       ));
     }
   }
@@ -19907,7 +19973,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月14日 3:00"; // 51ee7bb7 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月14日 3:19"; // c8b8791b (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -35160,7 +35226,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return best;
   }
   function mo2Parse(raw) {
-    let t = String(raw || "").normalize("NFKC").replace(/\s+/g, " ").trim();
+    let t = mo3Sum(String(raw || "").normalize("NFKC").replace(/\s+/g, " ").trim()); // (その3 ② 800+120 → 920)
     if (!t) return null;
     let date = todayKey, m;
     if ((m = /^(きょう|今日|きのう|昨日|おととい|一昨日)(?:\s+|の|に)?/.exec(t))) {
@@ -35621,6 +35687,236 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const added = mo2AddNow([{ date: todayKey, kind: "out", category, amount: b.mine, memo: "割り勘", createdAt: Date.now(), ...($("exMethod").value ? { method: $("exMethod").value } : {}) }]);
     mo2Speak(added, keepUnits(`自分の分 ${fmtYen(b.mine)} を支出（${category}）に入れました`), mo2TakeBack(added));
   });
+
+  // ---------- 家計簿 その3 ①〜⑩ (the user's calls, 2026-11-14): each 費目 against its usual (①), a sum written in ひとことで
+  // 追加 (②), 明細 in order of amount (③), several 明細 picked at once (④), the tags in メモ (⑤), the days of the week (⑥),
+  // the month's biggest (⑦), the months the budget held (⑧), a few words on the month (⑨), and this week against the
+  // budget (⑩). Function declarations and var, as the page may draw before this runs ----------
+
+  function renderMo3(m) {
+    const sel = $("mo3Sort");
+    if (document.activeElement !== sel) sel.value = mo3ByAmt() ? "amt" : "";
+    $("mo3Pick").setAttribute("aria-pressed", String(mo3Picking));
+    $("mo3Pick").textContent = mo3Picking ? "選ぶのをやめる" : "選ぶ";
+    if (moneyPart === "book") draw(renderMo3Week);
+    if (moneyPart === "stats") { draw(renderMo3Note); draw(() => renderMo3Usual(m)); draw(renderMo3Bud); draw(() => renderMo3Big(m)); draw(renderMo3Wd); draw(() => renderMo3Tags(m)); }
+  }
+  var mo3Outs = (e) => e.kind !== "in" && !e.fixed; // (固定費 aside: the same each month)
+  function mo3Phr(...ws) { return ws.filter(Boolean).map((w) => (typeof w === "string" ? el("span", { class: "phrase" }, keepUnits(w)) : w)); }
+
+  // ① いつもとくらべる: each 費目's 支出 in the month shown against its average over the 6 months before (those with a
+  // record). The month under way is set against the part of the usual its days so far come to
+  function renderMo3Usual(m) {
+    const box = $("mo3Usual"), months = [];
+    for (let i = 1; i <= 6; i++) { const ym = addMonths(viewMonth, -i); if (expenses.items.some((e) => monthOf(e.date) === ym)) months.push(ym); }
+    if (months.length < 2) { setChildren(box, el("p", {}, "2か月以上記録すると、費目ごとに「ふだん」とくらべられます。")); return; }
+    const set = new Set(months), usual = new Map(), now = new Map();
+    for (const e of expenses.items) if (mo3Outs(e) && set.has(monthOf(e.date))) { const c = expenseCat(e) || "未分類"; usual.set(c, (usual.get(c) || 0) + num(e.amount)); }
+    for (const e of m.outs) if (mo3Outs(e)) { const c = expenseCat(e) || "未分類"; now.set(c, (now.get(c) || 0) + num(e.amount)); }
+    const cur = viewMonth === monthOf(todayKey), part = cur ? parseYmd(todayKey).getDate() / daysInMonth(viewMonth) : 1;
+    const rows = [];
+    for (const c of new Set([...usual.keys(), ...now.keys()])) {
+      const u = ((usual.get(c) || 0) / months.length) * part, a = now.get(c) || 0, d = a - u;
+      if (Math.abs(d) >= Math.max(1000, u * 0.2)) rows.push({ c, u, a, d });
+    }
+    rows.sort((x, y) => Math.abs(y.d) - Math.abs(x.d));
+    const mon = `${Number(viewMonth.slice(5))}月`, r100 = (v) => Math.round(v / 100) * 100;
+    setChildren(box,
+      el("p", {}, mo3Phr(`前の ${months.length} か月の平均を「ふだん」として、`, cur ? "きょうまでの分でくらべています。" : `${mon}とくらべています。`, "固定費はのぞいています。")),
+      rows.length ? el("ul", { class: "list" }, rows.slice(0, 6).map((r) => el("li", {},
+        el("span", { class: "body" }, el("span", { class: "text" }, r.c), el("span", { class: "sub" }, keepUnits(`${mon} ${fmtYen(r.a)}・ふだん ${fmtYen(r100(r.u))}`))),
+        el("span", { class: "amount " + (r.d > 0 ? "warn" : "good") }, keepUnits(`${r.d > 0 ? "+" : "−"}${fmtYen(r100(Math.abs(r.d)))}`)))))
+        : el("p", {}, `${mon}は、どの費目もふだんと同じくらいです。`));
+  }
+
+  // ② a sum in ひとことで追加: 800+120, 300×3 (or 300*3) read as the one amount
+  function mo3Sum(t) {
+    const n = (s) => Number(s.replace(/,/g, ""));
+    let x = t, prev;
+    do {
+      prev = x;
+      x = x.replace(/(\d[\d,]*)\s*(?:円)?\s*[×*]\s*(\d{1,3})(?![\d,])/, (all, a, b) => String(n(a) * n(b)));
+      x = x.replace(/(\d[\d,]*)\s*(?:円)?\s*\+\s*(\d[\d,]*)/, (all, a, b) => String(n(a) + n(b)));
+    } while (x !== prev);
+    return x;
+  }
+
+  // ③ 明細 in order of date (newest first) or of amount (biggest first), kept on this device
+  var MO3_SORT_KEY = LS_PREFIX + "mo3Sort";
+  function mo3ByAmt() { try { return localStorage.getItem(MO3_SORT_KEY) === "amt"; } catch { return false; } }
+  function mo3Sort(items) { return mo3ByAmt() ? [...items].sort((a, b) => num(b.amount) - num(a.amount) || b.date.localeCompare(a.date)) : items; }
+  $("mo3Sort").addEventListener("change", (ev) => { lsPut(MO3_SORT_KEY, ev.target.value === "amt" ? "amt" : ""); renderMoney(); });
+
+  // ④ 選ぶ: 明細 picked (a row pressed, or its box), with what they come to; their 費目 changed at once (of one kind), or
+  // deleted at once, either with 元に戻す
+  var mo3Picking = false, mo3Picked = new Set();
+  function mo3Box(e) {
+    return el("input", { type: "checkbox", class: "mo3-box-in", checked: mo3Picked.has(e.id), "aria-label": `${e.memo || expenseCat(e) || ""} ${fmtYen(e.amount)}を選ぶ`, "data-ex": e.id,
+      onchange: (ev) => mo3Toggle(e.id, ev.currentTarget.checked) });
+  }
+  function mo3Toggle(id, on = !mo3Picked.has(id)) {
+    if (on) mo3Picked.add(id); else mo3Picked.delete(id);
+    renderMoney();
+    $("exList").querySelector(`input.mo3-box-in[data-ex="${CSS.escape(id)}"]`)?.focus();
+  }
+  function mo3PickEnd() { mo3Picking = false; mo3Picked.clear(); renderMoney(); }
+  $("mo3Pick").addEventListener("click", () => { if (mo3Picking) mo3PickEnd(); else { mo3Picking = true; mo3Picked.clear(); renderMoney(); } });
+  $("exList").addEventListener("click", (ev) => {
+    if (!mo3Picking || ev.target.matches("input.mo3-box-in")) return;
+    const li = ev.target.closest("li[data-ex]");
+    if (!li) return;
+    ev.preventDefault(); ev.stopPropagation(); // (not opened to be changed)
+    mo3Toggle(li.dataset.ex);
+  }, true);
+  function mo3SelSync(items) {
+    const box = $("mo3Sel");
+    box.hidden = !mo3Picking;
+    if (!mo3Picking) { box.replaceChildren(); return; }
+    const seen = new Set(items.map((e) => e.id));
+    for (const id of [...mo3Picked]) if (!seen.has(id)) mo3Picked.delete(id);
+    const picked = items.filter((e) => mo3Picked.has(e.id)), outs = picked.filter((e) => e.kind !== "in"), ins = picked.filter((e) => e.kind === "in");
+    const kinds = new Set(picked.map((e) => (e.kind === "in" ? "in" : "out"))), kind = kinds.size === 1 ? [...kinds][0] : null;
+    const cat = el("select", { "aria-label": "選んだ明細の費目を変える", disabled: !kind },
+      el("option", { value: "" }, !picked.length ? "費目を変える" : kind ? "費目を変える…" : "支出と収入がまざっています"),
+      kind ? exCats(kind).map((c) => el("option", { value: c }, `「${c}」にする`)) : null);
+    cat.addEventListener("change", () => { if (cat.value) mo3SetCat(picked, cat.value); });
+    const all = picked.length === items.length;
+    setChildren(box,
+      el("div", { class: "mo3-sel-sum", role: "status" }, mo3Phr(picked.length ? `${picked.length} 件を選んでいます` : "明細を押して選びます",
+        outs.length ? `・支出 ${fmtYen(sum(outs, (e) => e.amount))}` : "", ins.length ? `・収入 ${fmtYen(sum(ins, (e) => e.amount))}` : "")),
+      el("div", { class: "mo3-sel-acts" }, cat,
+        el("button", { type: "button", class: "btn ghost sm", id: "mo3SelDel", disabled: !picked.length, onclick: () => mo3Del(picked) }, "削除"),
+        items.length ? el("button", { type: "button", class: "link-btn", onclick: () => { if (all) mo3Picked.clear(); else items.forEach((e) => mo3Picked.add(e.id)); renderMoney(); } }, all ? "選ぶのを外す" : "ぜんぶ選ぶ") : null));
+  }
+  function mo3SetCat(picked, c) {
+    const was = picked.map((e) => [e.id, { category: e.category }]), n = picked.length;
+    act(() => expenses.updateMany(picked.map((e) => [e.id, { category: c }])));
+    mo3Picked.clear(); renderMoney();
+    flash(`${n} 件の費目を「${c}」にしました`, () => act(async () => { await expenses.updateMany(was); flash("元に戻しました"); }));
+  }
+  function mo3Del(picked) {
+    if (!picked.length) return;
+    const ids = picked.map((e) => e.id);
+    mo3Picked.clear();
+    removeWithUndo(expenses, ids, `家計簿の記録を ${ids.length} 件削除しました`);
+  }
+
+  // ⑤ タグ: words after # in メモ (#旅行). The month shown's 支出 of each, and every month's; one pressed, 明細 looked for it
+  function mo3TagsOf(e) { return [...new Set([...String(e.memo || "").normalize("NFKC").matchAll(/#([^\s#、。,.!?！？「」()]+)/g)].map((x) => x[1].slice(0, 20)))]; }
+  function renderMo3Tags(m) {
+    const all = new Map(), mon = new Map();
+    for (const e of expenses.items) {
+      if (e.kind === "in") continue;
+      for (const t of mo3TagsOf(e)) {
+        all.set(t, (all.get(t) || 0) + num(e.amount));
+        if (monthOf(e.date) === viewMonth) { const x = mon.get(t) || { a: 0, n: 0 }; x.a += num(e.amount); x.n++; mon.set(t, x); }
+      }
+    }
+    const box = $("mo3Tags");
+    if (!all.size) { setChildren(box, el("p", {}, mo3Phr("メモに「#旅行」「#推し活」のように書くと、", "タグごとに合計が出ます。"))); return; }
+    const rows = [...mon.entries()].sort((a, b) => b[1].a - a[1].a), top = Math.max(1, ...rows.map(([, x]) => x.a));
+    setChildren(box,
+      rows.length ? rows.map(([t, x]) => el("button", { type: "button", class: "cat-row mo3-tag", title: `#${t}の明細を出す`, onclick: () => mo3FindTag(t) },
+        el("span", { class: "cat" }, "#" + t),
+        el("span", { class: "cat-track" }, el("span", { class: "cat-bar", style: `width:${Math.max(1, (x.a / top) * 100)}%` })),
+        el("span", { class: "amount" }, fmtYen(x.a), el("small", {}, `${x.n} 件`)),
+        all.get(t) > x.a ? el("span", { class: "cat-note" }, el("span", {}, keepUnits(`すべての月で ${fmtYen(all.get(t))}`))) : null))
+        : el("p", {}, `${fmtMonth(viewMonth)}は、タグのついた支出はありません。`),
+      el("p", {}, mo3Phr("これまでのタグ：", [...all.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([t, a]) => `#${t} ${fmtYen(a)}`).join("・"))));
+  }
+  function mo3FindTag(t) {
+    moneyCat = null; moneyQuery = "#" + t; $("exFind").value = moneyQuery;
+    setMoneyPart("book");
+    $("exFind").scrollIntoView({ block: "start", behavior: reduceMotion.matches ? "auto" : "smooth" });
+  }
+
+  // ⑥ 曜日ごとの支出: the last 12 weeks to today, each day of the week's average (固定費 aside), the week as the calendar starts it
+  function renderMo3Wd() {
+    const from = addDays(todayKey, -83), by = Array(7).fill(0);
+    let any = false;
+    for (const e of expenses.items) if (mo3Outs(e) && e.date >= from && e.date <= todayKey) { by[parseYmd(e.date).getDay()] += num(e.amount); any = true; }
+    const box = $("mo3Wd");
+    if (!any) { setChildren(box, el("p", {}, "支出を記録すると、何曜日によく使うかが出ます。")); return; }
+    const avg = by.map((v) => v / 12), top = Math.max(1, ...avg), ws = weekStart(), most = avg.indexOf(Math.max(...avg));
+    setChildren(box,
+      el("p", {}, mo3Phr(`いちばん使うのは ${WD[most]}曜日（平均 ${fmtYen(avg[most])}）。`, "この12週間の、曜日ごとの1日の平均です。固定費はのぞいています。")),
+      Array.from({ length: 7 }, (_, i) => (ws + i) % 7).map((d) => el("div", { class: "cat-row mo3-wd" + (d === most ? " on" : "") },
+        el("span", { class: "cat" }, `${WD[d]}曜日`),
+        el("span", { class: "cat-track" }, el("span", { class: "cat-bar", style: avg[d] ? `width:${Math.max(1, (avg[d] / top) * 100)}%` : "width:0;min-width:0" })),
+        el("span", { class: "amount" }, fmtYen(avg[d])))));
+  }
+
+  // ⑦ 大きな支出: the month shown's five biggest (固定費 aside), each opening to be changed, and their part of the month
+  function renderMo3Big(m) {
+    const list = m.outs.filter(mo3Outs).sort((a, b) => num(b.amount) - num(a.amount) || a.date.localeCompare(b.date)).slice(0, 5), box = $("mo3Big");
+    if (!list.length) { setChildren(box, el("p", {}, `${fmtMonth(viewMonth)}の支出はまだありません。`)); return; }
+    const s = sum(list, (e) => e.amount);
+    setChildren(box,
+      el("ul", { class: "list" }, list.map((e, i) => el("li", {},
+        el("span", { class: "chip", style: "--chip-c: var(--c-money)" }, String(i + 1)),
+        el("span", { class: "body" }, editLink("money", e.id, e.memo || expenseCat(e), `${e.memo || expenseCat(e)} ${fmtYen(e.amount)}`), el("span", { class: "sub" }, `${fmtShort(e.date)}・${expenseCat(e)}`)),
+        el("span", { class: "amount" }, fmtYen(e.amount))))),
+      m.out ? el("p", {}, mo3Phr(`この ${list.length} 件で ${fmtYen(s)}、`, `${fmtMonth(viewMonth)}の支出の ${Math.round((s / m.out) * 100)}% です。`)) : null);
+  }
+
+  // ⑧ 予算を守れた月: the 6 months to the one shown, each against the month's budget as it is now (from the 1st)
+  function renderMo3Bud() {
+    const budget = monthlyBudget(), box = $("mo3Bud");
+    if (!(budget > 0)) {
+      setChildren(box, el("p", {}, "月の予算を決めると、予算内に収まった月が出ます。", " ", el("button", { type: "button", class: "link-btn", onclick: (ev) => openSettings(ev.detail === 0, "money", budgetInput) }, "月の予算を決める")));
+      return;
+    }
+    const cur = monthOf(todayKey), rows = [];
+    for (let i = 5; i >= 0; i--) {
+      const ym = addMonths(viewMonth, -i);
+      if (ym > cur) continue;
+      const items = expenses.items.filter((e) => monthOf(e.date) === ym);
+      if (!items.length) continue;
+      rows.push({ ym, out: sum(items.filter((e) => e.kind !== "in"), (e) => e.amount), now: ym === cur });
+    }
+    if (!rows.length) { setChildren(box, el("p", {}, "記録のある月が出ます。")); return; }
+    const done = rows.filter((r) => !r.now), kept = done.filter((r) => r.out <= budget).length, top = Math.max(budget, ...rows.map((r) => r.out));
+    setChildren(box,
+      el("p", {}, mo3Phr(done.length ? `終わった ${done.length} か月のうち、${kept} か月が予算内でした。` : "", `月の予算 ${fmtYen(budget)} でくらべています。`)),
+      rows.map((r) => { const left = budget - r.out; return el("div", { class: "cat-row mo3-bud-row" },
+        el("span", { class: "cat" }, `${Number(r.ym.slice(5))}月`),
+        el("span", { class: "cat-track" }, el("span", { class: "cat-bar" + (left < 0 ? " over" : ""), style: `width:${Math.max(1, (r.out / top) * 100)}%` })),
+        el("span", { class: "amount" }, fmtYen(r.out)),
+        el("span", { class: "cat-note" + (left < 0 ? " warn" : "") }, el("span", {}, keepUnits(r.now ? (left >= 0 ? `途中・残り ${fmtYen(left)}` : `途中・${fmtYen(-left)} 超え`) : left >= 0 ? `○ 予算内（${fmtYen(left)} 残った）` : `× ${fmtYen(-left)} 超えた`)))); }));
+  }
+
+  // ⑨ ふりかえりメモ: the month shown's words, kept with the account a moment after they are typed (and as it is left)
+  var mo3NoteTimer = 0, mo3NoteMonth = "";
+  function mo3Notes() { const s = settings.get("moNotes"); return s && s.notes && typeof s.notes === "object" ? { ...s.notes } : {}; }
+  function renderMo3Note() {
+    const f = $("mo3NoteText");
+    $("mo3NoteHead").textContent = `${fmtMonth(viewMonth)}のふりかえりメモ`;
+    if (document.activeElement === f && mo3NoteMonth === viewMonth) return;
+    if (mo3NoteMonth && mo3NoteMonth !== viewMonth) mo3SaveNote();
+    mo3NoteMonth = viewMonth;
+    f.value = mo3Notes()[viewMonth] || "";
+  }
+  function mo3SaveNote() {
+    clearTimeout(mo3NoteTimer); mo3NoteTimer = 0;
+    const ym = mo3NoteMonth, v = $("mo3NoteText").value.replace(/\s+$/, "").slice(0, 2000), notes = mo3Notes();
+    if (!ym || (notes[ym] || "") === v) return;
+    if (v) notes[ym] = v; else delete notes[ym];
+    act(() => settings.set("moNotes", { notes, updatedAt: Date.now() }));
+  }
+  $("mo3NoteText").addEventListener("input", () => { clearTimeout(mo3NoteTimer); mo3NoteTimer = setTimeout(mo3SaveNote, 700); });
+  $("mo3NoteText").addEventListener("blur", mo3SaveNote);
+
+  // ⑩ 今週の支出 (固定費 aside), from the week's first day as the calendar has it, against the week's share of the budget
+  function renderMo3Week() {
+    const box = $("mo3Week"), ws = weekStart(), from = addDays(todayKey, -((parseYmd(todayKey).getDay() - ws + 7) % 7));
+    const show = viewMonth === monthOf(todayKey);
+    const out = show ? sum(expenses.items.filter((e) => mo3Outs(e) && e.date >= from && e.date <= todayKey), (e) => e.amount) : 0;
+    box.hidden = !show || !(out > 0);
+    if (box.hidden) { box.replaceChildren(); return; }
+    const budget = monthlyBudget(), aim = budget > 0 ? Math.round((budget / daysInMonth(viewMonth)) * 7 / 100) * 100 : 0;
+    setChildren(box, mo3Phr(`今週（${fmtShort(from)}〜）の支出は ${fmtYen(out)}`, aim ? "・" : ""),
+      aim ? el("span", { class: "phrase" + (out > aim ? " warn" : "") }, keepUnits(out > aim ? `週の目安 ${fmtYen(aim)} を ${fmtYen(out - aim)} 超えています` : `週の目安 ${fmtYen(aim)} まで あと ${fmtYen(aim - out)}`)) : null);
+  }
 
   // ---------- boot ----------
   function renderAll() {
