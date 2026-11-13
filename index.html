@@ -1409,6 +1409,47 @@ ul.wx-days > li { padding: 0; }
 .wx-keep input { flex: 1; min-width: 0; }
 .wx-find-row { display: flex; align-items: center; gap: 8px; }
 .wx-find-row input { flex: 1; min-width: 0; }
+/* きょう その2 ①〜⑩ (2026-11-13): ① a tile held down (its menu), ② a tile's size in the settings, ③ a tile whose day is
+   done, ④ きのうの書き忘れ, ⑤ きょうの準備's checks, ⑦ the pages of the tiles hidden, ⑧ 天気's いま, ⑨ ふりかえり's 文字で
+   送る, ⑩ the page pulled down */
+#homeTiles > .tile { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+#homeTiles > .tile.held { box-shadow: 0 0 0 2px var(--tile-c); }
+#homeTiles > .tile.spot { animation: h2-spot 1.4s ease-out; }
+@keyframes h2-spot { from { box-shadow: 0 0 0 3px var(--tile-c); } to { box-shadow: 0 0 0 3px transparent; } }
+@media (prefers-reduced-motion: reduce) { #homeTiles > .tile.spot { animation: none; } }
+#h2TileMenu { max-height: 100dvh; overflow-y: auto; }
+.h2-check { display: grid; flex: none; color: var(--tile-c); }
+.tile.h2-done .big, .tile.h2-done .big small, .tile.h2-done > .sub, .tile.h2-done .dt-val, .tile.h2-done .dt-val small { color: var(--muted); }
+#h2Set .ffield .unit { flex: none; }
+#tileList .h2-size { flex: none; min-height: 32px; margin-inline-start: 8px; padding: 0 10px; background: var(--fill); box-shadow: none; color: var(--fg); font-size: var(--t-foot); font-weight: 400; white-space: nowrap; }
+#homeTiles > .tile[data-tile="weather"]:not(.wide) .wx-week { display: none; }
+.h2-miss { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+.h2-miss .chip-btn { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; background: color-mix(in srgb, var(--chip-c) 12%, var(--surface)); box-shadow: none; color: var(--fg); }
+.h2-miss .chip-btn .icon { flex: none; color: var(--chip-c); }
+.h2-miss-off { position: relative; z-index: 1; min-height: 36px; font-size: var(--t-sub); }
+.h2-checks-head { margin: 6px 0 0; font-size: var(--t-sub); color: var(--muted); }
+.tile ul.h2-checks { margin-top: 0; }
+.h2-checks li.done .check circle { fill: var(--f-cal); stroke: var(--f-cal); }
+.h2-checks li.done .check path { fill: #ffffff; }
+.h2-checks li.done .rt-label { color: var(--muted); }
+.h2-dock { margin-top: 20px; }
+.h2-dock[hidden] { display: none; }
+.h2-dock-head { margin: 0 0 8px; padding-inline: 4px; font-size: var(--t-sub); font-weight: 400; color: var(--muted); }
+.h2-dock-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(5em, 1fr)); gap: 8px; }
+.h2-dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 64px; padding: 8px 4px; border: 0; border-radius: 12px; background: var(--surface); color: var(--fg); font: inherit; font-size: var(--t-foot); line-height: 1.2; text-align: center; overflow-wrap: anywhere; cursor: pointer; touch-action: manipulation; }
+.h2-dock-btn .icon { flex: none; color: var(--tile-c); }
+.h2-dock-btn:active { opacity: .75; }
+.wx-now { font-weight: 600; }
+.wx-now small { font-size: var(--t-sub); font-weight: 400; color: var(--muted); }
+.rv-acts { display: flex; flex-wrap: wrap; align-items: center; column-gap: 16px; }
+.h2-share { position: relative; z-index: 1; min-height: 40px; margin-top: 6px; font-size: var(--t-sub); }
+html[data-tab="home"] { overscroll-behavior-y: contain; }
+.h2-pull { position: fixed; z-index: 40; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 50%; display: grid; place-items: center; width: 36px; height: 36px; margin-left: -18px; border-radius: 50%; background: var(--surface); color: var(--muted); box-shadow: 0 2px 10px rgba(0, 0, 0, .18); opacity: 0; transform: translateY(-48px); pointer-events: none; }
+.h2-pull.ready { color: var(--accent); }
+.h2-pull.busy { color: var(--accent); }
+.h2-pull.busy .icon { animation: h2-turn .9s linear infinite; }
+@keyframes h2-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .h2-pull.busy .icon { animation: none; } }
 /* バイト その2 ①〜⑩ (2026-11-13): ③ 出勤・退勤, ① 決まったシフト, ④ the 時給 before, ⑥⑦ the year by months, ⑩ hours of work */
 .bt2-clock { display: grid; gap: 6px; }
 .bt2-clock p { margin: 0; }
@@ -16317,6 +16358,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const HOME_TILES = [
     { key: "review", label: "きょうのふりかえり", color: "var(--c-journal)", icon: "journal", open: "journal", wide: true, evening: true },
     { key: "tomorrow", label: "あしたの準備", color: "var(--c-cal)", icon: "calendar", open: () => { setCalDay(addDays(todayKey, 1)); showTab("calendar"); }, wide: true, evening: true },
+    // (きょう その2 ⑤ in the morning's hours and before leaving, ④ only while yesterday is missing something)
+    { key: "prep", label: "きょうの準備", color: "var(--c-cal)", icon: "checklist", open: () => { setCalDay(todayKey); showTab("calendar"); }, wide: true, morning: true },
+    { key: "missed", label: "きのうの書き忘れ", color: "var(--lc-orange)", icon: "bell", open: false, wide: true },
     { key: "quick", label: "すぐに記録", color: "var(--accent)", icon: "plus", open: false, wide: true },
     { key: "weather", label: "天気", color: "var(--sat)", icon: "sun", open: (ev) => wxOpenPage(ev?.detail === 0), wide: true }, // (天気 その1 ①: its page)
     { key: "todo", label: "ToDo", color: "var(--c-todo)" },
@@ -16489,16 +16533,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function weatherTile() {
     const ask = (words) => el("button", { type: "button", class: "btn sm wx-ask", disabled: wxBusy, onclick: wxAsk }, wxBusy ? "調べています…" : words);
     if (!wxPlace()) return tile("weather", null, null, wxError || "いる場所のきょうの天気を出せます", ask("天気を出す"));
-    const w = wxDay(todayKey);
-    if (!w) { wxFetch(); return tile("weather", null, null, wxError || "天気を調べています…", wxError ? el("button", { type: "button", class: "link-btn wx-ask", onclick: () => wxFetch(true) }, "もう一度") : null); }
+    const w0 = wxDay(todayKey);
+    if (!w0) { wxFetch(); return tile("weather", null, null, wxError || "天気を調べています…", wxError ? el("button", { type: "button", class: "link-btn wx-ask", onclick: () => wxFetch(true) }, "もう一度") : null); }
     wxFetch(); // (an hour on, afresh)
-    const m = woDays()[parseYmd(todayKey).getDay()], runLeft = num(m.km) > 0 && !woTally(todayKey).ran;
+    // (きょう その2 ⑧) from the evening's hour tomorrow's weather first, and the temperature now
+    const tmr = homeTwo ? h2WxTomorrow() : null, w = tmr ? wxDay(tmr) : w0, now = homeTwo ? h2WxNow() : null;
+    const m = woDays()[parseYmd(todayKey).getDay()], runLeft = !tmr && num(m.km) > 0 && !woTally(todayKey).ran;
     const h = new Date().getHours();
-    return tile("weather", w.word, null, null, [
+    return tile("weather", tmr ? `あしたは${w.word}` : w.word, null, null, [
       el("div", { class: "wx-row" }, el("span", { class: "wx-icon " + w.icon, "aria-hidden": "true" }, icon(w.icon, 28)),
-        el("span", { class: "wx-temp" }, `${w.hi}° / ${w.lo}°`), el("span", { class: "wx-rain" }, `降水確率 ${w.rain}%`)),
-      w.rainAt !== null ? el("p", { class: "wx-note" }, w.rainAt <= h ? "いま雨の予報です" : `${w.rainAt}時ごろから雨の予報です`) : null,
+        el("span", { class: "wx-temp" }, `${w.hi}° / ${w.lo}°`), el("span", { class: "wx-rain" }, `降水確率 ${w.rain}%`), now && !tmr ? h2WxNowEl(now) : null),
+      tmr ? (w.wet ? el("p", { class: "wx-note" }, wxRainWords(tmr) || (w.icon === "snow" ? "雪の予報です" : "雨の予報です")) : null)
+        : w.rainAt !== null ? el("p", { class: "wx-note" }, w.rainAt <= h ? "いま雨の予報です" : `${w.rainAt}時ごろから雨の予報です`) : null,
       w.wet && runLeft ? el("p", { class: "wx-note" }, "ランはエアロバイク30分に替えても") : null,
+      now && tmr ? el("p", { class: "wx-note" }, h2WxNowEl(now)) : null,
       wxWeek(), // 1週間の天気予報
     ]);
   }
@@ -16587,11 +16635,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const tz = tsumiBlocks(false, "tally"), tk = tsumiCol(tz.n);
     // ⑧ きょうのふりかえり and ⑨ あしたの準備 (the user's calls), from 20:00: a line a kind, [what, words]
     // (a line of several, each kept whole: it breaks between them, sep after each but the last)
-    const evening = nowMinutes() >= EVENING, rows = (list) => el("ul", { class: "rv-list" }, list.filter(Boolean).map(([k, v, sep = "・"]) => el("li", {}, el("span", { class: "rv-k" }, k),
+    const evening = nowMinutes() >= (homeTwo ? h2Times().pm : EVENING), rows = (list) => el("ul", { class: "rv-list" }, list.filter(Boolean).map(([k, v, sep = "・"]) => el("li", {}, el("span", { class: "rv-k" }, k),
       el("span", { class: "rv-v" }, Array.isArray(v) ? v.map((x, i) => el("span", { class: "phrase" }, x + (i < v.length - 1 ? sep : ""))) : v))));
     const woToday = workouts.items.filter((w) => w.date === todayKey), ranKm = sum(woToday.filter((w) => w.type === "ランニング"), (w) => num(w.km)), setsDone = sum(woToday.filter((w) => w.exercise), (w) => num(w.sets));
     const spent = sum(expenses.items.filter((x) => x.date === todayKey && x.kind !== "in"), (x) => num(x.amount)), todoDone = todos.items.filter((t) => t.done && !t.cancelled && doneDay(t) === todayKey).length;
-    const reviewRows = rows([
+    const reviewList = [
       todoDone ? ["ToDo", `${todoDone}件 完了`] : null,
       stMins > 0 ? ["勉強", durText(stMins)] : null,
       woToday.length ? ["運動", ranKm > 0 || setsDone ? [ranKm > 0 ? `ラン ${Math.round(ranKm * 100) / 100} km` : null, setsDone ? `筋トレ ${setsDone}セット` : null].filter(Boolean) : `${woToday.length}件`] : null,
@@ -16599,7 +16647,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       wToday && num(wToday.kg) > 0 ? ["体重", `${fmtKg(wToday.kg)} kg`] : null,
       rts.length && rtLeft.length < rts.length ? ["ルーティーン", `${rts.length - rtLeft.length} / ${rts.length}`] : null,
       spent ? ["支出", fmtYen(spent)] : null,
-    ]);
+    ], reviewRows = rows(reviewList);
     const reviewJournal = j?.text ? el("p", { class: "rv-note" }, "日記は書きました") : el("button", { type: "button", class: "btn sm rv-act", onclick: () => openFromHome("journal") }, "日記を書く");
     const tmr = addDays(todayKey, 1), evT = turnsByDay(tmr, tmr).get(tmr) || [], tdT = todos.items.filter((t) => !t.done && t.due === tmr);
     const shT = shifts.items.filter((x) => x.date === tmr).sort((a, b) => String(a.start).localeCompare(String(b.start))), mT = woDays()[parseYmd(tmr).getDay()], wxT = wxPlace() ? wxDay(tmr) : null;
@@ -16615,10 +16663,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // ⑩ カウントダウン (the user's call): the plans marked for it, each by its next turn within a year, nearest first
     const cdTo = addDays(todayKey, 366), cds = events.items.filter((e) => e.count).map((e) => ({ e, d: turnStarts(e, todayKey, cdTo).find((d) => d >= todayKey) })).filter((x) => x.d).sort((a, b) => a.d.localeCompare(b.d) || num(a.e.createdAt) - num(b.e.createdAt));
     const cdDays = (d) => daysBetween(todayKey, d), cd0 = cds[0];
+    // (きょう その2 ③) the tiles whose day is done: 日記 written, ルーティーン all done, nothing left to do by today in ToDo
+    // with some done today, きょうの運動's menu all done, ダイエット's three, the plans all over, and some 勉強
+    const doneOf = { journal: !!j?.text, routine: rts.length > 0 && !rtLeft.length, todo: dueToday + overdue === 0 && todoDone > 0, move: mvRows.length > 0 && mvRows.every((r) => r.done),
+      diet: num(wToday?.kg) > 0 && ms.length > 0 && woMenuDone(todayKey), calendar: evToday.length > 0 && evNow.every((x) => x.past), study: stMins > 0 };
 
     const tiles = [
-      tile("review", tz.today ? String(tz.today) : "まだ", tz.today ? "こ" : null, tz.today ? "きょう積んだブロック" : "きょうはまだ記録がありません", [reviewRows, reviewJournal]),
+      tile("review", tz.today ? String(tz.today) : "まだ", tz.today ? "こ" : null, tz.today ? "きょう積んだブロック" : "きょうはまだ記録がありません", [reviewRows, homeTwo ? el("div", { class: "rv-acts" }, reviewJournal, h2ShareBtn(reviewList, tz.today, !!j?.text)) : reviewJournal]), // (きょう その2 ⑨)
       tile("tomorrow", null, null, fmtDayLong(tmr), tomorrowRows),
+      homeTwo ? h2PrepTile() : null, homeTwo ? h2MissedTile() : null, // (きょう その2 ⑤④: none when there is nothing to say)
       tile("quick", null, null, null, quickRow),
       weatherTile(),
       tile("move", mvRows.length ? String(mvRows.filter((r) => r.done).length) : "休み", mvRows.length ? `/ ${mvRows.length}` : null, null, mvList),
@@ -16672,8 +16725,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     ];
     // the ones shown, in the user's order, two to a row: one left without a partner before a wide one takes the next half
     // one up beside it (the user's call: it took the row, as ルーティーン and 目標 did), and one left at the end stays half
-    const hidden = homeHidden(), wide = (t) => homeTile(t.dataset.tile).wide || (t.dataset.tile === "todo" && top.length);
-    const rest = homeTileOrder().filter((k) => !hidden.has(k) && (!homeTile(k).evening || evening)).map((k) => tiles.find((t) => t.dataset.tile === k)), shown = [];
+    // (きょう その2 ② a size of the user's, ③ the ones done marked, and put after the others when so set)
+    const built = tiles.filter(Boolean);
+    if (homeTwo) h2Mark(built, doneOf);
+    const hidden = homeHidden(), wide = (t) => { const k = t.dataset.tile, d = !!(homeTile(k).wide || (k === "todo" && top.length)); return homeTwo ? h2Wide(k, d) : d; };
+    let rest = homeTileOrder().filter((k) => !hidden.has(k) && (!homeTile(k).evening || evening)).map((k) => built.find((t) => t.dataset.tile === k)).filter(Boolean);
+    if (homeTwo) rest = h2Order(rest);
+    const shown = [];
     let waiting = false;
     while (rest.length) {
       const t = rest.shift();
@@ -16685,12 +16743,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("homeTiles").replaceChildren(...(shown.length ? shown : [el("p", { class: "card tiles-none" }, "タイルをすべて隠しています。右上の歯車から、出すタイルを選べます。")]));
     if (focusRow.rt) $("homeTiles").querySelector(`[data-rt="${focusRow.rt}"]`)?.focus();
     if (focusRow.td) $("homeTiles").querySelector(`[data-td="${focusRow.td}"]`)?.focus();
+    if (homeTwo) { if (focusRow.pc) $("homeTiles").querySelector(`[data-pc="${focusRow.pc}"]`)?.focus(); h2Dock(hidden); } // (きょう その2 ⑤ a check pressed from the keyboard, ⑦)
   }
   // きょう kept up to the minute while it shows (the next plan's あと…, and what comes with the evening): drawn again as each
   // minute turns, and as the app is brought back, not while a sheet is open or a field is in use
   function homeTick() {
     const f = document.activeElement, typing = f?.matches?.("input, textarea, select, [contenteditable]");
-    if (tab === "home" && document.visibilityState === "visible" && !sheetEl.open && !typing) renderHome();
+    if (tab === "home" && document.visibilityState === "visible" && !sheetEl.open && !typing && !$("h2TileMenu")?.open) renderHome(); // (nor while a tile's menu is open: その2 ①)
   }
   (function everyMinute() { setTimeout(() => { homeTick(); everyMinute(); }, 60050 - (Date.now() % 60000)); })();
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") homeTick(); });
@@ -16698,12 +16757,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // down, or moves it a step with the arrow keys (focus stays on it). Not drawn anew while a row is being dragged
   function renderTileList() {
     syncWxSettings();
+    if (homeTwo) { h2SetBuild(); h2SetSync(); } // (きょう その2 ③⑥)
     const list = $("tileList");
     if (tileDrag) return;
-    const a = list.contains(document.activeElement) ? document.activeElement : null, focusKey = a?.closest("li")?.dataset.key, onGrip = a?.classList.contains("grip");
+    const a = list.contains(document.activeElement) ? document.activeElement : null, focusKey = a?.closest("li")?.dataset.key, onGrip = a?.classList.contains("grip"), onSize = a?.classList.contains("h2-size");
     const hidden = homeHidden(), keys = homeTileOrder();
     setChildren(list, keys.map((k, i) => {
-      const { label, color } = homeTile(k), on = !hidden.has(k);
+      const { label, color } = homeTile(k), on = !hidden.has(k), note = homeTwo ? h2Note(k) : homeTile(k).evening ? "夜8時から" : null;
       return el("li", { class: on ? "on" : null, "data-key": k, style: `--tile-c:${color}` },
         el("button", { type: "button", class: "tile-pick", role: "checkbox", "aria-checked": String(on), onclick: () => {
           const h = homeHidden();
@@ -16712,7 +16772,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         } },
           el("span", { class: "check", "aria-hidden": "true" }, checkMark()),
           el("span", { class: "ticon" }, icon(tileIcon(k), 20)),
-          el("span", { class: "tname" }, label, homeTile(k).evening ? el("span", { class: "tnote" }, "夜8時から") : null)),
+          el("span", { class: "tname" }, label, note ? el("span", { class: "tnote" }, note) : null)),
+        homeTwo && h2CanSize(k) ? h2SizeChip(k, label) : null, // (きょう その2 ②)
         el("button", { type: "button", class: "grip", "aria-label": `「${label}」を動かす（${i + 1} 番目）`, onpointerdown: (ev) => startTileDrag(ev, k),
           onkeydown: (ev) => {
             const to = i + (ev.key === "ArrowUp" ? -1 : ev.key === "ArrowDown" ? 1 : 0);
@@ -16721,7 +16782,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             if (to >= 0 && to < keys.length) moveHomeTile(k, to);
           } }, icon("grip", 22)));
     }));
-    if (focusKey) list.querySelector(`li[data-key="${focusKey}"] ${onGrip ? ".grip" : ".tile-pick"}`)?.focus();
+    if (focusKey) list.querySelector(`li[data-key="${focusKey}"] ${onGrip ? ".grip" : onSize ? ".h2-size" : ".tile-pick"}`)?.focus();
   }
   function moveHomeTile(k, to) {
     const keys = homeTileOrder().filter((x) => x !== k);
@@ -31862,6 +31923,364 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("button", { type: "button", class: "chip-btn", onclick: () => wxUse(p) }, "使う"), el("button", { type: "button", class: "chip-btn", onclick: () => { wxKeep(p, p.name); wxUse(p); } }, "登録して使う")))) : null);
   }
   wxMoreBuild();
+
+  // ---------- きょう その2 ①〜⑩ (the user's calls, 2026-11-13): a tile held down opens what can be done to it there (①),
+  // a tile half a row or a whole one (②), a tile whose day is done marked (③), what yesterday is missing of what is
+  // usually recorded (④), きょうの準備 in the morning and before leaving (⑤), the hours of the morning's and the evening's
+  // tiles (⑥), the pages of the tiles hidden at the page's foot (⑦), 天気's tile as the day goes (⑧), ふりかえり as words
+  // to send (⑨), and the page pulled down to get everything afresh (⑩). きょう's settings ("home", with the account) keep
+  // the choices. Function declarations and var, as the page may draw before this part has run ----------
+  var homeTwo = false, h2Hold = null, h2MenuDown = false, h2PullAt = null, h2Busy = false;
+
+  // ⑥ the morning's tile from amFrom to amTo (5:00〜10:00 at first), the evening's from pmFrom (20:00)
+  function h2Times() {
+    const p = homePrefs(), hm = (v, d) => (isHm(v || "") ? minOf(v) : d);
+    let am = hm(p.amFrom, 300), amTo = hm(p.amTo, 600);
+    if (amTo <= am) { am = 300; amTo = 600; }
+    return { am, amTo, pm: hm(p.pmFrom, EVENING) };
+  }
+  // 朝5時, 夜8時30分, 13時
+  function h2Clock(m) {
+    const h = Math.floor(m / 60), mi = m % 60, w = mi ? `${mi}分` : "";
+    return h >= 4 && h < 12 ? `朝${h}時${w}` : h >= 18 ? `夜${h - 12}時${w}` : `${h}時${w}`;
+  }
+  // a tile's note in the settings' list: when it shows
+  function h2Note(k) {
+    const t = homeTile(k), w = h2Times();
+    if (t.evening) return `${h2Clock(w.pm)}から`;
+    if (t.morning) return `${h2Clock(w.am)}〜${h2Clock(w.amTo).replace(/^朝/, "")}、出発の前にも`;
+    if (k === "missed") return "書き忘れがあるときだけ";
+    return null;
+  }
+  // (a start put past the end moves the end along, and an end put before the start the start, the hours as long as before)
+  function h2SetTime(key, v) {
+    if (!isHm(v)) return;
+    const w = h2Times(), m = minOf(v), len = w.amTo - w.am;
+    if (key === "amFrom" && m >= w.amTo) { const to = Math.min(1439, m + len); if (to > m) saveHomePrefs({ amFrom: v, amTo: atMin(to) }); else { flash("きょうの準備の始まりは、23:58 までにしてください"); h2SetSync(true); } return; }
+    if (key === "amTo" && m <= w.am) { const from = Math.max(0, m - len); if (from < m) saveHomePrefs({ amTo: v, amFrom: atMin(from) }); else { flash("きょうの準備の終わりは、0:01 からにしてください"); h2SetSync(true); } return; }
+    saveHomePrefs({ [key]: v });
+  }
+  // ③⑥ under the tiles' list in the gear's sheet: what a tile done does, and the hours (built once, kept)
+  function h2SetBuild() {
+    if ($("h2Set")) return;
+    const time = (id, key, label) => el("input", { type: "time", id, "aria-label": label, onchange: (ev) => h2SetTime(key, ev.target.value) });
+    const done = el("select", { id: "h2Done", onchange: (ev) => saveHomePrefs({ done: ev.target.value }) },
+      [["mark", "印をつける"], ["last", "印をつけて後ろに回す"], ["off", "そのまま"]].map(([v, w]) => el("option", { value: v }, w)));
+    $("tileList").nextElementSibling.after(el("div", { id: "h2Set" },
+      el("h3", { class: "group-head" }, "タイルの出し方"),
+      el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
+        recRow("済んだタイル", done),
+        recRow("きょうの準備", time("h2AmFrom", "amFrom", "きょうの準備を出しはじめる時刻"), { unit: "から", after: [time("h2AmTo", "amTo", "きょうの準備を出しおわる時刻"), el("span", { class: "unit" }, "まで")] }),
+        recRow("夜のタイル", time("h2PmFrom", "pmFrom", "ふりかえりとあしたの準備を出しはじめる時刻"), { unit: "から" })),
+      el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "日記を書いた、ルーティーンがぜんぶできた、などできょうの分が済んだタイルは、名前の横に✓が付いて文字が薄くなります。"),
+        el("span", { class: "phrase" }, "きょうの準備は、この時間のほか、移動時間のある予定の出発2時間前からも出ます。"),
+        el("span", { class: "phrase" }, "夜のタイルは、きょうのふりかえりとあしたの準備です。"),
+        el("span", { class: "phrase" }, "タイルを長押しすると、その場で動かしたり、大きさを変えたり、隠したりできます。"))));
+  }
+  function h2SetSync(force = false) {
+    if (!$("h2Set")) return;
+    const w = h2Times(), put = (id, v) => { const f = $(id); if (force || document.activeElement !== f) f.value = v; };
+    put("h2Done", h2DoneMode()); put("h2AmFrom", atMin(w.am)); put("h2AmTo", atMin(w.amTo)); put("h2PmFrom", atMin(w.pm));
+  }
+
+  // ② each tile half a row or a whole one (the user's call); those made to take a row (ダイエット's three, すぐに記録's six,
+  // the lists of ふりかえり, あしたの準備, きょうの運動 and きょうの準備) keep theirs. ToDo, a whole row while it lists them
+  // (自動), unless set
+  const H2_FIXED = ["review", "tomorrow", "quick", "diet", "move", "prep"];
+  function h2CanSize(k) { return !!homeTile(k) && !H2_FIXED.includes(k); }
+  function h2Size(k) { const v = (homePrefs().size || {})[k]; return v === "wide" || v === "half" ? v : null; }
+  function h2Wide(k, dflt) { if (!h2CanSize(k)) return dflt; const v = h2Size(k); return v ? v === "wide" : dflt; }
+  // (null: as the app has it; the sizes as they were, for 元に戻す)
+  function h2SetSize(k, v) {
+    const was = { ...(homePrefs().size || {}) }, next = { ...was };
+    if (!v || (k !== "todo" && (v === "wide") === !!homeTile(k).wide)) delete next[k]; else next[k] = v;
+    saveHomePrefs({ size: next });
+    return was;
+  }
+  // in the settings' list, its size at a press (ToDo: 自動 → 半分 → 横いっぱい)
+  function h2SizeChip(k, label) {
+    const v = h2Size(k), word = v === "wide" ? "横いっぱい" : v === "half" ? "半分" : k === "todo" ? "自動" : homeTile(k).wide ? "横いっぱい" : "半分";
+    const next = k === "todo" ? (v === null ? "half" : v === "half" ? "wide" : null) : word === "半分" ? "wide" : "half";
+    const nextWord = next === "wide" ? "横いっぱい" : next === "half" ? "半分" : "自動（ToDoがあれば横いっぱい）";
+    return el("button", { type: "button", class: "chip-btn h2-size", "aria-label": `「${label}」の大きさ：${word}。押すと${nextWord}にします`, onclick: () => h2SetSize(k, next) }, word);
+  }
+
+  // ③ a tile whose day is done: a check by its name and its words grey (mark), those put after the others too (last), or
+  // neither (off)
+  function h2DoneMode() { const v = homePrefs().done; return v === "last" || v === "off" ? v : "mark"; }
+  function h2Mark(tiles, done) {
+    if (h2DoneMode() === "off") return;
+    for (const t of tiles) {
+      const k = t.dataset.tile;
+      if (!done[k]) continue;
+      t.classList.add("h2-done");
+      const head = t.querySelector(".tile-head"), chev = head && head.querySelector(".chev"), mark = el("span", { class: "h2-check", "aria-hidden": "true" }, icon("check", 16));
+      if (chev) chev.before(mark); else if (head) head.append(mark);
+      if (head && head.tagName === "BUTTON") head.setAttribute("aria-label", `${homeTile(k).label}（きょうの分は済み）を開く`);
+    }
+  }
+  function h2Order(list) {
+    if (h2DoneMode() !== "last") return list;
+    return [...list.filter((t) => !t.classList.contains("h2-done")), ...list.filter((t) => t.classList.contains("h2-done"))];
+  }
+
+  // ① a tile held down (or right-clicked): what can be done to it at once, in an action sheet under its name (the user's
+  // call: it took the gear and its list): 前へ, 後ろへ, いちばん前へ, its size (②), hidden (with 元に戻す), or the gear's
+  // settings. The finger moving (a scroll) opens nothing; from a keyboard or VoiceOver, the gear's list does the same
+  function h2MenuBuild() {
+    let m = $("h2TileMenu");
+    if (m) return m;
+    m = el("dialog", { class: "ask", id: "h2TileMenu", "aria-labelledby": "h2TileMsg" }, el("div", { class: "ask-group", id: "h2TileGroup" }),
+      el("button", { type: "button", class: "ask-btn ask-keep", id: "h2TileNo", onclick: (ev) => { if (h2MenuDown || ev.detail === 0) m.close(); } }, "やめる"));
+    m.addEventListener("pointerdown", () => { h2MenuDown = true; });
+    m.addEventListener("click", (ev) => { if (ev.target === m && h2MenuDown) m.close(); }); // around the buttons
+    m.addEventListener("close", () => { for (const x of $("homeTiles").querySelectorAll(".tile.held")) x.classList.remove("held"); });
+    document.body.append(m);
+    return m;
+  }
+  // the tiles showing now, in the user's order (not as ③ may have moved them)
+  function h2Visible() {
+    const on = new Set([...$("homeTiles").querySelectorAll(":scope > .tile")].map((t) => t.dataset.tile));
+    return homeTileOrder().filter((k) => on.has(k));
+  }
+  function h2Spot(k) {
+    const t = $("homeTiles").querySelector(`:scope > .tile[data-tile="${k}"]`);
+    if (!t) return;
+    t.scrollIntoView({ block: "nearest", behavior: reduceMotion.matches ? "auto" : "smooth" });
+    t.classList.add("spot");
+    setTimeout(() => t.classList.remove("spot"), 1500);
+  }
+  function h2Move(k, how) {
+    const vis = h2Visible(), i = vis.indexOf(k), to = how === "first" ? vis[0] : vis[i + (how === "up" ? -1 : 1)];
+    if (i < 0 || !to || to === k) return;
+    const was = homePrefs().order, keys = homeTileOrder().filter((x) => x !== k);
+    keys.splice(keys.indexOf(to) + (how === "down" ? 1 : 0), 0, k);
+    saveHomePrefs({ order: keys });
+    h2Spot(k);
+    flash(`「${homeTile(k).label}」を${how === "first" ? "いちばん前に" : how === "up" ? "前に" : "後ろに"}動かしました`, () => saveHomePrefs({ order: was }));
+  }
+  function h2Hide(k) {
+    const was = homePrefs().hidden, h = homeHidden();
+    h.add(k);
+    saveHomePrefs({ hidden: [...h] });
+    flash(`「${homeTile(k).label}」を隠しました。右上の歯車から、また出せます`, () => saveHomePrefs({ hidden: was }));
+  }
+  function h2OpenMenu(held) {
+    const k = held && held.dataset.tile, m = h2MenuBuild();
+    if (!k || !homeTile(k) || m.open || sheetEl.open) return;
+    const t = $("homeTiles").querySelector(`:scope > .tile[data-tile="${k}"]`) || held; // (drawn again meanwhile)
+    const vis = h2Visible(), i = vis.indexOf(k), wide = t.classList.contains("wide"), label = homeTile(k).label;
+    const item = (text, go) => el("button", { type: "button", class: "ask-btn", onclick: (ev) => { if (!h2MenuDown && ev.detail !== 0) return; m.close(); go(ev.detail === 0); } }, text);
+    setChildren($("h2TileGroup"), el("p", { class: "ask-msg", id: "h2TileMsg" }, `「${label}」のタイル`),
+      i > 0 ? item("前へ", () => h2Move(k, "up")) : null,
+      i >= 0 && i < vis.length - 1 ? item("後ろへ", () => h2Move(k, "down")) : null,
+      i > 1 ? item("いちばん前へ", () => h2Move(k, "first")) : null,
+      h2CanSize(k) ? item(wide ? "半分の大きさにする" : "横いっぱいにする", () => {
+        const was = h2SetSize(k, wide ? "half" : "wide");
+        h2Spot(k);
+        flash(`「${label}」を${wide ? "半分の大きさ" : "横いっぱい"}にしました`, () => saveHomePrefs({ size: was }));
+      }) : null,
+      item("このタイルを隠す", () => h2Hide(k)),
+      item("タイルの設定", (byKey) => openSettings(byKey, "home")));
+    t.classList.add("held");
+    h2MenuDown = false;
+    m.showModal();
+    $("h2TileNo").focus();
+    navigator.vibrate?.(15);
+  }
+  const h2HeldTile = (ev) => { const t = ev.target.closest?.("#homeTiles > .tile"); return t && !ev.target.closest("input, textarea, select, a[href]") ? t : null; };
+  const h2Drop = () => { clearTimeout(h2Hold?.timer); h2Hold = null; };
+  $("homeTiles").addEventListener("pointerdown", (ev) => {
+    h2Drop();
+    const t = homeTwo ? h2HeldTile(ev) : null;
+    if (!t || ev.pointerType === "mouse" || !ev.isPrimary) return;
+    h2Hold = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, timer: setTimeout(() => { h2Hold = null; h2OpenMenu(t); }, 500) };
+  });
+  $("homeTiles").addEventListener("pointermove", (ev) => { if (h2Hold && ev.pointerId === h2Hold.id && Math.hypot(ev.clientX - h2Hold.x, ev.clientY - h2Hold.y) > 10) h2Drop(); });
+  for (const type of ["pointerup", "pointercancel"]) $("homeTiles").addEventListener(type, h2Drop);
+  $("homeTiles").addEventListener("contextmenu", (ev) => {
+    const t = homeTwo ? h2HeldTile(ev) : null;
+    if (!t) return;
+    ev.preventDefault(); // the menu in place of the browser's own
+    h2Drop();
+    h2OpenMenu(t);
+  });
+
+  // ④ きのうの書き忘れ (the user's call): a kind recorded on 5 of the 7 days before yesterday but not yesterday (日記, 体重,
+  // 食事, 勉強, 家計簿; ルーティーン with items left on a day not お休み, on 5 of those days some done), each pressed to
+  // record it on yesterday; 「きょうは出さない」 leaves it out for the rest of today
+  const H2_MISS = [
+    { key: "journal", label: "日記", has: (d) => !!journal.get(d)?.text },
+    { key: "weight", label: "体重", page: "diet", part: "weight", has: (d) => num(weights.get(d)?.kg) > 0 },
+    { key: "meal", label: "食事", page: "diet", part: "meal", has: (d) => meals.items.some((x) => x.date === d) },
+    { key: "study", label: "勉強", has: (d) => study.items.some((x) => x.date === d && num(x.minutes) > 0) },
+    { key: "money", label: "家計簿", has: (d) => expenses.items.some((x) => x.date === d) },
+  ];
+  function h2Missing() {
+    if (homePrefs().missedOff === todayKey) return [];
+    const y = addDays(todayKey, -1), usual = (has) => { let n = 0; for (let i = 2; i <= 8; i++) if (has(addDays(todayKey, -i))) n++; return n >= 5; };
+    const out = H2_MISS.filter((x) => !x.has(y) && usual(x.has)).map((x) => ({ ...x, words: x.label }));
+    const rt = rtItemsOn(y);
+    if (rt.length && !rtRest(y)) {
+      const done = routineDone(y), left = rt.filter((r) => !done.has(r.id)).length;
+      if (left && usual((d) => routineDone(d).size > 0)) out.push({ key: "routine", label: "ルーティーン", words: `ルーティーン（まだ${left}つ）` });
+    }
+    return out;
+  }
+  function h2MissedTile() {
+    const miss = h2Missing(), y = addDays(todayKey, -1);
+    if (!miss.length) return null;
+    return tile("missed", null, null, `${fmtMDW(y)}の分`, el("div", { class: "h2-miss" },
+      miss.map((x) => el("button", { type: "button", class: "chip-btn", "data-miss": x.key, style: `--chip-c:var(--c-${x.key})`, "aria-label": `きのうの${x.label}を記録する${x.key === "routine" ? `（まだ${x.words.replace(/\D/g, "")}つ）` : ""}`, onclick: () => h2OpenDay(x, y) }, icon(x.key, 16), x.words)),
+      el("button", { type: "button", class: "link-btn h2-miss-off", onclick: () => { saveHomePrefs({ missedOff: todayKey }); flash("きのうの書き忘れを、きょうは出さないようにしました", () => saveHomePrefs({ missedOff: null })); } }, "きょうは出さない")));
+  }
+  // its page at yesterday (a tile opens it at today: openFromHome); 家計簿 its form's day and month
+  function h2OpenDay(x, d) {
+    if (x.part) setDietPart(x.part);
+    if (x.key === "money") { exDate.value = d; setMoneyMonth(monthOf(d)); }
+    setViewDate(d);
+    showTab(x.page || x.key);
+  }
+
+  // ⑤ きょうの準備 (the user's call): in the morning's hours (⑥), and from two hours before leaving for a plan with a 移動時間,
+  // what the day asks for before going out: when to leave, the shifts, rain and an umbrella, what to wear, and what to take
+  // and do for today's plans (カレンダー's 持ち物・準備), checked off here. Nothing to say, no tile
+  function h2Rows(list) {
+    return el("ul", { class: "rv-list" }, list.map(([k, v, sep = "・"]) => el("li", {}, el("span", { class: "rv-k" }, k),
+      el("span", { class: "rv-v" }, Array.isArray(v) ? v.map((x, i) => el("span", { class: "phrase" }, x + (i < v.length - 1 ? sep : ""))) : v))));
+  }
+  function h2PrepTile() {
+    const now = nowMinutes(), w = h2Times();
+    const turns = (turnsByDay(todayKey, todayKey).get(todayKey) || []).filter((t) => t.day === 0 && !t.e.ten);
+    const leave = calTwo ? turns.filter((t) => isHm(t.e.time || "") && num(t.e.travel) > 0).map((t) => ({ t, at: minOf(t.e.time) - num(t.e.travel) }))
+      .filter((x) => x.at >= now - 15).sort((a, b) => a.at - b.at)[0] : null;
+    if (!(now >= w.am && now < w.amTo) && !(leave && leave.at - now <= 120)) return null;
+    const wx = wxPlace() ? wxDay(todayKey) : null, wear = wx ? wxWear(todayKey) : null;
+    const sh = shifts.items.filter((x) => x.date === todayKey).sort((a, b) => String(a.start).localeCompare(String(b.start)));
+    const list = [
+      leave ? ["出発", [`${atMin(Math.max(0, leave.at))} に出発（${leave.t.e.time} ${oneLine(leave.t.e.title)}）`, leave.at > now ? leftWords(leave.at - now) : "いま"], "、"] : null,
+      sh.length ? ["バイト", sh.map((x) => `${x.start}〜${x.end}` + (shiftName(x) !== "バイト" ? ` ${shiftName(x)}` : "")), "、"] : null,
+      wx && wx.wet ? ["傘", [wxRainWords(todayKey) || (wx.icon === "snow" ? "雪の予報です" : "雨の予報です"), "傘を持っていこう"], "。"] : null,
+      wear ? ["服装", wear.main] : null,
+    ].filter(Boolean);
+    const checks = [];
+    if (calTwo) for (const t of turns) { const on = calChecked(t.e, todayKey); for (const c of calChecksOf(t.e)) checks.push({ e: t.e, c, done: on.has(c.id) }); }
+    if (!list.length && !checks.length) return null;
+    const few = checks.slice(0, 6);
+    return tile("prep", null, null, null, [list.length ? h2Rows(list) : null,
+      checks.length ? el("p", { class: "h2-checks-head" }, `持ち物・準備 ${checks.filter((x) => x.done).length} / ${checks.length}`) : null,
+      checks.length ? el("ul", { class: "rt-tile h2-checks" }, few.map((x) => el("li", { class: x.done ? "done" : null },
+        el("button", { type: "button", class: "rt-row", "data-pc": `${x.e.id}:${x.c.id}`, "aria-label": `「${x.c.text}」を${x.done ? "まだにする" : "済みにする"}`, onclick: () => calToggleCheck(x.e.id, todayKey, x.c.id) },
+          el("span", { class: "check", "aria-hidden": "true" }, checkMark()), el("span", { class: "rt-label" }, x.c.text)))),
+        checks.length > few.length ? el("li", { class: "rt-more" }, `ほか ${checks.length - few.length} 件`) : null) : null]);
+  }
+
+  // ⑦ the pages of the tiles hidden (the user's call: a hidden tile's page took つみかさね's list to reach), as icons at the
+  // foot of きょう; nothing while every tile shows
+  const H2_NO_PAGE = ["review", "tomorrow", "quick", "prep", "missed"];
+  function h2Dock(hidden) {
+    let box = $("h2Dock");
+    if (!box) { box = el("nav", { class: "h2-dock", id: "h2Dock", "aria-labelledby": "h2DockHead" }); $("homeTiles").after(box); }
+    const keys = homeTileOrder().filter((k) => hidden.has(k) && !H2_NO_PAGE.includes(k));
+    box.hidden = !keys.length;
+    setChildren(box, keys.length ? [el("h3", { class: "h2-dock-head", id: "h2DockHead" }, "ほかのページ"),
+      el("div", { class: "h2-dock-row" }, keys.map((k) => el("button", { type: "button", class: "h2-dock-btn", "data-dock": k, style: `--tile-c:${homeTile(k).color}`, onclick: (ev) => h2Go(k, ev) },
+        icon(tileIcon(k), 22), el("span", {}, homeTile(k).label))))] : []);
+  }
+  function h2Go(k, ev) {
+    const { open } = homeTile(k), to = [].concat(open || k);
+    if (typeof open === "function") open(ev); else openFromHome(to[0], to[1] || null);
+  }
+
+  // ⑧ 天気's tile as the day goes (the user's call): the temperature now (and how it feels, when 2° apart) by the day's,
+  // and from the evening's hour (⑥) tomorrow's weather first
+  function h2WxTomorrow() { const d = addDays(todayKey, 1); return nowMinutes() >= h2Times().pm && wxDay(d) ? d : null; }
+  function h2WxNow() {
+    const x = wxHours(`${todayKey}T${pad(new Date().getHours())}:00`, 1)[0];
+    return x && x.d === todayKey && x.temp != null ? { t: Math.round(num(x.temp)), f: x.feel != null ? Math.round(num(x.feel)) : null } : null;
+  }
+  function h2WxNowEl(n) {
+    return el("span", { class: "wx-now" }, el("small", {}, "いま "), `${n.t}°`, n.f !== null && Math.abs(n.f - n.t) >= 2 ? el("small", {}, `（体感 ${n.f}°）`) : null);
+  }
+
+  // ⑨ ふりかえり as words to send (the user's call): the share sheet, or copied where there is none; the day, its blocks,
+  // each kind's line as the tile has it, and whether 日記 was written (never its words)
+  function h2ShareBtn(list, blocks, wrote) {
+    return el("button", { type: "button", class: "link-btn h2-share", onclick: () => {
+      const lines = [`${fmtMDW(todayKey)}のふりかえり`, blocks ? `きょう積んだブロック ${blocks}こ` : null,
+        ...list.filter(Boolean).map(([k, v, sep = "・"]) => `${k} ${Array.isArray(v) ? v.join(sep) : v}`), wrote ? "日記 書きました" : null].filter(Boolean);
+      h2Share(lines[0], lines.join("\n"));
+    } }, "文字で送る");
+  }
+  async function h2Share(title, text) {
+    if (navigator.share) {
+      try { await navigator.share({ title, text }); return; } catch (e) { if (e?.name === "AbortError") return; }
+    }
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch {
+      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
+      document.body.append(ta); ta.select();
+      try { ok = document.execCommand("copy"); } catch {}
+      ta.remove();
+    }
+    flash(ok ? "文字でコピーしました。LINEなどに貼り付けられます" : "コピーできませんでした");
+  }
+
+  // ⑩ きょう pulled down from its top (the user's call): the weather got afresh and the records synced now, a mark at the
+  // top turning meanwhile. A finger only, from the page's top, not while a sheet is open
+  const H2_PULL = 70;
+  function h2PullEl() {
+    let p = $("h2Pull");
+    if (!p) { p = el("div", { class: "h2-pull", id: "h2Pull", "aria-hidden": "true" }, icon("sync", 20)); document.body.append(p); }
+    return p;
+  }
+  function h2PullShow(d) {
+    const p = h2PullEl(), k = Math.min(1, d / H2_PULL);
+    p.classList.toggle("ready", d >= H2_PULL);
+    p.style.opacity = String(k);
+    p.style.transform = `translateY(${Math.round(Math.min(d, 110) * 0.6 - 40)}px) rotate(${Math.round(k * 270)}deg)`;
+  }
+  function h2PullHide() { const p = $("h2Pull"); if (!p) return; p.classList.remove("ready", "busy"); p.style.opacity = ""; p.style.transform = ""; }
+  async function h2Refresh() {
+    if (h2Busy) return;
+    h2Busy = true;
+    const p = h2PullEl();
+    p.classList.add("busy"); p.style.opacity = "1"; p.style.transform = "translateY(8px)";
+    const jobs = [new Promise((r) => setTimeout(r, 600))]; // (the mark seen turning)
+    if (wxPlace()) { wxError = ""; wxFailedAt = 0; jobs.push(wxFetch(true)); }
+    jobs.push(syncNow(false));
+    await Promise.allSettled(jobs);
+    h2Busy = false; h2PullHide();
+    if (tab === "home") renderHome();
+    flash(wxError || "更新しました");
+  }
+  document.addEventListener("touchstart", (ev) => {
+    h2PullAt = null;
+    if (!homeTwo || tab !== "home" || sheetEl.open || h2Busy || ev.touches.length !== 1 || window.scrollY > 2) return;
+    if (ev.target.closest?.("input, textarea, select, dialog, .wx-hours")) return;
+    h2PullAt = { x: ev.touches[0].clientX, y: ev.touches[0].clientY, d: 0, on: false };
+  }, { passive: true });
+  document.addEventListener("touchmove", (ev) => {
+    const p = h2PullAt;
+    if (!p) return;
+    const f = ev.touches[0], dy = f.clientY - p.y, dx = f.clientX - p.x;
+    if (!p.on) {
+      if ((Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) || dy < -4 || window.scrollY > 2) { h2PullAt = null; return; } // sideways, or the page scrolled
+      if (dy < 10) return;
+      p.on = true;
+      h2Drop(); // (not a tile held down)
+    }
+    p.d = Math.max(0, dy - 10);
+    h2PullShow(p.d);
+  }, { passive: true });
+  document.addEventListener("touchend", () => {
+    const p = h2PullAt;
+    h2PullAt = null;
+    if (!p || !p.on) return;
+    if (p.d >= H2_PULL) h2Refresh(); else h2PullHide();
+  }, { passive: true });
+  document.addEventListener("touchcancel", () => { if (h2PullAt?.on) h2PullHide(); h2PullAt = null; }, { passive: true });
+  homeTwo = true;
 
   // ---------- からだ その3 ①〜⑩ (the user's calls, 2026-11-13): 体組成 (①), 体温 (②), the day's 体調 (③), 寝る時刻 (④) and
   // 水分 (⑤)'s お知らせ, ウエスト身長比 (⑥), サイズの部位 of one's own (⑦), 区切りの目標 (⑧), the days on end recorded (⑨), and
