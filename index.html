@@ -2958,6 +2958,51 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
 .cal5-dup { display: grid; gap: 10px; margin-bottom: 12px; }
 .cal5-dup p { margin: 0; }
 .cal5-dup .btn { justify-self: start; }
+/* カレンダー その6 ①〜⑩ (2026-11-14). ① a day's plans moved or copied at once, under its list */
+.cal6-day { display: grid; gap: 8px; padding: 4px var(--space-2) 14px; }
+.cal6-day[hidden] { display: none; }
+.cal6-day .sub, .cal6-sum .sub, .cal6-old .sub, .cal6-money .sub { margin: 0; color: var(--muted); font-size: var(--t-sub); }
+.cal6-day-row, .cal6-money-row, .cal6-old-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cal6-day-row input[type="date"] { flex: 1 1 140px; min-width: 0; }
+/* ② the month summed up, ③ a number of days on: under the month picker's wheels */
+.cal6-sum, .cal6-jump { display: grid; gap: 8px; }
+.cal6-sum-head { margin: 0; font-size: var(--t-sub); font-weight: 700; color: var(--muted); }
+.cal6-sum-list { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.cal6-jump-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cal6-jump-row input { width: 7em; }
+.cal6-jump-row output { flex: 1 1 auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cal6-jump-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cal6-jump-chips .chip-btn, .cal6-same-btn, .cal6-find-chip { background: var(--fill); box-shadow: none; color: var(--fg); }
+/* ⑤ 前と同じにする, under the new plan's name */
+.cal6-same[hidden] { display: none; }
+.cal6-same-btn { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; max-width: 100%; min-height: 40px; padding: 6px 14px; text-align: start; }
+.cal6-same-head { color: var(--accent); font-weight: 700; }
+.cal6-same-what { color: var(--muted); font-size: var(--t-sub); overflow-wrap: anywhere; }
+/* ⑥ 予定's labels to narrow it to */
+.cal6-find-labels { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.cal6-find-labels[hidden] { display: none; }
+.cal6-find-chip { display: inline-flex; align-items: center; gap: 6px; }
+.cal6-find-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lc); }
+.cal6-find-chip[aria-pressed="true"] { background: var(--accent); color: #fff; }
+/* ⑧ 古い予定の整理 */
+.cal6-old { display: grid; gap: 10px; }
+.cal6-old-n { flex: 1 1 auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* ⑨ いま・あと何分, ⑩ 費用, in a plan's row */
+.cal6-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.cal6-now:empty { display: none; }
+.cal6-now { display: inline-block; padding: 0 7px; border-radius: 999px; background: var(--fill); color: var(--accent); font-size: 11px; font-weight: 700; line-height: 1.6; font-variant-numeric: tabular-nums; }
+.cal6-now.on { background: var(--accent); color: #fff; }
+.cal6-now.over { color: var(--muted); }
+/* ⑩ 費用 in 家計簿, in the plan opened */
+.cal6-money { display: grid; gap: 8px; }
+.cal6-money p { margin: 0; }
+.cal6-money .link-btn { justify-self: start; }
+/* the 費目 and how long ago, in their cards, as the forms' fields; and (その5 ⑧) 追加 kept on one line beside its field */
+.cal6-money select, .cal6-old select, .cal6-day input[type="date"], .cal6-jump input { min-height: 40px; min-width: 0; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); }
+.cal6-money select { flex: 1 1 8em; }
+.cal5-some-add .btn { flex: none; white-space: nowrap; }
+.cal5-some-add input { min-height: 40px; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.cal5-some-add + .sub { padding-top: 8px; }
 /* 目標 その2 ①〜⑩ (2026-11-11). ① a counted cell: its ring (a press counts one) and the count by it, the cell filling
    from its foot as the count goes up; ⑦ an element's own colour: its cell tinted, with a line of it along the top */
 .m-cell[data-k] { --m-bg: var(--surface); }
@@ -14439,6 +14484,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // anything after a day: a plan's turn (five years ahead) or a deadline, for もっと見る
   const anyAfter = (d) => dueItems().some((x) => x.date > d) || events.items.some((e) => turnStarts(e, addDays(d, 1), addDays(d, 1830)).some((s) => s > d));
   function renderFind() {
+    renderCal6FindChips(); // (カレンダー その6 ⑥ ラベルで絞り込む)
     if (calThree && cal3FindHook()) return; // (カレンダー その3 ⑤ 繰り返しの予定)
     const q = foldText($("findText").value.trim()), groups = [];
     const dayHead = (d) => el("h3", { class: "group-head" }, (relLabel(d) ? relLabel(d) + "・" : "") + fmtMDW(d));
@@ -14451,13 +14497,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const end = addDays(todayKey, 92 * findPages - 1), by = turnsByDay(todayKey, end), sb = shiftsByDay(todayKey, end); // (① the shifts too)
       const dues = groupBy(dueItems().filter((x) => x.date >= todayKey && x.date <= end), (x) => x.date);
       for (const d of [...new Set([...by.keys(), ...dues.keys(), ...sb.keys()])].sort()) {
-        const turns = (by.get(d) || []).filter((t) => t.day === 0 || d === todayKey), dd = dues.get(d) || [], sh = (sb.get(d) || []).filter((p) => p.first);
+        const turns = (by.get(d) || []).filter((t) => (t.day === 0 || d === todayKey) && cal6FindOk(t.e)), dd = cal6FindOn() ? [] : dues.get(d) || [], sh = cal6FindOn() ? [] : (sb.get(d) || []).filter((p) => p.first); // (その6 ⑥)
         if (turns.length || dd.length || sh.length) groups.push(...dayGroup(d, turns, dd, sh));
       }
       const more = anyAfter(end) ? el("div", { class: "card" }, el("button", { type: "button", class: "link-btn sheet-row", id: "findMore", onclick: () => { findPages++; renderFind(); } }, "もっと見る")) : null;
       // the ToDos past their 期限 first, each opening its day, as ToDo's page puts them (the user's call: 予定 showed only
       // what was ahead, so they went unseen)
-      const late = todos.items.filter((t) => !t.done && t.due && t.due < todayKey).sort(todoOrder);
+      const late = cal6FindOn() ? [] : todos.items.filter((t) => !t.done && t.due && t.due < todayKey).sort(todoOrder); // (その6 ⑥: none while a label is picked)
       const lateGroup = late.length ? [el("h3", { class: "group-head warn" }, "期限切れの ToDo"), el("ul", { class: "list card" },
         late.map((t) => dueRow({ date: t.due, text: t.text, chip: "ToDo", hue: "var(--c-todo)", sub: `${daysBetween(t.due, todayKey)} 日過ぎています・${fmtDay(t.due)}` })))] : [];
       setChildren($("findList"), cal5FindCards(), sumSection(), lateGroup, groups.length ? [el("h3", { class: "group-head" }, "これからの予定"), ...groups] : el("div", { class: "card empty" }, findPages > 1 ? "この先の予定はありません。" : "これから3か月の予定はありません。"), more);
@@ -14465,11 +14511,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     // what was found: each plan once, at its next turn (or its last, if they are all past), and the deadlines; its name,
     // memo or label's name has the words (the user's call); the ones to come first
-    const found = events.items.filter((e) => foldText(e.title + "\n" + (e.memo || "") + "\n" + (e.place || "") + "\n" + (labelOf(e)?.name || "") + "\n" + (e.with || "") + (e.star ? "\n★" : "")).includes(q)).map((e) => { // (その4 ⑥ いっしょの人 and ① ★ found too)
+    const found = events.items.filter((e) => cal6FindOk(e) && foldText(e.title + "\n" + (e.memo || "") + "\n" + (e.place || "") + "\n" + (labelOf(e)?.name || "") + "\n" + (e.with || "") + (e.star ? "\n★" : "")).includes(q)).map((e) => { // (その4 ⑥ いっしょの人 and ① ★ found too)
       const next = turnStarts(e, todayKey, addDays(todayKey, 3660)).find((d) => d >= addDays(todayKey, -extraDays(e)));
       const start = next || turnStarts(e, e.date, todayKey).pop() || e.date;
       return { date: start, turn: { e, start, day: 0, days: extraDays(e) + 1 }, past: !next };
-    }).concat(calNoteHits(q)).concat(dueItems().filter((x) => foldText(x.text).includes(q)).map((x) => ({ date: x.date, due: x, past: x.date < todayKey })));
+    }).concat(calNoteHits(q).filter((x) => cal6FindOk(x.turn.e))).concat(dueItems().filter((x) => !cal6FindOn() && foldText(x.text).includes(q)).map((x) => ({ date: x.date, due: x, past: x.date < todayKey })));
     const coming = found.filter((x) => !x.past).sort((a, b) => a.date.localeCompare(b.date)), past = found.filter((x) => x.past).sort((a, b) => b.date.localeCompare(a.date));
     for (const [head, list] of [["これから", coming], ["過ぎた予定", past]]) {
       if (!list.length) continue;
@@ -14509,10 +14555,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const years = Array.from({ length: Math.max(now + 30, y0) - Math.min(now - 30, y0) + 1 }, (_, i) => Math.min(now - 30, y0) + i);
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
     pickYM = [y0, m0];
-    const cols = [wheelCol(years, years.indexOf(y0), { label: "年", idBase: "mpY", show: (y) => `${y}年`, loop: false, onTake: (j) => { pickYM[0] = years[j]; } }),
-      wheelCol(months, m0 - 1, { label: "月", idBase: "mpM", show: (m) => `${m}月`, cls: "months", onTake: (j) => { pickYM[1] = months[j]; } })];
+    const cols = [wheelCol(years, years.indexOf(y0), { label: "年", idBase: "mpY", show: (y) => `${y}年`, loop: false, onTake: (j) => { pickYM[0] = years[j]; cal6Pick(); } }),
+      wheelCol(months, m0 - 1, { label: "月", idBase: "mpM", show: (m) => `${m}月`, cls: "months", onTake: (j) => { pickYM[1] = months[j]; cal6Pick(); } })]; // (その6 ② the month summed up)
     setChildren($("mpWheels"), el("div", { class: "wheel", role: "group", "aria-label": "年と月" }, el("div", { class: "wheel-band" }), cols));
     syncSheetHead();
+    cal6Pick(); // (その6 ②)
     presentSheet(byKey, "month");
     for (const col of cols) col.place(); // laid out by now (the sheet is open), so each stops on its row
   }
@@ -16415,7 +16462,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   function renderCalendar() {
     syncCalView();
-    draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); // (その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
+    draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); draw(renderCalSix); // (その6 ①⑤⑧; その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
     const title = calTitle();
     if ($("calMonthName").textContent !== title) $("calMonthName").textContent = title; // a live region: only a change is read out
     const todoBy = groupBy(todos.items, (t) => t.due);
@@ -16573,7 +16620,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("span", { class: "body" }, el("span", { class: "text" }, cal4Name(t)), sub ? el("span", { class: "sub" + (l ? " ev-label" : "") }, sub) : null,
           // its place on a line of its own with a pin (the user's call: a plan's 場所 as the iPhone's カレンダー has it)
           e.place ? el("span", { class: "sub ev-place" }, icon("place", 14), el("span", {}, e.place)) : null,
-          e.memo ? el("span", { class: "sub ev-memo clamp" }, e.memo) : null, calRowMore(t), calThree ? cal3RowMore(t) : null, cal4RowMore(t), cal5RowMore(t)), // (カレンダー その3 ⑧, その4 ②⑥, その5 ②)
+          e.memo ? el("span", { class: "sub ev-memo clamp" }, e.memo) : null, calRowMore(t), calThree ? cal3RowMore(t) : null, cal4RowMore(t), cal5RowMore(t), cal6RowMore(t)), // (カレンダー その3 ⑧, その4 ②⑥, その5 ②, その6 ⑨⑩)
         el("span", { class: "chev" }, icon("next", 16))));
   }
 
@@ -17077,14 +17124,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the plans out as an .ics file the iPhone's カレンダー (and the others) take in: repeats as RRULE, turns taken out as
   // EXDATE, the place, memo, URL and label too. Times carry no zone, so they stay the clock times they were written in;
   // one with a start and no end lasts an hour there. One read in from another keeps its UID, so it isn't made twice there
-  function icsOf() {
+  function icsOf(list = events.items) { // (カレンダー その6 ⑦: one plan too)
     const esc = (t) => String(t).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
     const day = (d) => d.replace(/-/g, ""), at = (d, t) => `${day(d)}T${t.replace(":", "")}00`;
     const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
     const RULES = { daily: "FREQ=DAILY", weekdays: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", weekly: "FREQ=WEEKLY", biweekly: "FREQ=WEEKLY;INTERVAL=2", monthly: "FREQ=MONTHLY", yearly: "FREQ=YEARLY" };
     const DAYS = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
     const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//tsumikasane//calendar//JA", "CALSCALE:GREGORIAN", "X-WR-CALNAME:つみかさね"];
-    for (const e of events.items) {
+    for (const e of list) {
       if (!isDay(e.date) || !e.title || (e.repeat && !turnStarts(e, e.date, addDays(e.date, 3660)).length)) continue; // (every turn taken out)
       let first = e.date;
       if (e.repeat === "weekdays") while ([0, 6].includes(parseYmd(first).getDay())) first = addDays(first, 1);
@@ -20385,7 +20432,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月14日 8:48"; // d7d99499 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月14日 9:08"; // 05607868 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -25673,6 +25720,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const cs = calChecksEd[f].read().map((c) => (rep ? { id: c.id, text: c.text } : c));
     if (cs.length) x.checks = cs;
     Object.assign(x, cal4FormExtras(f)); // (カレンダー その4 ①③⑤⑥)
+    Object.assign(x, cal6FormExtras(f)); // (カレンダー その6 ⑩ 費用)
     return x;
   }
   function calFormSig(f) { return calTwo ? JSON.stringify(calFormExtras(f, $(f + "Date").value, $(f + "Time").value)) : ""; }
@@ -25698,7 +25746,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!e) { box.replaceChildren(); return; }
     const d = e.repeat ? editingStart || e.date : e.date, act0 = document.activeElement, k = box.contains(act0) ? act0.dataset.k || act0.id : null;
     const typed = act0?.id === "edNoteText" ? act0.value : null;
-    setChildren(box, calThree ? cal3EditCards(e, d) : null, cal4EditCards(e, d), cal5EditCards(e, d), calDecideCard(e, editingStart), calChecksCard(e, d), calNoteCard(e, d)); // (カレンダー その3 ②⑧ first)
+    setChildren(box, calThree ? cal3EditCards(e, d) : null, cal4EditCards(e, d), cal5EditCards(e, d), cal6EditCards(e, d), calDecideCard(e, editingStart), calChecksCard(e, d), calNoteCard(e, d)); // (カレンダー その3 ②⑧ first)
     if (k) { const n = box.querySelector(`[data-k="${k}"]`) || $(k); if (n) { if (typed !== null && n.id === "edNoteText") n.value = typed; n.focus(); } }
   }
 
@@ -26424,6 +26472,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $(f + "EndNote").checked = !!e?.endNote;
     $(f + "With").value = typeof e?.with === "string" ? e.with : "";
     cal4SyncRows(f);
+    cal6FillForm(f, e); // (その6 ⑩ 費用, ④)
   }
 
   // a plan's row (a day's list, 予定を探す): 中止 (②) and who it is with (⑥)
@@ -26803,6 +26852,311 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   calFive = true;
   cal5SyncLens("plan"); cal5SyncLens("ed");
+
+  // ---------- カレンダー その6 ①〜⑩ (the user's calls, 2026-11-14): a day's plans copied or moved to another day at once
+  // (①), the month on the picker's wheels summed up (②), the day a number of days on (③), a place's 移動時間 remembered
+  // (④), a new plan filled in from the last one of its name (⑤), 予定 narrowed to a label (⑥), a plan as a .ics file (⑦),
+  // the old plans deleted at once (⑧), いま and あと何分 on today's plans (⑨), and a plan's 費用 put in 家計簿 (⑩) ----------
+  // (what was there calls in here; before this part has run, as the page opens, these do nothing)
+  var calSix = false, cal6FindLabel = "", cal6DayOpen = false, cal6DayFor = null;
+
+  // ① この日の予定をまとめて: under a day's list, its plans (those beginning that day, not 仮 and not called off) copied
+  // or moved to another day at once (台風で全部あしたに). A repeating plan's turn alone: copied as a plan of its own, or
+  // moved as この回だけ is (taken out of the plan, kept on the new day). 元に戻す puts them all back
+  const CAL6_DROP = new Set(["id", "repeat", "repeatUntil", "skip", "repeatDays", "repeatCount", "nthBase", "noHol", "pauseFrom", "pauseTo", "cancel", "notes", "checked", "att", "cls", "icsUid", "ten", "cands", "cand", "todoId", "exMade", "createdAt", "updatedAt"]);
+  function cal6TurnCopy(e, to) {
+    const x = {};
+    for (const [k, v] of Object.entries(e)) if (!CAL6_DROP.has(k) && v !== undefined) x[k] = v;
+    const n = extraDays(e);
+    x.date = to;
+    if (n) x.endDate = addDays(to, n); else delete x.endDate;
+    if (Array.isArray(x.checks)) x.checks = x.checks.map((c) => ({ id: uid(), text: c.text }));
+    x.createdAt = Date.now();
+    return JSON.parse(JSON.stringify(x));
+  }
+  function cal6DayTurns(d) {
+    return (turnsByDay(d, d).get(d) || []).filter((t) => t.day === 0 && !t.e.ten && !t.e.cand && !cal4Cx(t.e, t.start) && onCalendar(t.e, calHidden()) && typeof t.e.title === "string");
+  }
+  function cal6MoveDay(from, to, move) {
+    const turns = cal6DayTurns(from);
+    if (!turns.length || !isDay(to) || to === from) return;
+    const made = [], before = [];
+    act(async () => {
+      for (const t of turns) {
+        const e = events.get(t.e.id);
+        if (!e) continue;
+        if (move) before.push(JSON.parse(JSON.stringify(e)));
+        if (move && !e.repeat) { const n = extraDays(e); await events.update(e.id, { date: to, endDate: n ? addDays(to, n) : undefined }); continue; }
+        if (move) await events.update(e.id, { skip: [...new Set([...(e.skip || []), t.start])] });
+        made.push(await events.add(cal6TurnCopy(e, to)));
+      }
+    });
+    cal6DayOpen = false;
+    flash(`${turns.length}件の予定を${fmtMDW(to)}に${move ? "移しました" : "コピーしました"}`, () => act(async () => { if (made.length) takeBack(events, made); for (const b of before) await events.set(b.id, b); flash("元に戻しました"); }));
+  }
+  const cal6DayBox = el("div", { class: "cal6-day", id: "cal6DayBox", hidden: true });
+  $("dayShareBox").after(cal6DayBox);
+  $("dayView").querySelector(".label-tools").append(el("button", { type: "button", class: "link-btn", id: "cal6DayBtn", "aria-expanded": "false", "aria-controls": "cal6DayBox", hidden: true,
+    onclick: () => { cal6DayOpen = !cal6DayOpen; renderCal6Day(); if (cal6DayOpen) $("cal6DayTo")?.focus(); } }, icon("calendar", 20), "まとめて動かす"));
+  function renderCal6Day() {
+    const d = calDay, turns = cal6DayTurns(d), btn = $("cal6DayBtn");
+    if (cal6DayFor !== d || !sheetEl.open) { cal6DayOpen = false; cal6DayFor = d; } // (closed again for another day, or the sheet opened afresh)
+    btn.hidden = !turns.length;
+    if (!turns.length) cal6DayOpen = false;
+    btn.setAttribute("aria-expanded", String(cal6DayOpen));
+    cal6DayBox.hidden = !cal6DayOpen;
+    if (!cal6DayOpen) { cal6DayBox.replaceChildren(); return; }
+    const was = $("cal6DayTo")?.value, to = el("input", { type: "date", id: "cal6DayTo", value: isDay(was || "") && was !== d ? was : addDays(d, 1), "aria-label": "動かす先の日" });
+    const go = (move) => { const v = to.value; if (!isDay(v)) { flash("日付を選んでください"); return; } if (v === d) { flash("ほかの日を選んでください"); return; } cal6MoveDay(d, v, move); };
+    cal6DayBox.replaceChildren(
+      el("p", { class: "sub" }, `この日の予定 ${turns.length}件を、まとめて`),
+      el("div", { class: "cal6-day-row" }, to, el("button", { type: "button", class: "btn sm", "data-k": "day-move", onclick: () => go(true) }, "移す"),
+        el("button", { type: "button", class: "btn sm ghost", "data-k": "day-copy", onclick: () => go(false) }, "コピー")),
+      el("p", { class: "sub" }, "繰り返しの予定は、この日の回だけ。仮の予定と中止の予定は動かしません。"));
+  }
+
+  // ② the month picker: under the wheels, the month in their band summed up as they turn (plans, their hours, ★, called
+  // off, the busiest day, the labels, shifts, and ⑩'s 費用)
+  const cal6Sum = el("div", { class: "card pad cal6-sum", id: "cal6Sum", "aria-live": "polite" });
+  $("mpToday").closest(".card").after(cal6Sum);
+  function cal6MonthSum(ym) {
+    const first = ym + "-01", last = `${ym}-${pad(daysInMonth(ym))}`, by = turnsByDay(first, last), hidden = calHidden();
+    const seen = new Set(), perDay = new Map(), perLabel = new Map();
+    let n = 0, cx = 0, star = 0, min = 0, cost = 0;
+    for (const [d, list] of by) for (const t of list) {
+      if (t.e.cand || !onCalendar(t.e, hidden)) continue;
+      const off = cal4Cx(t.e, t.start), key = t.e.id + "|" + t.start;
+      if (!off) { const sp = turnSpan(t); if (sp) min += sp[1] - sp[0]; perDay.set(d, (perDay.get(d) || 0) + 1); }
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (off) { cx++; continue; }
+      n++;
+      if (t.e.star) star++;
+      if (num(t.e.cost) > 0) cost += Math.round(num(t.e.cost));
+      const l = labelOf(t.e);
+      if (l) perLabel.set(l.id, { l, n: (perLabel.get(l.id)?.n || 0) + 1 });
+    }
+    let busy = null;
+    for (const [d, c] of perDay) if (!busy || c > busy.c || (c === busy.c && d < busy.d)) busy = { d, c };
+    const shifts = [...shiftsByDay(first, last).values()].flat().filter((p) => p.first).length;
+    return { n, cx, star, min, cost, busy, labels: [...perLabel.values()].sort((a, b) => b.n - a.n), shifts };
+  }
+  function cal6Pick() {
+    if (!calSix || !pickYM) return;
+    const ym = `${pickYM[0]}-${pad(pickYM[1])}`, s = cal6MonthSum(ym), lines = [];
+    lines.push([`予定 ${s.n}件`, s.min ? `合計 ${durText(s.min)}` : "", s.star ? `★ ${s.star}件` : "", s.cx ? `中止 ${s.cx}件` : ""].filter(Boolean).join("・"));
+    if (s.busy && s.busy.c >= 2) lines.push(`いちばん多い日：${fmtShort(s.busy.d)} ${s.busy.c}件`);
+    if (s.labels.length) lines.push("ラベル：" + s.labels.slice(0, 4).map((x) => `${oneLine(x.l.name)} ${x.n}件`).join("・"));
+    if (s.shifts) lines.push(`バイト ${s.shifts}回`);
+    if (s.cost) lines.push(`予定の費用 ${fmtN(s.cost)}円`);
+    cal6Sum.replaceChildren(el("h3", { class: "cal6-sum-head" }, `${fmtMonth(ym)}のまとめ`),
+      s.n || s.cx || s.shifts ? el("ul", { class: "cal6-sum-list" }, lines.map((x) => el("li", {}, x))) : el("p", { class: "sub" }, "この月の予定はありません。"));
+  }
+
+  // ③ the month picker: the day a number of days from today (100日後, 30日前), and that day at a press
+  const cal6Jump = el("div", { class: "card pad cal6-jump" });
+  cal6Sum.after(cal6Jump);
+  {
+    const n = el("input", { type: "number", id: "cal6JumpN", min: -9999, max: 9999, step: 1, inputmode: "numeric", "aria-label": "きょうから何日" });
+    const out = el("output", { id: "cal6JumpTo", for: "cal6JumpN" }), go = el("button", { type: "button", class: "btn sm", id: "cal6JumpGo", disabled: true }, "その日へ");
+    const sync = () => {
+      const v = Math.round(Number(n.value)), ok = n.value !== "" && Number.isFinite(v) && Math.abs(v) <= 9999;
+      out.textContent = ok ? `→ ${fmtDayLong(addDays(todayKey, v))}` : "";
+      go.disabled = !ok;
+      $("cal6JumpWord").textContent = ok && v < 0 ? "日前" : "日後";
+    };
+    n.addEventListener("input", sync);
+    go.addEventListener("click", () => { const v = Math.round(Number(n.value)); if (!Number.isFinite(v)) return; setCalDay(addDays(todayKey, v)); closeSheet(); });
+    cal6Jump.append(el("h3", { class: "cal6-sum-head" }, "日数で探す"),
+      el("div", { class: "cal6-jump-row" }, el("span", {}, "きょうから"), n, el("span", { id: "cal6JumpWord" }, "日後")),
+      el("div", { class: "cal6-jump-chips", role: "group", "aria-label": "よく使う日数" }, [7, 30, 100, 365].map((v) => el("button", { type: "button", class: "chip-btn", onclick: () => { n.value = String(v); sync(); } }, `${v}日後`))),
+      el("div", { class: "cal6-jump-row" }, out, go));
+  }
+
+  // ④ a place's 移動時間 remembered: a place put in (the form's 移動時間 still なし and not set by hand) takes the time of the
+  // last plan at that place, and says so
+  const cal6TravelHand = { plan: false, ed: false };
+  for (const f of ["plan", "ed"]) {
+    $(f + "TravelFoot").after(el("p", { class: "full cal-travel-foot cal6-travel-memo", id: f + "TravelMemo", hidden: true }));
+    $(f + "Travel").addEventListener("change", (ev) => { if (ev.isTrusted) { cal6TravelHand[f] = true; $(f + "TravelMemo").hidden = true; } });
+    $(f + "Place").addEventListener("change", () => cal6PlaceTravel(f));
+  }
+  function cal6PlaceTravel(f) {
+    if (!calSix || cal6TravelHand[f]) return;
+    const place = oneLine($(f + "Place").value), k = foldText(place), sel = $(f + "Travel"), memo = $(f + "TravelMemo");
+    if (!k || Number(sel.value) > 0 || sel.disabled) return;
+    let best = null;
+    for (const e of events.items) if (num(e.travel) > 0 && foldText(oneLine(e.place || "")) === k && (!best || String(e.date || "") > String(best.date || ""))) best = e;
+    const tv = best ? Math.round(num(best.travel)) : 0;
+    if (!(tv > 0 && tv <= 600)) return;
+    if (![...sel.options].some((o) => Number(o.value) === tv)) sel.append(el("option", { value: tv, "data-own": "1" }, durText(tv)));
+    sel.value = String(tv);
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+    memo.hidden = false;
+    memo.textContent = `「${place}」までの移動時間を、前と同じ ${durText(tv)}にしました`;
+  }
+
+  // ⑤ a new plan whose name is one put in before: 前と同じにする fills in that one's time, place, label and the rest (its day
+  // kept), as よく使う does. Shown while something there differs
+  const cal6Same = el("div", { class: "full cal6-same", id: "planSame", hidden: true });
+  $("planOften").after(cal6Same);
+  function cal6SameOf(title) {
+    const k = foldText(oneLine(title));
+    if (!k) return null;
+    let best = null;
+    for (const e of events.items) if (!e.ten && isDay(e.date || "") && foldText(oneLine(e.title)) === k && (!best || e.date > best.date || (e.date === best.date && num(e.createdAt) > num(best.createdAt)))) best = e;
+    return best;
+  }
+  function renderCal6Same() {
+    const e = calSix && planNew && !planCopy ? cal6SameOf($("planTitle").value) : null;
+    const same = e && (e.time || "") === $("planTime").value && (e.time && e.endTime ? e.endTime : "") === (e.time ? $("planEndTime").value : "") && (e.place || "") === $("planPlace").value.trim() && (labelOf(e) ? e.labelId : "") === (planLabelChoice || "");
+    cal6Same.hidden = !e || same;
+    if (cal6Same.hidden) { cal6Same.replaceChildren(); return; }
+    const l = labelOf(e), what = [fmtDay(e.date), e.time ? e.time + (e.endTime ? "〜" + e.endTime : "") : "終日", e.place || "", l ? l.name : ""].filter(Boolean).join("・");
+    cal6Same.replaceChildren(el("button", { type: "button", class: "chip-btn cal6-same-btn", "aria-label": `前の「${e.title}」と同じにする（${what}）`, onclick: () => { fillOften(e); renderCal6Same(); $("planTitle").focus(); } },
+      el("span", { class: "cal6-same-head" }, "前と同じにする"), el("span", { class: "cal6-same-what" }, what)));
+  }
+  $("planTitle").addEventListener("input", () => renderCal6Same());
+
+  // ⑥ 予定 narrowed to a label: its chips under the field (すべて, then each label), the plans there alone, coming or
+  // found (the ToDo's and goals' 期限 and the shifts left out while one is picked). Not in 繰り返しの予定
+  const cal6FindChips = el("div", { class: "cal6-find-labels", id: "cal6FindLabels", role: "group", "aria-label": "ラベルで絞り込む", hidden: true });
+  $("cal3FindSeg").after(cal6FindChips);
+  function cal6FindOk(e) { return !calSix || !cal6FindLabel || e?.labelId === cal6FindLabel; }
+  const cal6FindOn = () => calSix && !!cal6FindLabel;
+  function renderCal6FindChips() {
+    if (!calSix) return;
+    if (!sheetEl.open) { cal6FindLabel = ""; cal5FreeLen = 0; } // (予定 opened afresh: all of it, and その5 ⑦ asking nothing)
+    const ls = sortedLabels(), q = $("findText").value.trim();
+    if (cal6FindLabel && !labels.get(cal6FindLabel)) cal6FindLabel = "";
+    cal6FindChips.hidden = !ls.length || (!q && cal3FindRep);
+    if (cal6FindChips.hidden) { cal6FindChips.replaceChildren(); return; }
+    const had = cal6FindChips.contains(document.activeElement) ? document.activeElement.dataset.l : null;
+    const chip = (id, name, l) => el("button", { type: "button", class: "chip-btn cal6-find-chip", "data-l": id, "aria-pressed": String(cal6FindLabel === id), style: l ? labelStyle(l) : null,
+      onclick: () => { cal6FindLabel = id; renderFind(); } }, l ? el("span", { class: "dot", "aria-hidden": "true" }) : null, name);
+    cal6FindChips.replaceChildren(chip("", "すべて", null), ...ls.map((l) => chip(l.id, oneLine(l.name), l)));
+    if (had !== null) cal6FindChips.querySelector(`[data-l="${CSS.escape(had)}"]`)?.focus();
+  }
+
+  // ⑦ a plan as a .ics file (to put it in another calendar app, or send it to someone): from the plan opened, the whole
+  // plan with its repeat
+  $("edShare").closest(".card").after(el("div", { class: "card" }, el("button", { type: "button", class: "link-btn sheet-row", id: "cal6Ics" }, "カレンダーのファイル（.ics）で送る")));
+  $("cal6Ics").addEventListener("click", async () => {
+    const e = editingId && events.get(editingId);
+    if (!e) return;
+    const name = `${oneLine(e.title).replace(/[\\/:*?"<>|]/g, "").slice(0, 40) || "予定"}.ics`, how = await handOut(new Blob([icsOf([e])], { type: "text/calendar" }), name);
+    if (how) flash(how === "shared" ? "予定をファイルで送りました" : `「${name}」を書き出しました`);
+  });
+
+  // ⑧ the old plans deleted at once (the gear, under ほかのカレンダー): those over before 1, 2 or 3 years ago (a repeat
+  // ended by then; the classes of the timetable left alone), how many said, deleted with a second press; 元に戻す and
+  // 最近削除した項目 have them back
+  function cal6OldIds(years) {
+    const cut = `${Number(todayKey.slice(0, 4)) - years}${todayKey.slice(4)}`;
+    return events.items.filter((e) => !e.cls && isDay(e.date || "") && (e.repeat ? isDay(e.repeatUntil || "") && e.repeatUntil < cut : addDays(e.date, extraDays(e)) < cut)).map((e) => e.id);
+  }
+  let cal6OldArmed = false, cal6OldTimer = null;
+  {
+    const foot = [...$("labelsGroup").querySelectorAll("p.group-foot")].find((p) => p.previousElementSibling?.contains($("icsExport")));
+    const sel = el("select", { id: "cal6OldYears", "aria-label": "どれくらい前の予定" }, [1, 2, 3].map((y) => el("option", { value: String(y) }, `${y}年より前`)));
+    const btn = el("button", { type: "button", class: "btn sm ghost", id: "cal6OldDel" }, "削除");
+    (foot || $("icsExport").closest("ul")).after(el("h3", { class: "group-head" }, "古い予定の整理"), el("div", { class: "card pad cal6-old" },
+      el("div", { class: "cal6-old-row" }, sel, el("span", { id: "cal6OldN", class: "cal6-old-n", role: "status" }), btn),
+      el("p", { class: "sub" }, "終わった予定（繰り返しは終わったもの）をまとめて削除します。授業の時間割の予定は残します。")));
+    sel.addEventListener("change", () => { cal6Disarm(); renderCal6Old(); });
+    btn.addEventListener("click", () => {
+      const ids = cal6OldIds(Number(sel.value));
+      if (!ids.length) return;
+      if (!cal6OldArmed) { cal6OldArmed = true; btn.textContent = "もう一度押すと削除します"; btn.classList.add("danger-fill"); cal6OldTimer = setTimeout(() => { cal6Disarm(); }, 4000); return; }
+      cal6Disarm();
+      removeWithUndo(events, ids, `${ids.length}件の古い予定を削除しました`);
+    });
+  }
+  function cal6Disarm() { clearTimeout(cal6OldTimer); cal6OldArmed = false; const b = $("cal6OldDel"); if (b) { b.textContent = "削除"; b.classList.remove("danger-fill"); } }
+  function renderCal6Old() {
+    const n = cal6OldIds(Number($("cal6OldYears").value)).length;
+    $("cal6OldN").textContent = n ? `${n}件` : "ありません";
+    $("cal6OldDel").disabled = !n;
+  }
+
+  // ⑨ today's plans in a day's list (and 予定): いま while one goes on, あと45分 before one (twelve hours ahead at most),
+  // 終わり after; kept up to the minute while the list shows. ⑩ its 費用 there too
+  function cal6NowWords(s, e, at = nowMinutes()) { return at >= e ? "終わり" : at >= s ? "いま" : s - at <= 720 ? leftWords(s - at) : ""; }
+  function cal6RowMore(t) {
+    if (!calSix) return null;
+    const parts = [], day = addDays(t.start, t.day), sp = day === todayKey && !cal4Cx(t.e, t.start) ? turnSpan(t) : null;
+    if (sp) {
+      const w = cal6NowWords(sp[0], sp[1]);
+      parts.push(el("span", { class: "cal6-now" + (w === "いま" ? " on" : w === "終わり" ? " over" : ""), "data-s": sp[0], "data-e": sp[1] }, w));
+    }
+    if (t.day === 0 && num(t.e.cost) > 0) parts.push(el("span", { class: "phrase cal6-cost" }, `費用 ${fmtN(Math.round(num(t.e.cost)))}円` + (t.e.exMade?.[t.start] && expenses.get(t.e.exMade[t.start]) ? "（家計簿に記録済み）" : "")));
+    return parts.length ? el("span", { class: "sub cal6-row" }, parts) : null;
+  }
+  setInterval(() => {
+    if (!calSix) return;
+    for (const c of document.querySelectorAll(".cal6-now[data-s]")) {
+      const w = cal6NowWords(Number(c.dataset.s), Number(c.dataset.e));
+      if (c.textContent !== w) { c.textContent = w; c.classList.toggle("on", w === "いま"); c.classList.toggle("over", w === "終わり"); }
+    }
+  }, 30000);
+
+  // ⑩ a plan's 費用 (円): in the forms under いっしょの人; the plan opened puts it in 家計簿 as spending on its day (today for a
+  // day still to come), under the 費目 picked (the one its name says, else 交際費), once a turn, with 取り消す
+  for (const f of ["plan", "ed"]) {
+    const cost = el("input", { type: "number", id: f + "Cost", min: 1, max: 9999999, step: 1, inputmode: "numeric" });
+    $(f + "With").parentElement.after(...recRow("費用", cost, { opt: true, unit: "円" }));
+  }
+  function cal6FormExtras(f) {
+    if (!calSix) return {};
+    const v = Math.round(Number($(f + "Cost").value));
+    return { cost: v >= 1 && v <= 9999999 ? v : undefined };
+  }
+  function cal6FillForm(f, e) {
+    if (!calSix) return;
+    $(f + "Cost").value = num(e?.cost) > 0 ? String(Math.round(num(e.cost))) : "";
+    cal6TravelHand[f] = false;
+    $(f + "TravelMemo").hidden = true;
+  }
+  function cal6GuessCat(title) {
+    const cats = exCats("out"), g = typeof mo2Guess === "function" ? mo2Guess(title, "out") : "";
+    return g && cats.includes(g) ? g : cats.includes("交際費") ? "交際費" : cats[0];
+  }
+  async function cal6ToMoney(id, d, cat) {
+    const e = events.get(id), amount = Math.round(num(e?.cost));
+    if (!e || !(amount > 0)) return;
+    const day = d > todayKey ? todayKey : d, m = lastMethod();
+    const xid = await expenses.add({ date: day, kind: "out", category: cat, amount, memo: clip(oneLine(e.title), 60), ...(m ? { method: m } : {}), createdAt: Date.now() });
+    await events.update(id, { exMade: { ...(e.exMade || {}), [d]: xid } });
+    flash(`家計簿に ${fmtN(amount)} 円（${cat}）を記録しました`, () => act(() => cal6UndoMoney(id, d)));
+  }
+  async function cal6UndoMoney(id, d) {
+    const e = events.get(id), xid = e?.exMade?.[d];
+    if (!e) return;
+    if (xid && expenses.get(xid)) takeBack(expenses, [xid]);
+    const rest = { ...(e.exMade || {}) };
+    delete rest[d];
+    await events.update(id, { exMade: Object.keys(rest).length ? rest : undefined });
+  }
+  function cal6EditCards(e, d) {
+    if (!calSix || !isDay(d || "") || !(num(e.cost) > 0)) return null;
+    const amount = Math.round(num(e.cost)), xid = e.exMade?.[d], x = xid && expenses.get(xid);
+    if (x) return el("div", { class: "card pad cal6-money" }, el("p", {}, `費用 ${fmtN(amount)}円：家計簿に記録しました（${fmtShort(x.date)}・${expenseCat(x)}）`),
+      el("button", { type: "button", class: "link-btn", "data-k": "money-undo", onclick: () => act(async () => { await cal6UndoMoney(e.id, d); flash("家計簿の記録を取り消しました"); }) }, "取り消す"));
+    const sel = el("select", { id: "cal6MoneyCat", "aria-label": "費目" }, exCats("out").map((c) => el("option", { value: c }, c)));
+    sel.value = cal6GuessCat(e.title);
+    return el("div", { class: "card pad cal6-money" }, el("p", {}, `費用 ${fmtN(amount)}円`),
+      el("div", { class: "cal6-money-row" }, sel, el("button", { type: "button", class: "btn sm", "data-k": "money-go", onclick: () => act(() => cal6ToMoney(e.id, d, sel.value)) }, "家計簿に入れる")),
+      d > todayKey ? el("p", { class: "sub" }, "まだ先の予定なので、きょうの日付で記録します。") : null);
+  }
+
+  // drawn with the calendar: ① the day's sheet, ⑥ 予定's chips, ⑧ the gear's count, ⑤ the form
+  function renderCalSix() {
+    if (!calSix) return;
+    renderCal6Day();
+    renderCal6Old();
+    if (planNew) renderCal6Same();
+  }
+  calSix = true;
 
   // ---------- 目標: 使わないマスを×で埋める (the user's call, 2026-11-11: a chart can't always be filled in whole; its empty
   // squares crossed out so it reads as finished). An empty cell crossed is { t: "", x: true }: still empty to all that
