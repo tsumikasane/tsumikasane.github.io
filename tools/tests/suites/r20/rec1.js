@@ -101,13 +101,13 @@ const download = async (p, click) => { const [d] = await Promise.all([p.waitForE
   // ⑨ the cards: hidden and moved, kept
   await p.click("#recSettings"); await p.waitForTimeout(500);
   const names = await p.evaluate(() => [...document.querySelectorAll("#recCardList .tname")].map((x) => x.textContent));
-  ok(names.join(",") === "続けた日,1か月前・1年前のきょう,書き忘れた日,日記,食事,運動,からだ,勉強,ルーティーン,家計簿,節目,これまでのいちばん", "⑨ the cards in 設定", names);
+  ok(names.join(",") === "続けた日,1か月前・1年前のきょう,書き忘れた日,日記,食事,運動,からだ,勉強,ルーティーン,家計簿,節目,これまでのいちばん,はじめた日", "⑨ the cards in 設定", names);
   await p.locator("#recCardList li", { hasText: "書き忘れた日" }).locator(".tile-pick").click(); await p.waitForTimeout(300);
   await p.locator("#recCardList li", { hasText: "これまでのいちばん" }).locator(".grip").focus();
   for (let i = 0; i < 11; i++) { await p.keyboard.press("ArrowUp"); await p.waitForTimeout(80); }
   await p.keyboard.press("Escape"); await p.waitForTimeout(600);
   const shown = await p.evaluate(() => [...document.querySelectorAll("#sumCards > .card")].map((c) => c.dataset.card || c.querySelector(".sum-open")?.dataset.kind || "days"));
-  ok(shown[0] === "best" && !shown.includes("missed") && shown.length === 11, "⑨ これまでのいちばん first, 書き忘れた日 hidden", shown);
+  ok(shown[0] === "best" && !shown.includes("missed") && shown.length === 12, "⑨ これまでのいちばん first, 書き忘れた日 hidden", shown);
   const pref = (await ls(p, "settings")).find((x) => x.id === "recordCards");
   ok(pref && pref.hidden.includes("missed") && pref.order[0] === "best", "⑨ kept with the account", pref);
   // ⑧ a kind as a table

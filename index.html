@@ -2194,6 +2194,31 @@ dialog.td-photo-view::backdrop { background: rgba(0, 0, 0, .6); }
 .rec-day-head .rec-total { font-weight: 400; }
 .rec-day-go { display: flex; flex-wrap: wrap; gap: 8px; }
 .rec-day-go .chip-btn { min-height: 36px; background: var(--fill); box-shadow: none; }
+/* 記録 その2 (2026-11-14): ⑤ the words looked for lately, ③ the kinds of what was found, ① the days with records, ⑦⑧ the
+   list's order and a day to go to, ⑧ the day gone to lit a while */
+.rec2-recent { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: calc(-1 * var(--space-1)); padding: 0 var(--space-2); }
+.rec2-recent .sub { font-size: var(--t-foot); color: var(--muted); }
+.rec2-recent .chip-btn, .rec2-kinds .chip-btn, .rec2-jump .chip-btn { min-height: 34px; background: var(--fill); box-shadow: none; }
+.rec2-kinds { display: flex; gap: 6px; overflow-x: auto; padding: 2px var(--space-2); scrollbar-width: none; }
+.rec2-kinds::-webkit-scrollbar { display: none; }
+.rec2-kinds .chip-btn { flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rec2-kinds .chip-btn[aria-pressed="true"] { background: var(--accent-fill); color: var(--accent-ink); }
+.rec2-date { width: 100%; }
+.rec2-jump { display: flex; justify-content: space-between; gap: 8px; margin: -4px 0; }
+.rec2-jump { align-items: center; }
+.rec2-jump .chip-btn { flex: none; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rec2-jump-say { flex: 1; text-align: center; font-size: var(--t-foot); color: var(--muted); }
+.rec2-jump .rec2-jump-say:first-child { text-align: start; }
+.rec2-jump .rec2-jump-say:last-child { text-align: end; }
+#rec2Order { font-size: var(--t-sub); font-weight: 600; }
+.rec2-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -8px 0 -6px; padding: 0 var(--space-2); }
+.rec2-go { position: relative; display: inline-flex; align-items: center; gap: 4px; min-height: 40px; color: var(--accent); font-size: var(--t-sub); font-weight: 600; cursor: pointer; }
+.rec2-go input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+ul.list li.rec2-lit { animation: rec2-lit 2.4s ease; }
+@keyframes rec2-lit { 0%, 60% { background: var(--accent-fill); } 100% { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { ul.list li.rec2-lit { animation: none; outline: 2px solid var(--accent); outline-offset: -2px; } }
+.rec2-share { margin: -8px 0 0; }
+.rec2-share .link-btn { display: inline-flex; align-items: center; gap: 6px; }
 /* ⑨ 記録's cards in its 設定, as きょう's tiles there */
 #recCardList > li { padding-block: 0; padding-inline-end: 0; transition: transform .2s ease; }
 #recCardList > li:has(.tile-pick:active) { background: var(--fill-press); }
@@ -5155,6 +5180,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <input type="search" id="recSearch" autocomplete="off" enterkeyhint="search">
           <button type="button" class="rec-search-clear" id="recSearchClear" aria-label="探す言葉を消す" hidden><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
         </div>
+        <!-- 記録 その2 ⑦ 古い順 and ⑧ 日付へ移る (the user's call, 2026-11-14) -->
+        <div class="rec2-tools" id="rec2Tools">
+          <label class="rec2-go"><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-calendar"/></svg><span>日付へ移る</span><input type="date" id="rec2Go" aria-label="日付へ移る"></label>
+          <button type="button" class="link-btn" id="rec2Order"></button>
+        </div>
         <div class="rec-groups" id="recList"></div>
       </section>
 
@@ -5166,7 +5196,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <button type="button" class="navbtn" id="recDayPrev"><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-prev"/></svg>前の日</button>
           <button type="button" class="navbtn" id="recDayNext">次の日<svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button>
         </div>
+        <!-- 記録 その2 ① the nearest days with records, past the days with none (the user's call, 2026-11-14) -->
+        <div class="rec2-jump" id="rec2Jump" hidden></div>
         <div class="rec-groups" id="recDayBody"></div>
+        <!-- 記録 その2 ② the day's records as words, for LINE and the like -->
+        <p class="rec-page rec2-share"><button type="button" class="link-btn" id="rec2DayShare"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-export"/></svg>この日の記録を文字で送る</button></p>
       </section>
 
       <!-- つみかさね › a year looked back on (the user's call, 2026-11-10): its count, days, months, kinds, times of day and 記念,
@@ -5183,6 +5217,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       <!-- 記録 › 最近削除した項目: what was deleted in the last 30 days, newest first, each with 戻す; then it goes for good -->
       <section id="sec-trash" hidden>
         <div class="sec-head"><h2><span class="page-mark" role="img" aria-label="最近削除した項目"><svg class="icon" width="40" height="40" aria-hidden="true" focusable="false"><use href="#i-trash"/></svg></span></h2><p class="sum-since" id="trashNote"></p></div>
+        <!-- 記録 その2 ⑩ 最近削除した項目から探す (the user's call, 2026-11-14) -->
+        <div class="rec-search" id="rec2TrashBox" hidden>
+          <svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+          <input type="search" id="rec2TrashFind" autocomplete="off" enterkeyhint="search" placeholder="削除した項目から探す" aria-label="削除した項目から探す">
+          <button type="button" class="rec-search-clear" id="rec2TrashClear" aria-label="探す言葉を消す" hidden><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
+        </div>
         <ul class="list card" id="trashList"></ul>
         <div class="list-foot" id="trashFoot" hidden><button type="button" class="link-btn danger" id="trashPurgeAll">すべて完全に削除</button></div>
         <p class="group-foot">削除してから 30 日のあいだは、ここから戻せます。そのあとは自動で消えます。「完全に削除」すると、この端末の中のコピーからも消えます（前に書き出したファイルには残ります）。つみかさねのブロックは、名前を消して残ります。</p>
@@ -6082,6 +6122,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <input type="search" id="recAll" autocomplete="off" enterkeyhint="search" placeholder="すべての記録から探す" aria-label="すべての記録から探す">
           <button type="button" class="rec-search-clear" id="recAllClear" aria-label="探す言葉を消す" hidden><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
         </div>
+        <!-- 記録 その2 ⑤ 最近探した言葉 (the user's call, 2026-11-14): while the field is empty and in use, this device only -->
+        <div class="rec2-recent" id="rec2Recent" hidden></div>
         <div class="rec-groups" id="recFound" hidden></div>
         <div class="grid" id="sumCards"></div>
         <!-- what was deleted in the last 30 days, each back with a tap (the user's call, as the iPhone's Photos keeps them) -->
@@ -20239,7 +20281,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         rtDays.length ? `${rtDays.length} 日チェック` : "まだチェックしていません", "list", topList(byRoutine, () => "var(--c-routine)", (n) => `${n} 回`), "routine"), "routine"),
       money: () => withStreak(sumCard("var(--c-money)", "money", "家計簿", fmtN(Math.round(out)), "円 支出", `収入 ${fmtYen(inn)}・収支 ${net > 0 ? "+" : ""}${fmtYen(net)}`, "list",
         topList(byCat, () => "var(--c-money)", fmtYen), "money"), "money"),
-      memory: recMemoryCard, missed: recMissedCard, milestone: recMilestoneCard, best: recBestCard,
+      memory: recMemoryCard, missed: recMissedCard, milestone: recMilestoneCard, best: recBestCard, first: rec2FirstCard,
     };
     const hidden = recCardHidden();
     setChildren($("sumCards"), recCardOrder().filter((k) => !hidden.has(k) && cards[k]).map((k) => cards[k]()).filter(Boolean));
@@ -20314,10 +20356,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const words = spec.text ? foldText(recQuery).split(/\s+/).filter(Boolean) : [];
     const all = spec.items().filter((x) => x.date && x.date <= todayKey);
     const found = words.length ? all.filter((x) => { const t = foldText(spec.text(x)); return words.every((w) => t.includes(w)); }) : all;
-    const byDay = groupBy(found, (x) => x.date), days = [...byDay.keys()].sort().reverse(), q = recQuery.trim();
+    const byDay = groupBy(found, (x) => x.date), days = rec2Old() ? [...byDay.keys()].sort() : [...byDay.keys()].sort().reverse(), q = recQuery.trim();
     setChildren($("recListTitle"), el("span", { class: "page-mark", role: "img", "aria-label": spec.label, style: `--mark-c: var(--c-${recListKind})` }, icon(recListKind, 40)));
     $("recListPage").textContent = isDietPart(recListKind) ? `ダイエットの${spec.label}を開く` : `${spec.label}のページを開く`;
-    $("recListNote").textContent = !days.length ? "" : words.length ? `「${q}」の記録 ${found.length} 件・${days.length} 日分` : `${days.length} 日分・新しい順`;
+    const foundTotal = words.length && found.length ? spec.total?.(found) : null; // (その2 ⑥ what was found, added up)
+    $("recListNote").textContent = !days.length ? "" : words.length ? `「${q}」の記録 ${found.length} 件・${days.length} 日分${foundTotal ? "・" + foundTotal : ""}` : `${days.length} 日分・${rec2Old() ? "古い順" : "新しい順"}`;
+    rec2ListTools(days); // (その2 ⑦ ⑧)
     $("recSearchBox").hidden = !spec.text;
     $("recSearch").placeholder = spec.find || "";
     $("recSearch").setAttribute("aria-label", spec.find || "探す");
@@ -20331,7 +20375,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         parts.push(el("h3", { class: "group-head" }, fmtMonth(month)), ul = el("ul", { class: "list card rec-list" }));
       }
       const rel = relLabel(d), day = (rel ? rel + "・" : "") + fmtMDW(d), xs = byDay.get(d), total = words.length ? null : spec.total?.(xs);
-      ul.append(...(spec.oneLine ? [] : [recDayHead(d, total)]), ...spec.rows(xs, day)); // (① its date opens the day whole)
+      const dayRows = [...(spec.oneLine ? [] : [recDayHead(d, total)]), ...spec.rows(xs, day)]; // (① its date opens the day whole)
+      if (dayRows[0]) dayRows[0].dataset.day = d; // (その2 ⑧ a day to go to)
+      ul.append(...dayRows);
     }
     setChildren($("recList"), parts.length ? parts : el("div", { class: "card empty" }, words.length ? `「${q}」に合う記録はありません。` : "まだ記録がありません。「きょう」から記録すると、ここに並びます。"));
   }
@@ -20989,9 +21035,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const trashShown = () => trashItems().filter((t) => !trashOf || t.store === trashOf);
   const trashOpen = new Set(); // groups of 最近削除した項目 unfolded, by the moment they were deleted at
   function renderTrash() {
-    const items = trashShown(), what = trashOf === "todos" ? "最近削除したToDo" : "最近削除した項目";
+    const all = trashShown(), items = rec2TrashFilter(all), what = trashOf === "todos" ? "最近削除したToDo" : "最近削除した項目"; // (その2 ⑩)
     $("sec-trash").querySelector(".page-mark").setAttribute("aria-label", what);
-    $("trashNote").textContent = items.length ? `${fmtN(items.length)} 件・新しい順` : "";
+    $("trashNote").textContent = rec2TrashQ.trim() ? `${fmtN(all.length)} 件のうち ${fmtN(items.length)} 件` : items.length ? `${fmtN(items.length)} 件・新しい順` : "";
+    $("rec2TrashBox").hidden = all.length < 4 && !rec2TrashQ; $("rec2TrashClear").hidden = !rec2TrashQ;
     const whenOf = (t) => { const ago = daysBetween(ymd(new Date(t.at)), todayKey); return [ago <= 0 ? "きょう" : ago === 1 ? "きのう" : `${ago} 日前に`, Math.max(1, TRASH_DAYS - ago)]; };
     // the one opened from つみかさね's block: its group unfolded, its row lit and brought into sight (the user's call: which
     // one it was didn't show, and one deleted with others could be folded away)
@@ -21017,12 +21064,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           el("span", { class: "body" }, el("span", { class: "text" }, `${kinds} ${fmtN(ts.length)} 件`), el("span", { class: "sub" }, `${when}まとめて削除`)),
           el("button", { type: "button", class: "link-btn", "aria-label": `${when}まとめて削除した ${ts.length} 件をまとめて戻す`, onclick: () => restoreManyFromTrash(ts.map((t) => t.id)) }, "まとめて戻す")));
       }
-      const folded = ts.length > 3 && !trashOpen.has(at);
+      const folded = ts.length > 3 && !trashOpen.has(at) && !rec2TrashQ.trim();
       for (const t of folded ? ts.slice(0, 2) : ts) rows.push(itemRow(t));
       if (folded) rows.push(el("li", { class: "more-done" }, el("button", { type: "button", class: "link-btn", onclick: () => { trashOpen.add(at); renderTrash(); } }, `ほか ${fmtN((ts.length - 2))} 件を見る`)));
     }
-    setChildren($("trashList"), rows.length ? rows : el("li", { class: "empty" }, `${what}はありません。`));
-    $("trashFoot").hidden = !items.length;
+    setChildren($("trashList"), rows.length ? rows : el("li", { class: "empty" }, rec2TrashQ.trim() ? `「${rec2TrashQ.trim()}」に合う項目はありません。` : `${what}はありません。`));
+    $("trashFoot").hidden = !items.length || !!rec2TrashQ.trim(); // (すべて完全に削除 is for all of them, so not while some are looked for)
     if (trashMarkScroll && !$("sec-trash").hidden) { trashMarkScroll = false; $("trashList").querySelector("li.marked")?.scrollIntoView({ block: "center" }); }
   }
   function renderTrashRow() {
@@ -22425,6 +22472,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("h3", { class: "group-head" }, "この日に書く"),
       el("div", { class: "rec-day-go" }, REC_DAY_KINDS.map((k) => el("button", { type: "button", class: "chip-btn", onclick: () => openKindOnDay(k, d) },
         (k === "journal" ? (has.has(k) ? "日記を開く" : "日記を書く") : RECORD_LISTS[k].label)))));
+    rec2DayExtras(d); // (その2 ① ②)
   }
   $("recDayPrev").addEventListener("click", () => { recDayAt = addDays(recDayAt, -1); renderRecDay(); });
   $("recDayNext").addEventListener("click", () => { if (recDayAt < todayKey) { recDayAt = addDays(recDayAt, 1); renderRecDay(); } });
@@ -22438,14 +22486,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const q = recAllQuery.trim(), words = foldText(q).split(/\s+/).filter(Boolean), box = $("recFound");
     $("recAllClear").hidden = !recAllQuery;
     box.hidden = !words.length; $("sumCards").hidden = !!words.length;
-    if (!words.length) { box.replaceChildren(); return; }
+    rec2RenderRecent(); // (その2 ⑤)
+    if (!words.length) { box.replaceChildren(); rec2Kind = ""; return; }
+    const counts = {}; // (その2 ③ each kind's count, the one pressed alone shown)
     const parts = [], has = (s) => { const t = foldText(s); return words.every((w) => t.includes(w)); };
     let total = 0;
     for (const kind of REC_FIND) {
       const spec = RECORD_LISTS[kind], found = spec.items().filter((x) => x.date && x.date <= todayKey && has(spec.text(x)));
       if (!found.length) continue;
-      total += found.length;
-      const byDay = groupBy(found, (x) => x.date), days = [...byDay.keys()].sort().reverse(), shown = days.slice(0, 5);
+      total += found.length; counts[kind] = found.length;
+      if (rec2Kind && rec2Kind !== kind) continue;
+      const byDay = groupBy(found, (x) => x.date), days = [...byDay.keys()].sort().reverse(), shown = days.slice(0, rec2Kind ? 30 : 5);
       const more = found.length - sum(shown, (d) => byDay.get(d).length);
       parts.push(el("h3", { class: "group-head rec-found-head" }, spec.label, el("span", { class: "n" }, `${found.length} 件`)),
         el("ul", { class: "list card rec-list" }, shown.flatMap((d) => [recDayHead(d, null, "records"), ...spec.rows(byDay.get(d), dayLabel(d))])),
@@ -22453,14 +22504,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     const tds = todos.items.filter((t) => has([t.text, t.memo || "", ...(Array.isArray(t.steps) ? t.steps.map((s) => s?.text || "") : [])].join(" ")))
       .sort((a, b) => Number(!!a.done) - Number(!!b.done) || (a.due || "9999").localeCompare(b.due || "9999"));
-    if (tds.length) {
-      total += tds.length;
+    if (tds.length) { total += tds.length; counts.todo = tds.length; }
+    if (tds.length && (!rec2Kind || rec2Kind === "todo")) {
       parts.push(el("h3", { class: "group-head rec-found-head" }, "ToDo", el("span", { class: "n" }, `${tds.length} 件`)),
         el("ul", { class: "list card rec-list" }, tds.slice(0, 10).map((t) => el("li", {}, recOpen("todo", t.id, `「${t.text}」を編集`, t.text, "rec-what"),
           el("span", { class: "rec-num" }, t.done ? (doneDay(t) ? `${fmtDay(doneDay(t))}に完了` : "完了") : t.due ? `期限 ${fmtDay(t.due)}` : "")))),
         tds.length > 10 ? el("button", { type: "button", class: "link-btn rec-found-more", onclick: () => { todoQuery = q; $("todoSearch").value = q; showTab("todo"); } }, `ほか ${tds.length - 10} 件をToDoで見る`) : null);
     }
-    setChildren(box, el("p", { class: "sub rec-found-say", role: "status" }, total ? `「${q}」の記録 ${total} 件` : `「${q}」に合う記録はありません。`), parts);
+    if (rec2Kind && !counts[rec2Kind]) { rec2Kind = ""; renderRecFound(); return; } // (その2 ③ the kind pressed has none now)
+    setChildren(box, rec2DateRow(q), el("p", { class: "sub rec-found-say", role: "status" }, total ? `「${q}」の記録 ${total} 件` : `「${q}」に合う記録はありません。`), rec2KindChips(counts), parts);
   }
   $("recAll").addEventListener("input", (ev) => { recAllQuery = ev.target.value; renderRecFound(); });
   $("recAll").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing) ev.target.blur(); });
@@ -22621,6 +22673,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     { key: "journal", label: "日記", icon: "journal" }, { key: "meal", label: "食事", icon: "meal" }, { key: "workout", label: "運動", icon: "workout" }, { key: "weight", label: "からだ", icon: "weight" },
     { key: "study", label: "勉強", icon: "study" }, { key: "routine", label: "ルーティーン", icon: "routine" }, { key: "money", label: "家計簿", icon: "money" },
     { key: "milestone", label: "節目", icon: "flag" }, { key: "best", label: "これまでのいちばん", icon: "heart" },
+    { key: "first", label: "はじめた日", icon: "flag" }, // (その2 ⑨)
   ];
   const recCard = (k) => REC_CARDS.find((c) => c.key === k);
   const recCardPrefs = () => settings.get("recordCards") || {};
@@ -22722,6 +22775,187 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const n = journal.items.filter((j) => j.text?.trim()).length;
     $("journalBookFoot").textContent = n ? `書いた ${fmtN(n)} 日分を、古い日から順に1つのテキストファイルにします。` : "日記を書くと、ここから1冊にまとめて書き出せます。";
   }
+
+  // ---------- 記録 その2 ①〜⑩ (the user's calls, 2026-11-14): on a day's page the nearest days with records past those with
+  // none (①) and the day as words to send (②); in 記録's search the kinds of what was found (③), a date typed opening that
+  // day (④) and the words looked for lately (⑤); in a kind's list what was found added up (⑥), oldest first (⑦) and a day
+  // to go to (⑧); はじめた日, each kind's first record (⑨); and 最近削除した項目 looked through (⑩). Still no weeks, months or
+  // years, no charts, nothing typed in but words to look for (the user's calls before). (var, not let: renderRecFound and
+  // renderTrash, above, may run before this) ----------
+
+  // ① the nearest days with records before and after, shown only where they skip days with none (前の日・次の日 above go
+  // a day at a time)
+  function rec2RecDays() {
+    const s = new Set();
+    for (const k of [...REC_DAY_KINDS, "todo"]) for (const d of recDaysOf(k)) s.add(d);
+    return [...s].sort();
+  }
+  function rec2DayExtras(d) {
+    let prev = null, next = null;
+    for (const x of rec2RecDays()) { if (x < d) prev = x; else if (x > d && !next) next = x; }
+    const go = (x, cls, label, content) => el("button", { type: "button", class: "chip-btn " + cls, "aria-label": label, onclick: () => { recDayAt = x; renderRecDay(); } }, content);
+    const bits = [
+      prev && prev !== addDays(d, -1) ? go(prev, "prev", `記録のある前の日、${fmtDayLong(prev)}へ`, [icon("prev", 14), fmtShort(prev)]) : null,
+      next && next !== addDays(d, 1) ? go(next, "next", `記録のある次の日、${fmtDayLong(next)}へ`, [fmtShort(next), icon("next", 14)]) : null,
+    ].filter(Boolean);
+    if (bits.length) bits.splice(bits[0].classList.contains("prev") ? 1 : 0, 0, el("span", { class: "rec2-jump-say", "aria-hidden": "true" }, "記録のある日"));
+    $("rec2Jump").hidden = !bits.length;
+    setChildren($("rec2Jump"), bits);
+    $("rec2DayShare").closest("p").hidden = !rec2DayText(d);
+  }
+
+  // ② the day's records as words: each kind under its name with its day's total, as the page has them, the ToDos done last
+  function rec2Line(kind, x) {
+    switch (kind) {
+      case "journal": return x.text.trim();
+      case "meal": return "・" + [x.slot || "食事", x.text, typeof x.kcal === "number" ? `${fmtN(x.kcal)} kcal` : ""].filter(Boolean).join(" ");
+      case "workout": return "・" + [x.type, workoutDetail(x), x.note].filter(Boolean).join(" ");
+      case "study": return "・" + [subjectOf(x)?.name || "科目なし", `${num(x.minutes)} 分`, x.note].filter(Boolean).join(" ");
+      case "weight": return "・" + [`${fmtKg(x.kg)} kg`, num(x.fat) > 0 ? `体脂肪率 ${fmtFat(x.fat)}%` : ""].filter(Boolean).join("・");
+      case "routine": return "・" + (x.done.map((id) => routines.get(id)?.name).filter(Boolean).join("・") || "（消した項目）");
+      case "money": return "・" + [expenseCat(x) || (x.kind === "in" ? "収入" : "支出"), x.memo, (x.kind === "in" ? "+" : "") + fmtYen(x.amount)].filter(Boolean).join(" ");
+      default: return "";
+    }
+  }
+  function rec2DayText(d) {
+    const lines = [];
+    for (const kind of REC_DAY_KINDS) {
+      const spec = RECORD_LISTS[kind], xs = spec.items().filter((x) => x.date === d);
+      if (!xs.length) continue;
+      const total = spec.total?.(xs), sorted = kind === "meal" ? [...xs].sort((a, b) => SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot) || num(a.createdAt) - num(b.createdAt)) : byCreated(xs);
+      lines.push("", `【${spec.label}】${total ? " " + total : ""}`, ...sorted.map((x) => rec2Line(kind, x)));
+    }
+    const done = todos.items.filter((t) => t.done && !t.cancelled && doneDay(t) === d && typeof t.text === "string").sort((a, b) => num(a.doneAt) - num(b.doneAt));
+    if (done.length) lines.push("", `【完了したToDo】 ${done.length} 件`, ...done.map((t) => `✓ ${oneLine(t.text)}`));
+    return lines.length ? `${fmtDayLong(d)}の記録\n${lines.join("\n")}` : null;
+  }
+  $("rec2DayShare").addEventListener("click", async () => {
+    const d = recDayAt, text = rec2DayText(d);
+    if (!text) { flash("送る記録がありません"); return; }
+    if (navigator.share) {
+      try { await navigator.share({ title: `${fmtDayLong(d)}の記録`, text }); return; } catch (e) { if (e?.name === "AbortError") return; }
+    }
+    flash((await td6Copy(text)) ? "この日の記録を文字でコピーしました。LINEなどに貼り付けられます" : "コピーできませんでした");
+  });
+
+  // ③ the kinds of what was found, as chips with their counts: one pressed, only its records, more days of them (30)
+  var rec2Kind = "";
+  var REC2_KIND_LABEL = (k) => (k === "todo" ? "ToDo" : RECORD_LISTS[k].label);
+  function rec2KindChips(counts) {
+    const ks = [...REC_FIND, "todo"].filter((k) => counts[k]);
+    if (ks.length < 2 && !rec2Kind) return null;
+    const all = sum(ks, (k) => counts[k]);
+    const chip = (k, label) => el("button", { type: "button", class: "chip-btn", "aria-pressed": String(rec2Kind === k), onclick: () => { rec2Kind = k; renderRecFound(); } }, label);
+    return el("div", { class: "rec2-kinds", role: "group", "aria-label": "種類で絞る" }, chip("", `ぜんぶ ${fmtN(all)}`), ks.map((k) => chip(k, `${REC2_KIND_LABEL(k)} ${fmtN(counts[k])}`)));
+  }
+
+  // ④ a date typed (11/3, 11月3日, 2025/11/3, きのう…): that day whole (①) at the top of what was found. One with no year
+  // is this year's, last year's while it is still to come
+  function rec2DateOf(q) {
+    const s = q.normalize("NFKC").trim().replace(/[(（][^)）]*[)）]$/, "").trim();
+    const rel = { きょう: 0, 今日: 0, きのう: -1, 昨日: -1, おととい: -2, 一昨日: -2 }[s];
+    if (rel !== undefined) return addDays(todayKey, rel);
+    const m = s.match(/^(?:(\d{4})\s*[/\-.年]\s*)?(\d{1,2})\s*[/\-.月]\s*(\d{1,2})\s*日?$/);
+    if (!m) return null;
+    const p2 = (n) => String(n).padStart(2, "0");
+    let y = m[1] ? Number(m[1]) : Number(todayKey.slice(0, 4)), d = `${y}-${p2(m[2])}-${p2(m[3])}`;
+    if (!m[1] && d > todayKey) d = `${y - 1}-${p2(m[2])}-${p2(m[3])}`;
+    if (!isDay(d) || d > todayKey || ymd(parseYmd(d)) !== d) return null;
+    return d;
+  }
+  function rec2DateRow(q) {
+    const d = rec2DateOf(q);
+    if (!d) return null;
+    const s = recDaySummary(d);
+    return el("div", { class: "card pad rec2-date" }, el("button", { type: "button", class: "rec-row-btn", "aria-label": `${fmtDayLong(d)}の記録をまとめて見る`, onclick: () => openRecDay(d, "records") },
+      el("span", { class: "rec-row-main" }, el("span", {}, `${dayLabel(d)}の記録をまとめて見る`), el("small", {}, s ? s.text : "この日の記録はありません")), icon("next", 16)));
+  }
+
+  // ⑤ the words looked for lately (six, the latest first), under the field while it is empty and in use; pressed, looked
+  // for again. This device only
+  var REC2_RECENT = LS_PREFIX + "recAllRecent";
+  var rec2RecentOn = false;
+  function rec2Recents() {
+    try { const v = JSON.parse(localStorage.getItem(REC2_RECENT) || "[]"); return Array.isArray(v) ? v.filter((x) => typeof x === "string" && x.trim()).slice(0, 6) : []; } catch { return []; }
+  }
+  function rec2Remember(q) {
+    q = (q || "").trim();
+    if (!q) return;
+    try { localStorage.setItem(REC2_RECENT, JSON.stringify([q, ...rec2Recents().filter((x) => x !== q)].slice(0, 6))); } catch {}
+  }
+  function rec2RenderRecent() {
+    const box = $("rec2Recent"), xs = rec2Recents(), show = rec2RecentOn && !recAllQuery.trim() && xs.length > 0;
+    box.hidden = !show;
+    if (!show) { box.replaceChildren(); return; }
+    const keep = (ev) => ev.preventDefault(); // (the field keeps the keyboard)
+    setChildren(box, el("span", { class: "sub" }, "最近探した言葉"),
+      xs.map((w) => el("button", { type: "button", class: "chip-btn", onpointerdown: keep, onclick: () => { recAllQuery = w; $("recAll").value = w; rec2Remember(w); renderRecFound(); } }, w)),
+      el("button", { type: "button", class: "link-btn", onpointerdown: keep, onclick: () => { try { localStorage.removeItem(REC2_RECENT); } catch {} rec2RenderRecent(); $("recAll").focus(); } }, "履歴を消す"));
+  }
+  $("recAll").addEventListener("focus", () => { rec2RecentOn = true; rec2RenderRecent(); });
+  $("recAll").addEventListener("blur", (ev) => { if ($("rec2Recent").contains(ev.relatedTarget)) return; rec2RecentOn = false; rec2RenderRecent(); });
+  $("rec2Recent").addEventListener("focusout", (ev) => { if (ev.relatedTarget === $("recAll") || $("rec2Recent").contains(ev.relatedTarget)) return; rec2RecentOn = false; rec2RenderRecent(); });
+  $("recAll").addEventListener("change", () => rec2Remember(recAllQuery));
+
+  // ⑦ a kind's list oldest first, or newest (this device only); ⑧ a day to go to: there, or the nearest with records,
+  // lit a while
+  var REC2_OLD = LS_PREFIX + "recListOld";
+  function rec2Old() { try { return localStorage.getItem(REC2_OLD) === "1"; } catch { return false; } }
+  function rec2ListTools(days) {
+    $("rec2Tools").hidden = days.length < 2;
+    $("rec2Order").textContent = rec2Old() ? "新しい順にする" : "古い順にする";
+    $("rec2Go").max = todayKey;
+    if (days.length) $("rec2Go").min = days.reduce((a, b) => (a < b ? a : b));
+  }
+  $("rec2Order").addEventListener("click", () => {
+    try { if (rec2Old()) localStorage.removeItem(REC2_OLD); else localStorage.setItem(REC2_OLD, "1"); } catch {}
+    renderRecList();
+    window.scrollTo(0, 0);
+  });
+  function rec2GoTo(d) {
+    if (!isDay(d || "")) return;
+    const rows = [...$("recList").querySelectorAll("li[data-day]")];
+    if (!rows.length) return;
+    let best = rows[0], gap = Infinity;
+    for (const r of rows) {
+      const x = Math.abs(daysBetween(r.dataset.day, d));
+      if (x < gap || (x === gap && r.dataset.day < best.dataset.day)) { best = r; gap = x; }
+    }
+    best.scrollIntoView({ block: "center" });
+    for (const r of rows) r.classList.remove("rec2-lit"); void best.offsetWidth; best.classList.add("rec2-lit");
+    if (best.dataset.day !== d) flash(`${fmtDayLong(d)}の記録はないので、近い${fmtDayLong(best.dataset.day)}へ移りました`);
+  }
+  $("rec2Go").addEventListener("change", (ev) => { const d = ev.target.value; if (d) rec2GoTo(d); });
+
+  // ⑨ はじめた日: each kind's first record, the oldest first, with how many days since (that one the first) and how many
+  // days it has records on; pressed, that day whole (①)
+  var REC2_FIRST = [["journal", "日記"], ["meal", "食事"], ["workout", "運動"], ["weight", "からだ"], ["study", "勉強"], ["routine", "ルーティーン"], ["money", "家計簿"], ["todo", "ToDoの完了"]];
+  function rec2FirstCard() {
+    const rows = REC2_FIRST.map(([k, label]) => {
+      const ds = recDaysOf(k);
+      if (!ds.size) return null;
+      const first = [...ds].sort()[0];
+      return { label, first, n: ds.size, nth: daysBetween(first, todayKey) + 1 };
+    }).filter(Boolean).sort((a, b) => a.first.localeCompare(b.first));
+    if (!rows.length) return null;
+    return el("div", { class: "card sum-card wide rec-extra", "data-card": "first", style: "--sum-c: var(--accent)" },
+      el("h3", { class: "sum-head" }, icon("flag", 18), el("span", {}, "はじめた日")),
+      el("ul", { class: "rec-rows" }, rows.map((r) => el("li", {}, el("button", { type: "button", class: "rec-row-btn", "aria-label": `${r.label}をはじめた日、${fmtDayLong(r.first)}、${r.nth} 日目`, onclick: () => openRecDay(r.first, "records") },
+        el("span", { class: "rec-row-main" }, el("span", {}, r.label), el("small", {}, `${fmtDayLong(r.first)}から・${fmtN(r.n)} 日記録`)), el("span", { class: "rec-row-val" }, keepUnits(`${fmtN(r.nth)} 日目`)), icon("next", 16))))));
+  }
+
+  // ⑩ 最近削除した項目 looked through, by its words and kind (ToDo, 日記…), every one found shown (no group folded). The
+  // field once there are four or more
+  var rec2TrashQ = "";
+  function rec2TrashFilter(items) {
+    const words = foldText(rec2TrashQ).split(/\s+/).filter(Boolean);
+    if (!words.length) return items;
+    return items.filter((t) => { const s = foldText(`${trashText(t)} ${t.store === "tsumi" ? "ブロック" : STORE_NAMES[t.store] || ""}`); return words.every((w) => s.includes(w)); });
+  }
+  $("rec2TrashFind").addEventListener("input", (ev) => { rec2TrashQ = ev.target.value; renderTrash(); });
+  $("rec2TrashFind").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing) ev.target.blur(); });
+  $("rec2TrashClear").addEventListener("pointerdown", (ev) => ev.preventDefault());
+  $("rec2TrashClear").addEventListener("click", () => { rec2TrashQ = ""; $("rec2TrashFind").value = ""; renderTrash(); $("rec2TrashFind").focus(); });
 
   // ---------- 目標 ①〜⑩ (the user's calls, 2026-11-10): joined to the records (①), the pace against its 期限 (②), the
   // steps taken (③), ふりかえり (④), 見直しのお知らせ (⑤), a copy (⑥), a cell's memo (⑦), a photo (⑧), goals and cells
