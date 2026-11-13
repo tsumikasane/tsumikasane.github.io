@@ -871,6 +871,31 @@ span.stc-d { background: transparent; color: var(--muted); cursor: default; }
 .stc-d.on { box-shadow: inset 0 0 0 2px var(--fg); }
 .stc-d:active { filter: brightness(.94); }
 .stc-sw { flex: none; width: 14px; height: 14px; border-radius: 4px; }
+/* 勉強 その2: ① the times, ② 復習 rows, ③ the copy, ④ 12 weeks, ⑤ the hours, ⑥ a subject opened, ⑦ 点数, ⑩ the share */
+.st2-time { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.st2-time input[type=time] { width: auto; min-width: 7.2em; }
+.st2-rev-line { grid-column: 1 / -1; }
+.st2-copy, .st2-share { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 8px var(--space-2) 0; }
+.st2-share { margin: 16px 0 0; justify-content: center; }
+ul.list > li.st2-rev { align-items: center; }
+.st2-rev .st-row-name::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-inline-end: 8px; border-radius: 50%; background: var(--lc); }
+.st2-rev-acts { display: flex; align-items: center; gap: 8px; flex: none; }
+.st2-rev-acts .chip-btn, .st2-copy .chip-btn { background: var(--fill); box-shadow: none; }
+.st2-weeks { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1px; }
+.st2-weeks .st-bar { width: 70%; }
+.st2-weeks .st-day-dn { font-size: 10px; white-space: nowrap; }
+#st2HourList > li, #st2ResList > li { flex-direction: column; align-items: stretch; gap: 6px; padding: 12px var(--space-2); }
+.st2-hour .bar-track i { background: var(--c-study); }
+.st2-hour.top .st-row-v { color: var(--fg); font-weight: 700; }
+.st2-hour small { color: var(--muted); }
+.st2-foot { margin: 0; padding: 4px var(--space-2) 12px; font-size: var(--t-foot); color: var(--muted); }
+.st2-score { display: flex; align-items: center; gap: 6px; }
+.st2-score input { width: 6em; }
+#stSubList > li[data-st2-sub] { cursor: pointer; }
+.st2-sub-more { margin-top: 4px; padding-top: 8px; border-top: .5px solid var(--separator); }
+.st2-sub-more .sub { margin: 0 0 4px; }
+.st2-sub-recent { list-style: none; margin: 0; padding: 0; font-size: var(--t-sub); }
+.st2-sub-recent li { padding: 2px 0; overflow-wrap: anywhere; }
 /* ⑥ 科目ごとの時間 and ⑨ 教材: a row's name with its dot and its time, its bar, and a line of parts */
 .st-seg-wrap { padding: 8px var(--space-2) 0; }
 .st-range { margin: 6px 0 0; font-size: var(--t-foot); color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -5089,6 +5114,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <label class="flabel" for="stMin">時間<span class="sr-only">（分）</span></label>
           <!-- ① a press adds its time to the field; an hour or more is said in hours -->
           <div class="ffield st-min"><input type="number" id="stMin" placeholder="30" min="1" max="1440" inputmode="numeric" required><span class="unit">分</span><span class="st-min-words" id="stMinWords"></span><span class="st-quick" id="stQuick" role="group" aria-label="時間を足す"><button type="button" class="chip-btn" data-add="15" aria-label="15分足す">+15分</button><button type="button" class="chip-btn" data-add="30" aria-label="30分足す">+30分</button><button type="button" class="chip-btn" data-add="60" aria-label="1時間足す">+1時間</button></span></div>
+          <!-- (勉強 その2 ① 時刻で入れる: from when to when, the 時間 worked out) -->
+          <p class="full field-note" id="st2TimeOpenRow"><button type="button" class="link-btn" id="st2TimeOpen">始めと終わりの時刻で入れる</button></p>
+          <span class="flabel" id="st2TimeLabel" hidden>時刻 <span class="opt">任意</span></span>
+          <div class="ffield st2-time" id="st2TimeField" hidden><input type="time" id="st2From" aria-label="始めた時刻"><span class="unit">〜</span><input type="time" id="st2To" aria-label="終えた時刻"><button type="button" class="link-btn small" id="st2TimeClose">やめる</button></div>
           <!-- ⑨ the 教材 (put in under the gear) and how far it went -->
           <label class="flabel" for="stMat" id="stMatLabel" hidden>教材 <span class="opt">任意</span></label>
           <div class="ffield" id="stMatField" hidden><select id="stMat"><option value="">なし</option></select></div>
@@ -5096,10 +5125,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield st-upto" id="stUptoField" hidden><input type="number" id="stUpto" min="1" max="99999" inputmode="numeric"><span class="unit" id="stUptoUnit"></span><span class="st-upto-now" id="stUptoNow"></span></div>
           <label class="flabel" for="stNote">メモ <span class="opt">任意</span></label>
           <div class="ffield"><input type="text" id="stNote" maxlength="1000" list="stNoteHints"><datalist id="stNoteHints"></datalist></div>
+          <!-- (勉強 その2 ② 復習の予定: 1日後・3日後・7日後・30日後) -->
+          <label class="check-line full st2-rev-line"><input type="checkbox" id="st2Rev"><span>復習する（1日後・3日後・7日後・30日後）</span></label>
           <div class="actions"><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
         </form>
+        <!-- (勉強 その2 ② きょうの復習) -->
+        <div class="card" id="st2RevCard" hidden>
+          <div class="card-head row-between"><span>きょうの復習</span><span class="muted small" id="st2RevCount"></span></div>
+          <ul class="list" id="st2RevList"></ul>
+        </div>
         <ul class="list card" id="studyList"></ul>
         <div class="muted small" id="studyTotal"></div>
+        <!-- (勉強 その2 ③ 前に勉強した日と同じにする) -->
+        <p class="st2-copy" id="st2Copy" hidden></p>
         <!-- ⑧ the 試験 to come (put in under the gear), the nearest first, with the days left -->
         <div class="card" id="stExamCard" hidden>
           <div class="card-head">試験まで</div>
@@ -5130,6 +5168,24 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="card-head">教材</div>
           <ul class="list" id="stMatList"></ul>
         </div>
+        <!-- (勉強 その2 ④ 12週間の推移) -->
+        <div class="card" id="st2WeeksCard" hidden>
+          <div class="card-head row-between"><span>12週間の推移</span><span class="muted small" id="st2WeeksSum"></span></div>
+          <div class="st-week st2-weeks" id="st2Weeks" role="group" aria-label="週ごとの勉強時間"></div>
+        </div>
+        <!-- (勉強 その2 ⑤ 勉強する時間帯) -->
+        <div class="card" id="st2HourCard" hidden>
+          <div class="card-head row-between"><span>勉強する時間帯</span><span class="muted small">この30日</span></div>
+          <ul class="list" id="st2HourList"></ul>
+          <p class="st2-foot" id="st2HourFoot"></p>
+        </div>
+        <!-- (勉強 その2 ⑦ 試験の結果) -->
+        <div class="card" id="st2ResCard" hidden>
+          <div class="card-head">試験の結果</div>
+          <ul class="list" id="st2ResList"></ul>
+        </div>
+        <!-- (勉強 その2 ⑩ この1週間を文字で送る) -->
+        <p class="st2-share" id="st2ShareRow" hidden><button type="button" class="chip-btn" id="st2Share">この1週間の勉強を文字で送る</button></p>
       </section>
 
       <!-- ルーティーン: the user's own list of things to do every day, checked off day by day (the user's call: a daily
@@ -6231,7 +6287,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <ul class="list" id="stExamRows"></ul>
           <div class="label-tools"><button type="button" class="link-btn" id="stExamAdd"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>試験を追加</button></div>
         </div>
-        <p class="group-foot"><span class="phrase">試験の日まであと何日かが、勉強のページに出ます。</span><span class="phrase">終わった試験は出なくなります。</span></p>
+        <p class="group-foot"><span class="phrase">試験の日まであと何日かが、勉強のページに出ます。</span><span class="phrase">終わった試験は「試験の結果」に移り、点数を入れられます。</span></p>
+        <!-- (勉強 その2 ⑨ お知らせ) -->
+        <h3 class="group-head">お知らせ</h3>
+        <form class="add" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="st2RemOn">まだの日</label>
+          <div class="ffield"><input type="checkbox" id="st2RemOn" class="switch" role="switch"></div>
+          <label class="flabel" for="st2RemAt">時刻</label>
+          <div class="ffield"><input type="time" id="st2RemAt" value="20:00"></div>
+          <label class="flabel" for="st2RevOn">復習</label>
+          <div class="ffield"><input type="checkbox" id="st2RevOn" class="switch" role="switch"></div>
+          <label class="flabel" for="st2RevAt">時刻</label>
+          <div class="ffield"><input type="time" id="st2RevAt" value="07:30"></div>
+        </form>
+        <p class="group-foot" id="st2RemFoot"></p>
       </div>
       <div class="sheet-view" id="tilesGroup" hidden>
         <h3 class="group-head">きょうのタイル</h3>
@@ -10109,12 +10178,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (stSubjectChoice && subjects.get(stSubjectChoice)) item.subjectId = stSubjectChoice;
     const note = $("stNote").value.trim();
     if (note) item.note = note;
+    st2Take(item, minutes); // (その2 ① 時刻, ② 復習)
     // ⑨ the 教材 and how far, no further than all of it; reaching its end said so
     const m = stMatOf($("stMat").value), total = stMatTotal(m), upto = Math.round(Number($("stUpto").value)), wasDone = m ? stMatState(m).done : true;
     if (m) { item.mat = m.id; if (upto > 0) item.upto = total ? Math.min(upto, total) : upto; }
     act(() => study.add(item));
     if (m && total && !wasDone && item.upto === total) { flash(`「${m.name}」を最後までやりきりました`); $("stMat").value = ""; stFillMatSelect(); } // (off the menu now)
-    $("stMin").value = ""; $("stNote").value = ""; $("stUpto").value = ""; stSyncMinWords(); $("stMin").focus();
+    $("stMin").value = ""; $("stNote").value = ""; $("stUpto").value = ""; stSyncMinWords(); $("stMin").focus(); st2Reset();
   });
   function renderStudy() {
     const cur = stSubjectChoice ? subjects.get(stSubjectChoice) : null;
@@ -10141,6 +10211,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const byDay = new Map();
     for (const x of study.items) if (isDay(x.date || "") && x.date <= todayKey) { if (!byDay.has(x.date)) byDay.set(x.date, []); byDay.get(x.date).push(x); }
     for (const fn of [renderStOften, renderStExams, () => renderStStats(byDay), () => renderStWeek(byDay), () => renderStCal(byDay), renderStSubs, renderStMats]) draw(fn);
+    draw(() => renderSt2(byDay)); // (勉強 その2 ①〜⑩)
   }
   $("studySettings").addEventListener("click", (ev) => openSettings(ev.detail === 0, "study"));
   $("subjectAdd").addEventListener("click", () => addTag(subjects, $("subjectList"), "新しい科目"));
@@ -10291,7 +10362,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren($("stSubList"), [...by].sort((a, b) => b[1].min - a[1].min).map(([k, o]) => {
       const s = subjects.get(k) || null, pct = total ? Math.round((o.min / total) * 100) : 0;
       const ago = to !== todayKey ? fmtMD(o.last) : o.last === todayKey ? "きょう" : o.last === addDays(todayKey, -1) ? "きのう" : `${daysBetween(o.last, todayKey)} 日前`;
-      return el("li", { style: `--lc:${stHue(s)}` },
+      return el("li", { style: `--lc:${stHue(s)}`, "data-st2-sub": k }, // (その2 ⑥ pressed, its own record)
         el("div", { class: "st-row-top" }, el("span", { class: "st-row-name" }, stName(s), s?.shelved ? el("small", {}, "しまった科目") : null), el("span", { class: "st-row-v" }, keepUnits(durText(o.min)))),
         el("div", { class: "bar-track", role: "img", "aria-label": `合計の ${pct}%` }, el("i", { style: `width:${pct}%` })),
         el("span", { class: "sub" }, dotParts([`${pct}%`, `${o.days.size} 日`, `1回あたり ${durText(Math.round(o.min / o.n))}`, `最後は ${ago}`])));
@@ -13286,6 +13357,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...goalFiveAlarms(now)); // (目標 その5 ⑧ マスの期限のお知らせ)
     out.push(...goalFourAlarms(now)); // (目標 その4 ⑤ 取り組む時間のお知らせ)
     out.push(...jnAlarms(now)); // (日記 ⑨ 書く時間のお知らせ)
+    out.push(...st2Alarms(now)); // (勉強 その2 ⑨)
     if (todoEight) td8Hold(out); // (ToDo その8 ②⑧ none for いつかやる nor a list put away)
     return (todoSix ? td6Hold(out) : out).sort((a, b) => a.at - b.at).slice(0, 400); // (ToDo その6 ③ held while put aside, ⑧ 静かな時間)
   }
@@ -13334,6 +13406,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...goalFiveParts()); // (目標 その5 ⑧)
     parts.push(...goalFourPush()); // (目標 その4 ⑤)
     parts.push(...jnPushParts()); // (日記 ⑨)
+    parts.push(...st2PushParts()); // (勉強 その2 ⑨)
     parts.push(...wxPushParts()); // (天気 その1 ⑩ 朝の天気のお知らせ, this device's and the others')
     const t = JSON.stringify(parts);
     let h = 2166136261;
@@ -14272,6 +14345,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (scope === "meal") renderMealSettings(); // 食事's 目安, protein goal (⑤) and お知らせ (⑩)
     if (scope === "goal") renderGoalSettings(); // 目標's ⑤ 見直しのお知らせ
     if (scope === "journal") renderJnSettings(); // (日記 ③⑨①)
+    if (scope === "study") renderSt2Settings(); // (勉強 その2 ⑨)
     if (scope === "todo") { renderTd9Settings(); renderTdMorning(); renderTdEvening(); renderTdBadge(); if (todoFour) renderTd4Slots(); if (todoSix) renderTd6Quiet(); if (todoSeven) renderTd7Settings(); if (todoEight) renderTd8Settings(); } // (ToDo その2 ① 朝のまとめのお知らせ, その3 ③④)
     // (バイト: one blank job to fill in when there is none yet, its 時給 ready to type)
     if (scope === "job") {
@@ -20119,7 +20193,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月14日 4:16"; // 5c3d1338 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月14日 7:17"; // 7f07185e (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -36720,6 +36794,303 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("jnRemindAt").addEventListener("change", (ev) => { if (/^\d\d:\d\d$/.test(ev.target.value)) saveJnRemind({ at: ev.target.value }); });
   $("jnAskOn").addEventListener("change", (ev) => { act(() => settings.set("jnAsk", { off: !ev.target.checked, updatedAt: Date.now() })); draw(renderJnAsk); });
   $("jnSettings").addEventListener("click", (ev) => openSettings(ev.detail === 0, "journal"));
+
+  // ---------- 勉強 その2 ①〜⑩ (the user's calls, 2026-11-14; still no timer and no goal a day): the time from 始め and 終わり
+  // (①), 復習 1・3・7・30 days on (②), the day before copied (③), 12 weeks (④), the hours of the day studied in (⑤), a
+  // subject's own record (⑥), 試験の結果 (⑦), when a 教材 will be finished (⑧), お知らせ (⑨) and the week in words (⑩) ----------
+  const st2Sigs = new Map();
+  const st2Same = (k, v) => { const t = JSON.stringify(v); if (st2Sigs.get(k) === t) return true; st2Sigs.set(k, t); return false; };
+  const hmMin = (t) => (/^\d\d:\d\d$/.test(t || "") ? Number(t.slice(0, 2)) * 60 + Number(t.slice(3)) : null);
+  // ① 始めと終わりの時刻: the 時間 worked out from them (past midnight, the next day's), kept with the record while it agrees
+  function st2Span(from, to) { const a = hmMin(from), b = hmMin(to); if (a === null || b === null) return 0; const d = (b - a + 1440) % 1440; return d; }
+  function st2TimeShow(on) {
+    $("st2TimeLabel").hidden = $("st2TimeField").hidden = !on; $("st2TimeOpenRow").hidden = on;
+    if (!on) { $("st2From").value = ""; $("st2To").value = ""; }
+  }
+  $("st2TimeOpen").addEventListener("click", () => {
+    st2TimeShow(true);
+    const n = new Date(), m = Math.round(Number($("stMin").value) || 0), to = n.getHours() * 60 + n.getMinutes();
+    if (viewDate === todayKey) { $("st2To").value = `${pad(n.getHours())}:${pad(n.getMinutes())}`; if (m > 0) { const f = (to - m + 1440) % 1440; $("st2From").value = `${pad(Math.floor(f / 60))}:${pad(f % 60)}`; } }
+    $("st2From").focus();
+  });
+  $("st2TimeClose").addEventListener("click", () => { st2TimeShow(false); $("st2TimeOpen").focus(); });
+  for (const id of ["st2From", "st2To"]) $(id).addEventListener("input", () => {
+    const d = st2Span($("st2From").value, $("st2To").value);
+    if (d > 0) { $("stMin").value = String(d); stSyncMinWords(); }
+  });
+  function st2Take(item, minutes) {
+    const f = $("st2From").value, t = $("st2To").value;
+    if (!$("st2TimeField").hidden && st2Span(f, t) === minutes) { item.from = f; item.to = t; }
+    if ($("st2Rev").checked) { item.rev = true; item.revDone = []; }
+  }
+  function st2Reset() { st2TimeShow(false); }
+  const st2At = (x) => (x.from && x.to && st2Span(x.from, x.to) === num(x.minutes) ? `${x.from}〜${x.to}` : "");
+  // ② 復習: 1, 3, 7 and 30 days on; today's list holds each record's first step due and not done, the oldest first.
+  // やった marks that step and any before it done; やめる stops that record's
+  const ST2_STEPS = [1, 3, 7, 30];
+  function st2Due(day = todayKey) {
+    const out = [];
+    for (const x of study.items) {
+      if (!x.rev || !isDay(x.date || "")) continue;
+      const done = Array.isArray(x.revDone) ? x.revDone : [];
+      const left = ST2_STEPS.filter((n) => !done.includes(n));
+      const due = left.filter((n) => addDays(x.date, n) <= day);
+      if (!due.length) continue;
+      out.push({ x, step: due[due.length - 1], steps: due, late: daysBetween(addDays(x.date, due[due.length - 1]), day), next: left.find((n) => !due.includes(n)) });
+    }
+    return out.sort((a, b) => a.x.date.localeCompare(b.x.date) || num(a.x.createdAt) - num(b.x.createdAt));
+  }
+  const st2Words = (x) => [stName(subjectOf(x)), x.note ? `「${clip(oneLine(x.note), 20)}」` : stMatOf(x.mat)?.name || ""].filter(Boolean).join(" ");
+  function renderSt2Rev() {
+    const card = $("st2RevCard"), list = viewDate === todayKey ? st2Due() : [];
+    card.hidden = !list.length;
+    if (st2Same("rev", [list.map((r) => [r.x.id, r.step, r.steps]), viewDate === todayKey, subjects.items.length])) return;
+    if (!list.length) return;
+    $("st2RevCount").textContent = `${list.length} 件`;
+    setChildren($("st2RevList"), list.map(({ x, step, steps, late, next }) => {
+      const s = subjectOf(x), done = Array.isArray(x.revDone) ? x.revDone : [];
+      return el("li", { class: "st2-rev", style: `--lc:${stHue(s)}` },
+        el("span", { class: "body" }, el("span", { class: "text st-row-name" }, st2Words(x)),
+          el("span", { class: "sub" }, dotParts([`${fmtMD(x.date)}の勉強の${step}日後`, late > 0 ? `${late}日おくれ` : null, next ? `次は${next}日後` : "これで最後"]))),
+        el("span", { class: "st2-rev-acts" },
+          el("button", { type: "button", class: "chip-btn", "aria-label": `${st2Words(x)}の復習をやった`, onclick: () => {
+            act(() => study.update(x.id, { revDone: [...new Set([...done, ...steps])].sort((a, b) => a - b) }));
+            flash(`${stName(s)}の復習をやりました`, () => act(() => study.update(x.id, { revDone: done })));
+          } }, "やった"),
+          el("button", { type: "button", class: "link-btn small", "aria-label": `${st2Words(x)}の復習をやめる`, onclick: () => {
+            act(() => study.update(x.id, { rev: false }));
+            flash("この勉強の復習をやめました", () => act(() => study.update(x.id, { rev: true })));
+          } }, "やめる")));
+    }));
+  }
+  // ③ a day with nothing yet: the last day studied before it, copied (subject, time, 教材 and メモ; not how far), with 元に戻す
+  function renderSt2Copy() {
+    const box = $("st2Copy"), has = study.items.some((x) => x.date === viewDate);
+    const before = has ? null : study.items.filter((x) => isDay(x.date || "") && x.date < viewDate).map((x) => x.date).sort().pop();
+    box.hidden = !before;
+    if (st2Same("copy", [viewDate, before, before && study.items.filter((x) => x.date === before).map((x) => [x.subjectId, x.minutes, x.note])])) return;
+    if (!before) return;
+    const xs = study.items.filter((x) => x.date === before).sort((a, b) => num(a.createdAt) - num(b.createdAt));
+    setChildren(box, el("button", { type: "button", class: "chip-btn", onclick: () => {
+      const date = viewDate, ids = [];
+      act(async () => { for (const x of xs) { const it = { date, minutes: num(x.minutes), createdAt: Date.now() }; if (x.subjectId && subjects.get(x.subjectId)) it.subjectId = x.subjectId; if (x.note) it.note = x.note; if (x.mat && stMatOf(x.mat)) it.mat = x.mat; ids.push(await study.add(it)); } });
+      flash(`${relLabel(before) || fmtMD(before)}と同じ ${xs.length} 件を記録しました`, () => { takeBack(study, ids); flash("元に戻しました"); });
+    } }, `${relLabel(before) || fmtMDW(before)}と同じにする`),
+      el("span", { class: "muted small" }, xs.map((x) => `${stName(subjectOf(x))} ${stDur(num(x.minutes))}`).join("・")));
+  }
+  // ④ 12週間: a bar a week (its first day by the setting), the subjects' colours; pressed, the last day of that week
+  function renderSt2Weeks(byDay) {
+    $("st2WeeksCard").hidden = !byDay.size;
+    if (!byDay.size) return;
+    const ws = weekStart(), t = parseYmd(todayKey), start0 = addDays(todayKey, -((t.getDay() - ws + 7) % 7));
+    const weeks = Array.from({ length: 12 }, (_, i) => addDays(start0, (i - 11) * 7));
+    const rank = new Map(sortedSubjects().map((s, i) => [s.id, i])), at = (k) => (k ? rank.get(k) ?? 1e9 : 2e9);
+    const each = weeks.map((w) => {
+      const by = new Map();
+      for (let i = 0; i < 7; i++) for (const x of byDay.get(addDays(w, i)) || []) { const k = subjectOf(x)?.id || ""; by.set(k, (by.get(k) || 0) + num(x.minutes)); }
+      return { w, parts: [...by].sort((a, b) => at(a[0]) - at(b[0])), t: sum([...by.values()], (m) => m) };
+    });
+    if (st2Same("weeks", [each.map((e) => [e.w, e.parts]), viewDate])) return;
+    const top = Math.max(60, ...each.map((e) => e.t)), on = each.filter((e) => e.t > 0);
+    $("st2WeeksSum").textContent = keepUnits(on.length ? `1週あたり ${durText(Math.round(sum(each, (e) => e.t) / 12))}` : "");
+    setChildren($("st2Weeks"), each.map(({ w, parts, t: tot }, i) => {
+      const end = addDays(w, 6) > todayKey ? todayKey : addDays(w, 6), h = tot ? Math.max(4, Math.round((tot / top) * ST_BAR_H)) : 0, here = viewDate >= w && viewDate <= addDays(w, 6);
+      return el("button", { type: "button", class: "st-day" + (here ? " on" : ""), "aria-label": `${fmtMD(w)}の週 ${tot ? durText(tot) : "記録なし"}`,
+        onclick: () => { setViewDate(end); window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" }); } },
+        el("span", { class: "st-day-v", "aria-hidden": "true" }, tot ? (tot < 60 ? `${Math.round(tot)}分` : `${Math.round(tot / 6) / 10}h`) : ""),
+        el("span", { class: "st-day-area", "aria-hidden": "true" }, h ? el("span", { class: "st-bar", style: `height:${h}px` }, parts.map(([k, m]) => el("i", { style: `flex:${m} 1 0;background:${stHue(subjects.get(k))}` }))) : null),
+        el("span", { class: "st-day-dn" + (i === 11 ? " today" : ""), "aria-hidden": "true" }, i === 11 ? "今週" : i % 2 ? "" : fmtMD(w)));
+    }));
+  }
+  // ⑤ the hours of the day studied in, over the 30 days to today: from its 始め (①), else from when it was put in less its
+  // time, if it was put in on its day; a row each for 朝 昼 夕方 夜 深夜 with its share
+  const ST2_PARTS = [["朝", 5, 11], ["昼", 11, 15], ["夕方", 15, 19], ["夜", 19, 24], ["深夜", 0, 5]];
+  function st2Start(x) {
+    const f = hmMin(x.from);
+    if (f !== null && st2At(x)) return f;
+    const c = num(x.createdAt);
+    if (!c || ymd(new Date(c)) !== x.date) return null;
+    const d = new Date(c), m = d.getHours() * 60 + d.getMinutes() - num(x.minutes);
+    return m >= 0 ? m : null;
+  }
+  function renderSt2Hours() {
+    const since = addDays(todayKey, -29), by = new Map(ST2_PARTS.map(([k]) => [k, 0]));
+    let n = 0;
+    for (const x of study.items) {
+      if (!isDay(x.date || "") || x.date < since || x.date > todayKey) continue;
+      const m = st2Start(x);
+      if (m === null) continue;
+      const h = m / 60, part = ST2_PARTS.find(([, a, b]) => h >= a && h < b);
+      if (part) { by.set(part[0], by.get(part[0]) + num(x.minutes)); n++; }
+    }
+    const total = sum([...by.values()], (v) => v);
+    $("st2HourCard").hidden = n < 3;
+    if (n < 3 || st2Same("hours", [...by])) return;
+    const top = [...by].sort((a, b) => b[1] - a[1])[0][0];
+    setChildren($("st2HourList"), ST2_PARTS.map(([k, a, b]) => {
+      const v = by.get(k), pct = total ? Math.round((v / total) * 100) : 0;
+      return el("li", { class: "st2-hour" + (k === top ? " top" : "") },
+        el("div", { class: "st-row-top" }, el("span", {}, k, el("small", {}, ` ${a}〜${b}時`)), el("span", { class: "st-row-v" }, v ? keepUnits(durText(v)) : "―")),
+        el("div", { class: "bar-track", role: "img", "aria-label": `${pct}%` }, el("i", { style: `width:${pct}%` })));
+    }));
+    $("st2HourFoot").textContent = `いちばん多いのは${top}です。始めの時刻を入れた記録と、その日のうちに記録した勉強から数えています。`;
+  }
+  // ⑥ a subject's own record: pressed in 科目ごとの時間, under its row, all of its time, days, first and last, and its last
+  // five records with their memos
+  let st2SubOpen = null;
+  $("stSubList").addEventListener("click", (ev) => {
+    const li = ev.target.closest("li[data-st2-sub]");
+    if (!li || ev.target.closest(".st2-sub-more")) return;
+    st2SubOpen = st2SubOpen === li.dataset.st2Sub ? null : li.dataset.st2Sub;
+    st2SubMark();
+  });
+  $("stSubList").addEventListener("keydown", (ev) => { if ((ev.key === "Enter" || ev.key === " ") && ev.target.matches("li[data-st2-sub]")) { ev.preventDefault(); ev.target.click(); } });
+  function st2SubMark() {
+    const list = $("stSubList"), names = [...list.children];
+    for (const li of names) {
+      const row = li.querySelector(".st-row-name");
+      if (!row || li.classList.contains("empty")) continue;
+      const k = li.dataset.st2Sub;
+      li.setAttribute("role", "button"); li.tabIndex = 0; li.setAttribute("aria-expanded", String(k === st2SubOpen));
+      li.querySelector(".st2-sub-more")?.remove();
+      if (k === st2SubOpen) li.append(st2SubMore(k));
+    }
+  }
+  function st2SubMore(k) {
+    const xs = study.items.filter((x) => isDay(x.date || "") && (subjectOf(x)?.id || "") === k && x.date <= todayKey).sort((a, b) => b.date.localeCompare(a.date) || num(b.createdAt) - num(a.createdAt));
+    const days = new Set(xs.map((x) => x.date)), first = xs.length ? xs[xs.length - 1].date : null;
+    return el("div", { class: "st2-sub-more" },
+      el("p", { class: "sub" }, dotParts([`これまで ${durText(sum(xs, (x) => x.minutes))}`, `${days.size} 日`, first ? `はじめは ${fmtMD(first)}${parseYmd(first).getFullYear() !== parseYmd(todayKey).getFullYear() ? `（${parseYmd(first).getFullYear()}年）` : ""}` : null])),
+      el("ul", { class: "st2-sub-recent" }, xs.slice(0, 5).map((x) => el("li", {}, el("button", { type: "button", class: "link-btn small", onclick: () => { setViewDate(x.date); window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" }); } }, fmtMD(x.date)),
+        ` ${stDur(num(x.minutes))}`, x.note ? el("span", { class: "muted" }, ` ${clip(oneLine(x.note), 24)}`) : null))));
+  }
+  // ⑦ 試験の結果: those gone by (and today's), the latest first: the time spent on its subject in the 14 days before it,
+  // and its 点数 out of 満点 (100 at first), put in here; the last one of the same subject beside it
+  function renderSt2Res() {
+    const list = stExams().filter((e) => e.date <= todayKey).sort((a, b) => b.date.localeCompare(a.date));
+    $("st2ResCard").hidden = !list.length;
+    const box = $("st2ResList");
+    if (box.contains(document.activeElement) && document.activeElement.matches("input")) return; // (kept while typed in)
+    if (st2Same("res", [list, todayKey])) return;
+    if (!list.length) return;
+    const put = (id, patch) => saveStExams(stExams().map((e) => (e.id === id ? dropUndef({ ...e, ...patch }) : e)));
+    const pctOf = (e) => (typeof e.score === "number" && num(e.max) > 0 ? Math.round((e.score / e.max) * 100) : null);
+    setChildren(box, list.map((e) => {
+      const s = e.sub ? subjects.get(e.sub) || null : null, from = addDays(e.date, -14);
+      const before = s ? sum(study.items.filter((x) => x.subjectId === s.id && x.date >= from && x.date < e.date), (x) => x.minutes) : 0;
+      const prev = list.filter((o) => o.sub && o.sub === e.sub && o.date < e.date && pctOf(o) !== null)[0], p = pctOf(e), pp = prev ? pctOf(prev) : null;
+      const max = num(e.max) > 0 ? e.max : 100;
+      return el("li", { class: "st2-res", style: `--lc:${stHue(s)}` },
+        el("div", { class: "st-row-top" }, el("span", { class: "st-row-name" }, e.name), el("span", { class: "st-row-v" }, p === null ? "" : `${p}%`)),
+        el("span", { class: "sub" }, dotParts([fmtMDW(e.date), s ? `前の2週間の${s.name} ${before ? durText(before) : "なし"}` : null, p !== null && pp !== null ? `前回（${prev.name}）より ${p - pp >= 0 ? "+" : "−"}${Math.abs(p - pp)} ポイント` : null])),
+        el("span", { class: "st2-score" },
+          el("input", { type: "number", min: 0, max: 99999, inputmode: "decimal", value: typeof e.score === "number" ? e.score : "", "aria-label": `「${e.name}」の点数`, placeholder: "点数",
+            onchange: (ev) => { const v = ev.target.value === "" ? undefined : Math.max(0, Math.round(Number(ev.target.value) * 10) / 10); put(e.id, { score: v, max: num(e.max) > 0 ? e.max : 100 }); } }),
+          el("span", { class: "unit" }, "点 /"),
+          el("input", { type: "number", min: 1, max: 99999, inputmode: "numeric", value: max, "aria-label": `「${e.name}」の満点`,
+            onchange: (ev) => { const v = Math.round(Number(ev.target.value)); if (v > 0) put(e.id, { max: v }); else ev.target.value = max; } }),
+          el("span", { class: "unit" }, "点")));
+    }));
+  }
+  $("st2ResList").addEventListener("focusout", (ev) => { if (!$("st2ResList").contains(ev.relatedTarget)) { st2Sigs.delete("res"); setTimeout(() => draw(renderSt2Res), 0); } });
+  // ⑧ when a 教材 will be finished, at the pace of its last 28 days, and against its subject's next 試験
+  function st2Pace(m) {
+    const st = stMatState(m);
+    if (!st.total || st.done || !st.upto) return null;
+    const from = addDays(todayKey, -28), xs = study.items.filter((x) => x.mat === m.id && num(x.upto) > 0 && isDay(x.date || ""));
+    const before = Math.max(0, ...xs.filter((x) => x.date < from).map((x) => num(x.upto)));
+    const inside = xs.filter((x) => x.date >= from && x.date <= todayKey);
+    if (!inside.length) return "この4週間は進んでいません";
+    const first = inside.map((x) => x.date).sort()[0], span = Math.max(7, daysBetween(before ? from : first, todayKey) + 1), gain = st.upto - before;
+    if (!(gain > 0)) return null;
+    const left = Math.ceil(((st.total - st.upto) / gain) * span), end = addDays(todayKey, left);
+    const ex = m.sub ? stExams().filter((e) => e.sub === m.sub && e.date > todayKey).sort((a, b) => a.date.localeCompare(b.date))[0] : null;
+    return `このペースだと ${fmtMD(end)}ごろ終わり` + (ex ? (end <= ex.date ? `（${ex.name}に間に合います）` : `（${ex.name}の${fmtMD(ex.date)}には間に合いません）`) : "");
+  }
+  function st2MarkMats() {
+    const list = $("stMatList");
+    stMats().forEach((m) => {
+      const li = [...list.children].find((li) => li.querySelector(".st-row-name")?.textContent === m.name && !li.querySelector(".st2-pace"));
+      const w = st2Pace(m);
+      if (li && w) li.append(el("span", { class: "sub st2-pace" }, w));
+    });
+  }
+  // ⑨ お知らせ: まだの日 (no study by its time) and 復習 (the day's due ones), each on or off with its time
+  const ST2_REM = "studyRemind";
+  function st2Rem() { const v = settings.get(ST2_REM) || {}; return { on: !!v.on, at: /^\d\d:\d\d$/.test(v.at || "") ? v.at : "20:00", rev: !!v.rev, revAt: /^\d\d:\d\d$/.test(v.revAt || "") ? v.revAt : "07:30" }; }
+  function st2Alarms(now) {
+    const r = st2Rem(), out = [];
+    const at = (d, t) => { const p = parseYmd(d), [h, mi] = t.split(":").map(Number); return new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime(); };
+    const ok = (a) => a > now + 5000 && a <= now + PUSH_AHEAD * 864e5;
+    if (r.on) {
+      const has = study.items.some((x) => x.date === todayKey);
+      for (let i = 0; i <= PUSH_AHEAD; i++) { const d = addDays(todayKey, i), a = at(d, r.at); if (ok(a) && !(i === 0 && has)) out.push({ at: a, title: "勉強", body: "きょうの勉強がまだです", tag: `st2-rem:${d}`, url: "./#study" }); }
+    }
+    if (r.rev) for (let i = 0; i <= 31; i++) {
+      const d = addDays(todayKey, i), a = at(d, r.revAt);
+      if (!ok(a)) continue;
+      const due = st2Due(d);
+      if (!due.length) continue;
+      out.push({ at: a, title: "きょうの復習", body: `${due.slice(0, 3).map((r) => st2Words(r.x)).join("、")}${due.length > 3 ? ` ほか${due.length - 3}件` : ""}`.slice(0, 200), tag: `st2-rev:${d}`, url: "./#study" });
+    }
+    return out;
+  }
+  function st2PushParts() {
+    const r = st2Rem();
+    if (!r.on && !r.rev) return [];
+    return [["st2", r, study.items.some((x) => x.date === todayKey), r.rev ? study.items.filter((x) => x.rev).map((x) => [x.id, x.date, x.revDone, x.subjectId, x.note]) : 0]];
+  }
+  function renderSt2Settings() {
+    const r = st2Rem(), st = pushState();
+    $("st2RemOn").checked = r.on; $("st2RevOn").checked = r.rev;
+    for (const [id, v, on] of [["st2RemAt", r.at, r.on], ["st2RevAt", r.revAt, r.rev]]) { const f = $(id); if (document.activeElement !== f) f.value = v; f.disabled = !on; }
+    $("st2RemFoot").textContent = !r.on && !r.rev ? "「まだの日」は、決めた時刻にその日の勉強がまだならお知らせします。「復習」は、復習がある日の朝などにお知らせします。"
+      : st === "on" ? [r.on ? `その日の勉強がまだなら ${r.at} に。` : "", r.rev ? `復習がある日は ${r.revAt} に。` : "", "この端末に届きます。"].join("") : pushWords(st).replace("通知アラーム", "お知らせ");
+  }
+  function saveSt2Rem(patch) { act(() => settings.set(ST2_REM, { ...st2Rem(), ...patch, updatedAt: Date.now() })); renderSt2Settings(); }
+  for (const [id, k] of [["st2RemOn", "on"], ["st2RevOn", "rev"]]) $(id).addEventListener("change", (ev) => { saveSt2Rem({ [k]: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderSt2Settings); });
+  for (const [id, k] of [["st2RemAt", "at"], ["st2RevAt", "revAt"]]) $(id).addEventListener("change", (ev) => { if (/^\d\d:\d\d$/.test(ev.target.value)) saveSt2Rem({ [k]: ev.target.value }); });
+  // ⑩ the 7 days up to the day shown in words: its total and days, each subject's, the 教材 moved on, the 試験 to come;
+  // shared (LINE etc.) or copied
+  function st2WeekText() {
+    const end = viewDate, from = addDays(end, -6), xs = study.items.filter((x) => isDay(x.date || "") && x.date >= from && x.date <= end);
+    if (!xs.length) return null;
+    const by = new Map();
+    for (const x of xs) { const k = subjectOf(x)?.id || ""; by.set(k, (by.get(k) || 0) + num(x.minutes)); }
+    const lines = [`${fmtMD(from)}〜${fmtMD(end)}の勉強`, `合計 ${durText(sum(xs, (x) => x.minutes))}（${new Set(xs.map((x) => x.date)).size}日）`];
+    for (const [k, m] of [...by].sort((a, b) => b[1] - a[1])) lines.push(`・${stName(subjects.get(k))} ${durText(m)}`);
+    const mats = stMats().filter((m) => xs.some((x) => x.mat === m.id));
+    for (const m of mats) { const st = stMatState(m); lines.push(`教材：${m.name}${st.total ? ` ${st.pct}%` : st.upto ? ` ${fmtN(st.upto)}${stMatUnit(m)}まで` : ""}`); }
+    for (const e of stExams().filter((e) => e.date > todayKey).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 2)) lines.push(`試験：${e.name}まであと${daysBetween(todayKey, e.date)}日`);
+    return lines.join("\n");
+  }
+  $("st2Share").addEventListener("click", async () => {
+    const text = st2WeekText();
+    if (!text) { flash("この1週間の勉強はまだありません"); return; }
+    if (navigator.share) { try { await navigator.share({ title: "勉強", text }); return; } catch (e) { if (e?.name === "AbortError") return; } }
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch {
+      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
+      document.body.append(ta); ta.select();
+      try { ok = document.execCommand("copy"); } catch {}
+      ta.remove();
+    }
+    flash(ok ? "この1週間の勉強を文字でコピーしました。LINEなどに貼り付けられます" : "コピーできませんでした");
+  });
+  // a record's 始め〜終わり and 復習 on its row in the day's list (①②)
+  function st2MarkRows() {
+    for (const li of $("studyList").children) {
+      const id = li.querySelector("[data-edit]")?.dataset.edit, x = id && study.get(id);
+      if (!x || li.querySelector(".st2-row-at")) continue;
+      const w = [st2At(x), x.rev ? `復習 ${(x.revDone || []).length}/${ST2_STEPS.length}` : ""].filter(Boolean);
+      if (w.length) li.querySelector(".body")?.append(el("span", { class: "sub st2-row-at" }, w.join("・")));
+    }
+  }
+  function renderSt2(byDay) {
+    draw(renderSt2Rev); draw(renderSt2Copy); draw(st2MarkRows); draw(() => renderSt2Weeks(byDay)); draw(renderSt2Hours);
+    draw(st2MarkMats); draw(renderSt2Res); draw(st2SubMark);
+    $("st2ShareRow").hidden = !study.items.length;
+  }
 
   // ---------- boot ----------
   function renderAll() {
