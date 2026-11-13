@@ -63,7 +63,8 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   r = await rows();
   ok(r[0] === '#期限切れ|すべて完了' && r[1] === '✓請求書を送る(kept)' && r[2] === '✓部屋の掃除(kept)', '期限切れ: both kept there, すべて完了', r.slice(0, 3));
   ok(await p.evaluate(() => { const h = todoList.querySelector('.dayhead'); return !h.classList.contains('warn') && !h.querySelector('.dayhead-btn'); }), '…no longer red, and no きょうに移す');
-  ok(await p.evaluate(() => todoList.querySelector('.dayhead [role=heading]').getAttribute('aria-label') === '期限切れ、すべて完了'), 'read out: 期限切れ、すべて完了');
+  // (ToDo その10 ①, 2026-11-13: a heading that folds says it on its button, inside the heading)
+  ok(await p.evaluate(() => { const h = todoList.querySelector('.dayhead [role=heading]'); return (h.getAttribute('aria-label') || h.querySelector('.td10-fold')?.getAttribute('aria-label')) === '期限切れ、すべて完了'; }), 'read out: 期限切れ、すべて完了');
   // ---- 完了: those done before today only, the last ten, the rest a press away
   const hd = r.findIndex((x) => x.startsWith('#完了'));
   ok(r[hd] === '#完了|13 件' && r[hd + 1] === '✓きのうやったこと' && r.slice(hd + 1).filter((x) => x.startsWith('✓')).length === 10, '完了: the 13 done before today, ten showing', r.slice(hd, hd + 3));

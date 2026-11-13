@@ -56,7 +56,8 @@ function forecast() {
   ok(wx === "天気 いる場所のきょうの天気を出せます 天気を出す", "⑦ before: " + wx);
   await p.locator('.tile[data-tile="weather"] .wx-ask').click(); await p.waitForTimeout(1200);
   wx = await tileText(p, "weather");
-  ok(wx === "天気 雨 18° / 9° 降水確率 80% 16時ごろから雨の予報です ランはエアロバイク30分に替えても", "⑦ got: " + wx);
+  // (since 2026-11-12, fb4d107, the user's call: the tile has the next days under it, from きょう)
+  ok(wx.startsWith("天気 雨 18° / 9° 降水確率 80% 16時ごろから雨の予報です ランはエアロバイク30分に替えても") && wx.includes("きょう 18° 9° 80%"), "⑦ got: " + wx);
   ok(calls.length === 1 && calls[0].includes("latitude=35.68&longitude=139.77") && calls[0].includes("timezone=auto"), "⑦ asked once, the place to 1 km: " + calls[0]);
   const kept = await p.evaluate((P) => JSON.parse(localStorage.getItem(P + "wxPlace")), P);
   ok(kept && kept.lat === 35.68 && kept.lon === 139.77, "⑦ the place kept on this device: " + JSON.stringify(kept));

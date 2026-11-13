@@ -75,7 +75,8 @@ const fmtN = (n) => n.toLocaleString("en-US");
   const rows = await p.evaluate(() => [...document.querySelectorAll("#wtReviewTable tbody tr")].map((tr) => tr.innerText.replace(/\s+/g, " ").trim()));
   const wk0 = addDays(today, -new Date(today + "T12:00:00Z").getUTCDay()), wkRecs = recs.filter((r) => r.id >= wk0), wkPrev = recs.filter((r) => r.id >= addDays(wk0, -7) && r.id < wk0);
   const mean = (xs) => xs.reduce((s, r) => s + r.kg, 0) / xs.length;
-  ok(rows.length === 8 && rows[0] === `今週 ${wkRecs.length}回 ${mean(wkRecs).toFixed(1)} kg ${mean(wkRecs) - mean(wkPrev) < 0 ? "−" : "+"}${Math.abs(mean(wkRecs) - mean(wkPrev)).toFixed(1)} kg ${(wkRecs.reduce((s, r) => s + r.fat, 0) / wkRecs.length).toFixed(1)}%`, "⑨ 8 weeks, this one first", rows.slice(0, 2));
+  // (からだ その3 ⑩, 2026-11-13: 運動 and 摂取 added after 体脂肪率)
+  ok(rows.length === 8 && rows[0].startsWith(`今週 ${wkRecs.length}回 ${mean(wkRecs).toFixed(1)} kg ${mean(wkRecs) - mean(wkPrev) < 0 ? "−" : "+"}${Math.abs(mean(wkRecs) - mean(wkPrev)).toFixed(1)} kg ${(wkRecs.reduce((s, r) => s + r.fat, 0) / wkRecs.length).toFixed(1)}% `), "⑨ 8 weeks, this one first", rows.slice(0, 2));
   ok(rows[1].startsWith(`${Number(addDays(wk0, -7).slice(5, 7))}/${Number(addDays(wk0, -7).slice(8))}〜`), "⑨ the week before's days", rows[1]);
   await p.locator('#wtReviewBy [data-by="month"]').click(); await p.waitForTimeout(100);
   const mrows = await p.evaluate(() => [...document.querySelectorAll("#wtReviewTable tbody tr")].map((tr) => tr.innerText.replace(/\s+/g, " ").trim()));

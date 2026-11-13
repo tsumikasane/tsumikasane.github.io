@@ -65,7 +65,7 @@ const todoBy = async (p, text) => (await ls(p, "todos")).find((t) => t.text === 
   ok(await p.inputValue("#todoDue") === today && await p.isChecked("#todoRemind") && await p.isVisible("#todoRemindNote"), "① a time: 期限 today, お知らせ on");
   ok((await txt(p, "#todoRemindNote")).length > 5, "① what お知らせ will do, said", await txt(p, "#todoRemindNote"));
   // ② steps: 改行 makes the next one
-  await p.click("#todoSteps .link-btn");
+  await p.locator("#todoSteps .link-btn", { hasText: "サブタスクを追加" }).click(); // (its first link-btn is その10's 並べ替える, hidden with no steps)
   await p.locator("#todoSteps .td-step-name").last().fill("番号を調べる");
   await p.locator("#todoSteps .td-step-name").last().press("Enter");
   await p.locator("#todoSteps .td-step-name").last().fill("かける");

@@ -44,7 +44,8 @@ const closeSheet = async (p) => { await p.keyboard.press("Escape"); await p.wait
   ok(cell.includes("バイト 17:00〜22:00") && (await p.evaluate(() => [...document.querySelectorAll(".cal-day.today .bar")].map((x) => x.textContent))).join(",") === "授業,ゼミ,コンビニ", "① the month: the shift by its time among the plans", cell);
   // ⑤ the weather on the next 7 days
   const wxCells = await p.evaluate(() => [...document.querySelectorAll(".cal-day")].filter((c) => c.querySelector(".wx")).map((c) => c.querySelector(".n").textContent + ":" + c.querySelector(".wx").className.replace("wx wx-icon ", "")));
-  ok(wxCells.join(" ") === "10:sun 11:cloud 12:rain 13:cloud 14:snow 15:rain 16:sun" && cell.includes("晴れ、最高18度、最低9度、降水確率10%"), "⑤ the weather on the 7 days", wxCells);
+  // (⑤ the calendar's weather was taken out, the user's call of 2026-11-12, fb4d107: きょうの天気 has the week instead)
+  ok(wxCells.length === 0 && !cell.includes("降水確率"), "⑤ no weather on the days (taken out)", wxCells);
   // ⑦ the marks
   const marks = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll(".cal-day")].filter((c) => c.querySelector(".marks")).map((c) => [c.querySelector(".n").textContent, c.querySelectorAll(".marks i").length])));
   ok(JSON.stringify(marks) === JSON.stringify({ 9: 2, 10: 2 }) && cell.includes("記録 運動・体重"), "⑦ the marks: 9th 日記・勉強, 10th 運動・体重", marks);
@@ -122,12 +123,12 @@ const closeSheet = async (p) => { await p.keyboard.press("Escape"); await p.wait
   // 週: ① the shift blocks, ⑤ the weather under the days, ⑥ the free bands
   await p.locator('#calViews [data-view="week"]').click(); await p.waitForTimeout(500);
   ok(await p.locator('#tgBody .tg-ev.shift[data-shift="s1"]').count() === 1 && (await p.evaluate(() => [...document.querySelectorAll("#tgBody .tg-ev.shift")].map((x) => x.innerText.replace(/\s+/g, " ")))).includes("コンビニ 〜05:00"), "① 週: the shifts, the part past midnight to its end");
-  ok((await p.evaluate(() => [...document.querySelectorAll("#tgHead .wxs")].map((x) => x.textContent))).join(" ") === "18° 17° 14° 16° 5°", "⑤ 週: the weather under the days", await p.evaluate(() => [...document.querySelectorAll("#tgHead .wxs")].map((x) => x.textContent)));
+  ok((await p.evaluate(() => [...document.querySelectorAll("#tgHead .wxs")].map((x) => x.textContent))).join(" ") === "", "⑤ 週: no weather under the days (taken out)", await p.evaluate(() => [...document.querySelectorAll("#tgHead .wxs")].map((x) => x.textContent)));
   ok(await p.locator("#tgBody .tg-free").count() > 4 && await p.locator("#tgBody .tg-free.one").count() === 0, "⑥ 週: the free bands, plain");
   await p.screenshot({ path: __dirname + "/shots/c-week.png" });
   // 日
   await p.locator('#calViews [data-view="day"]').click(); await p.waitForTimeout(500);
-  ok(await txt(p, "#tgWx") === "晴れ 18° / 9° 降水確率 10%", "⑤ 日: the day's weather", await txt(p, "#tgWx"));
+  ok(!(await txt(p, "#tgWx")), "⑤ 日: no weather for the day (taken out)", await txt(p, "#tgWx"));
   ok((await p.evaluate(() => [...document.querySelectorAll("#tgBody .tg-free.one")].map((x) => x.textContent))).join(",") === ",空き 1 時間,空き 2 時間 30 分,空き 1 時間", "⑥ 日: the free bands, a length on each but the short one",
     await p.evaluate(() => [...document.querySelectorAll("#tgBody .tg-free.one")].map((x) => x.textContent)));
   // ④ 授業 held and moved down 3 hours
@@ -166,10 +167,10 @@ const closeSheet = async (p) => { await p.keyboard.press("Escape"); await p.wait
 
   // the settings: ⑤⑦⑥ off, the free hours' span
   await p.locator("#calSettings").click(); await p.waitForTimeout(500);
-  await p.locator("#calWx").click({ force: true }); await p.locator("#calMarks").click({ force: true }); await p.waitForTimeout(300);
+  await p.locator("#calMarks").click({ force: true }); await p.waitForTimeout(300); // (⑤'s switch was taken out with it)
   await p.selectOption("#calFreeFrom", "09:00"); await p.selectOption("#calFreeTo", "21:00"); await p.waitForTimeout(300);
   let cs = (await ls(p, "settings")).find((x) => x.id === "calendar");
-  ok(cs && cs.wx === false && cs.marks === false && cs.freeFrom === "09:00" && cs.freeTo === "21:00", "⑤⑦⑥ kept", cs);
+  ok(cs && cs.marks === false && cs.freeFrom === "09:00" && cs.freeTo === "21:00", "⑦⑥ kept", cs);
   // ⑨ on
   await p.locator("#calMorningOn").click({ force: true }); await p.waitForTimeout(300);
   ok((await ls(p, "settings")).find((x) => x.id === "calMorning")?.on === true, "⑨ kept on");

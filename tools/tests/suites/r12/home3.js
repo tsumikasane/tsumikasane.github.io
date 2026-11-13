@@ -46,7 +46,7 @@ function forecast() {
   ok((await order(p)).startsWith("review,tomorrow,quick,weather,todo,calendar,countdown,"), "21:00: " + await order(p));
   const rv = await tileText(p, "review");
   ok(rv === "きょうのふりかえり 6こ きょう積んだブロック ToDo 1件 完了 勉強 1時間 30分 運動 ラン 4 km・筋トレ 3セット 食事 2回・1,350 kcal 体重 65.2 kg 支出 1,200円 日記を書く"
-    || /^きょうのふりかえり 7こ きょう積んだブロック ToDo 1件 完了 勉強 1 時間 30 分 運動 ラン 4 km・筋トレ 3セット 食事 2回・1,350 kcal 体重 65.2 kg 支出 1,200 円 日記を書く$/.test(rv), "⑧ " + rv);
+    || /^きょうのふりかえり 7こ きょう積んだブロック ToDo 1件 完了 勉強 1 時間 30 分 運動 ラン 4 km・筋トレ 3セット 食事 2回・1,350 kcal 体重 65.2 kg 支出 1,200 円 日記を書く( 文字で送る)?$/.test(rv), "⑧ " + rv); // (文字で送る: きょう その2, 2026-11-13)
   const tm = await tileText(p, "tomorrow");
   ok(tm.includes("予定 09:00 ゼミ、13:00 面談") && tm.includes("ToDo レポート提出、本を返す") && tm.includes("バイト 17:00〜22:00") && tm.includes("運動 ラン 4 km・レッグカール・ラットプルダウン・アームカール") && tm.includes("天気 晴れ 20° / 11°・降水確率 10%"), "⑨ " + tm);
   const cd = await tileText(p, "countdown");
@@ -64,7 +64,8 @@ function forecast() {
   await p.goto(URL0 + "#home"); await p.reload(); await p.waitForTimeout(800);
   await p.locator("#homeSettings").click(); await p.waitForTimeout(500);
   const notes = await p.evaluate(() => [...document.querySelectorAll("#tileList li")].filter((li) => li.querySelector(".tnote")).map((li) => li.dataset.key + ":" + li.querySelector(".tnote").textContent));
-  ok(JSON.stringify(notes) === JSON.stringify(["review:夜8時から", "tomorrow:夜8時から"]), "the settings: " + notes.join(" "));
+  // (きょう その2, 2026-11-13, added tiles of their own times: きょうの準備, きのうの書き忘れ)
+  ok(notes.includes("review:夜8時から") && notes.includes("tomorrow:夜8時から"), "the settings: " + notes.join(" "));
   ok(!p.errs.length, "no page errors", p.errs);
   await p.close();
   // 14:15: no evening ones; 日記 written: said so
@@ -74,7 +75,7 @@ function forecast() {
   await p.close();
   p = await phone(b, at("21:30"));
   await seed(p, { ...DATA, journal: [{ id: today, date: today, text: "いい日だった", createdAt: T0 }] });
-  ok((await tileText(p, "review")).endsWith("日記は書きました"), "⑧ written: " + (await tileText(p, "review")).slice(-12));
+  ok((await tileText(p, "review")).replace(/ 文字で送る$/, "").endsWith("日記は書きました"), "⑧ written: " + (await tileText(p, "review")).slice(-12));
   await p.close();
   // ⑩ one today; none at all
   p = await phone(b, at("10:00"));
