@@ -2449,6 +2449,9 @@ ul.td10-reps > li .body, ul.td10-bells > li { min-width: 0; }
 #todoForm .td11-off, #recForm .td11-off { display: none !important; }
 .td11-more { margin: 0; }
 .td11-more .link-btn { min-height: 44px; }
+/* ④ 回数: a short number, 回で終わる after it on the same line */
+.td11-count-row .ffield input[type="number"] { flex: 0 1 4.5em; }
+.td11-count-row .unit { white-space: nowrap; }
 /* ⑤ 期限を 1日前… under the 締め切り */
 .td11-back .td11-back-lead { align-self: center; font-size: var(--t-sub); color: var(--muted); }
 /* ⑦ the 売り場 it is in now, in its menu */
@@ -2456,6 +2459,10 @@ ul.td10-reps > li .body, ul.td10-bells > li { min-width: 0; }
 /* ⑧ the timer bar's ♪: dimmer while no sound is picked */
 .rest-btn.td11-noise-btn { min-width: 44px; padding: 0 10px; }
 .rest-btn.td11-noise-btn.off { opacity: .7; }
+@media (max-width: 479px) { .rest-btn.td11-noise-btn { display: none; } } /* (a phone's bar has no room: its ToDo's name went) */
+.td11-sound { display: grid; justify-items: center; gap: 6px; width: 100%; margin-top: 6px; }
+.td11-sound .seg { width: 100%; }
+.td11-sound .seg button { padding: 0 6px; white-space: nowrap; }
 #td11NoiseVol { width: 100%; min-height: 32px; accent-color: var(--accent-fill); }
 /* ⑨ さっきの操作: each one's words and how long ago, 元に戻す at its end */
 .td11-hist > li { align-items: center; }
@@ -31118,7 +31125,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         ["朝のまとめ・夜のお知らせ", "「編集」。その日のToDoを1つの通知で知らせます"], ["始めどき・通知の静かな時間", "「編集」"], ["アイコンの数字", "「編集」。期限切れときょうの数をホーム画面のアイコンに"], ["これから届くお知らせ", "「その他」。この先7日のお知らせを時刻の順に"], ["その日の混み具合", "期限を選ぶと、その下に出ます"], ["本当の締め切り", "ToDoの画面。期限とは別に入れて、期限をその何日前にするか選べます"], ["回数で終わる繰り返し", "ToDoの画面の繰り返しの「回数」"], ["時刻までの残り時間", "きょうの時刻つきのToDoの行に出ます"]]],
       ["きょうの計画", [["きょうやる", "長押し、または「その他」の「きょうやるを選ぶ」。終わる時刻の見込みも出ます"], ["いまやるなら", "一覧の上。いまの元気を選ぶと、それに合うものが先に出ます"],
         ["今週やる", "「その他」の「今週やるを選ぶ」"], ["きょうの時間割・すき間時間", "「その他」。空き時間にToDoを並べます"], ["1日の目標", "「編集」"], ["あしたやる", "「その他」の「あしたやるを選ぶ」、または長押し。前の夜に選んでおけます"]]],
-      ["集中する", [["集中タイマー・5分だけ", "長押し、またはToDoの画面"], ["1件に集中する画面", "長押しの「このToDoに集中する」。集中タイマーの帯のToDoの名前からも"], ["思いついたこと", "1件に集中する画面の下。期限なしのToDoになります"], ["集中の音", "集中タイマーの帯の♪、または「編集」。雨・波・川・さらさら"]]],
+      ["集中する", [["集中タイマー・5分だけ", "長押し、またはToDoの画面"], ["1件に集中する画面", "長押しの「このToDoに集中する」。集中タイマーの帯のToDoの名前からも"], ["思いついたこと", "1件に集中する画面の下。期限なしのToDoになります"], ["集中の音", "1件に集中する画面のタイマーの下、または「編集」。雨・波・川・さらさら"]]],
       ["整理する", [["リスト・ラベル", "「編集」。リストは色や順番を決めたり、しまったりできます"], ["絞り込みと並べ方", "探す欄の横のボタン。自分の絞り込みも作れます"],
         ["並べ替え・まとめて変える", "「その他」と長押し"], ["重要と急ぎの4つの箱・ボード", "「その他」"], ["あとで・いつかやる", "長押し"], ["返事待ち・人に頼む", "長押し"],
         ["順番", "長押しの「このあとにやるToDoを追加」、またはToDoの画面の「前のToDo」"], ["サブタスク", "ToDoの画面。サブタスクごとに期限も付けられます"],
@@ -32090,6 +32097,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     renderTd11Settings();
     flash(next[0] ? `集中の音：${next[1]}` : "集中の音をとめました");
   }
+  // in 1件に集中する画面, under its timer: the sound picked there (all widths; a moment of it when not counting down)
+  function td11FocusSound() {
+    const card = tdPanel === "focus7" ? $("tdPanelBody")?.querySelector(".td7-focus-timer") : null;
+    if (!card) return;
+    const cur = td11NoiseSet().kind;
+    card.append(el("div", { class: "td11-sound" }, el("span", { class: "sub" }, "集中の音"), el("div", { class: "seg", role: "group", "aria-label": "集中の音" },
+      TD11_NOISES.map(([k, w]) => el("button", { type: "button", "data-k": k, "aria-pressed": String(cur === k), onclick: () => {
+        td11NoisePut({ kind: k }); td11Audio(); focusTick(); renderTd11Settings();
+        if (k && !td11Kind) td11NoiseStart(k, 2);
+        for (const b of card.querySelectorAll(".td11-sound button")) b.setAttribute("aria-pressed", String(b.dataset.k === k));
+      } }, w)))));
+  }
+  const td11Focus7 = renderTd7Focus;
+  renderTd7Focus = function () { td11Focus7(); if (todoEleven) td11FocusSound(); };
   // a page opened again after the app was away: the sound comes back at the next touch (a browser starts none by itself)
   document.addEventListener("pointerdown", () => { if (td11Wanted && td11Ctx && td11Ctx.state === "suspended") td11Ctx.resume?.(); }, true);
 
@@ -32231,7 +32252,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     timer.after(el("h3", { class: "group-head" }, "集中の音"),
       el("form", { class: "add", id: "td11NoiseForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, el("label", { class: "flabel", for: "td11NoiseKind" }, "音"), el("div", { class: "ffield" }, kind),
         el("label", { class: "flabel", for: "td11NoiseVol" }, "大きさ"), el("div", { class: "ffield" }, vol)),
-      el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "集中タイマーで集中しているあいだ鳴ります（タイマーの帯の♪でも変えられます）。"), el("span", { class: "phrase" }, "この端末だけの設定で、アプリを開いているあいだだけ鳴ります。")));
+      el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "集中タイマーで集中しているあいだ鳴ります（1件に集中する画面でも選べます）。"), el("span", { class: "phrase" }, "この端末だけの設定で、アプリを開いているあいだだけ鳴ります。")));
     $("todoSwipeHint")?.append(el("span", { class: "phrase td11-hint" }, "右にスワイプすると、完了にできます。"));
     renderTd11Settings();
   }
