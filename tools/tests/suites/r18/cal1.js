@@ -196,14 +196,15 @@ const closeSheet = async (p) => { await p.keyboard.press("Escape"); await p.wait
   await p.locator("#calSettings").click(); await p.waitForTimeout(500);
   await p.setInputFiles("#icsFile", __dirname + "/in.ics"); await p.waitForTimeout(600);
   const said = await p.evaluate(() => document.querySelector("#sheetStatus.show, #status.show")?.firstChild?.textContent);
-  ok(said === "6 件の予定を読み込みました。すでにある 1 件は読み込んでいません。繰り返しの 1 件は1回目だけです", "⑩ read in: said", said);
+  // (カレンダー その3 ①, 2026-11-13: 最終〇曜 (BYDAY=-1FR) is kept as a repeat now, so none is cut to its first turn)
+  ok(said === "6 件の予定を読み込みました。すでにある 1 件は読み込んでいません", "⑩ read in: said", said);
   evs = await ls(p, "events");
   const g = (t) => evs.find((e) => e.title === t);
   ok(g("面談")?.date === "2026-11-20" && g("面談").time === "10:00" && g("面談").endTime === "11:30" && g("面談").place === "3号館" && g("面談").memo === "持ち物\n履歴書" && g("面談").icsUid === "a-1@example.com", "⑩ a timed one, its place and memo", g("面談"));
   ok(g("合宿")?.date === "2026-11-23" && g("合宿").endDate === "2026-11-25" && !g("合宿").time, "⑩ days, its last the day before DTEND", g("合宿"));
   ok(g("オンライン")?.date === "2026-11-21" && g("オンライン").time === "10:00" && g("オンライン").endTime === "11:30", "⑩ UTC to this phone's time, DURATION", g("オンライン"));
   ok(g("英語")?.repeat === "weekly" && g("英語").repeatUntil === "2026-12-15" && JSON.stringify(g("英語").skip) === '["2026-11-24"]' && g("英語").time === "09:00", "⑩ a weekly repeat, UNTIL and EXDATE", g("英語"));
-  ok(g("月末の会") && !g("月末の会").repeat, "⑩ a repeat it can't keep: the first turn", g("月末の会"));
+  ok(g("月末の会")?.repeat === "monthlyLast" && g("月末の会").date === "2026-11-27", "⑩ the last Friday each month: kept (カレンダー その3)", g("月末の会"));
   ok(!g("中止") && !g("英語（変更）") && evs.filter((e) => e.title === "旅行").length === 1, "⑩ called off, a changed turn and one here already: not read in");
   ok(g("とても長い名前の予定で、七十五バイトを超える行がちゃんと折り返されても読めるかどうかを確かめる"), "⑩ a folded line read whole");
   await p.locator(".toast-undo:visible").first().click(); await p.waitForTimeout(400);
