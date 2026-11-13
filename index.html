@@ -1419,6 +1419,8 @@ ul.wx-days > li { padding: 0; }
 @media (prefers-reduced-motion: reduce) { #homeTiles > .tile.spot { animation: none; } }
 #h2TileMenu { max-height: 100dvh; overflow-y: auto; }
 .h2-check { display: grid; flex: none; color: var(--tile-c); }
+#tileList .tnote { display: block; margin-inline-start: 0; }
+.wx-now small { display: inline-block; }
 .tile.h2-done .big, .tile.h2-done .big small, .tile.h2-done > .sub, .tile.h2-done .dt-val, .tile.h2-done .dt-val small { color: var(--muted); }
 #h2Set .ffield .unit { flex: none; }
 #tileList .h2-size { flex: none; min-height: 32px; margin-inline-start: 8px; padding: 0 10px; background: var(--fill); box-shadow: none; color: var(--fg); font-size: var(--t-foot); font-weight: 400; white-space: nowrap; }
@@ -31948,7 +31950,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function h2Note(k) {
     const t = homeTile(k), w = h2Times();
     if (t.evening) return `${h2Clock(w.pm)}から`;
-    if (t.morning) return `${h2Clock(w.am)}〜${h2Clock(w.amTo).replace(/^朝/, "")}、出発の前にも`;
+    if (t.morning) return `${h2Clock(w.am)}〜${h2Clock(w.amTo).replace(/^朝/, "")}`;
     if (k === "missed") return "書き忘れがあるときだけ";
     return null;
   }
@@ -31970,7 +31972,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("h3", { class: "group-head" }, "タイルの出し方"),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
         recRow("済んだタイル", done),
-        recRow("きょうの準備", time("h2AmFrom", "amFrom", "きょうの準備を出しはじめる時刻"), { unit: "から", after: [time("h2AmTo", "amTo", "きょうの準備を出しおわる時刻"), el("span", { class: "unit" }, "まで")] }),
+        recRow("きょうの準備", time("h2AmFrom", "amFrom", "きょうの準備を出しはじめる時刻"), { unit: "から" }),
+        el("span", { class: "flabel", "aria-hidden": "true" }), el("div", { class: "ffield" }, time("h2AmTo", "amTo", "きょうの準備を出しおわる時刻"), el("span", { class: "unit" }, "まで")),
         recRow("夜のタイル", time("h2PmFrom", "pmFrom", "ふりかえりとあしたの準備を出しはじめる時刻"), { unit: "から" })),
       el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "日記を書いた、ルーティーンがぜんぶできた、などできょうの分が済んだタイルは、名前の横に✓が付いて文字が薄くなります。"),
         el("span", { class: "phrase" }, "きょうの準備は、この時間のほか、移動時間のある予定の出発2時間前からも出ます。"),
@@ -31999,10 +32002,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // in the settings' list, its size at a press (ToDo: 自動 → 半分 → 横いっぱい)
   function h2SizeChip(k, label) {
-    const v = h2Size(k), word = v === "wide" ? "横いっぱい" : v === "half" ? "半分" : k === "todo" ? "自動" : homeTile(k).wide ? "横いっぱい" : "半分";
+    const v = h2Size(k), word = v === "wide" ? "横長" : v === "half" ? "半分" : k === "todo" ? "自動" : homeTile(k).wide ? "横長" : "半分";
     const next = k === "todo" ? (v === null ? "half" : v === "half" ? "wide" : null) : word === "半分" ? "wide" : "half";
     const nextWord = next === "wide" ? "横いっぱい" : next === "half" ? "半分" : "自動（ToDoがあれば横いっぱい）";
-    return el("button", { type: "button", class: "chip-btn h2-size", "aria-label": `「${label}」の大きさ：${word}。押すと${nextWord}にします`, onclick: () => h2SetSize(k, next) }, word);
+    return el("button", { type: "button", class: "chip-btn h2-size", "aria-label": `「${label}」の大きさ：${word === "横長" ? "横いっぱい" : word}。押すと${nextWord}にします`, onclick: () => h2SetSize(k, next) }, word);
   }
 
   // ③ a tile whose day is done: a check by its name and its words grey (mark), those put after the others too (last), or
@@ -32014,8 +32017,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const k = t.dataset.tile;
       if (!done[k]) continue;
       t.classList.add("h2-done");
-      const head = t.querySelector(".tile-head"), chev = head && head.querySelector(".chev"), mark = el("span", { class: "h2-check", "aria-hidden": "true" }, icon("check", 16));
-      if (chev) chev.before(mark); else if (head) head.append(mark);
+      const head = t.querySelector(".tile-head"), ic = head && head.querySelector(":scope > svg.icon");
+      if (ic) ic.replaceWith(el("span", { class: "h2-check", "aria-hidden": "true" }, icon("check", 18)));
       if (head && head.tagName === "BUTTON") head.setAttribute("aria-label", `${homeTile(k).label}（きょうの分は済み）を開く`);
     }
   }
@@ -32200,7 +32203,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return x && x.d === todayKey && x.temp != null ? { t: Math.round(num(x.temp)), f: x.feel != null ? Math.round(num(x.feel)) : null } : null;
   }
   function h2WxNowEl(n) {
-    return el("span", { class: "wx-now" }, el("small", {}, "いま "), `${n.t}°`, n.f !== null && Math.abs(n.f - n.t) >= 2 ? el("small", {}, `（体感 ${n.f}°）`) : null);
+    return el("span", { class: "wx-now" }, el("small", {}, "いま"), ` ${n.t}°`, n.f !== null && Math.abs(n.f - n.t) >= 2 ? el("small", {}, `（体感 ${n.f}°）`) : null);
   }
 
   // ⑨ ふりかえり as words to send (the user's call): the share sheet, or copied where there is none; the day, its blocks,
