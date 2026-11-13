@@ -28,7 +28,7 @@ const tileText = (p, key) => p.evaluate((key) => { const t = document.querySelec
   let p = await phone(b, at("14:15"));
   await seed(p, DATA);
   // the order: the new ones beside the ones they go with
-  const order = await p.evaluate(() => [...document.querySelectorAll("#homeTiles > .tile")].map((t) => t.dataset.tile).join(","));
+  const order = await p.evaluate(() => [...document.querySelectorAll("#homeTiles > .tile")].map((t) => t.dataset.tile).filter((k) => !k.startsWith("h3")).join(",")); // (きょう その3's tiles: home3)
   ok(order === "quick,weather,todo,calendar,countdown,journal,study,routine,diet,move,money,tsumi,job,goal", "order with a saved one: " + order);
   // ① 予定
   const ev = await p.evaluate(() => [...document.querySelectorAll('.tile[data-tile="calendar"] li')].map((li) => (li.classList.contains("past") ? "(past) " : "") + li.innerText.replace(/\s+/g, " ").trim()));
@@ -101,7 +101,7 @@ const tileText = (p, key) => p.evaluate((key) => { const t = document.querySelec
   const ev2 = await p.evaluate(() => [...document.querySelectorAll('.tile[data-tile="calendar"] li')].map((li) => (li.classList.contains("past") ? "(past) " : "") + li.innerText.replace(/\s+/g, " ").trim()));
   ok(JSON.stringify(ev2) === JSON.stringify(["レポート締め切り", "サークル あと1時間50分", "(past) 09:00 朝ゼミ"]), "① 16:40: " + ev2.join(" / "));
   ok((await tileText(p, "job")).includes("バイト先を決めると"), "② no jobs: how to begin");
-  const order2 = await p.evaluate(() => [...document.querySelectorAll("#homeTiles > .tile")].map((t) => t.dataset.tile).join(","));
+  const order2 = await p.evaluate(() => [...document.querySelectorAll("#homeTiles > .tile")].map((t) => t.dataset.tile).filter((k) => !k.startsWith("h3")).join(",")); // (きょう その3's tiles: home3)
   ok(order2 === "quick,weather,todo,calendar,countdown,journal,study,routine,diet,move,money,tsumi,job,goal", "order with none saved: " + order2);
   await p.screenshot({ path: out + "/home-393-b.png", fullPage: true });
   ok(!p.errs.length, "no page errors", p.errs);
