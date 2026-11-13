@@ -2456,6 +2456,10 @@ ul.td10-reps > li .body, ul.td10-bells > li { min-width: 0; }
 .td11-back .td11-back-lead { align-self: center; font-size: var(--t-sub); color: var(--muted); }
 /* ⑦ the 売り場 it is in now, in its menu */
 #todoMenuGroup .ask-btn.td11-cur { font-weight: 700; }
+#todoMenuGroup.td11-aisles { display: grid; grid-template-columns: 1fr 1fr; }
+#todoMenuGroup.td11-aisles > .ask-msg { grid-column: 1 / -1; }
+#todoMenuGroup.td11-aisles > .ask-btn { min-height: 52px; padding: 0 8px; border-top: 0; border-bottom: .5px solid var(--separator); }
+#todoMenuGroup.td11-aisles > .ask-btn:nth-of-type(odd) { border-right: .5px solid var(--separator); }
 /* ⑧ the timer bar's ♪: dimmer while no sound is picked */
 .rest-btn.td11-noise-btn { min-width: 44px; padding: 0 10px; }
 .rest-btn.td11-noise-btn.off { opacity: .7; }
@@ -19644,7 +19648,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月13日 22:13"; // 2010b977 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月13日 23:31"; // ed1b69cb (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -31995,10 +31999,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         if (!todoMenuDown && ev.detail !== 0) return;
         todoMenu.close(); td11SetAisle(t, k);
       } }, name)));
+    $("todoMenuGroup").classList.add("td11-aisles");
     todoMenuDown = false;
     todoMenu.showModal();
     (byKey ? $("todoMenuGroup").querySelector(".td11-cur") : null)?.focus() || $("todoMenuNo").focus();
   }
+  todoMenu.addEventListener("close", () => $("todoMenuGroup").classList.remove("td11-aisles")); // (the menu's other uses one to a row)
   function td11HoldItems(t, item) {
     return !t.done && todoFour && td4ShopList(t) ? item(`売り場を変える（${td11AisleName(td11AisleOf(t))}）`, (byKey) => td11AislePick(t, byKey)) : null;
   }
