@@ -18653,7 +18653,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月13日 11:31"; // c941c9de (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月13日 16:39"; // 16be4a86 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -30100,14 +30100,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (isDay(k) && k > addDays(todayKey, 31)) k = y - 1 + md; // (12/30 written on 1/2: last year's)
       if (isDay(k)) { date = k; t = t.slice(m[0].length).trim(); }
     }
-    const plus = /^\+/.test(t);
+    let plus = /^\+/.test(t);
     if (plus) t = t.slice(1).trim();
-    // the amount: the last number in it (580, 1,200円, ¥980, 1.5万, 3千)
-    const re = /¥?\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?\s*(万|千)?\s*(?:円|えん)?/g;
+    // the amount: the last number in it (580, 1,200円, ¥980, 1.5万, 3千), a + before it making it 収入
+    const re = /(\+\s*)?¥?\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?\s*(万|千)?\s*(?:円|えん)?/g;
     let last = null, x;
     while ((x = re.exec(t))) last = x;
     if (!last) return { error: "金額も書いてください" };
-    const amount = Math.round(Number(last[1].replace(/,/g, "") + (last[2] ? "." + last[2] : "")) * (last[3] === "万" ? 10000 : last[3] === "千" ? 1000 : 1));
+    if (last[1]) plus = true;
+    const amount = Math.round(Number(last[2].replace(/,/g, "") + (last[3] ? "." + last[3] : "")) * (last[4] === "万" ? 10000 : last[4] === "千" ? 1000 : 1));
     if (!(amount >= 1 && amount <= 99999999)) return { error: "金額は 1 〜 99,999,999 円で書いてください" };
     t = (t.slice(0, last.index) + " " + t.slice(last.index + last[0].length)).replace(/\s+/g, " ").trim();
     let words = t ? t.split(" ") : [], method = "", cat = "";
