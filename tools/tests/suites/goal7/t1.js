@@ -25,7 +25,7 @@ const item = (p, words) => p.locator("#mMenu button", { hasText: words }).first(
   ok(heads.join() === "進行中,これから", "⑧ これから after 進行中", heads);
   ok(await p.evaluate(() => { const x = [...document.querySelectorAll(".goal")].find((x) => x.textContent.includes("ハーフマラソン")); return x.querySelector(".goal-start")?.textContent === "12/1から（あと 20 日）" && !x.querySelector(".goal-pace"); }), "⑧ its day, and no pace");
   ok(!(await W(p, "next")).includes("走る"), "⑧ no 次の一歩 from it", await W(p, "next"));
-  const st = (await W(p, "alarms", Date.now())).find((a) => a.tag === "goal-start:g7:2026-12-01");
+  const st = (await W(p, "alarms", await p.evaluate(() => Date.now()))) /* (the page's clock, not the real one) */.find((a) => a.tag === "goal-start:g7:2026-12-01");
   ok(st && new Date(st.at).toISOString() === "2026-12-01T00:00:00.000Z" && st.url === "./#goal:g7" && st.body.startsWith("きょうから始める目標です。"), "⑧ 9:00 on 12/1", st);
 
   // ③ あとで out of 次の一歩; ⑦ シャドーイング (1) before 毎日15分 (2)

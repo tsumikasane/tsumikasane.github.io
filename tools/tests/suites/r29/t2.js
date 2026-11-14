@@ -14,6 +14,7 @@ const G = (id, title, extra = {}) => ({ id, title, criterion: "達成", deadline
   const b = await chromium.launch();
   const p = await phone(b, new Date("2026-11-11T12:00:00+09:00"), { deviceScaleFactor: 1 });
   const W = (f, ...a) => p.evaluate(({ f, a }) => window.__goal[f](...a), { f, a });
+  const NOW = Date.parse("2026-11-11T12:00:00+09:00"); // the page's clock, not the real one (from 11/14 9:00 on, the real one had passed the 9:00 counted on)
 
   // ⑩ notifications: 7 days after the last step (11/8 21:00 → 11/15, then every 7 days), at 9:00, naming the next step
   const N1 = G("n1", "TOEIC 800点", { nudge: 7, mandala: [{ t: "単語", c: [{ t: "単語帳1周", d: true, at: T("2026-11-08", 21) }, { t: "単語帳2周" }, null, null, null, null, null, null] }, { t: "文法" }, null, null, null, null, null, null] });
@@ -21,18 +22,18 @@ const G = (id, title, extra = {}) => ({ id, title, criterion: "達成", deadline
   const N3 = G("n3", "休止中", { nudge: 3, pausedAt: T("2026-11-01") });
   const N4 = G("n4", "通知なし");
   await seed(p, { goals: [N1, N2, N3, N4] }, "goal"); await p.waitForTimeout(900);
-  let al = (await W("alarms", Date.now())).filter((a) => a.tag.startsWith("goal-nudge:"));
+  let al = (await W("alarms", NOW)).filter((a) => a.tag.startsWith("goal-nudge:"));
   const a1 = al.filter((a) => a.tag.startsWith("goal-nudge:n1:")), a2 = al.filter((a) => a.tag.startsWith("goal-nudge:n2:"));
   ok(a1[0]?.tag === "goal-nudge:n1:2026-11-15" && new Date(a1[0].at).toISOString() === "2026-11-15T00:00:00.000Z" && a1[1]?.tag === "goal-nudge:n1:2026-11-22", "⑩ 7 days on, at 9:00, and 7 days after that", a1.map((a) => a.tag));
   ok(a1[0].title === "TOEIC 800点" && a1[0].body === "7日進めていません。次の一歩は「単語帳2周」はどうですか？" && a1[0].url === "./#goal:n1" && a1[1].body.startsWith("14日進めていません"), "⑩ its words", a1.slice(0, 2));
-  ok(a1.every((a) => a.at <= Date.now() + 40 * 864e5), "⑩ within the 40 days");
+  ok(a1.every((a) => a.at <= NOW + 40 * 864e5), "⑩ within the 40 days");
   ok(a2[0]?.tag === "goal-nudge:n2:2026-11-14" && a2[0].body.startsWith("105日進めていません"), "⑩ long still: the next after today's 9:00 (today's has gone)", a2.slice(0, 1));
   ok(!al.some((a) => /:n3:|:n4:/.test(a.tag)), "⑩ none on hold, none when off");
   const sig0 = await W("sig");
   // a step today: from today
   await p.evaluate(({ P }) => { const gs = JSON.parse(localStorage.getItem(P + "goals")); gs[0].mandala[1].d = true; gs[0].mandala[1].at = Date.now(); localStorage.setItem(P + "goals", JSON.stringify(gs)); }, { P });
   await p.reload(); await p.waitForTimeout(900);
-  al = (await W("alarms", Date.now())).filter((a) => a.tag.startsWith("goal-nudge:n1:"));
+  al = (await W("alarms", NOW)).filter((a) => a.tag.startsWith("goal-nudge:n1:"));
   ok(al[0]?.tag === "goal-nudge:n1:2026-11-18", "⑩ moved on today: 7 days from today", al.map((a) => a.tag));
   ok((await W("sig")) !== sig0, "⑩ the notifications go again (their sign changed)");
 
