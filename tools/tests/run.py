@@ -9,10 +9,13 @@ before. Exits 1 with any NEW.
   python3 tools/tests/run.py r37 r38      those suites alone
   python3 tools/tests/run.py cmp          the comparison tests alone
   python3 tools/tests/run.py --list       the suites by chat, with their tests
+  python3 tools/tests/run.py -j 3 ...     three at a time (a suite's tests still one after another); the results in
+                                          the same order. A failure seen only so: run that suite alone to be sure
 
 A suite is a folder under suites/ with its suite.txt (port, chat, tests) and, if some of its failures are known, its
 known.txt. Its servers: the working tree at 8765, the page before at 8766, each suite's hook build at its port. They stay
 up after it (TEST_WORK, /tmp/tsumikasane-tests by default, keeps what it made: logs/, out/, summary.txt)."""
+import concurrent.futures
 import os
 import pathlib
 import re
@@ -163,6 +166,16 @@ def failures(text):
 
 
 def main(args):
+    jobs, rest, it = 1, [], iter(args)
+    for a in it:  # (-j N, or -jN: that many at a time)
+        if a == "-j" or (a.startswith("-j") and a[2:].isdigit()):
+            n = next(it, "") if a == "-j" else a[2:]
+            if not n.isdigit() or int(n) < 1:
+                sys.exit("run.py: -j wants a number, as -j 3")
+            jobs = int(n)
+        else:
+            rest.append(a)
+    args = rest
     all_suites = suites()
     cmp_rows = table(HERE / "cmp" / "list.txt")
     for rel, chat in cmp_rows:
@@ -197,7 +210,8 @@ def main(args):
     if cmps:
         short = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--short", base], capture_output=True, text=True).stdout.strip()
         print(f"（比べる前の版：{short or base}）", flush=True)
-    for rel, _ in cmps:
+    def one_cmp(rel):
+        """a comparison test on the page before and on the page now: its line, and 1 if it's NEW"""
         folder, stem = (WORK / "cmp" / rel).parent, pathlib.Path(rel).stem
         src = (folder / f"{stem}.js").read_text(encoding="utf-8")
         (folder / f"{stem}.base.js").write_text(src.replace("localhost:8765", "localhost:8766"), encoding="utf-8")
@@ -208,22 +222,32 @@ def main(args):
         was_err = {l.strip() for l in before.splitlines() if "Error" in l}
         fresh = [l.strip() for l in now.splitlines() if (l.startswith("FAIL") and name(l) not in was_bad) or ("Error" in l and l.strip() not in was_err)]
         if fresh:
-            new += 1
-            say(f"NEW   cmp/{rel}  " + " / ".join(fresh[:4]))
-        else:
-            say(f"OK    cmp/{rel}" + (f"  (前から {len(was_bad)} 件の失敗)" if was_bad else ""))
-    for s in picked:
+            return [f"NEW   cmp/{rel}  " + " / ".join(fresh[:4])], 1
+        return [f"OK    cmp/{rel}" + (f"  (前から {len(was_bad)} 件の失敗)" if was_bad else "")], 0
+
+    def one_suite(s):
+        """a suite's tests, one after another: their lines, and how many are NEW"""
+        lines, n = [], 0
         for t in s["tests"]:
             key = f"{s['name']}/{t}"
             bad = failures(run_node(WORK / "suites" / s["name"], t, WORK / "logs" / f"{s['name']}-{t}.txt"))
             fresh = [l for l in bad if not any(k == t and piece in l for k, piece in s["known"])]
             if fresh:
-                new += 1
-                say(f"NEW   {key}  " + " / ".join(fresh[:4]))
+                n += 1
+                lines.append(f"NEW   {key}  " + " / ".join(fresh[:4]))
             elif bad:
-                say(f"KNOWN {key}  " + " / ".join(bad[:4]))
+                lines.append(f"KNOWN {key}  " + " / ".join(bad[:4]))
             else:
-                say(f"OK    {key}")
+                lines.append(f"OK    {key}")
+        return lines, n
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as pool:  # (each test is a node process of its own)
+        done = [pool.submit(one_cmp, rel) for rel, _ in cmps] + [pool.submit(one_suite, s) for s in picked]
+        for f in done:  # (in their order, each as soon as it and the ones before it are through)
+            lines, n = f.result()
+            new += n
+            for line in lines:
+                say(line)
     say((f"--- NEW {new} 件（{len(report)} 件中）" if new else f"--- NEW なし（{len(report)} 件）") + f"  logs: {WORK / 'logs'}")
     (WORK / "summary.txt").write_text("\n".join(report) + "\n", encoding="utf-8")
     return 1 if new else 0
