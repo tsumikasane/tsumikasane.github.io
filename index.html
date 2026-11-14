@@ -1746,6 +1746,38 @@ ul.wx-days > li { padding: 0; }
 .h4-qk-pick .chip-btn { min-height: 36px; background: var(--fill); box-shadow: none; }
 .h4-qk-pick .chip-btn[aria-pressed="true"] { background: var(--accent); color: #fff; }
 .tile[data-tile="h4watch"] .big { font-variant-numeric: tabular-nums; }
+/* きょう その5 */
+#homeTiles > .tile.h5-fold:not(.wide) { aspect-ratio: auto; align-self: start; }  /* (short, not drawn out to the tile beside it) */
+.tile.h5-fold > :not(.tile-head):not(.big):not(.h5-unfold) { display: none !important; }
+.tile.h5-fold .big { font-size: 20px; }
+.tile.h5-fold .big.word { font-size: 17px; }
+.h5-unfold { position: relative; z-index: 1; align-self: flex-start; min-height: 32px; padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-size: var(--t-sub); cursor: pointer; }
+.h5-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0 10px; }
+.h5-anniv { flex-basis: 100%; margin: 2px 0 0; font-size: var(--t-sub); line-height: 1.45; }
+.h5-anniv.today { font-weight: 600; }
+.h5-jump-btn { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0; font-size: var(--t-sub); }
+.h5-jump .ask-group { max-height: min(60vh, 520px); overflow-y: auto; }
+.tile .h5-edit, .tile .h5-links, .tile .h5-ms, .tile .h5-acts { position: relative; z-index: 1; }
+.tile ul.h5-rows li { grid-template-columns: minmax(0, 7em) auto minmax(0, 1fr); }
+.tile .h5-edit ul.h5-rows li { grid-template-columns: minmax(0, 1fr) auto 40px; }
+.h5-rows li.now .h3-s { color: var(--accent); font-weight: 600; }
+.h5-del { justify-self: end; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.h5-add { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.h5-add .h5-in { flex: 1 1 8em; min-width: 0; min-height: 44px; padding: 0 12px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 12px; -webkit-user-select: text; user-select: text; }
+.h5-add .h5-add-go { flex: none; min-height: 44px; }
+.h5-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.h5-link { display: inline-flex; align-items: center; min-height: 40px; background: var(--fill); box-shadow: none; text-decoration: none; }
+.h5-ms { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 2px; margin-top: 6px; align-items: end; }
+.h5-msd { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.h5-msd .h5-face { font-size: 13px; line-height: 1; }
+.h5-bar { position: relative; width: 70%; height: 48px; border-radius: 3px; background: var(--fill); overflow: hidden; }
+.h5-bar > i { position: absolute; inset: auto 0 0 0; border-radius: 3px; background: var(--c-weight); }
+.h5-msd small { font-size: 10px; color: var(--muted); }
+.h5-msd.today small { color: var(--fg); font-weight: 600; }
+.tile ul.h5-year li { grid-template-columns: 6.5em auto minmax(0, 1fr); }
+.h5-set-name { display: grid; gap: 2px; text-align: start; }
+.h5-set-name small { font-size: var(--t-foot); color: var(--muted); font-weight: 400; }
+.h5-acts { margin-top: 6px; }
 /* 天気 その2 */
 .wx2-share { margin-inline-start: auto; }
 .wx2-graph { padding: 8px 8px 4px; margin-bottom: 8px; }
@@ -19294,6 +19326,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       // and つみねこ in its corner, asleep till something goes on today (the user's call: on this tile too)
       ...(homeThree ? h3Tiles() : []), // (きょう その3 ①〜⑧⑩)
       ...(homeFour ? h4Tiles() : []), // (きょう その4 ③④⑥⑦⑧⑩)
+      ...(homeFive ? h5Tiles() : []), // (きょう その5 ④⑤⑥⑦⑩)
       tile("tsumi", tz.n ? String(tk) : "まだ", tz.n ? "段" : null, tz.n ? null : "記録すると、ブロックが積みあがります", tz.n ? nekoSvg(tz.today ? "awake" : "asleep", 0.74, nekoLook(tz.n)) : null),
     ];
     // the ones shown, in the user's order, two to a row: one left without a partner before a wide one takes the next half
@@ -19301,7 +19334,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // (きょう その2 ② a size of the user's, ③ the ones done marked, and put after the others when so set)
     const built = tiles.filter(Boolean);
     if (homeTwo) h2Mark(built, doneOf);
-    const hidden = homeHidden(), wide = (t) => { const k = t.dataset.tile, d = !!(homeTile(k).wide || (k === "todo" && top.length)); return homeTwo ? h2Wide(k, d) : d; };
+    if (homeFive) h5Fold(built); // (きょう その5 ① たたんだタイル)
+    const hidden = homeHidden(), wide = (t) => { const k = t.dataset.tile, d = !!(homeTile(k).wide || (k === "todo" && top.length)); if (homeFive && h5Folded(k)) return false; return homeTwo ? h2Wide(k, d) : d; };
     let rest = homeTileOrder().filter((k) => !hidden.has(k) && (!homeTile(k).evening || evening)).map((k) => built.find((t) => t.dataset.tile === k)).filter(Boolean);
     if (homeTwo) rest = h2Order(rest);
     const shown = [];
@@ -19318,6 +19352,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (focusRow.td) $("homeTiles").querySelector(`[data-td="${focusRow.td}"]`)?.focus();
     if (homeThree) h3GreetSync(); // (きょう その3 ⑨)
     if (homeFour) h4HeadSync(); // (きょう その4 ⑤⑨, and a field typed in on a tile given its focus back)
+    if (homeFive) h5HeadSync(); // (きょう その5 ⑨③)
     if (homeTwo) { if (focusRow.pc) $("homeTiles").querySelector(`[data-pc="${focusRow.pc}"]`)?.focus(); h2Dock(hidden); } // (きょう その2 ⑤ a check pressed from the keyboard, ⑦)
   }
   // きょう kept up to the minute while it shows (the next plan's あと…, and what comes with the evening): drawn again as each
@@ -19335,6 +19370,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (homeTwo) { h2SetBuild(); h2SetSync(); } // (きょう その2 ③⑥)
     if (homeThree) { h3SetBuild(); h3SetSync(); } // (きょう その3 ⑨)
     if (homeFour) { h4SetBuild(); h4SetSync(); } // (きょう その4 ②⑤⑨)
+    if (homeFive) { h5SetBuild(); h5SetSync(); } // (きょう その5 ②⑨)
     const list = $("tileList");
     if (tileDrag) return;
     const a = list.contains(document.activeElement) ? document.activeElement : null, focusKey = a?.closest("li")?.dataset.key, onGrip = a?.classList.contains("grip"), onSize = a?.classList.contains("h2-size");
@@ -22171,7 +22207,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月14日 15:48"; // 94f15327 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月14日 16:01"; // 832e6ee7 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -42696,6 +42732,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         h2Spot(k);
         flash(`「${label}」を${wide ? "半分の大きさ" : "横いっぱい"}にしました`, () => saveHomePrefs({ size: was }));
       }) : null,
+      homeFive ? h5FoldItem(k, item) : null, // (きょう その5 ①)
       item("このタイルを隠す", () => h2Hide(k)),
       item("タイルの設定", (byKey) => openSettings(byKey, "home")));
     t.classList.add("held");
@@ -43287,18 +43324,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function h4LineBox() {
     const f = el("input", { type: "text", class: "h4-line-in", id: "h4LineIn", value: h4Line, maxlength: 100, enterkeyhint: "done", autocomplete: "off", placeholder: "例：体重60.5 勉強30分 ランチ900円", "aria-label": "ひとことで記録", "aria-describedby": "h4LineSay" });
-    const say = el("p", { class: "h4-line-say", id: "h4LineSay", "aria-live": "polite" }), go = el("button", { type: "submit", class: "chip-btn h4-line-go" }, "記録");
+    const say = el("p", { class: "h4-line-say", id: "h4LineSay", "aria-live": "polite" }), go = el("button", { type: "submit", class: "chip-btn h4-line-go" }, "記録"), acts = el("div", { class: "h5-acts-box" });
     const sync = () => {
       h4Line = f.value;
       const r = h4Parse(f.value);
       go.disabled = !r.items.length;
-      setChildren(say, !f.value.trim() ? "体重・勉強・運動・支出・水分を、ひとことで記録できます"
-        : [r.items.length ? el("span", { class: "phrase" }, "記録するもの：" + r.items.map(h4Say).join("、")) : el("span", { class: "phrase" }, "まだ読み取れません（例：勉強30分）"),
+      setChildren(say, !f.value.trim() ? (homeFive ? "体重・勉強・運動・支出・水分を、ひとことで記録できます。数字のない文は、ToDo・日記・メモに入れられます" : "体重・勉強・運動・支出・水分を、ひとことで記録できます")
+        : [r.items.length ? el("span", { class: "phrase" }, "記録するもの：" + r.items.map(h4Say).join("、")) : el("span", { class: "phrase" }, homeFive ? "記録する数字がありません。ToDo・日記・メモに入れられます" : "まだ読み取れません（例：勉強30分）"),
           r.odd.length && r.items.length ? el("span", { class: "phrase h4-odd" }, `（「${r.odd.join("・")}」は読み取れませんでした）`) : null]);
+      setChildren(acts, homeFive && f.value.trim() && !r.items.length ? h5LineActs(f.value) : null); // (きょう その5 ⑧)
     };
     f.addEventListener("input", sync);
     sync();
-    return el("form", { class: "h4-line", autocomplete: "off", onsubmit: (ev) => { ev.preventDefault(); if (!go.disabled) act(() => h4Record(f.value)); } }, el("div", { class: "h4-line-row" }, f, go), say);
+    return el("form", { class: "h4-line", autocomplete: "off", onsubmit: (ev) => { ev.preventDefault(); if (!go.disabled) act(() => h4Record(f.value)); } }, el("div", { class: "h4-line-row" }, f, go), say, acts);
   }
   // (a field typed in on a tile, kept through the tiles being drawn anew: focus and the caret put back)
   function h4Grab() {
@@ -43558,6 +43596,290 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   H2_FIXED.push(...H4_FIXED);
   H2_NO_PAGE.push(...H4_TILES.map((t) => t.key)); // (none is a page of its own)
   homeFour = true;
+  if (tab === "home") draw(() => renderHome());
+
+  // ---------- きょう その5 ①〜⑩ (the user's calls, 2026-11-14): a tile folded to its name and number (①), the tiles to
+  // show picked from a few sets (②), the tiles listed to go to one (③), the days since a day (④), links (⑤), yesterday in
+  // the morning (⑥), mood and sleep side by side (⑦), a line with no figures to ToDo, 日記 or メモ (⑧), birthdays and
+  // anniversaries under the date (⑨), and the year so far (⑩). The folds are in きょう's settings, the days and the links
+  // in 設定 (synced). Function declarations and var, as the page may draw before this part has run ----------
+  var homeFive = false, h5SinceEdit = false, h5LinkEdit = false;
+  const H5_TILES = [
+    { key: "h5yday", label: "きのうのまとめ", color: "var(--c-journal)", icon: "journal", open: false, wide: true, morning: true },
+    { key: "h5mood", label: "気分と睡眠", color: "var(--lc-orange)", icon: "moon", open: false, wide: true },
+    { key: "h5since", label: "あの日から", color: "var(--c-goal)", icon: "flag", open: false, wide: true },
+    { key: "h5links", label: "リンク", color: "var(--accent)", icon: "export", open: false, wide: true },
+    { key: "h5year", label: "ことしのまとめ", color: "var(--c-cal)", icon: "cal-year", open: false, wide: true },
+  ];
+
+  // ① a tile folded: its head and its number only, half a row, with ひらく; from its menu (held down), 「たたむ」
+  function h5Folded(k) { const v = homePrefs().fold; return Array.isArray(v) && v.includes(k); }
+  function h5SetFold(k, on) {
+    const was = Array.isArray(homePrefs().fold) ? [...homePrefs().fold] : [], next = was.filter((x) => x !== k && homeTile(x));
+    if (on) next.push(k);
+    saveHomePrefs({ fold: next });
+    return was;
+  }
+  function h5FoldItem(k, item) {
+    const label = homeTile(k).label, on = !h5Folded(k);
+    return item(on ? "たたむ（名前と数字だけにする）" : "ひらく", () => {
+      const was = h5SetFold(k, on);
+      h2Spot(k);
+      flash(`「${label}」を${on ? "たたみました" : "ひらきました"}`, () => saveHomePrefs({ fold: was }));
+    });
+  }
+  function h5Fold(tiles) {
+    for (const t of tiles) {
+      const k = t.dataset.tile;
+      if (!h5Folded(k)) continue;
+      t.classList.add("h5-fold");
+      t.append(el("button", { type: "button", class: "h5-unfold", "aria-label": `「${homeTile(k).label}」のタイルをひらく`, onclick: () => { h5SetFold(k, false); h2Spot(k); } }, "ひらく"));
+    }
+  }
+
+  // ② the tiles to show, as a set: one press, 元に戻す. Those that come only when they have something to say stay
+  const H5_SETS = [
+    ["simple", "シンプル", "すぐに記録・天気・ToDo・きょうの予定・次にすること", ["quick", "weather", "todo", "calendar", "h3now"]],
+    ["plan", "予定とToDo", "予定・ToDo・タイムライン・これから1週間・バイトなど", ["quick", "weather", "todo", "calendar", "countdown", "job", "h3now", "h3line", "h4week"]],
+    ["rec", "記録をしっかり", "ダイエット・日記・勉強・ルーティーン・家計簿・きょうの記録など", ["quick", "weather", "todo", "calendar", "diet", "move", "journal", "study", "routine", "money", "tsumi", "h3recs", "h3streak", "h3water", "h4mood", "h4sleep"]],
+    ["all", "ぜんぶ", "すべてのタイルを出す", null],
+  ];
+  const H5_ALWAYS = ["review", "tomorrow", "prep", "missed", "h5yday"];
+  function h5ApplySet(id) {
+    const s = H5_SETS.find(([x]) => x === id);
+    if (!s) return;
+    const was = Array.isArray(homePrefs().hidden) ? [...homePrefs().hidden] : [], keep = s[3] ? new Set([...s[3], ...H5_ALWAYS]) : null;
+    saveHomePrefs({ hidden: keep ? homeTileOrder().filter((k) => !keep.has(k)) : [] });
+    flash(`タイルを「${s[1]}」の見本にしました`, () => saveHomePrefs({ hidden: was }));
+  }
+
+  // ③ the tiles showing, listed: one pressed is gone to and lit up
+  function h5Jump() {
+    let m = $("h5Jump");
+    if (!m) {
+      m = el("dialog", { class: "ask h5-jump", id: "h5Jump", "aria-labelledby": "h5JumpMsg" }, el("div", { class: "ask-group", id: "h5JumpGroup" }),
+        el("button", { type: "button", class: "ask-btn ask-keep", onclick: () => m.close() }, "やめる"));
+      m.addEventListener("click", (ev) => { if (ev.target === m) m.close(); });
+      document.body.append(m);
+    }
+    if (m.open || sheetEl.open) return;
+    const tiles = [...$("homeTiles").querySelectorAll(":scope > .tile")];
+    setChildren($("h5JumpGroup"), el("p", { class: "ask-msg", id: "h5JumpMsg" }, "どのタイルへ移動しますか？"),
+      tiles.map((t) => el("button", { type: "button", class: "ask-btn", "data-go": t.dataset.tile, onclick: () => { m.close(); h5GoTile(t.dataset.tile); } }, homeTile(t.dataset.tile)?.label || t.dataset.tile)));
+    m.showModal();
+  }
+  function h5GoTile(k) {
+    const t = $("homeTiles").querySelector(`:scope > .tile[data-tile="${k}"]`);
+    if (!t) return;
+    t.scrollIntoView({ block: "center", behavior: reduceMotion.matches ? "auto" : "smooth" });
+    t.classList.add("spot");
+    setTimeout(() => t.classList.remove("spot"), 1800);
+    const f = t.querySelector(".tile-head, button, a[href], input");
+    if (f) f.focus({ preventScroll: true });
+  }
+
+  // ④ the days since a day: each its days gone by, and the next round number (100日, 200日 …) or year to come
+  function h5Since() { const v = settings.get("h5since"); return (v && Array.isArray(v.items) ? v.items : []).filter((x) => x && x.id && typeof x.name === "string" && isDay(x.date || "") && x.date <= todayKey).slice(0, 8); }
+  function h5SincePut(items) { act(() => (items.length ? settings.set("h5since", { items, updatedAt: Date.now() }) : settings.remove("h5since"))); }
+  const H5_ROUND = [100, 200, 300, 500, 1000, 1500, 2000, 3000, 5000, 10000];
+  function h5SinceOf(x) {
+    const n = daysBetween(x.date, todayKey), md = x.date.slice(5), y = Number(todayKey.slice(0, 4));
+    const annOf = (yy) => (isDay(`${yy}-${md}`) ? `${yy}-${md}` : `${yy}-02-28`);
+    let ann = annOf(y);
+    if (ann < todayKey) ann = annOf(y + 1);
+    const yrs = Number(ann.slice(0, 4)) - Number(x.date.slice(0, 4));
+    if (n > 0 && ann === todayKey && yrs > 0) return { n, now: `きょうで${yrs}年` };
+    if (H5_ROUND.includes(n)) return { n, now: `きょうで${fmtN(n)}日` };
+    const round = H5_ROUND.find((r) => r > n), toAnn = daysBetween(todayKey, ann), toRound = round ? round - n : Infinity;
+    return { n, next: toAnn <= toRound ? `あと${toAnn}日で${yrs}年` : `あと${toRound}日で${fmtN(round)}日` };
+  }
+  function h5SinceTile() {
+    const l = h5Since();
+    if (h5SinceEdit) {
+      const name = el("input", { type: "text", class: "h5-in", id: "h5SinceName", maxlength: 20, placeholder: "例：禁煙、つきあって", "aria-label": "名前" });
+      const date = el("input", { type: "date", class: "h5-in", id: "h5SinceDate", max: todayKey, value: todayKey, "aria-label": "その日" });
+      const add = () => {
+        const nm = oneLine(name.value).slice(0, 20), d = date.value;
+        if (!nm) { name.focus(); return; }
+        if (!isDay(d) || d > todayKey) { date.focus(); flash("きょうまでの日を選んでください"); return; }
+        h5SincePut([...l, { id: uid(), name: nm, date: d }].slice(-8));
+        name.value = "";
+      };
+      return tile("h5since", null, null, null, el("div", { class: "h5-edit" },
+        el("ul", { class: "h3-rows h5-rows" }, l.map((x) => el("li", {}, el("span", { class: "h3-k" }, x.name), el("span", { class: "h3-s" }, fmtShort(x.date)),
+          el("button", { type: "button", class: "wx-del h5-del", "aria-label": `「${x.name}」を消す`, onclick: () => { h5SincePut(l.filter((y) => y.id !== x.id)); flash(`「${x.name}」を消しました`, () => h5SincePut(l)); } }, icon("close", 16))))),
+        el("form", { class: "h5-add", autocomplete: "off", novalidate: true, onsubmit: (ev) => { ev.preventDefault(); add(); } }, name, date, el("button", { type: "submit", class: "chip-btn h5-add-go" }, "足す")),
+        el("div", { class: "h3-btns" }, el("button", { type: "button", class: "chip-btn h5-done", onclick: () => { h5SinceEdit = false; renderHome(); } }, "おわる"))));
+    }
+    const edit = el("button", { type: "button", class: "link-btn h5-edit-btn", onclick: () => { h5SinceEdit = true; renderHome(); $("h5SinceName")?.focus(); } }, l.length ? "編集" : "足す");
+    if (!l.length) return tile("h5since", null, null, "「禁煙」「つきあって」など、ある日から何日たったかを数えられます", el("div", { class: "h3-btns" }, edit));
+    return tile("h5since", null, null, null, [el("ul", { class: "h3-rows h5-rows" }, l.map((x) => {
+      const s = h5SinceOf(x);
+      return el("li", { class: s.now ? "now" : null }, el("span", { class: "h3-k" }, x.name), el("span", { class: "h3-v" }, `${fmtN(s.n)}日`), el("span", { class: "h3-s" }, s.now || s.next));
+    })), el("div", { class: "h3-btns" }, edit)]);
+  }
+
+  // ⑤ links: sites opened often, as buttons (http and https alone), added and taken away on the tile
+  function h5Links() { const v = settings.get("h5links"); return (v && Array.isArray(v.items) ? v.items : []).filter((x) => x && x.id && typeof x.name === "string" && /^https?:\/\/[^\s]+$/i.test(x.url || "")).slice(0, 12); }
+  function h5LinksPut(items) { act(() => (items.length ? settings.set("h5links", { items, updatedAt: Date.now() }) : settings.remove("h5links"))); }
+  function h5Url(s) {
+    let v = String(s || "").trim();
+    if (v && !/^[a-z][a-z0-9+.-]*:/i.test(v)) v = "https://" + v;
+    try { const u = new URL(v); return /^https?:$/.test(u.protocol) && u.hostname.includes(".") ? u.href : null; } catch { return null; }
+  }
+  function h5LinksTile() {
+    const l = h5Links();
+    if (h5LinkEdit) {
+      const name = el("input", { type: "text", class: "h5-in", id: "h5LinkName", maxlength: 20, placeholder: "名前（例：時間割）", "aria-label": "名前" });
+      const url = el("input", { type: "url", class: "h5-in", id: "h5LinkUrl", maxlength: 500, placeholder: "https://…", inputmode: "url", "aria-label": "アドレス" });
+      const add = () => {
+        const u = h5Url(url.value), nm = oneLine(name.value).slice(0, 20) || (u ? new URL(u).hostname : "");
+        if (!u) { url.focus(); flash("https:// から始まるアドレスを入れてください"); return; }
+        h5LinksPut([...l, { id: uid(), name: nm, url: u }].slice(-12));
+        name.value = ""; url.value = "";
+      };
+      return tile("h5links", null, null, null, el("div", { class: "h5-edit" },
+        el("ul", { class: "h3-rows h5-rows" }, l.map((x) => el("li", {}, el("span", { class: "h3-k" }, x.name), el("span", { class: "h3-s" }, x.url.replace(/^https?:\/\//, "")),
+          el("button", { type: "button", class: "wx-del h5-del", "aria-label": `「${x.name}」を消す`, onclick: () => { h5LinksPut(l.filter((y) => y.id !== x.id)); flash(`「${x.name}」を消しました`, () => h5LinksPut(l)); } }, icon("close", 16))))),
+        el("form", { class: "h5-add", autocomplete: "off", novalidate: true, onsubmit: (ev) => { ev.preventDefault(); add(); } }, name, url, el("button", { type: "submit", class: "chip-btn h5-add-go" }, "足す")),
+        el("div", { class: "h3-btns" }, el("button", { type: "button", class: "chip-btn h5-done", onclick: () => { h5LinkEdit = false; renderHome(); } }, "おわる"))));
+    }
+    const edit = el("button", { type: "button", class: "link-btn h5-edit-btn", onclick: () => { h5LinkEdit = true; renderHome(); $("h5LinkName")?.focus(); } }, l.length ? "編集" : "足す");
+    if (!l.length) return tile("h5links", null, null, "大学のページや時刻表など、よく開くサイトをボタンにできます", el("div", { class: "h3-btns" }, edit));
+    return tile("h5links", null, null, null, [el("div", { class: "h5-links" }, l.map((x) => el("a", { class: "chip-btn h5-link", href: x.url, target: "_blank", rel: "noopener noreferrer" }, x.name))),
+      el("div", { class: "h3-btns" }, edit)]);
+  }
+
+  // ⑥ yesterday, in the morning's hours (as きょうの準備's): ToDo done, 勉強, 運動, 支出, 体重, the mood and the theme
+  function h5YdayTile() {
+    if (!homeTwo) return null;
+    const w = h2Times(), now = nowMinutes();
+    if (!(now >= w.am && now < w.amTo)) return null;
+    const y = addDays(todayKey, -1), wo = workouts.items.filter((x) => x.date === y), km = Math.round(sum(wo.filter((x) => x.type === "ランニング"), (x) => num(x.km)) * 100) / 100;
+    const done = todos.items.filter((t) => t.done && !t.cancelled && doneDay(t) === y).length, st = sum(study.items.filter((x) => x.date === y), (x) => x.minutes);
+    const spent = sum(expenses.items.filter((x) => x.date === y && x.kind !== "in"), (x) => num(x.amount)), kg = num(weights.get(y)?.kg), mood = H4_MOODS.find(([v]) => v === h4Mood(y)), th = h3Theme(y);
+    const list = [
+      done ? ["ToDo", `${done}件 完了`] : null,
+      st > 0 ? ["勉強", durText(st)] : null,
+      wo.length ? ["運動", km > 0 ? `ラン ${km} km` : `${wo.length}件`] : null,
+      spent ? ["支出", fmtYen(spent)] : null,
+      kg > 0 ? ["体重", `${fmtKg(kg)} kg`] : null,
+      mood ? ["気分", `${mood[1]} ${mood[2]}`] : null,
+      th ? ["テーマ", `「${th.text}」${th.done === true ? " できた" : th.done === false ? " まだ" : ""}`] : null,
+    ].filter(Boolean);
+    return tile("h5yday", null, null, list.length ? `${fmtMDW(y)}` : `${fmtMDW(y)}は、記録がありませんでした`, list.length ? h2Rows(list) : null);
+  }
+
+  // ⑦ mood (その4 ③) and sleep (からだ's) for two weeks, side by side; with enough of both, the mood on a long night's day
+  // against a short one's
+  function h5MoodSleepTile() {
+    const xs = Array.from({ length: 14 }, (_, i) => addDays(todayKey, i - 13)).map((d) => ({ d, m: h4Mood(d), s: bd2SleepMins(bd2Day(d)) }));
+    if (!xs.some((x) => x.m || x.s)) return tile("h5mood", null, null, "きょうの気分と、睡眠（おやすみ・おはよう）を記録すると、2週間を並べて見られます");
+    const max = Math.max(600, ...xs.map((x) => x.s)), avg = (l, f) => Math.round((sum(l, f) / l.length) * 10) / 10;
+    const long = xs.filter((x) => x.m && x.s >= 420), short = xs.filter((x) => x.m && x.s && x.s < 360), slept = xs.filter((x) => x.s);
+    const say = long.length >= 3 && short.length >= 3 ? `よく眠れた日（7時間以上）の気分は平均 ${avg(long, (x) => x.m)}、短い日（6時間未満）は ${avg(short, (x) => x.m)}（5がいちばんよい）`
+      : slept.length ? `この2週間の睡眠は平均 ${durText(Math.round(sum(slept, (x) => x.s) / slept.length))}` : "睡眠を記録すると、気分とくらべられます";
+    return tile("h5mood", null, null, null, [el("div", { class: "h5-ms", role: "img", "aria-label": "この2週間の気分と睡眠：" + xs.filter((x) => x.m || x.s).map((x) => `${fmtShort(x.d)} ${x.m ? H4_MOODS[x.m - 1][2] : ""}${x.s ? " " + durText(x.s) : ""}`).join("、") },
+      xs.map((x) => el("span", { class: "h5-msd" + (x.d === todayKey ? " today" : "") }, el("span", { class: "h5-face" }, x.m ? H4_MOODS[x.m - 1][1] : "・"),
+        el("span", { class: "h5-bar" }, el("i", { style: `height:${Math.round((x.s / max) * 100)}%` })), el("small", {}, x.d === todayKey ? "今" : WD[parseYmd(x.d).getDay()])))),
+      el("p", { class: "h4-foot" }, say)]);
+  }
+
+  // ⑧ a line in ひとことで記録 with nothing to record in it: to a new ToDo (its own sheet, the words in), 日記, or メモ
+  function h5LineActs(text) {
+    const t = oneLine(String(text || "")).slice(0, 200);
+    if (!t) return null;
+    const b = (cls, words, go) => el("button", { type: "button", class: "chip-btn " + cls, onclick: (ev) => go(ev.detail === 0) }, words);
+    return el("div", { class: "h3-btns h5-acts" },
+      b("h5-to-todo", "ToDoにする", (k) => { h4Line = ""; homeReturn = "#h4LineIn"; renderHome(); openNewTodo(k, "homerec"); const f = $("todoText"); if (f) { f.value = t; f.dispatchEvent(new Event("input", { bubbles: true })); growField(f); } }),
+      b("h5-to-diary", "日記に足す", () => act(async () => {
+        const was = journal.get(todayKey), cur = String(was?.text || "").replace(/\s+$/, "");
+        await journal.write(todayKey, { ...was, date: todayKey, text: (cur ? cur + "\n" : "") + t, createdAt: was?.createdAt || Date.now(), updatedAt: Date.now() });
+        h4Line = ""; renderHome();
+        flash("きょうの日記に書き足しました", () => act(async () => { if (was) await journal.write(todayKey, was); else takeBack(journal, [todayKey]); }));
+      })),
+      b("h5-to-memo", "メモに足す", () => {
+        const was = h4MemoText();
+        h4MemoPut((was ? was.replace(/\s+$/, "") + "\n" : "") + t);
+        h4Line = ""; renderHome();
+        flash("メモに書き足しました", () => h4MemoPut(was));
+      }));
+  }
+
+  // ⑨ birthdays and anniversaries (カレンダー's plans each year): today's and those within a week, with how old or how many
+  // years (カレンダー その4 ③), under the date
+  function h5Annivs() {
+    const to = addDays(todayKey, 7), out = [];
+    for (const e of events.items) {
+      if (e.repeat !== "yearly" || typeof e.title !== "string") continue;
+      for (const s of turnStarts(e, todayKey, to)) if (!cal4Cx(e, s)) out.push({ e, s, y: cal4Years(e, s) });
+    }
+    return out.sort((a, b) => a.s.localeCompare(b.s) || a.e.title.localeCompare(b.e.title)).slice(0, 3);
+  }
+  function h5HeadSync() {
+    let box = $("h5Head");
+    if (!box) { box = el("div", { class: "h5-head", id: "h5Head" }); ($("h4Head") || $("h3Greet") || $("homeHoliday")).after(box); }
+    const an = homePrefs().noAnniv ? [] : h5Annivs(), h4 = $("h4Head");
+    const jump = el("button", { type: "button", class: "link-btn h5-jump-btn", id: "h5JumpBtn", onclick: h5Jump }, icon("list", 16), "タイルへ移動");
+    if (h4 && !h4.hidden) h4.append(jump); // (on the line of きょうを読み上げる)
+    setChildren(box, an.map((x) => {
+      const left = daysBetween(todayKey, x.s), cake = /誕生日|バースデー|生まれ/.test(x.e.title);
+      return el("p", { class: "h5-anniv" + (left ? "" : " today") }, el("span", { "aria-hidden": "true" }, cake ? "🎂 " : "🎉 "),
+        left ? `あと${left}日（${fmtMD(x.s)}）：「${x.e.title}」${x.y ? `（${x.y}）` : ""}` : `きょうは「${x.e.title}」${x.y ? `（${x.y}）` : ""}`);
+    }), h4 && !h4.hidden ? null : jump);
+  }
+
+  // ⑩ the year so far: the days recorded, 勉強, 運動 (and the run), 日記, ToDo done, the weight since its first of the year
+  function h5Year() {
+    const y0 = todayKey.slice(0, 4) + "-01-01", inY = (d) => typeof d === "string" && d >= y0 && d <= todayKey;
+    const days = new Set();
+    for (const s of [journal, weights, meals, workouts, study, expenses]) for (const x of s.items) { const d = x.date || x.id; if (inY(d) && (s !== journal || x.text)) days.add(d); }
+    const wo = workouts.items.filter((w) => inY(w.date)), ws = sortedWeights().filter((r) => inY(r.id) && num(r.kg) > 0);
+    return {
+      days: days.size, of: daysBetween(y0, todayKey) + 1,
+      study: sum(study.items.filter((x) => inY(x.date)), (x) => x.minutes),
+      moveDays: new Set(wo.map((w) => w.date)).size, km: Math.round(sum(wo.filter((w) => w.type === "ランニング"), (w) => num(w.km)) * 10) / 10,
+      diary: journal.items.filter((j) => inY(j.date || j.id) && j.text).length,
+      done: todos.items.filter((t) => t.done && !t.cancelled && inY(doneDay(t))).length,
+      kg: ws.length >= 2 ? Math.round((num(ws[ws.length - 1].kg) - num(ws[0].kg)) * 10) / 10 : null, kgFrom: ws.length >= 2 ? ws[0].id : null,
+    };
+  }
+  function h5YearTile() {
+    const x = h5Year(), y = todayKey.slice(0, 4);
+    if (!x.days && !x.done) return tile("h5year", null, null, `記録すると、${y}年の合計がここに出ます`);
+    const rows = [
+      ["記録した日", `${x.days}日`, `${y}年の ${x.of}日のうち`],
+      x.study ? ["勉強", durText(x.study), null] : null,
+      x.moveDays ? ["運動した日", `${x.moveDays}日`, x.km ? `ラン ${x.km} km` : null] : null,
+      x.diary ? ["日記", `${x.diary}日`, null] : null,
+      x.done ? ["ToDo", `${fmtN(x.done)}件 完了`, null] : null,
+      x.kg !== null ? ["体重", `${x.kg > 0 ? "+" : x.kg < 0 ? "−" : "±"}${Math.abs(x.kg).toFixed(1)} kg`, `${fmtShort(x.kgFrom)}から`] : null,
+    ].filter(Boolean);
+    return tile("h5year", null, null, null, el("ul", { class: "h3-rows h5-year" }, rows.map(([k, v, s]) => el("li", {}, el("span", { class: "h3-k" }, k), el("span", { class: "h3-v" }, v), el("span", { class: "h3-s" }, s || "")))));
+  }
+
+  function h5Tiles() { return [h5YdayTile(), h5MoodSleepTile(), h5SinceTile(), h5LinksTile(), h5YearTile()]; }
+
+  // ②⑨ in the gear's sheet, under その4's: the sets, and the birthdays on or off
+  function h5SetBuild() {
+    if ($("h5Set") || !$("h4Set")) return;
+    $("h4Set").after(el("div", { id: "h5Set" },
+      el("h3", { class: "group-head" }, "タイルの見本"),
+      el("ul", { class: "list card h5-sets" }, H5_SETS.map(([id, name, words]) => el("li", { class: "btn-row" },
+        el("button", { type: "button", class: "row-btn", "data-set": id, onclick: () => h5ApplySet(id) }, el("span", { class: "h5-set-name" }, name, el("small", {}, words)))))),
+      el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "押すと、その見本のタイルだけを出します（元に戻せます）。"), el("span", { class: "phrase" }, "出したあとで、上の一覧から1つずつ選びなおせます。"),
+        el("span", { class: "phrase" }, "タイルを長押しすると、名前と数字だけに「たたむ」こともできます。")),
+      el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
+        recRow("誕生日・記念日", el("input", { type: "checkbox", id: "h5AnnivOn", class: "switch", role: "switch", onchange: (ev) => saveHomePrefs({ noAnniv: !ev.target.checked }) }))),
+      el("p", { class: "group-foot" }, "カレンダーの毎年の予定（誕生日・記念日）を、日付の下に1週間前から出します。")));
+  }
+  function h5SetSync() { if ($("h5AnnivOn")) $("h5AnnivOn").checked = !homePrefs().noAnniv; }
+  // (きのうのまとめ, a morning's, where きょうの準備 and きのうの書き忘れ are, up top; the others after the rest)
+  HOME_TILES.splice(HOME_TILES.findIndex((t) => t.key === "missed") + 1, 0, H5_TILES[0]);
+  HOME_TILES.push(...H5_TILES.slice(1));
+  H2_FIXED.push(...H5_TILES.map((t) => t.key));
+  H2_NO_PAGE.push(...H5_TILES.map((t) => t.key)); // (none is a page of its own)
+  homeFive = true;
   if (tab === "home") draw(() => renderHome());
 
   // ---------- からだ その3 ①〜⑩ (the user's calls, 2026-11-13): 体組成 (①), 体温 (②), the day's 体調 (③), 寝る時刻 (④) and
