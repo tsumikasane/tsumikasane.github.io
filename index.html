@@ -2915,6 +2915,31 @@ ul.td10-reps > li .body, ul.td10-bells > li { min-width: 0; }
 .td11-switches input.switch::before { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #ffffff; box-shadow: 0 3px 8px rgba(0, 0, 0, .15), 0 1px 1px rgba(0, 0, 0, .16); transition: transform .2s; }
 .td11-switches input.switch:checked { background: var(--accent-fill); }
 .td11-switches input.switch:checked::before { transform: translateX(20px); }
+/* ToDo その16 ①〜⑩ (2026-11-14): ① the 期限's record; ② まとめて書く and the memo's lines; ④ the swipe's other buttons;
+   ⑤ the time focused as columns; ⑥ the words read; ⑧ rain; ⑩ who asked */
+.td-note.td16-log { color: var(--muted); }
+.td16-bulk-row { display: grid; gap: 6px; }
+.td16-bulk-open { justify-self: start; min-height: 40px; }
+.td16-bulk-open .icon, .td16-memo-steps .icon { vertical-align: -3px; margin-inline-end: 4px; }
+.td16-bulk[hidden] { display: none; }
+.td16-bulk { display: grid; gap: 8px; }
+.td16-bulk-in { box-sizing: border-box; width: 100%; min-height: 96px; padding: 10px 12px; border: 1px solid var(--separator); border-radius: 10px; background-color: var(--surface); color: var(--fg); font: inherit; resize: vertical; }
+.td16-bulk-acts { display: flex; align-items: center; gap: 12px; }
+.td16-memo-steps { justify-self: start; min-height: 40px; }
+.swipe-act.td16-act-d0 { background: var(--accent-fill); }
+.swipe-act.td16-act-d1 { background: var(--f-todo); }
+.swipe-act.td16-act-d7, .swipe-act.td16-act-wkend { background: var(--f-weight); }
+.swipe-act.td16-act-some { background: var(--muted); }
+.swipe-act.td16-act-flag, .swipe-act.td16-act-today { background: var(--c-meal); }
+.swipe-act.td16-act-free { background: var(--f-todo); }
+.swipe-act.td16-act-del { background: var(--warn); }
+.td16-bar { fill: var(--accent-fill); opacity: .55; }
+.td16-bar.now { opacity: 1; }
+.td16-hit { fill: transparent; }
+.ask-field.td16-words { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.td16-words-say { grid-column: 1 / -1; margin: 0; font-size: var(--t-sub); color: var(--muted); }
+.td-x.td16-rain { color: var(--f-todo); font-weight: 600; }
+.td-x.td16-from { color: var(--accent); }
 /* ToDo その15 ①〜⑩ (2026-11-14): ① the line over the list while ToDo's お知らせ rest; ③ a time over a plan, in the forms
    and on a row; ⑧ one's way with 見積もり; ④ the plan to even the days out; ⑨ how many are left, as a line */
 .td15-mute { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; padding: 6px 12px; border-radius: 12px; background: color-mix(in srgb, var(--c-meal) 12%, var(--surface)); font-size: var(--t-sub); }
@@ -9626,6 +9651,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       item("できることの一覧", () => openTdPanel("guide9", false)), // (その9 ③)
       td10MoreItems(item), // (その10 ④ 繰り返しのToDo, ⑤ これから届くお知らせ)
       todoEleven ? td11MoreItems(item) : null, // (その11 ⑨ さっきの操作)
+      todoSixteen ? td16MoreItems(item) : null, // (その16 ⑨ ひな形からリスト)
       todoFifteen ? td15MoreItems(item) : null, // (その15 ① お知らせを止める, ④ ならす, ⑨ 残りの推移, ⑤ リストをまとめる)
       todoFourteen ? td14MoreItems(item) : null, // (その14 ⑨ 週のふりかえり, ⑧ きょうやったこと, ⑤ リストのメモ, ④ リストを複製)
       todoThirteen ? td13MoreItems(item) : null, // (その13 ⑥ リストなし, ⑦ 同じ名前)
@@ -10000,6 +10026,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       todoThirteen ? td13HoldItems(t, item) : null, // (その13 ① 時間をおいて知らせる, ② 送る, ③ ひみつ, ⑩ 名前を分ける)
       todoFourteen ? td14HoldItems(t, item) : null, // (その14 ⑥ やった時間を足す, ⑦ 空いている日, ⑩ もう一度やる)
       todoFifteen ? td15HoldItems(t, item) : null, // (その15 ⑦ 時間を決めて集中, ⑩ つづきを追加)
+      todoSixteen ? td16HoldItems(t, item) : null, // (その16 ⑥ 期限を文字で, ③ バイトの前, ⑩ 頼まれごと)
       t.done ? null : item("このあとにやるToDoを追加", (byKey) => tdAddAfter(t, byKey)), // (その3 ⑦)
       t.done ? null : item("やめる（削除しないで残す）", () => tdCancel(t)), // (その3 ⑤)
       item("複製", (byKey) => { recReturnId = t.id; fillTodoCopy(t); openNewTodo(byKey, "rec"); }),
@@ -21606,7 +21633,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月14日 13:39"; // 0a6b88b8 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月14日 13:47"; // 501629dc (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -39541,6 +39568,364 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   td15InitForms();
   todoFifteen = true;
   td15MuteBar();
+
+  // ---------- ToDo その16 ①〜⑩ (the user's calls, 2026-11-14): where a ToDo's 期限 went, and when (①), steps written all at
+  // once, or made of the memo's lines (②), the 期限 put before the next バイト (③), the left swipe's buttons picked (④), the
+  // time focused, day by day (⑤), a 期限 written in words (⑥), a list all done celebrated (⑦), rain on the day of one
+  // with a place (⑧), a list made from a ready one (⑨), and one asked of you, said done (⑩). Function declarations and
+  // var, as the page may draw before this runs ----------
+  var todoSixteen = false;
+  // kept with the account (td16): ④ the left swipe's three buttons
+  const TD16_ACTS = [["d0", "きょう"], ["d1", "あした"], ["d7", "来週"], ["wkend", "週末"], ["some", "いつかやる"], ["flag", "重要"], ["today", "きょうやる"], ["free", "空いている日"], ["del", "削除"]];
+  const TD16_SWIPE0 = ["d0", "d1", "d7"];
+  function td16Set() {
+    const v = settings.get("td16") || {}, ok = (k) => TD16_ACTS.some(([x]) => x === k);
+    const sw = Array.isArray(v.swipe) && v.swipe.length === 3 && v.swipe.every((k) => k === "" || ok(k)) ? v.swipe : TD16_SWIPE0;
+    return { swipe: sw };
+  }
+  function td16Put(patch) { act(() => settings.set("td16", { ...td16Set(), ...patch, updatedAt: Date.now() })); }
+
+  // ① 期限の記録 (dueLog): each move of a 期限 (a swipe, a menu, きょうに移す, its sheet, and the rest that move it) kept on
+  // the ToDo with when, the last twenty; in its sheet, under the 期限, where it went. 元に戻す takes the move back with it
+  function td16LogAdd(x, from, to) {
+    const log = Array.isArray(x?.dueLog) ? x.dueLog.filter((e) => e && num(e.at) > 0) : [];
+    return [...log, { at: Date.now(), from: from || "", to: to || "" }].slice(-20);
+  }
+  const td16DueBase = tdDuePatch;
+  tdDuePatch = function (x, due) {
+    const p = td16DueBase(x, due);
+    if (!todoSixteen || !x || (x.due || "") === (due || "")) return p;
+    return { ...p, dueLog: td16LogAdd(x, x.due, due) };
+  };
+  function td16LogLine(t) {
+    const log = Array.isArray(t.dueLog) ? t.dueLog.filter((e) => e && num(e.at) > 0) : [];
+    if (!log.length) return null;
+    const day = (d) => (d ? fmtMD(d) : "期限なし"), when = (at) => { const d = ymd(new Date(num(at))); return relLabel(d) || fmtMD(d); };
+    const shown = log.slice(-5), steps = [day(shown[0].from), ...shown.map((e) => `${day(e.to)}（${when(e.at)}に）`)];
+    return el("p", { class: "full td-note td16-log", id: "reLog16" }, el("span", { class: "phrase" }, `期限を ${log.length} 回動かしました：`),
+      log.length > shown.length ? el("span", { class: "phrase" }, "…") : null, el("span", { class: "phrase" }, steps.join(" → ")));
+  }
+
+  // ② まとめてサブタスク: under the steps in both forms, まとめて書く opens a field where each line is a step (their marks
+  // taken off), added after those there are; and under the memo, while it has two lines or more, メモの行をサブタスクに
+  // makes its lines steps and empties it. Kept as the form is; 元に戻す puts them back
+  function td16Lines(s) { return String(s || "").split("\n").map((x) => x.trim().replace(LIST_MARK, "").trim()).filter(Boolean).map((x) => x.slice(0, 200)); }
+  function td16AddSteps(box, lines, undoMemo = null) {
+    const was = box.read();
+    box.fill([...was, ...lines.map((text) => ({ id: uid(), text, done: false }))]);
+    box.dispatchEvent(new Event("input", { bubbles: true }));
+    flash(`サブタスクを ${lines.length} 個足しました`, () => { box.fill(was); undoMemo?.(); box.dispatchEvent(new Event("input", { bubbles: true })); });
+  }
+  function td16BulkBox(boxId) {
+    const ta = el("textarea", { class: "td16-bulk-in", rows: 4, maxlength: 4000, "aria-label": "サブタスクをまとめて書く（1行に1つ）", placeholder: "1行に1つずつ" });
+    const wrap = el("div", { class: "full td16-bulk", hidden: true }, ta, el("div", { class: "td16-bulk-acts" },
+      el("button", { type: "button", class: "chip-btn", onclick: () => { const lines = td16Lines(ta.value); if (!lines.length) { ta.focus(); return; } td16AddSteps($(boxId), lines); ta.value = ""; wrap.hidden = true; open.hidden = false; } }, "サブタスクにする"),
+      el("button", { type: "button", class: "link-btn", onclick: () => { ta.value = ""; wrap.hidden = true; open.hidden = false; } }, "やめる")));
+    const open = el("button", { type: "button", class: "link-btn td16-bulk-open", onclick: () => { wrap.hidden = false; open.hidden = true; ta.focus(); } }, icon("list", 16), "まとめて書く");
+    const frag = el("div", { class: "full td16-bulk-row" }, open, wrap);
+    frag.reset = () => { ta.value = ""; wrap.hidden = true; open.hidden = false; };
+    return frag;
+  }
+  function td16MemoBtn(memoId, boxId) {
+    const btn = el("button", { type: "button", class: "link-btn td16-memo-steps", hidden: true, onclick: () => {
+      const memo = $(memoId), lines = td16Lines(memo.value);
+      if (lines.length < 2) return;
+      const was = memo.value;
+      memo.value = "";
+      memo.dispatchEvent(new Event("input", { bubbles: true }));
+      td16AddSteps($(boxId), lines, () => { memo.value = was; memo.dispatchEvent(new Event("input", { bubbles: true })); });
+    } }, "メモの行をサブタスクにする");
+    btn.sync = () => { const m = $(memoId); btn.hidden = !m || td16Lines(m.value).length < 2; };
+    return btn;
+  }
+  function td16StepsWire(boxId, memoId, form) {
+    const box = $(boxId), memo = $(memoId);
+    if (!box) return;
+    const bulk = td16BulkBox(boxId);
+    box.after(bulk);
+    if (memo) {
+      const mb = td16MemoBtn(memoId, boxId);
+      (memo.closest(".ffield") || memo).after(mb);
+      memo.addEventListener("input", mb.sync);
+      form.addEventListener("reset", () => setTimeout(() => { mb.sync(); bulk.reset(); }, 0));
+      mb.sync();
+    }
+  }
+
+  // ③ 次のバイトの前に (a row's menu, while there are shifts in the coming month): the next three shifts; one picked is its
+  // 期限 and its start the time (元に戻す)
+  function td16Shifts() {
+    const to = addDays(todayKey, 30), now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes(), out = [];
+    let by;
+    try { by = shiftsByDay(todayKey, to); } catch { return []; }
+    for (let d = todayKey; d <= to && out.length < 3; d = addDays(d, 1)) for (const w of by.get(d) || []) {
+      if (!w.first || (d === todayKey && w.s <= nowMin)) continue;
+      out.push({ d, s: w.s, end: Math.min(w.end, 1440) });
+      if (out.length >= 3) break;
+    }
+    return out;
+  }
+  function td16ShiftAsk(t) {
+    const xs = td16Shifts();
+    if (!xs.length) { flash("これから1か月にバイトはありません"); return; }
+    tdAsk(`「${clip(td14Name(t), 24)}」を、どのバイトの前にしますか`, xs.map((w) => [`${relLabel(w.d) ? relLabel(w.d) + " " : ""}${fmtDay(w.d)} ${atMin(w.s)}〜${atMin(w.end)}`, () => {
+      const x = todos.get(t.id);
+      if (!x || x.done) return;
+      const undo = tdUndoOf([x]), time = atMin(w.s);
+      act(() => todos.update(x.id, { ...tdDuePatch(x, w.d), time }));
+      flash(`「${clip(td14Name(x), 24)}」の期限を、${relLabel(w.d) || fmtDay(w.d)} ${time}（バイトの前）にしました`, undo);
+    }]));
+  }
+
+  // ④ 左スワイプのボタン (編集): the three buttons behind a row swiped left, each one of きょう・あした・来週・週末・いつかやる・
+  // 重要・きょうやる・空いている日・削除 (or none); きょう・あした・来週 at first. One that means nothing for the row is left out
+  function td16Act(k, t) {
+    const name = oneLine(t.text), sk = (n, w) => el("button", { type: "button", class: `swipe-act td16-act-${k}`, "aria-label": `「${name}」${w}` }, n);
+    const day = (n) => (t.due === addDays(todayKey, n) ? null : Object.assign(sk(n === 0 ? "きょう" : n === 1 ? "あした" : "来週", `を${n === 0 ? "きょう" : n === 1 ? "あした" : "来週"}に移す`), { onclick: () => putOff(t, n) }));
+    if (k === "d0") return day(0);
+    if (k === "d1") return day(1);
+    if (k === "d7") return day(7);
+    if (k === "wkend") { const d = td11QuickDay("wkend"); return t.due === d ? null : Object.assign(sk("週末", "を週末に移す"), { onclick: () => putOff(t, daysBetween(todayKey, d)) }); }
+    if (k === "some") return todoEight && !t.repeat ? Object.assign(sk("いつか", "をいつかやるに移す"), { onclick: () => td8SetSome(t, true) }) : null;
+    if (k === "flag") return Object.assign(sk(t.flag ? "重要を外す" : "重要", t.flag ? "の重要をはずす" : "を重要にする"), { onclick: () => setFlag(t, !t.flag) });
+    if (k === "today") return Object.assign(sk(tdToday(t) ? "外す" : "きょうやる", tdToday(t) ? "をきょうやるから外す" : "をきょうやるに入れる"), { onclick: () => tdSetToday(t, !tdToday(t)) });
+    if (k === "free") return todoFourteen ? Object.assign(sk("空いている日", "を空いている日に入れる"), { onclick: () => { closeRow(); td14FreeAsk(t); } }) : null;
+    if (k === "del") return Object.assign(sk("削除", "を削除"), { onclick: () => { closeRow(); removeWithUndo(todos, t.id); } });
+    return null;
+  }
+  function td16Swipes() {
+    const sw = td16Set().swipe;
+    if (sw.join() === TD16_SWIPE0.join()) return;
+    for (const acts of document.querySelectorAll("#todoList > li > .swipe-acts")) {
+      const id = acts.closest("li").querySelector("[data-check]")?.dataset.check, t = id && todos.get(id);
+      if (!t || t.done) continue;
+      acts.replaceChildren(...sw.map((k) => (k ? td16Act(k, t) : null)).filter(Boolean));
+    }
+  }
+
+  // ⑤ 集中した時間（14日）: in ToDoの記録, the minutes the focus timer counted each day of the last 14 (the timer's own
+  // log), as columns, today's last; a press on one says its day's; the numbers as a table too
+  function td16FocusDays() {
+    const log = (settings.get(FOCUS_LOG_ID) || {}).days || {};
+    return Array.from({ length: 14 }, (_, i) => { const d = addDays(todayKey, i - 13); return { d, m: Math.max(0, Math.round(num(log[d]))) }; });
+  }
+  function td16FocusChart(days) {
+    const W = 340, H = 140, L = 34, R = 6, T = 10, B = 22, max = Math.max(30, ...days.map((x) => x.m)), top = max <= 60 ? 60 : Math.ceil(max / 60) * 60;
+    const slot = (W - L - R) / days.length, bw = Math.min(16, slot - 4), Y = (v) => T + (1 - v / top) * (H - T - B);
+    const svg = svgEl("svg", { class: "td16-chart", viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `集中した時間、この14日で合わせて ${durText(sum(days, (x) => x.m)) || "0分"}` });
+    for (const v of [0, top / 2, top]) {
+      svg.append(svgEl("line", { class: "td15-grid", x1: L, x2: W - R, y1: Y(v).toFixed(1), y2: Y(v).toFixed(1) }));
+      svg.append(svgEl("text", { class: "td15-tick", x: L - 6, y: (Y(v) + 4).toFixed(1), "text-anchor": "end" }, v === 0 ? "0" : v >= 60 ? `${Math.round((v / 60) * 10) / 10}時間` : `${v}分`));
+    }
+    days.forEach((x, i) => {
+      const cx = L + slot * i + slot / 2, h = Math.max(0, Y(0) - Y(x.m));
+      if (h > 0) {
+        const r = Math.min(4, h, bw / 2), x0 = cx - bw / 2, y0 = Y(0) - h;
+        svg.append(svgEl("path", { class: "td16-bar" + (x.d === todayKey ? " now" : ""), d: `M${x0.toFixed(1)},${Y(0).toFixed(1)} V${(y0 + r).toFixed(1)} Q${x0.toFixed(1)},${y0.toFixed(1)} ${(x0 + r).toFixed(1)},${y0.toFixed(1)} H${(x0 + bw - r).toFixed(1)} Q${(x0 + bw).toFixed(1)},${y0.toFixed(1)} ${(x0 + bw).toFixed(1)},${(y0 + r).toFixed(1)} V${Y(0).toFixed(1)} Z` }));
+      }
+      if (i === 0 || i === 6 || i === 13) svg.append(svgEl("text", { class: "td15-tick", x: cx.toFixed(1), y: H - 6, "text-anchor": i === 0 ? "start" : i === 13 ? "end" : "middle" }, i === 13 ? "きょう" : fmtMD(x.d)));
+      svg.append(svgEl("rect", { class: "td16-hit", x: (L + slot * i).toFixed(1), y: T, width: slot.toFixed(1), height: H - T - B, "data-i": i }));
+    });
+    return svg;
+  }
+  function td16FocusBox() {
+    const days = td16FocusDays(), total = sum(days, (x) => x.m), week = sum(days.slice(7), (x) => x.m), before = sum(days.slice(0, 7), (x) => x.m);
+    const svg = td16FocusChart(days), tip = el("span", { class: "td15-tip", hidden: true, "aria-hidden": "true" });
+    const show = (ev) => {
+      const r = ev.target.closest?.(".td16-hit");
+      if (!r) return;
+      const i = Number(r.dataset.i), x = days[i];
+      tip.hidden = false;
+      tip.textContent = `${fmtDay(x.d)}　${x.m ? durText(x.m) : "なし"}`;
+      tip.style.left = `${((Number(r.getAttribute("x")) + Number(r.getAttribute("width")) / 2) / 340) * 100}%`;
+    };
+    svg.addEventListener("pointerdown", show); svg.addEventListener("pointermove", show);
+    svg.addEventListener("pointerleave", () => { tip.hidden = true; });
+    return [el("h3", { class: "group-head" }, "集中した時間（この14日）"),
+      el("div", { class: "card pad td15-trend td16-focus" }, el("p", { class: "td15-trend-head" }, el("b", {}, total ? durText(total) : "0分"),
+        el("span", { class: "sub" }, keepUnits(`この7日 ${durText(week) || "0分"}・その前の7日 ${durText(before) || "0分"}`))),
+        el("div", { class: "td15-chart-box" }, svg, tip),
+        total ? null : el("p", { class: "sub" }, "集中タイマーを使うと、ここにたまります。")),
+      el("details", { class: "td15-table" }, el("summary", {}, "数字で見る"),
+        el("table", {}, el("thead", {}, el("tr", {}, el("th", { scope: "col" }, "日"), el("th", { scope: "col" }, "集中した時間"))),
+          el("tbody", {}, [...days].reverse().map((x) => el("tr", {}, el("td", {}, fmtDay(x.d)), el("td", {}, x.m ? durText(x.m) : "—"))))))];
+  }
+  const td16RecBase = renderTd12Rec;
+  renderTd12Rec = function () {
+    td16RecBase();
+    if (todoSixteen) $("tdPanelBody")?.append(...td16FocusBox());
+  };
+
+  // ⑥ 期限を文字で決める (a row's menu): a few words (金曜, 11/20, あした15時, 来週の月曜, 今月中…) read as その1's ③ reads
+  // them, said under the field as they are typed; その日にする puts that 期限 (and time) in (元に戻す)
+  function td16Words(s) { const g = s.trim() ? parseTodo("x " + s.trim()) : null; return g && isDay(g.date || "") ? { due: g.date, time: isHm(g.time || "") ? g.time : "" } : null; }
+  function td16WordsAsk(t) {
+    const input = el("input", { type: "text", class: "td16-words-in", maxlength: 40, enterkeyhint: "done", placeholder: "例：金曜、11/20、あした15時", "aria-label": "期限を文字で" });
+    const say = el("p", { class: "td16-words-say", role: "status" }, "いつにしますか");
+    const go = () => {
+      const r = td16Words(input.value);
+      if (!r) { input.focus(); return; }
+      todoMenu.close();
+      const x = todos.get(t.id);
+      if (!x || x.done) return;
+      const undo = tdUndoOf([x]);
+      act(() => todos.update(x.id, { ...tdDuePatch(x, r.due), ...(r.time ? { time: r.time } : {}) }));
+      flash(`「${clip(td14Name(x), 24)}」の期限を${relLabel(r.due) || fmtDay(r.due)}${r.time ? " " + r.time : ""}にしました`, undo);
+    };
+    input.addEventListener("input", () => { const r = td16Words(input.value); say.textContent = !input.value.trim() ? "いつにしますか" : r ? `${fmtDayLong(r.due)}${r.time ? " " + r.time : ""}にします` : "読み取れませんでした（例：金曜、11/20、3日後）"; });
+    input.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing) { ev.preventDefault(); go(); } });
+    tdAsk(`「${clip(td14Name(t), 24)}」の期限`, [el("div", { class: "ask-field td16-words" }, input, el("button", { type: "button", class: "ask-go", onclick: go }, "その日にする"), say)]);
+    setTimeout(() => input.focus(), 60);
+  }
+
+  // ⑦ リストをぜんぶ終えたら: the last ToDo still to do in a list of three or more done (not a checklist or a 買い物リスト,
+  // which begin again): 紙ふぶき, and しまう a press away; once for a list for the day (this device)
+  const TD16_DONE = LS_PREFIX + "td16Done";
+  function td16ListCheck(id) {
+    const x = todos.get(id), l = x && todoListOf(x);
+    if (!x?.done || !l || l.archived || (todoFive && td5CheckOn(l.id)) || (todoFour && td4ShopOn(l.id))) return;
+    const xs = todos.items.filter((t) => t.listId === l.id && typeof t.text === "string" && !t.cancelled && !(t.done && t.next));
+    if (xs.some((t) => !t.done) || xs.length < 3) return;
+    const seen = lsJson(TD16_DONE) || {};
+    if (seen[l.id] === todayKey) return;
+    lsJsonPut(TD16_DONE, { ...seen, [l.id]: todayKey });
+    celebrate();
+    flash(`「${clip(l.name, 20)}」のToDoを、ぜんぶ終えました！`, todoEight ? () => td8Shelve(todoLists.get(l.id) || l, true) : null, 8000, "リストをしまう");
+  }
+  const td16ToggleBase = toggleTodo;
+  toggleTodo = function (t) { const r = td16ToggleBase(t); if (todoSixteen && t && !t.done) setTimeout(() => td16ListCheck(t.id), 900); return r; };
+
+  // ⑧ 雨の日: one to do with a 場所, due within the forecast: on its row, ☔ and the chance of rain when it is 50% or more
+  const td16PartsBase = td12Parts;
+  td12Parts = function (t) {
+    const out = td16PartsBase(t);
+    if (!todoSixteen || t.done || !t.place || !isDay(t.due || "") || t.due < todayKey || !wxPlace()) return out;
+    const w = wxDay(t.due);
+    return w && num(w.rain) >= 50 ? [...out, el("span", { class: "phrase td-x td16-rain", title: `${fmtDay(t.due)}は${w.word}（降水確率 ${w.rain}%）` }, `☔ ${w.rain}%`)] : out;
+  };
+
+  // ⑨ ひな形からリストを作る (その他): a few ready lists (旅行の持ち物 as a checklist, 引っ越し, テスト前, 大掃除, 就活), made
+  // as a new list with its ToDos (no 期限), its tab opened; 元に戻す takes it away
+  const TD16_SETS = [
+    ["旅行の持ち物", true, ["財布", "スマホ", "充電器", "モバイルバッテリー", "着替え", "下着", "洗面用具", "常備薬", "保険証", "チケット・予約の控え", "折りたたみ傘", "エコバッグ"]],
+    ["引っ越し", false, ["引っ越し業者を決める", "退去の連絡をする", "転出届を出す", "電気・ガス・水道の手続き", "インターネットの手続き", "郵便の転送届を出す", "荷造り", "粗大ごみを申し込む", "転入届を出す", "住所変更（銀行・カードなど）"]],
+    ["テスト前", false, ["テストの範囲を確かめる", "ノートを見直す", "問題集を1周する", "まちがえた問題をもう一度解く", "暗記カードを作る", "過去問を解く", "持ち物（筆記用具・学生証）を準備する"]],
+    ["大掃除", false, ["換気扇", "窓ふき", "冷蔵庫の中を整理する", "お風呂のカビ取り", "トイレ", "玄関", "いらないものを捨てる", "押し入れの整理"]],
+    ["就活", false, ["自己分析をする", "企業研究をする", "エントリーシートを書く", "証明写真を撮る", "説明会を予約する", "面接の練習をする", "スーツを準備する", "お礼のメールを送る"]],
+  ];
+  function td16SetAsk() {
+    tdAsk("どのひな形からリストを作りますか（あとで自由に変えられます）", TD16_SETS.map(([name, check, items]) => [`${name}（${items.length} 件）`, () => td16MakeList(name, check, items)]));
+  }
+  function td16MakeList(name, check, items) {
+    const have = new Set(todoLists.items.map((l) => l.name)), now = Date.now();
+    let n = name;
+    for (let i = 2; have.has(n); i++) n = `${name}（${i}）`;
+    const order = Math.max(-1, ...todoLists.items.map((x) => (Number.isFinite(x.order) ? x.order : -1))) + 1;
+    act(async () => {
+      const lid = await todoLists.add({ name: n, order, ...(check ? { check: true } : {}), createdAt: now });
+      const ids = await todos.addMany(items.map((text, i) => ({ text, done: false, due: "", listId: lid, createdAt: now + i })));
+      setTodoTab(lid);
+      flash(`ひな形から「${n}」を作りました（ToDo ${ids.length} 件）`, () => act(async () => {
+        const drop = new Set(ids);
+        await todos.restore(todos.items.filter((x) => !drop.has(x.id)));
+        await todoLists.restore(todoLists.items.filter((x) => x.id !== lid));
+        setTodoTab("");
+      }));
+    });
+  }
+
+  // ⑩ 頼まれごと (from): one asked of you, with who asked (a row's menu: the names given before offered); on its row
+  // 〇〇から; done, 終わったと伝える sends a word to say so (as その13's 送る does)
+  function td16Askers() { const seen = new Map(); for (const t of todos.items) if (typeof t.from === "string" && t.from.trim()) seen.set(t.from.trim(), Math.max(seen.get(t.from.trim()) || 0, num(t.createdAt))); return [...seen].sort((a, b) => b[1] - a[1]).map(([n]) => n).slice(0, 5); }
+  function td16FromAsk(t) {
+    const input = el("input", { type: "text", maxlength: 30, enterkeyhint: "done", placeholder: "例：店長、田中先生", "aria-label": "頼んだ人", value: t.from || "" });
+    const put = (who) => {
+      const x = todos.get(t.id);
+      if (!x) return;
+      const was = x.from;
+      act(() => todos.update(x.id, { from: who || undefined }));
+      flash(who ? `「${clip(td14Name(x), 24)}」を、${clip(who, 12)}からの頼まれごとにしました` : `「${clip(td14Name(x), 24)}」を頼まれごとからはずしました`, () => act(() => todos.update(x.id, { from: was })));
+    };
+    const go = () => { const v = input.value.trim(); if (!v) { input.focus(); return; } todoMenu.close(); put(v.slice(0, 30)); };
+    input.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing) { ev.preventDefault(); go(); } });
+    tdAsk(`「${clip(td14Name(t), 24)}」は、だれからの頼まれごとですか`, [el("div", { class: "ask-field" }, input, el("button", { type: "button", class: "ask-go", onclick: go }, "決める")),
+      ...td16Askers().filter((n) => n !== t.from).map((n) => [n, () => put(n)]), t.from ? ["頼まれごとからはずす", () => put(""), true] : null]);
+  }
+  function td16Tell(t) { td14Hand(`${t.from}へ`, `${t.from}さん\n「${oneLine(t.text)}」、終わりました。`, "伝えること"); }
+  const td16FromBase = td12Parts;
+  td12Parts = function (t) {
+    const out = td16FromBase(t);
+    return todoSixteen && !t.done && typeof t.from === "string" && t.from.trim() ? [el("span", { class: "phrase td-x td16-from" }, `${clip(t.from.trim(), 12)}から`), ...out] : out;
+  };
+
+  // a row's menu, その他, the guide
+  function td16HoldItems(t, item) {
+    return [t.done ? null : item("期限を文字で決める", () => td16WordsAsk(t)),
+      !t.done && !t.repeat && td16Shifts().length ? item("次のバイトの前にする", () => td16ShiftAsk(t)) : null,
+      t.done ? null : item(t.from ? `頼んだ人を変える（${clip(t.from, 8)}）` : "頼まれごとにする（だれから）", () => td16FromAsk(t)),
+      t.done && t.from ? item(`終わったと伝える（${clip(t.from, 8)}）`, () => td16Tell(t)) : null];
+  }
+  function td16MoreItems(item) { return [item("ひな形からリストを作る", () => td16SetAsk())]; }
+  const td16GuideBase = td9Guide;
+  td9Guide = function () {
+    const g = td16GuideBase();
+    if (!todoSixteen) return g;
+    const add = (head, rows) => { const x = g.find(([h]) => h === head); if (x) x[1].push(...rows); else g.push([head, rows]); };
+    add("期限とお知らせ", [["期限の記録", "ToDoの画面の期限の下。いつ、どこへ動かしたか"], ["期限を文字で決める", "長押し。「金曜」「11/20」「あした15時」など"], ["次のバイトの前にする", "長押し"]]);
+    add("追加する", [["まとめてサブタスク", "サブタスクの下の「まとめて書く」、メモの下の「メモの行をサブタスクにする」"], ["ひな形からリスト", "「その他」。旅行の持ち物・引っ越し・テスト前など"]]);
+    add("整理する", [["左スワイプのボタン", "「編集」。きょう・あした・来週のかわりに、週末・いつかやる・削除なども"], ["頼まれごと", "長押し。だれからかを残して、終わったら伝えられます"]]);
+    add("ふりかえる", [["集中した時間（14日）", "「その他」の「ToDoの記録」"], ["リストをぜんぶ終えたら", "紙ふぶきと、リストをしまうボタン"]]);
+    add("ほかとつなぐ", [["雨の日の外出", "場所のあるToDoの期限の日に雨が降りそうなら、一覧に☔"]]);
+    return g;
+  };
+  // after the list is drawn: ④ the swipe's buttons
+  const td16RenderBase = renderTodos;
+  renderTodos = function () { td16RenderBase(); if (todoSixteen) draw(td16Swipes); };
+
+  // the forms: ① the 期限's record and ② まとめてサブタスク in a ToDo's sheet; ② in the new ToDo's form
+  function td16InitForms() {
+    td16StepsWire("todoSteps", "todoMemo", $("todoForm"));
+    new MutationObserver(() => {
+      const text = $("reText");
+      if (!todoSixteen || recEdit?.kind !== "todo" || recEdit.fresh || !text || text.dataset.td16) return;
+      text.dataset.td16 = "1";
+      const t = todos.get(recEdit.id);
+      if (!t) return;
+      const line = td16LogLine(t);
+      if (line) ($("reDue")?.closest(".ffield"))?.after(line);
+      if (!t.done) td16StepsWire("reSteps", "reMemo", $("recForm"));
+      if (recShown !== null && sheetMode() === "rec") recShown = formState($("recForm"));
+    }).observe($("recForm"), { childList: true });
+    const read = REC_EDIT.todo.read;
+    REC_EDIT.todo.read = (t) => {
+      const p = read(t);
+      if (!todoSixteen || !p || typeof p !== "object" || (p.due || "") === (t.due || "")) return p;
+      return { ...p, dueLog: td16LogAdd(t, t.due, p.due) };
+    };
+  }
+
+  // ToDo's 編集: ④ the swipe's buttons
+  function td16InitSettings() {
+    const foot = $("td14RevForm")?.nextElementSibling;
+    if (!foot) return;
+    const sel = (i) => el("select", { id: `td16Swipe${i}`, "aria-label": `左スワイプの ${i + 1} つ目のボタン`, onchange: (ev) => { const sw = [...td16Set().swipe]; sw[i] = ev.target.value; td16Put({ swipe: sw }); renderTodos(); } },
+      el("option", { value: "" }, "なし"), TD16_ACTS.map(([k, n]) => el("option", { value: k }, n)));
+    foot.after(el("h3", { class: "group-head" }, "左スワイプのボタン"),
+      el("form", { class: "add", id: "td16SwipeForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
+        [0, 1, 2].flatMap((i) => [el("label", { class: "flabel", for: `td16Swipe${i}` }, `${i + 1} つ目`), el("div", { class: "ffield" }, sel(i))])),
+      el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "ToDoの行を左にスワイプしたときに出るボタンです。"), el("span", { class: "phrase" }, "はじめは「きょう・あした・来週」です。")));
+    renderTd16Settings();
+  }
+  function renderTd16Settings() {
+    const sw = td16Set().swipe;
+    for (let i = 0; i < 3; i++) { const s = $(`td16Swipe${i}`); if (s && document.activeElement !== s) s.value = sw[i] || ""; }
+  }
+  const td16SettingsBase = renderTd11Settings;
+  renderTd11Settings = function () { td16SettingsBase(); if (todoSixteen) renderTd16Settings(); };
+
+  td16InitForms();
+  td16InitSettings();
+  todoSixteen = true;
 
   // ---------- 天気 その1 ①〜⑩ (the user's calls, 2026-11-13): the tile opens 天気's own page (①) with the hours (②), the
   // day in detail (③), what to wear (④), when rain comes and the rain clouds (⑤), sunrise and sunset (⑥), UV (⑦), a word

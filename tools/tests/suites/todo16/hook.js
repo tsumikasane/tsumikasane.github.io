@@ -1,0 +1,2 @@
+// insert before:   // ---------- boot ----------
+  window.__td16 = { get: (id) => todos.get(id), all: () => todos.items.map((t) => ({ ...t })), lists: () => todoLists.items.map((l) => ({ ...l })), set: () => td16Set(), setting: (id, v) => act(() => settings.set(id, v)), update: (id, patch) => act(() => todos.update(id, patch)), add: (x) => act(() => todos.add(x)), words: (s) => td16Words(s), shifts: () => td16Shifts(), tab: (id) => setTodoTab(id), render: () => renderTodos(), guide: () => JSON.stringify(td9Guide()) };
