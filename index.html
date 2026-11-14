@@ -5368,6 +5368,38 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 .gn-row { display: grid; gap: 2px; width: 100%; padding: 10px var(--space-2); border: 0; background: none; color: var(--fg); font: inherit; text-align: start; cursor: pointer; }
 .gn-meta { font-size: var(--t-foot); color: var(--muted); }
 .gn-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--t-sub); }
+/* 目標 その10 ①〜⑩ (2026-11-14) */
+#sec-goal.gs-off-months #goalMonths, #sec-goal.gs-off-wish #goalWish { display: none !important; }
+.mfont-s .m-text { font-size: 13px; }
+.mfont-l .m-text, .mfont-l .m-cell textarea { font-size: 20px; }
+.m-review { gap: 8px; }
+.m-review[hidden] { display: none; }
+.m-review p { margin: 0; }
+.m-review textarea { width: 100%; }
+.rv-head { margin-top: 4px !important; font-size: var(--t-foot); font-weight: 600; color: var(--muted); }
+.rv-picks { display: flex; flex-wrap: wrap; gap: 8px; }
+.rv-picks .chip-btn { background: var(--fill); box-shadow: none; }
+.rv-picks .chip-btn[aria-pressed="true"] { background: var(--accent-fill); color: var(--accent-ink); }
+.rv-acts { justify-content: flex-end; align-items: center; gap: 12px; }
+.m-review .gs-v { font-size: 19px; }
+#mReviewCard[hidden], #mReviewFoot[hidden] { display: none; }
+.gm-card { gap: 8px; }
+.gm-card p { margin: 0; }
+.gm-bars, .gm-xs { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+.gwish-card { gap: 8px; }
+.gwish-card p { margin: 0; }
+.gwish-t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.gwish-list .btn { flex: none; }
+.m-time-goal { gap: 8px; }
+.m-time-goal p { margin: 0; }
+.m-memos[hidden] { display: none; }
+.gmemo-list { margin: 0; }
+.gmemo-list li { display: block; }
+.gmemo-row { display: grid; gap: 2px; width: 100%; padding: 10px var(--space-2); border: 0; background: none; color: var(--fg); font: inherit; text-align: start; cursor: pointer; }
+.gmemo-name { font-weight: 600; font-size: var(--t-sub); overflow-wrap: anywhere; }
+.gmemo-name .sub { font-weight: 400; }
+.gmemo-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--t-sub); color: var(--muted); }
+.m-top .m-streak { flex: none; font-size: 10px; font-weight: 700; line-height: 16px; color: var(--warn); white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -6570,6 +6602,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- (目標 その9 ④⑨) this year's goals; the latest ふりかえり -->
         <div class="goal-points goal-year" id="goalYear" hidden></div>
         <div class="goal-points goal-notes-all" id="goalNotesAll" hidden></div>
+        <!-- (目標 その10 ③②) the cells moved on month by month; things to do some day -->
+        <div class="goal-points goal-months" id="goalMonths" hidden></div>
+        <div class="goal-points goal-wish" id="goalWish" hidden></div>
       </section>
 
       <!-- つみかさね: every record a square block, the blocks stacked as stairs that climb one at a time (the user's call), as
@@ -7506,6 +7541,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <h3 class="group-head">目標のページに出すもの</h3>
         <div class="card pad goal-show-list" id="goalShowList"></div>
         <p class="group-foot">オフにしたものは、目標のページに出しません。この端末だけの設定です。</p>
+        <!-- (目標 その10 ④) the size of the chart's words (this device's) -->
+        <h3 class="group-head" id="goalFontHead">チャートの文字の大きさ</h3>
+        <div class="card pad goal-tap-card"><div class="seg" role="group" aria-labelledby="goalFontHead" id="goalFont"><button type="button" data-font="s" aria-pressed="false">小さく</button><button type="button" data-font="" aria-pressed="true">ふつう</button><button type="button" data-font="l" aria-pressed="false">大きく</button></div></div>
+        <p class="group-foot">マンダラチャートのマスの文字の大きさです。入りきらないときは、これまでどおり小さくして入れます。この端末だけの設定です。</p>
+        <!-- (目標 その10 ⑧) the day before a 中間目標 -->
+        <h3 class="group-head">中間目標の前日のお知らせ</h3>
+        <form class="add" id="goalMsForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="goalMsOn">お知らせ</label>
+          <div class="ffield"><input type="checkbox" id="goalMsOn" class="switch" role="switch"></div>
+          <label class="flabel" for="goalMsAt">時刻</label>
+          <div class="ffield"><input type="time" id="goalMsAt"></div>
+        </form>
+        <p class="group-foot" id="goalMsFoot"></p>
       </div>
       <div class="sheet-view" id="subjectsGroup" hidden>
         <h3 class="group-head">科目</h3>
@@ -8219,6 +8267,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- (目標 その4 ②) the time spent on it -->
         <h3 class="group-head">取り組んだ時間</h3>
         <div class="card pad m-time-card" id="mTime"></div>
+        <!-- (目標 その10 ⑤) a time to spend on it -->
+        <div class="card pad m-time-goal" id="mTimeGoal"></div>
         <p class="group-foot">マスを長押しして「時間・写真・重み」から、集中タイマーを始めたり、時間を足したりできます。</p>
         <!-- (目標 その8 ③) the money it takes, against its budget -->
         <h3 class="group-head">お金</h3>
@@ -8274,6 +8324,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="m-notes-acts"><button type="button" class="btn sm" id="mReflectAdd" disabled>書き足す</button></div>
           <ul class="m-notes-list" id="mReflectList"></ul>
         </div>
+        <!-- (目標 その10 ①) a 見直し: the week's figures, a ふりかえり, next week's cells -->
+        <div class="card" id="mReviewCard"><button type="button" class="link-btn sheet-del" id="mReviewOpen" aria-expanded="false" aria-controls="mReview">見直しをする（この1週間）</button></div>
+        <div class="card pad m-review" id="mReview" hidden></div>
+        <p class="group-foot" id="mReviewFoot"></p>
         <!-- (目標 その3 ③) the elements by how far each has got, the one furthest behind first -->
         <h3 class="group-head" id="mBalanceHead" hidden>要素ごとの進み具合</h3>
         <div class="card pad m-balance" id="mBalance" hidden></div>
@@ -8292,6 +8346,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- (目標 その7 ⑤) every photo on its cells -->
         <h3 class="group-head" id="mPhotosHead" hidden>マスの写真</h3>
         <div class="card pad m-photos" id="mPhotos" hidden></div>
+        <!-- (目標 その10 ⑥) every memo of its cells -->
+        <h3 class="group-head" id="mMemosHead" hidden>マスのメモ</h3>
+        <div class="card m-memos" id="mMemos" hidden></div>
         <!-- (目標 その2 ④) 進めた日: 12 weeks as grass, 8 weeks as bars -->
         <h3 class="group-head">進めた日</h3>
         <div class="card pad m-moves" id="mMoves"></div>
@@ -8312,6 +8369,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- (目標 その2 ⑧) the goal and its cells as words to send (LINE and the like) -->
         <div class="card"><button type="button" class="link-btn sheet-del" id="mShare">文字で送る（LINEなど）</button></div>
         <p class="group-foot">目標・達成基準・期限と、マスを ✅ と ⬜ で送れます。人に宣言したいときに。</p>
+        <!-- (目標 その10 ⑩) the goal as a table -->
+        <div class="card"><button type="button" class="link-btn sheet-del" id="mCsv">表（CSV）で書き出す</button></div>
+        <p class="group-foot">マスを1行ずつ、段・達成した日・期限・数・メモなどと一緒に、表計算のアプリで開ける形で書き出します。</p>
         <!-- (目標 その8 ⑥) the goal as a card, a picture -->
         <div class="card"><button type="button" class="link-btn sheet-del" id="mCard">宣言カードを画像で保存</button></div>
         <p class="group-foot">目標・達成基準・期限・なぜと、いまの進み具合を1枚の画像にします。待ち受けや、人に見せるときに。</p>
@@ -13991,6 +14051,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (goalSeven) renderGoalPageSeven(); // (目標 その7 ② いまやる, ④ 期限が近いマス, ① 見通し, ⑨ ポイント, ⑩ コンパクト)
     if (goalEight) renderGoalPageEight(); // (目標 その8 ① きょうのマス, ⑤ 時間の配分, ⑨ しまった目標)
     if (goalNine) renderGoalPageNine(); // (目標 その9 ④ 今年の目標, ⑨ 最近のふりかえり, ① 出すもの)
+    if (goalTen) renderGoalPageTen(); // (目標 その10 ③ 月ごとの進み, ② やりたいこと)
     const { active, paused, done } = goalGroups();
     const list = $("goalList");
     list.replaceChildren();
@@ -14764,6 +14825,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...goalFourAlarms(now)); // (目標 その4 ⑤ 取り組む時間のお知らせ)
     out.push(...goalSevenAlarms(now)); // (目標 その7 ⑧ 始める日)
     out.push(...goalEightAlarms(now)); // (目標 その8 ⑩ 月末のふりかえり)
+    out.push(...goalTenAlarms(now)); // (目標 その10 ⑧ 中間目標の前日)
     out.push(...jnAlarms(now)); // (日記 ⑨ 書く時間のお知らせ)
     out.push(...st2Alarms(now)); // (勉強 その2 ⑨)
     out.push(...jn2Alarms(now)); // (日記 その2 ⑨ 思い出のお知らせ)
@@ -14821,6 +14883,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...goalFourPush()); // (目標 その4 ⑤)
     parts.push(...goalSevenParts()); // (目標 その7 ⑧)
     parts.push(...goalEightParts()); // (目標 その8 ⑩)
+    parts.push(...goalTenParts()); // (目標 その10 ⑧)
     parts.push(...jnPushParts()); // (日記 ⑨)
     parts.push(...st2PushParts()); // (勉強 その2 ⑨)
     parts.push(...jn2PushParts()); // (日記 その2 ⑨)
@@ -16023,9 +16086,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const top6 = goalSix && filled && !inner.length ? sixTop(cell, done) : null; // (目標 その6 ⑤ 見積もり)
         const top7 = goalSeven && filled ? sevenTop(cell, done) : null; // (目標 その7 ⑦ 順番, ③ あとで, ② いまやる)
         const top8 = goalEight && filled && !inner.length ? eightTop(cell, done) : null; // (目標 その8 ① 曜日, ② 手ごたえ)
+        const top10 = goalTen && filled && !inner.length ? tenTop(cell, done) : null; // (目標 その10 ⑨ 連続日数)
         box.classList.toggle("later", !!(goalSeven && filled && !done && cell.later));
-        top.hidden = !dueOn && !memo && !top4 && !top6 && !top7?.length && !top8?.length;
-        setChildren(top, top7, top8, dueOn ? el("span", { class: "m-due" + (dueOn < todayKey ? " warn" : "") }, `期限 ${fmtMD(dueOn)}`) : null, top4, top6,
+        top.hidden = !dueOn && !memo && !top4 && !top6 && !top7?.length && !top8?.length && !top10;
+        setChildren(top, top7, top8, top10, dueOn ? el("span", { class: "m-due" + (dueOn < todayKey ? " warn" : "") }, `期限 ${fmtMD(dueOn)}`) : null, top4, top6,
           memo ? el("span", { class: "m-memo-mark", role: "img", "aria-label": "メモあり" }, icon("journal", 14)) : null);
         setChildren(box.querySelector(".m-tools"),
           !filled ? null : inner.length ? el("span", { class: "m-count" }, `${inner.filter((x) => cellDone(x, left - 2)).length}/${inner.length}`)
@@ -16064,6 +16128,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (goalTwo) goalTwoPaint(g); // (目標 その2 ⑥⑦)
     if (goalFour) goalFourPaint(g); // (目標 その4 ③ なぜ)
     if (goalNine) ninePaint(g); // (目標 その9 ⑥ ロック)
+    if (goalTen) tenPaint(); // (目標 その10 ④ 文字の大きさ)
     $("mRoot").hidden = !!mPath.length;
     if (!mPath.length) {
       // a field being typed in keeps its text when the same goal is drawn again, but another goal always fills it: focus
@@ -16685,6 +16750,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       goalSeven ? sevenItems(k, cell, left) : null, // (目標 その7 ② いまやる, ③ あとで, ⑦ 順番)
       goalEight ? eightItems(k, cell, left) : null, // (目標 その8 ① 曜日, ② 手ごたえ)
       goalNine ? nineItems(k, cell) : null, // (目標 その9 ⑩ 複製)
+      goalTen ? tenItems(k, cell, left) : null, // (目標 その10 ⑦ 中のまだのマスをToDoに)
       closable ? el("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); setCellClosed(k, !cell.x); } }, cell.x ? "×をはずす（また分けられるように）" : "×で閉じる（この先は分けない）") : null);
     const box = mGrid.querySelector(`.m-cell[data-k="${k}"]`), b = box.getBoundingClientRect(), v = $("mandalaView").getBoundingClientRect();
     menu.hidden = false;
@@ -21633,7 +21699,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月14日 13:47"; // 501629dc (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月14日 13:55"; // 85af757b (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -23854,6 +23920,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (goalFive) renderFiveSettings(); // (目標 その5 ⑧ マスの期限のお知らせ, ⑩ マスを押したとき, ⑤ 自分のひな形)
     if (goalEight) renderEightSettings(); // (目標 その8 ⑩ 月末のふりかえり, ⑧ キーボード)
     if (goalNine) renderNineSettings(); // (目標 その9 ① 出すもの)
+    if (goalTen) renderTenSettings(); // (目標 その10 ④ 文字の大きさ, ⑧ 中間目標の前日)
   }
   function saveGoalReview(patch) { act(() => settings.set(GOAL_REVIEW_ID, { ...goalReview(), ...patch, updatedAt: Date.now() })); renderGoalSettings(); }
   $("goalReviewOn").addEventListener("change", (ev) => { saveGoalReview({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderGoalSettings); });
@@ -24083,11 +24150,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return {
       photo: p ? el("img", { class: "goal-photo", src: goalPhotoUrl(p), alt: "" }) : null,
       lines: [ls?.ready && ls.now !== null ? el("span", { class: "goal-link" }, "記録", el("span", { class: "bar-track" }, el("i", { style: `width:${Math.round(ls.ratio * 100)}%` })), `${Math.floor(ls.ratio * 100)}%`) : null,
-        pace ? el("span", { class: "goal-pace " + pace.cls }, pace.word) : null, quotaChip(g), goalThree ? streakChip(g) : null, goalFour ? metricChip(g) : null, goalSix ? msChip(g) : null, goalSix ? tagChip(g) : null, goalSeven ? startChip(g) : null, goalEight ? shelfChip(g) : null, ...(goalNine ? nineChips(g) : [])], // (目標 その2 ② 今週のノルマ; その3 ① 連続; その4 ① 数値; その6 ① 中間目標, ⑥ 分類)
+        pace ? el("span", { class: "goal-pace " + pace.cls }, pace.word) : null, quotaChip(g), goalThree ? streakChip(g) : null, goalFour ? metricChip(g) : null, goalSix ? msChip(g) : null, goalSix ? tagChip(g) : null, goalSeven ? startChip(g) : null, goalEight ? shelfChip(g) : null, ...(goalNine ? nineChips(g) : []), ...(goalTen ? tenChips(g) : [])], // (目標 その2 ② 今週のノルマ; その3 ① 連続; その4 ① 数値; その6 ① 中間目標, ⑥ 分類)
     };
   }
   // the goal's own level of its chart: ①②③④⑧ drawn with its fields
-  function renderGoalExtras(g) { renderGoalProgress(g); renderGoalLink(g); renderGoalPhoto(g); renderGoalNotes(g); renderGoalSteps(g); if (goalTwo) renderGoalTwo(g); if (goalThree) renderGoalThree(g); if (goalFour) renderGoalFour(g); if (goalSix) renderGoalSix(g); if (goalSeven) renderGoalSeven(g); if (goalEight) renderGoalEight(g); if (goalNine) renderGoalNine(g); } // (目標 その2 ②④⑨⑩; その3; その4; その6; その7; その8; その9)
+  function renderGoalExtras(g) { renderGoalProgress(g); renderGoalLink(g); renderGoalPhoto(g); renderGoalNotes(g); renderGoalSteps(g); if (goalTwo) renderGoalTwo(g); if (goalThree) renderGoalThree(g); if (goalFour) renderGoalFour(g); if (goalSix) renderGoalSix(g); if (goalSeven) renderGoalSeven(g); if (goalEight) renderGoalEight(g); if (goalNine) renderGoalNine(g); if (goalTen) renderGoalTen(g); } // (目標 その2 ②④⑨⑩; その3; その4; その6; その7; その8; その9; その10)
 
   // ---------- つみかさね ①〜⑩ (the user's calls, 2026-11-10) ----------
   // every block as つみかさね has them, for what is worked out away from its page too (a year's page, 記念, つみねこ's words,
@@ -33285,7 +33352,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   var GOAL_SHOW_KEY = LS_PREFIX + "goalShow";
   const GOAL_SHOWS = [["now", "いまやる", "goalNow"], ["today", "きょうのマス", "goalToday"], ["next", "次の一歩", "goalNext"], ["due", "期限が近いマス", "goalDue"],
     ["week", "今週", "goalWeek"], ["time", "今週の時間の配分", "goalTimeShare"], ["stats", "成績表（達成）", "goalStats"], ["line", "期限の見通し", "goalLine"],
-    ["year", "今年の目標", "goalYear"], ["notes", "最近のふりかえり", "goalNotesAll"], ["points", "ごほうびポイント", "goalPoints"]];
+    ["year", "今年の目標", "goalYear"], ["notes", "最近のふりかえり", "goalNotesAll"],
+    ["months", "月ごとの進み", "goalMonths"], ["wish", "やりたいこと（いつか）", "goalWish"], ["points", "ごほうびポイント", "goalPoints"]]; // (その10 ③②)
   function goalShowOff() { try { const v = JSON.parse(lsGet(GOAL_SHOW_KEY) || "{}"); return new Set(Array.isArray(v.off) ? v.off.filter((k) => GOAL_SHOWS.some(([x]) => x === k)) : []); } catch { return new Set(); } }
   function setGoalShow(k, on) {
     const off = goalShowOff();
@@ -33623,6 +33691,332 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   sheetEl.addEventListener("close", () => { if (sheetEl.open) return; $("goalFromText").hidden = true; $("goalFromTextOpen").setAttribute("aria-expanded", "false"); });
   goalNine = true;
+
+  // ---------- 目標 その10 ①〜⑩ (the user's calls, 2026-11-14): a 見直し in one place (①), things to do some day (②), the
+  // cells moved on month by month (③), the size of the chart's words (④), a time to spend on the goal (⑤), every memo of
+  // its cells (⑥), the cells inside one put in ToDo at once (⑦), the day before a 中間目標 told (⑧), the days in a row a
+  // counted cell went up (⑨), and the goal written out as a table (⑩) ----------
+  // (what was there calls in here as it draws; before this part has run, as the page opens, these do nothing)
+  var goalTen = false;
+
+  // ① 見直しをする (g.reviewedAt): the last 7 days in figures, a ふりかえり to write (its 型 in place), and the cells to do
+  // next week put in いまやる (up to 3, as room allows); finished, all kept at once with 元に戻す
+  const REVIEW_TPL = "よかったこと：\n課題：\n次にやること：";
+  let reviewFor = null, reviewPick = new Set(), reviewDraft = null; // (what is typed, kept through a redraw)
+  function reviewFigs(g) {
+    const from = addDays(todayKey, -6);
+    let moved = 0, done = 0, mins = 0;
+    for (const [d, n] of moveDays(g)) if (d >= from) moved += n;
+    for (const l of goalLeaves2(g)) if (l.cell.d && num(l.cell.at) > 0 && ymd(new Date(num(l.cell.at))) >= from) done++;
+    (function walk(cells) { for (const c of cells || []) { if (!c) continue; if (c.tlog && typeof c.tlog === "object") for (const [d, v] of Object.entries(c.tlog)) if (isDay(d) && d >= from) mins += num(v); walk(c.c); } })(g.mandala);
+    return { moved, done, mins };
+  }
+  function reviewChoices(g) {
+    const out = [], seen = new Set(), add = (path, name, why) => { const k = path.join("."); if (seen.has(k) || out.length >= 6) return; const c = nodeAt(g, path); if (!c || c.d || c.now || c.later) return; seen.add(k); out.push({ k, name, why }); };
+    for (const s of goalNextFor(g)) add(s.path, s.name, s.why);
+    for (const l of goalLeaves2(g)) if (!(goalThree && linkOf(l.cell))) add(l.path, l.name, l.above.length ? clip(l.above.join(" › "), 14) : "");
+    return out;
+  }
+  function renderReview(g) {
+    const box = $("mReview"), open = reviewFor === g.id && !g.done;
+    $("mReviewOpen").textContent = open ? "見直しをやめる" : "見直しをする（この1週間）";
+    $("mReviewOpen").setAttribute("aria-expanded", String(open));
+    $("mReviewCard").hidden = $("mReviewFoot").hidden = !!g.done;
+    box.hidden = !open;
+    $("mReviewFoot").textContent = num(g.reviewedAt) > 0 ? `前回の見直し：${fmtMDW(ymd(new Date(num(g.reviewedAt))))}（${agoWords(ymd(new Date(num(g.reviewedAt))))}）` : "1週間に1回、数字を見てふりかえり、来週やるマスを決めると、進めやすくなります。";
+    if (!open || sixKeep(box)) return;
+    const f = reviewFigs(g), cs = reviewChoices(g), room = Math.max(0, NOW_MAX - nowCells().length);
+    for (const k of [...reviewPick]) if (!cs.some((c) => c.k === k)) reviewPick.delete(k);
+    const tile = (label, v) => el("span", { class: "gs-tile" }, el("span", { class: "gs-l" }, label), el("span", { class: "gs-v" }, v));
+    const ta = el("textarea", { id: "mReviewText", class: "grow memo", rows: 4, maxlength: 2000, "aria-label": "見直しのふりかえり" });
+    ta.value = reviewDraft ?? REVIEW_TPL;
+    ta.addEventListener("input", () => { reviewDraft = ta.value; });
+    setChildren(box, el("p", { class: "rv-head" }, "この1週間"),
+      el("div", { class: "gs-tiles" }, tile("進めたマス", String(f.moved)), tile("達成したマス", String(f.done)), tile("取り組んだ時間", f.mins ? keepUnits(durText(Math.round(f.mins))) : "—")),
+      el("p", { class: "rv-head" }, "ふりかえり"), ta,
+      el("p", { class: "rv-head" }, `来週やるマス（いまやるに入れる・${Math.min(3, room)}つまで）`),
+      cs.length && room ? el("div", { class: "rv-picks", role: "group", "aria-label": "来週やるマス" }, cs.map((c) => el("button", { type: "button", class: "chip-btn", "aria-pressed": String(reviewPick.has(c.k)), title: c.why,
+        onclick: (ev) => { if (reviewPick.has(c.k)) reviewPick.delete(c.k); else if (reviewPick.size < Math.min(3, room)) reviewPick.add(c.k); else { flash(`${Math.min(3, room)}つまで選べます`); return; } ev.currentTarget.setAttribute("aria-pressed", String(reviewPick.has(c.k))); } }, c.name)))
+        : el("p", { class: "sub" }, room ? "まだのマスはありません。" : `いまやるは ${NOW_MAX} つまで入っています。`),
+      el("div", { class: "m-notes-acts rv-acts" }, el("button", { type: "button", class: "link-btn", onclick: () => { reviewFor = null; reviewPick = new Set(); reviewDraft = null; renderReview(goals.get(g.id) || g); } }, "やめる"),
+        el("button", { type: "button", class: "btn sm", id: "mReviewDone", onclick: () => finishReview(g.id) }, "見直しを終える")));
+  }
+  function finishReview(id) {
+    const g = goals.get(id);
+    if (!g) return;
+    const text = (reviewDraft ?? $("mReviewText")?.value ?? "").trim(), note = text && text !== REVIEW_TPL.trim() ? text.slice(0, 2000) : "";
+    const chart = editChart(g), room = Math.max(0, NOW_MAX - nowCells().length);
+    let put = 0;
+    for (const k of reviewPick) {
+      if (put >= Math.min(3, room)) break;
+      const path = k.split(".").map(Number), c = slotsAt(chart, path.slice(0, -1))[path[path.length - 1]];
+      if (c?.t?.trim() && !c.d && !c.now) { c.now = Date.now() + put; delete c.later; put++; }
+    }
+    const was = { mandala: g.mandala, notes: g.notes, reviewedAt: g.reviewedAt };
+    const now = Date.now();
+    act(() => goals.update(id, { reviewedAt: now, ...(put ? { mandala: chart } : {}), ...(note ? { notes: [...goalNotes(g), { id: uid(), at: now, text: note }] } : {}) }));
+    reviewFor = null; reviewPick = new Set(); reviewDraft = null;
+    flash("見直しをしました" + (note ? "（ふりかえりに書きました）" : "") + (put ? `。${put}マスをいまやるに入れました` : ""), () => act(() => goals.update(id, was)));
+  }
+  $("mReviewOpen").addEventListener("click", () => {
+    commitChartText();
+    const g = goals.get(mandalaGoal);
+    if (!g) return;
+    reviewFor = reviewFor === g.id ? null : g.id; reviewPick = new Set(); reviewDraft = null;
+    renderReview(g);
+    if (reviewFor) setTimeout(() => $("mReview").scrollIntoView({ block: "nearest", behavior: reduceMotion.matches ? "auto" : "smooth" }), 50);
+  });
+
+  // ② やりたいこと（いつか） (settings goalWish: { items: [{ id, t, at }] }): what may be a goal some day; 目標にする opens a
+  // new goal with its words, and the goal added takes it off the list
+  var GOAL_WISH_ID = "goalWish";
+  let wishToGoal = null;
+  const wishItems = () => { const v = settings.get(GOAL_WISH_ID)?.items; return Array.isArray(v) ? v.filter((x) => x && typeof x.id === "string" && typeof x.t === "string") : []; };
+  function saveWish(items, said, was) {
+    act(() => settings.set(GOAL_WISH_ID, { items, updatedAt: Date.now() }));
+    if (said) flash(said, was ? () => act(() => settings.set(GOAL_WISH_ID, { items: was, updatedAt: Date.now() })) : undefined);
+  }
+  function renderWish() {
+    const box = $("goalWish");
+    if (!box) return;
+    if (goalFilter === "done" || foldText(goalQuery.trim())) { box.hidden = true; box.replaceChildren(); return; }
+    if (sixKeep(box)) return;
+    box.hidden = false;
+    const list = wishItems();
+    const t = el("input", { type: "text", class: "m-cnt-in", maxlength: 100, placeholder: "例：フルマラソンを走る", "aria-label": "やりたいことを足す", enterkeyhint: "done" });
+    setChildren(box, el("div", { class: "goal-head" }, el("span", {}, "やりたいこと（いつか）"), el("span", {}, list.length ? `${list.length} 件` : "")),
+      el("div", { class: "card pad gwish-card" },
+        list.length ? el("ul", { class: "six-list gwish-list" }, list.map((x) => el("li", {}, el("span", { class: "gwish-t" }, oneLine(x.t)),
+          el("button", { type: "button", class: "btn sm ghost", "aria-label": `「${clip(oneLine(x.t), 20)}」を目標にする`, onclick: (ev) => wishGoal(x, ev.detail === 0) }, "目標にする"),
+          el("button", { type: "button", class: "link-btn", "aria-label": `「${clip(oneLine(x.t), 20)}」を削除`, onclick: () => { const was = wishItems(); saveWish(was.filter((y) => y.id !== x.id), `「${clip(oneLine(x.t), 20)}」を削除しました`, was); } }, "削除")))) : el("p", { class: "sub" }, "まだ目標にしない、いつかやりたいことを書きためておけます。"),
+        list.length < 50 ? el("form", { class: "six-add", autocomplete: "off", onsubmit: (ev) => {
+          ev.preventDefault();
+          const v = t.value.trim().slice(0, 100);
+          if (!v) { t.focus(); return; }
+          sixBlur();
+          const was = wishItems();
+          saveWish([...was, { id: uid(), t: v, at: Date.now() }], `「${clip(v, 20)}」をやりたいことに足しました`, was);
+        } }, t, el("button", { type: "submit", class: "btn sm" }, "足す")) : null));
+  }
+  function wishGoal(x, byKey) {
+    if (sheetEl.open) return;
+    openNewGoal(byKey);
+    wishToGoal = x.id;
+    const f = $("goalTitle");
+    f.value = oneLine(x.t).slice(0, 200); growField(f); syncGoalSave();
+    setTimeout(() => $("goalCriterion").focus(), 350);
+  }
+  // (before the sheet's own, which empties the form: the goal added, it leaves the list)
+  $("goalForm").addEventListener("submit", () => {
+    if (!wishToGoal || !$("goalTitle").value.trim() || !$("goalCriterion").value.trim() || !$("goalDeadline").value) return;
+    const id = wishToGoal, was = wishItems();
+    wishToGoal = null;
+    if (was.some((y) => y.id === id)) saveWish(was.filter((y) => y.id !== id));
+  }, true);
+
+  // ③ 月ごとの進み: the cells moved on (as 進めた日 counts them) across every goal, month by month for 12 months
+  function renderGoalMonths() {
+    const box = $("goalMonths");
+    if (!box) return;
+    const mos = Array.from({ length: 12 }, (_, i) => monthShift(todayKey.slice(0, 7), i - 11)), per = new Map(mos.map((m) => [m, 0]));
+    if (goalFilter !== "done" && !foldText(goalQuery.trim())) for (const g of goals.items) { if (typeof g.title !== "string") continue; for (const [d, n] of moveDays(g)) { const m = d.slice(0, 7); if (per.has(m)) per.set(m, per.get(m) + n); } }
+    const vals = mos.map((m) => per.get(m)), total = vals.reduce((s, v) => s + v, 0);
+    box.hidden = !total;
+    if (!total) { box.replaceChildren(); return; }
+    const top = Math.max(...vals), best = mos[vals.indexOf(top)], now = vals[11], last = vals[10];
+    const read = el("p", { class: "sub gm-read", "aria-live": "polite" }, `今月 ${now}マス（先月 ${last}）・この12か月でいちばんは ${Number(best.slice(5))}月（${top}マス）`);
+    const bars = el("div", { class: "mv-bars gm-bars", role: "img", "aria-label": `月ごとに進めたマス：${mos.map((m, i) => `${Number(m.slice(5))}月 ${vals[i]}`).join("、")}` },
+      mos.map((m, i) => el("span", { class: "mv-bar" + (i === 11 ? " now" : ""), title: `${Number(m.slice(0, 4))}年${Number(m.slice(5))}月：${vals[i]}マス`, "data-say": `${Number(m.slice(0, 4))}年${Number(m.slice(5))}月：${vals[i]}マス` },
+        el("i", { style: `height: ${vals[i] ? Math.max(4, Math.round((vals[i] / top) * 100)) : 0}%` }, (i === 11 || m === best) && vals[i] ? el("b", {}, String(vals[i])) : null))));
+    bars.addEventListener("click", (ev) => { const c = ev.target.closest(".mv-bar"); if (c) read.textContent = c.dataset.say; });
+    setChildren(box, el("div", { class: "goal-head" }, el("span", {}, "月ごとの進み"), el("span", {}, `この12か月 ${total}マス`)),
+      el("div", { class: "card pad gm-card" }, bars, el("div", { class: "mv-xs gm-xs", "aria-hidden": "true" }, mos.map((m) => el("span", {}, String(Number(m.slice(5)))))), read));
+  }
+
+  // ④ チャートの文字の大きさ (this device's): 小さく・ふつう・大きく, the cells' words measured again to fit
+  var GOAL_FONT_KEY = LS_PREFIX + "goalFont";
+  const goalFont = () => { const v = lsGet(GOAL_FONT_KEY); return v === "s" || v === "l" ? v : ""; };
+  function tenPaint() {
+    if (!goalTen) return;
+    const v = goalFont(), view = $("mandalaView");
+    if (view.classList.contains("mfont-s") === (v === "s") && view.classList.contains("mfont-l") === (v === "l")) return;
+    view.classList.toggle("mfont-s", v === "s"); view.classList.toggle("mfont-l", v === "l");
+    for (const t of mGrid.querySelectorAll(".m-text")) delete t.dataset.fit;
+    fitCells();
+  }
+  $("goalFont").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button[data-font]");
+    if (!b) return;
+    lsPut(GOAL_FONT_KEY, b.dataset.font);
+    renderTenSettings(); tenPaint();
+  });
+
+  // ⑤ 取り組んだ時間の目標 (g.timeGoal, minutes): against the time spent on its cells (その4 ②), and what a day comes to
+  // until its 期限
+  const TIME_GOALS = [10, 20, 30, 50, 100, 200, 300, 500, 1000];
+  function renderTimeGoal(g) {
+    const box = $("mTimeGoal");
+    if (!box) return;
+    const tg = num(g.timeGoal) > 0 ? num(g.timeGoal) : 0, all = goalTime(g).all;
+    const sel = el("select", { "aria-label": "取り組む時間の目標", onchange: (ev) => { const v = Number(ev.target.value) * 60, was = g.timeGoal; sixPatch(g.id, { timeGoal: v || undefined }, v ? `取り組む時間の目標を ${v / 60}時間にしました` : "時間の目標をはずしました", { timeGoal: was }); } },
+      el("option", { value: 0, selected: !tg }, "決めない"), TIME_GOALS.map((h) => el("option", { value: h, selected: tg === h * 60 }, `${h}時間`)));
+    const parts = [el("label", { class: "m-time-row" }, el("span", {}, "時間の目標"), sel)];
+    if (tg) {
+      const r = all / tg, n = !g.done && isDay(g.deadline || "") ? daysUntil(g.deadline) + 1 : 0, rest = Math.max(0, tg - all);
+      parts.push(el("span", { class: "progress fill-bar" }, el("span", { class: "bar-track" }, el("i", { style: `width:${Math.min(100, Math.round(r * 100))}%` })), el("span", { class: "pct" }, `${Math.floor(r * 100)}%`)),
+        el("p", { class: "sub" }, rest ? `${keepUnits(durText(Math.round(all)) || "0分")} / ${tg / 60}時間・あと ${keepUnits(durText(Math.round(rest)))}` + (n > 0 ? `。期限まで1日あたり 約${keepUnits(durText(Math.max(1, Math.ceil(rest / n))))}` : "") : `${tg / 60}時間に届きました（${keepUnits(durText(Math.round(all)))}）`));
+    }
+    setChildren(box, parts);
+  }
+
+  // ⑥ マスのメモの一覧: every cell's memo (その1 ⑦) of the goal, where it is; pressed, the cell's level opens with its memo
+  function renderMemos(g) {
+    const box = $("mMemos");
+    if (!box) return;
+    const out = [];
+    (function walk(cells, path, above) { (cells || []).forEach((c, i) => { if (!c?.t?.trim()) return; const p = [...path, i]; if (typeof c.m === "string" && c.m.trim()) out.push({ p, name: oneLine(c.t), above, m: c.m.trim() }); walk(c.c, p, [...above, oneLine(c.t)]); }); })(g.mandala, [], []);
+    $("mMemosHead").hidden = box.hidden = !out.length;
+    if (!out.length) { box.replaceChildren(); return; }
+    setChildren(box, el("ul", { class: "list gmemo-list" }, out.map((x) => el("li", {}, el("button", { type: "button", class: "gmemo-row", onclick: () => { commitChartText(); mPath = x.p.slice(0, -1); mOverview = false; mList = false; showChartLevel(); openCellNote(x.p[x.p.length - 1]); } },
+      el("span", { class: "gmemo-name" }, x.above.length ? el("span", { class: "sub" }, clip(x.above.join(" › "), 16) + " › ") : null, x.name), el("span", { class: "gmemo-text" }, x.m))))));
+  }
+
+  // ⑦ 中のまだのマスをToDoに: a cell with cells inside, its leaves still to do and in no ToDo yet put in ToDo at once (a
+  // 期限 picked first), each joined to its cell as one put in alone is; 元に戻す takes them all out
+  function bulkTodoLeaves(cell, left) { return fiveLeaves(cell, left - 1).filter((y) => !y.d && !(y.todo && todos.get(y.todo)) && !(goalThree && linkOf(y))); }
+  function bulkTodoMenu(k) {
+    const g = goals.get(mandalaGoal), cell = g && nodeAt(g, mPath)?.c?.[k], menu = $("mMenu");
+    if (!cell?.t?.trim()) return;
+    const n = bulkTodoLeaves(cell, goalDepth(g) - mPath.length).length;
+    setChildren(menu, el("p", { class: "m-menu-head pad" }, `「${clip(oneLine(cell.t), 12)}」の ${n}マスの期限`),
+      [["期限なし", null], ["きょう", todayKey], ["あした", addDays(todayKey, 1)], ["1週間後", addDays(todayKey, 7)]].map(([w, due]) => el("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); bulkTodo(k, due); } }, w)));
+    menu.querySelector("button")?.focus({ preventScroll: true });
+  }
+  function bulkTodo(k, due) {
+    commitChartText();
+    const g = goals.get(mandalaGoal), chart = g && editChart(g), cell = chart && slotsAt(chart, mPath)[k];
+    if (!cell?.t?.trim()) return;
+    const leaves = bulkTodoLeaves(cell, goalDepth(g) - mPath.length), id = g.id, name = clip(oneLine(cell.t), 16);
+    if (!leaves.length) { flash("ToDoに入れるマスがありません"); return; }
+    act(async () => {
+      const ids = await todos.addMany(leaves.map((y) => ({ text: oneLine(y.t).slice(0, 200), done: false, ...(due ? { due } : {}), goal: id, createdAt: Date.now() })));
+      leaves.forEach((y, i) => { y.todo = ids[i]; });
+      const x = goals.get(id);
+      if (!x) return;
+      saveChart(x, chart, { said: `「${name}」の ${ids.length}マスをToDoに入れました${due ? `（期限 ${fmtDay(due)}）` : ""}`, undo: () => {
+        takeBack(todos, ids);
+        const y = goals.get(id), ch = y && editChart(y), gone = new Set(ids);
+        if (!ch) return;
+        (function walk(cells) { for (const c of cells || []) { if (!c) continue; if (gone.has(c.todo)) delete c.todo; walk(c.c); } })(ch);
+        saveChart(y, ch);
+      } });
+    });
+  }
+  function tenItems(k, cell, left) {
+    if (!goalTen || !kidsOf(cell, left - 1).length) return null;
+    const n = bulkTodoLeaves(cell, left).length;
+    return n ? el("button", { type: "button", role: "menuitem", onclick: () => bulkTodoMenu(k) }, `中のまだのマスをToDoに（${n}マス）`) : null;
+  }
+
+  // ⑧ 中間目標の前日のお知らせ (目標's 設定; on at first, as マスの期限's): the day before a 中間目標 not reached yet, at the
+  // time set (9:00 at first), how far there is still to go
+  var GOAL_MS_ID = "goalMsRemind";
+  function goalMsSet() { const v = settings.get(GOAL_MS_ID) || {}; return { on: v.on !== false, at: isHm(v.at) ? v.at : "09:00" }; }
+  function msAhead() {
+    const out = [];
+    for (const g of goals.items) {
+      if (typeof g.title !== "string" || g.done || g.pausedAt || (goalSeven && startOf(g))) continue;
+      const p = goalPct(g);
+      for (const m of msList(g)) if (!m.hit && p < m.p && m.d > todayKey) out.push({ g, m, p });
+    }
+    return out;
+  }
+  function goalTenAlarms(now) {
+    if (!goalTen) return [];
+    const s = goalMsSet();
+    if (!s.on) return [];
+    const out = [], [h, mi] = s.at.split(":").map(Number);
+    for (const { g, m, p } of msAhead()) {
+      const d = parseYmd(addDays(m.d, -1)), at = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, mi).getTime();
+      if (at > now + 5000 && at <= now + PUSH_AHEAD * 864e5) out.push({ at, title: clip(oneLine(g.title), 60), body: `あした ${fmtMD(m.d)} までに ${m.p}% の中間目標です（いま ${p}%、あと ${m.p - p}%）。`, tag: `goal-ms:${g.id}:${m.id}`, url: `./#goal:${g.id}` });
+    }
+    return out;
+  }
+  function goalTenParts() {
+    if (!goalTen) return [];
+    const s = goalMsSet();
+    return s.on ? [["goalMs", s.at, msAhead().map(({ g, m, p }) => [g.id, m.id, m.d, m.p, p])]] : [];
+  }
+  function saveGoalMs(patch) { act(() => settings.set(GOAL_MS_ID, { ...goalMsSet(), ...patch, updatedAt: Date.now() })); renderTenSettings(); }
+  $("goalMsOn").addEventListener("change", (ev) => { saveGoalMs({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderTenSettings); });
+  $("goalMsAt").addEventListener("change", (ev) => { if (isHm(ev.target.value)) saveGoalMs({ at: ev.target.value }); });
+
+  // ⑨ 数えるマスの連続日数: the days in a row a counted cell went up (その2 ①), to today or yesterday, over its words
+  function cntStreak(c) {
+    const log = c?.log && typeof c.log === "object" && !Array.isArray(c.log) ? c.log : null;
+    if (!log) return 0;
+    let d = num(log[todayKey]) > 0 ? todayKey : addDays(todayKey, -1), n = 0;
+    while (num(log[d]) > 0 && n < 3660) { n++; d = addDays(d, -1); }
+    return n;
+  }
+  function tenTop(cell, done) {
+    if (!goalTen || done || !(goalTwo && cntOf(cell))) return null;
+    const n = cntStreak(cell);
+    return n >= 2 ? el("span", { class: "m-streak", title: `${n}日続けて進めています${num(cell.log?.[todayKey]) > 0 ? "" : "（きょうはまだ）"}` }, `🔥${n}日`) : null;
+  }
+
+  // ⑩ 表（CSV）で書き出す: every cell written in, a row each, where it is, whether and when it was done, its 期限, count,
+  // weight, time and memo
+  async function goalCsv(id) {
+    commitChartText();
+    const g = goals.get(id);
+    if (!g) return;
+    const rows = [["段", "要素", "マス", "上のマス", "達成", "達成した日", "期限", "数（いま）", "数（目標）", "単位", "重み", "見積もり（分）", "取り組んだ時間（分）", "メモ"]];
+    const depth = goalDepth(g);
+    (function walk(cells, left, above, lv) { (cells || []).forEach((c) => {
+      if (!c?.t?.trim()) return;
+      const kids = kidsOf(c, left - 1), done = cellDone(c, left - 1);
+      rows.push([lv + 1, above[0] || oneLine(c.t), oneLine(c.t), above.length ? above[above.length - 1] : oneLine(g.title), done ? "○" : "", !kids.length && c.d && num(c.at) > 0 ? ymd(new Date(num(c.at))) : "",
+        isDay(c.due || "") ? c.due : "", cntOf(c) ? num(c.v) : "", cntOf(c) || "", cntOf(c) ? cntUnit(c) : "", num(c.wt) === 2 ? "大" : num(c.wt) === 0.5 ? "小" : "", num(c.est) || "", num(c.mins) ? Math.round(num(c.mins)) : "", typeof c.m === "string" ? c.m : ""]);
+      if (kids.length) walk(c.c, left - 1, [...above, oneLine(c.t)], lv + 1);
+    }); })(g.mandala, depth, [], 0);
+    if (rows.length < 2) { flash("書き出すマスがありません"); return; }
+    const name = `tsumikasane-goal-${todayKey}.csv`, how = await handOut(new Blob([csvOf(rows)], { type: "text/csv" }), name);
+    if (how) flash(how === "shared" ? "目標のマスを表にして書き出しました" : `「${name}」を書き出しました（${rows.length - 1}マス）`);
+  }
+  $("mCsv").addEventListener("click", () => { if (mandalaGoal) goalCsv(mandalaGoal); });
+
+  // over the goal's block: ① a 見直し more than a week ago
+  function tenChips(g) {
+    if (!goalTen || g.done || !(num(g.reviewedAt) > 0)) return [];
+    const n = daysBetween(ymd(new Date(num(g.reviewedAt))), todayKey);
+    return n >= 7 ? [el("span", { class: "goal-chain" }, `見直しから ${n}日`)] : [];
+  }
+  // 目標's 設定: ④ 文字の大きさ, ⑧ 中間目標の前日のお知らせ
+  function renderTenSettings() {
+    if (!goalTen) return;
+    const v = goalFont();
+    for (const b of $("goalFont").querySelectorAll("button")) b.setAttribute("aria-pressed", String((b.dataset.font || "") === v));
+    const s = goalMsSet(), st = pushState(), f = $("goalMsAt");
+    $("goalMsOn").checked = s.on;
+    if (document.activeElement !== f) f.value = s.at;
+    f.disabled = !s.on;
+    $("goalMsFoot").textContent = !s.on ? "オンにすると、中間目標の前の日に、まだ届いていない中間目標をお知らせします。"
+      : st === "on" ? `中間目標の前の日の ${s.at} に、まだ届いていなければ、この端末にお知らせします。` : pushWords(st).replace("通知アラーム", "お知らせ");
+  }
+  // the goal's own level: ①⑤⑥ (and その9's 目次 again, with these drawn)
+  function renderGoalTen(g) {
+    if (!goalTen) return;
+    renderReview(g); renderTimeGoal(g); renderMemos(g);
+    if (goalNine) renderToc();
+  }
+  // the page: ②③
+  function renderGoalPageTen() {
+    if (!goalTen) return;
+    draw(renderGoalMonths); draw(renderWish);
+  }
+  sheetEl.addEventListener("close", () => { if (sheetEl.open) return; reviewFor = null; reviewPick = new Set(); reviewDraft = null; wishToGoal = null; });
+  goalTen = true;
 
   // ---------- ToDo その4 ①〜⑩ (the user's calls, 2026-11-11): the list narrowed and put in another order (①), what fits a
   // spare moment (②), a big one spread over the days to its 期限 (③), 朝・昼・夜 (④), the weather it is for (⑤), a list for
