@@ -66,7 +66,7 @@ const download = async (p, click) => { const [d] = await Promise.all([p.waitForE
   await p.click("#recDayNext"); await p.waitForTimeout(200);
   ok((await txt(p, "#recDayTitle")) === "10月3日（土）" && (await txt(p, "#sec-recday")).includes("からだ"), "① the next day");
   await p.click("#backBtn"); await p.waitForTimeout(700);
-  ok(await p.evaluate(() => document.documentElement.dataset.tab) === "records", "① back to 記録");
+  ok(await p.evaluate(() => document.documentElement.dataset.tab) === "tsumi", "① back to 記録 (on つみかさね's page since 2026-11-11)");
   // ① from a kind's list: its date, and back there
   await p.locator('#sumCards .sum-open[data-kind="journal"]').click(); await p.waitForTimeout(700);
   await p.locator("#recList .rec-day-open").first().click(); await p.waitForTimeout(700);
