@@ -37,8 +37,8 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   const [dl] = await Promise.all([p.waitForEvent("download"), p.click("#bt4Csv")]);
   const csv = fs.readFileSync(await dl.path(), "utf8");
   const lines = csv.replace(/^﻿/, "").trim().split(/\r\n/);
-  ok(dl.suggestedFilename() === "tsumikasane-baito-2026-11-26.csv" && lines[0] === "日付,曜日,バイト先,始まり,終わり,休憩(分),働いた時間(時間),うち深夜(時間),給料の見込み(円),メモ", "⑩ head: " + lines[0]);
-  ok(lines.includes("2026-11-02,月,カフェ,09:00,19:00,60,9,0,8950,") && lines.includes("2026-11-28,土,カフェ,17:00,22:00,0,5,0,4700,研修") && lines.length === DATA.shifts.length + 1, "⑩ rows: " + lines.length);
+  ok(dl.suggestedFilename() === "tsumikasane-baito-2026-11-26.csv" && lines[0] === "日付,曜日,バイト先,始まり,終わり,休憩(分),働いた時間(時間),うち深夜(時間),時給(円),給料の見込み(円),メモ", "⑩ head: " + lines[0]);
+  ok(lines.includes("2026-11-02,月,カフェ,09:00,19:00,60,9,0,1000,8950,") && lines.includes("2026-11-28,土,カフェ,17:00,22:00,0,5,0,1000,4700,研修") && lines.length === DATA.shifts.length + 1, "⑩ rows: " + lines.length);
   await p.screenshot({ path: (process.argv[2] || __dirname) + "/baito4-job.png", fullPage: true });
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
