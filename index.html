@@ -3749,6 +3749,24 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
 .cal9-often-tool[hidden] { display: none; }
 .cal9-often-tool { margin-top: -6px; }
 .cal9-often-edit { min-height: 32px; font-size: var(--t-sub); }
+/* カレンダー その10 ①〜⑩ (2026-11-14). ① the month's weeks under 毎月（第N曜日）, as the weekdays are under 毎週 */
+.cal10-nths[hidden] { display: none; }
+/* ② この回のメモ */
+.cal10-turn { display: grid; gap: 8px; }
+.cal10-turn input { min-height: 40px; padding: 0 12px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); }
+.cal10-turn .sub, .cal10-stamps .sub { margin: 0; color: var(--muted); font-size: var(--t-sub); }
+.cal10-note-line { overflow-wrap: anywhere; }
+/* ③ 1年前のきょう, in the day's sheet */
+.cal10-ago { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; justify-self: start; min-height: 36px; padding: 0 var(--space-2); text-align: start; }
+.cal10-ago-head { color: var(--muted); font-size: var(--t-sub); font-weight: 400; }
+/* ④ カウントダウン, in 予定 */
+.cal10-count .cal10-left { flex: none; min-width: 5.5em; color: var(--c-cal); font-weight: 700; font-variant-numeric: tabular-nums; }
+/* ⑥ よく使う時刻, beside 開始's buttons */
+.cal10-often { display: inline-flex; align-items: baseline; gap: 4px; }
+.cal10-often-w { color: var(--muted); font-size: 10px; font-weight: 400; }
+/* ⑦ スタンプを選ぶ */
+.cal10-stamps { display: grid; gap: 8px; }
+.cal10-palette { display: flex; flex-wrap: wrap; gap: 4px; }
 /* 目標 その2 ①〜⑩ (2026-11-11). ① a counted cell: its ring (a press counts one) and the count by it, the cell filling
    from its foot as the count goes up; ⑦ an element's own colour: its cell tinted, with a line of it along the top */
 .m-cell[data-k] { --m-bg: var(--surface); }
@@ -14860,6 +14878,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       for (let k = Math.max(0, (ly - y0) * 12 + lm - m0 - 1); ; k++) {
         const y = y0 + Math.floor((m0 - 1 + k) / 12), m = ((m0 - 1 + k) % 12) + 1, ym = `${y}-${pad(m)}`;
         if (ym + "-01" > last) break;
+        const ns10 = !e.toEnd && cal10Nths(e); // (カレンダー その10 ① 第2・第4 and the like: each of its weeks, from its first day)
+        if (ns10) { const d1 = 1 + ((wd - new Date(y, m - 1, 1).getDay() + 7) % 7); for (const nn of ns10) { const dn = d1 + 7 * (nn - 1), dd = `${ym}-${pad(dn)}`; if (dn <= daysInMonth(ym) && dd >= e.date) take(dd); } continue; }
         const day = 1 + ((wd - new Date(y, m - 1, 1).getDay() + 7) % 7) + 7 * (n - 1);
         if (day <= daysInMonth(ym)) take(`${ym}-${pad(day)}`);
         else if (e.toEnd) take(`${ym}-${pad(day - 7)}`);
@@ -15388,6 +15408,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...cal4Alarms(now)); // (カレンダー その4 ⑤ 終わったらお知らせ)
     out.push(...cal5WeekAlarms(now)); // (カレンダー その5 ⑥ 来週の予定)
     out.push(...cal7StarAlarms(now)); // (カレンダー その7 ④ 大事な予定の前の日)
+    out.push(...cal10Alarms(now)); // (カレンダー その10 ⑩ そろそろ支度)
     out.push(...tdAlarms(now)); // ① ToDo's お知らせ (the user's call, 2026-11-10)
     out.push(...tdMorningAlarms(now), ...tdWaitAlarms(now)); // (ToDo その2 ① 朝のまとめ, ⑥ 返事待ち)
     out.push(...tdPreAlarms(now), ...tdEveningAlarms(now)); // (ToDo その3 ② 前もって, ③ 夜のお知らせ)
@@ -15450,6 +15471,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...cal5Push()); // (カレンダー その5 ⑥ 来週の予定, ④ お休み)
     parts.push(...cal7Push()); // (カレンダー その7 ④ 大事な予定の前の日, ① 自分の休みの日)
     parts.push(...cal9Push()); // (カレンダー その9 ⑤ お知らせを休む)
+    parts.push(...cal10Push()); // (カレンダー その10 ⑩ 支度)
     parts.push(...tdPushParts()); // (① ToDo's お知らせ, and the focus timer's end)
     parts.push(...tdMorningParts(), ...tdWaitParts()); // (ToDo その2 ①⑥)
     parts.push(...tdTenPush()); // (ToDo その3 ②③④)
@@ -18320,7 +18342,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   function renderCalendar() {
     syncCalView();
-    draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); draw(renderCalSix); draw(renderCalSeven); draw(renderCalEight); draw(renderCalNine); // (その9 ②⑤⑥⑦⑧⑩; その8 ①④⑤⑩; その7 ①③④⑥ the gear and the forms; その6 ①⑤⑧; その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
+    draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); draw(renderCalSix); draw(renderCalSeven); draw(renderCalEight); draw(renderCalNine); draw(renderCalTen); // (その10 ③⑤⑦; その9 ②⑤⑥⑦⑧⑩; その8 ①④⑤⑩; その7 ①③④⑥ the gear and the forms; その6 ①⑤⑧; その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
     const title = calTitle();
     if ($("calMonthName").textContent !== title) $("calMonthName").textContent = title; // a live region: only a change is read out
     const todoBy = groupBy(todos.items, (t) => t.due);
@@ -18471,14 +18493,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // repeat, then its memo
   function planRow(t, onclick, verb) {
     const { e } = t, l = labelOf(e), when = turnTimeText(t);
-    const sub = [e.ten ? (Array.isArray(e.cands) && e.cands.length ? `仮・候補 ${e.cands.length + 1}日` : "仮") : "", l ? l.name : "", t.days > 1 ? `${fmtMD(t.start)}〜${fmtMD(addDays(t.start, t.days - 1))}` : "", e.repeat ? repeatName(e.repeat, e.date, false, false, e.repeatDays) + cal3RowRep(t) : ""].filter(Boolean).join("・"); // (カレンダー その3 ①②③)
+    const sub = [e.ten ? (Array.isArray(e.cands) && e.cands.length ? `仮・候補 ${e.cands.length + 1}日` : "仮") : "", l ? l.name : "", t.days > 1 ? `${fmtMD(t.start)}〜${fmtMD(addDays(t.start, t.days - 1))}` : "", e.repeat ? cal10RepName(e) + cal3RowRep(t) : ""].filter(Boolean).join("・"); // (カレンダー その3 ①②③)
     return el("li", { class: "btn-row" + (cal4Cx(e, t.start) ? " cal4-cx" : ""), style: labelStyle(l) },
       el("button", { type: "button", class: "row-btn nav", "aria-label": `「${e.title}」${verb}（${when}${sub ? "・" + sub : ""}${e.place ? "・場所 " + e.place : ""}${e.memo ? "・" + e.memo : ""}）`, onclick },
         el("span", { class: "chip when", style: "--chip-c: var(--lc)" }, when),
         el("span", { class: "body" }, el("span", { class: "text" }, cal4Name(t)), sub ? el("span", { class: "sub" + (l ? " ev-label" : "") }, sub) : null,
           // its place on a line of its own with a pin (the user's call: a plan's 場所 as the iPhone's カレンダー has it)
           e.place ? el("span", { class: "sub ev-place" }, icon("place", 14), el("span", {}, e.place)) : null,
-          e.memo ? el("span", { class: "sub ev-memo clamp" }, e.memo) : null, calRowMore(t), calThree ? cal3RowMore(t) : null, cal4RowMore(t), cal5RowMore(t), cal6RowMore(t), cal8RowMore(t)), // (カレンダー その3 ⑧, その4 ②⑥, その5 ②, その6 ⑨⑩, その8 ③)
+          e.memo ? el("span", { class: "sub ev-memo clamp" }, e.memo) : null, calRowMore(t), calThree ? cal3RowMore(t) : null, cal4RowMore(t), cal5RowMore(t), cal6RowMore(t), cal8RowMore(t), cal10RowMore(t)), // (その10 ②⑩, カレンダー その3 ⑧, その4 ②⑥, その5 ②, その6 ⑨⑩, その8 ③)
         el("span", { class: "chev" }, icon("next", 16))));
   }
 
@@ -18937,7 +18959,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (rr) {
       const r = Object.fromEntries(rr.toUpperCase().split(";").map((kv) => kv.split("="))), iv = Number(r.INTERVAL || 1), by = (r.BYDAY || "").split(",").filter(Boolean).sort();
       const wd = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][parseYmd(st.date).getDay()];
-      const c3 = cal3IcsRep(r, st.date, by, iv); // (カレンダー その3 ① 曜日を選ぶ, 月末, 最終〇曜日)
+      const c3 = cal3IcsRep(r, st.date, by, iv) || cal10IcsRep(r, st.date, by, iv); // (カレンダー その3 ① 曜日を選ぶ, 月末, 最終〇曜日, その10 ① 第2・第4)
       const rep = c3 ? c3.repeat : r.FREQ === "DAILY" && iv === 1 ? "daily"
         : r.FREQ === "WEEKLY" && iv === 1 && by.join() === "FR,MO,TH,TU,WE" ? "weekdays"
         : r.FREQ === "WEEKLY" && iv <= 2 && (!by.length || by.join() === wd) ? (iv === 2 ? "biweekly" : "weekly")
@@ -18947,6 +18969,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (rep) {
         p.repeat = rep;
         if (c3?.days) p.repeatDays = c3.days;
+        if (c3?.nths) p.nths = c3.nths; // (その10 ①)
         const skip = (v.EXDATE || []).flatMap((x) => x.value.split(",")).map((x) => icsWhen(x)?.date).filter((d) => d && isDay(d));
         if (skip.length) p.skip = [...new Set(skip)];
         if (r.UNTIL) { const u = icsWhen(r.UNTIL); if (u) p.repeatUntil = u.date; }
@@ -19001,7 +19024,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         if (e.endTime && (last > first || e.endTime > e.time)) lines.push(`DTEND:${at(last, e.endTime)}`);
         else lines.push(last > first ? `DTEND:${at(addDays(last, 1), "00:00")}` : "DURATION:PT1H");
       } else lines.push(`DTSTART;VALUE=DATE:${day(first)}`, `DTEND;VALUE=DATE:${day(addDays(last, 1))}`);
-      const rule = cal3IcsRule(e) || (e.repeat === "monthlyNth" ? `FREQ=MONTHLY;BYDAY=${nthOf(e.date)}${DAYS[parseYmd(e.date).getDay()]}` : RULES[e.repeat]) || cal9IcsRule(e); // (カレンダー その3 ①, その9 ① INTERVAL)
+      const rule = cal10IcsRule(e) || cal3IcsRule(e) || (e.repeat === "monthlyNth" ? `FREQ=MONTHLY;BYDAY=${nthOf(e.date)}${DAYS[parseYmd(e.date).getDay()]}` : RULES[e.repeat]) || cal9IcsRule(e); // (カレンダー その3 ①, その9 ① INTERVAL)
       if (rule) {
         lines.push(`RRULE:${rule}${e.repeatUntil ? ";UNTIL=" + day(e.repeatUntil) + (e.time ? "T235959" : "") : ""}`);
         for (const d of [...(e.skip || []), ...cal3IcsHolSkips(e)]) lines.push(e.time ? `EXDATE:${at(d, e.time)}` : `EXDATE;VALUE=DATE:${day(d)}`); // (カレンダー その3 ③ the holidays too)
@@ -22305,7 +22328,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月14日 16:20"; // a180fdda (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月14日 17:01"; // fd4f8594 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -28305,7 +28328,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (cal4Cx(t.e, t.start)) return null; // (その4 ② 中止: its time free)
     const sp = turnSpan(t);
     if (!sp || !calTwo) return sp;
-    const tv = t.day === 0 ? num(t.e.travel) : 0, back = calEight && t.day === t.days - 1 ? num(t.e.travelBack) : 0; // (その8 ③ 帰りの移動時間 after it)
+    const tv = t.day === 0 ? num(t.e.travel) + (calTen && isHm(t.e.time) ? num(t.e.prep) : 0) : 0, back = calEight && t.day === t.days - 1 ? num(t.e.travelBack) : 0; // (その8 ③ 帰りの移動時間 after it)
     return [Math.max(0, sp[0] - (tv > 0 ? tv : 0)), Math.min(1440, sp[1] + (back > 0 ? back : 0))];
   }
   // 週 and 日: the way there, before its plan, under it
@@ -28325,7 +28348,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (t.day !== 0 || !(tv > 0) || !isHm(e.time) || e.ten || typeof e.title !== "string" || cal4Cx(e, t.start)) continue; // (その4 ② 中止: none)
       const at = dayAt(d, e.time) - tv * 60e3;
       if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5) continue;
-      out.push({ at, title: `そろそろ出発：${oneLine(e.title).slice(0, 80)}`, body: [`${e.time}から・移動 ${durText(tv)}`, e.place ? oneLine(e.place) : ""].filter(Boolean).join("\n"), tag: `cal-leave:${e.id}:${d}`, url: `./#calendar:${d}` });
+      out.push({ at, title: `そろそろ出発：${oneLine(e.title).slice(0, 80)}`, body: [`${e.time}から・${cal10By(e)}移動 ${durText(tv)}`, e.place ? oneLine(e.place) : ""].filter(Boolean).join("\n"), tag: `cal-leave:${e.id}:${d}`, url: `./#calendar:${d}` });
     }
     return out;
   }
@@ -28794,7 +28817,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function calRowMore(t) {
     if (!calTwo) return null;
     const e = t.e, parts = [], cs = calChecksOf(e), sub = e.subjectId && subjects.get(e.subjectId), n = calNoteOf(e, t.start);
-    if (t.day === 0 && isHm(e.time) && num(e.travel) > 0) parts.push(`移動 ${durText(num(e.travel))}・${calLeaveAt(e)} 出発`);
+    if (t.day === 0 && isHm(e.time) && num(e.travel) > 0) parts.push(`${cal10By(e)}移動 ${durText(num(e.travel))}・${calLeaveAt(e)} 出発`); // (その10 ⑨ 電車で)
     if (cs.length) { const on = calChecked(e, t.start); parts.push(`持ち物・準備 ${cs.filter((c) => on.has(c.id)).length}/${cs.length}`); }
     if (sub) parts.push(`勉強：${sub.name}`);
     return [parts.length ? el("span", { class: "sub cal-more" }, phrasesOf(parts)) : null,
@@ -28836,6 +28859,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     Object.assign(x, cal6FormExtras(f)); // (カレンダー その6 ⑩ 費用)
     Object.assign(x, cal7FormExtras(f)); // (カレンダー その7 ⑩ アイコン)
     Object.assign(x, cal8FormExtras(f)); // (カレンダー その8 ③ 帰りの移動時間)
+    Object.assign(x, cal10FormExtras(f)); // (カレンダー その10 ①⑨⑩)
     return x;
   }
   function calFormSig(f) { return calTwo ? JSON.stringify(calFormExtras(f, $(f + "Date").value, $(f + "Time").value)) : ""; }
@@ -28861,7 +28885,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!e) { box.replaceChildren(); return; }
     const d = e.repeat ? editingStart || e.date : e.date, act0 = document.activeElement, k = box.contains(act0) ? act0.dataset.k || act0.id : null;
     const typed = act0?.id === "edNoteText" ? act0.value : null;
-    setChildren(box, calThree ? cal3EditCards(e, d) : null, cal4EditCards(e, d), cal5EditCards(e, d), cal6EditCards(e, d), cal7EditCards(e, d), calDecideCard(e, editingStart), calChecksCard(e, d), calNoteCard(e, d)); // (カレンダー その3 ②⑧ first)
+    setChildren(box, calThree ? cal3EditCards(e, d) : null, cal4EditCards(e, d), cal5EditCards(e, d), cal6EditCards(e, d), cal7EditCards(e, d), cal10EditCards(e, d), calDecideCard(e, editingStart), calChecksCard(e, d), calNoteCard(e, d)); // (カレンダー その3 ②⑧ first)
     if (k) { const n = box.querySelector(`[data-k="${k}"]`) || $(k); if (n) { if (typed !== null && n.id === "edNoteText") n.value = typed; n.focus(); } }
   }
 
@@ -29171,7 +29195,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     over.sort((a, b) => String(b.prev || "").localeCompare(String(a.prev || "")));
     const row = ({ e, next, prev }) => {
       const l = labelOf(e), left = next && e.repeatUntil ? turnStarts(e, next, e.repeatUntil).length : null;
-      const how = [l ? l.name : "", repeatName(e.repeat, e.date, false, false, e.repeatDays), e.noHol ? "祝日休み" : ""];
+      const how = [l ? l.name : "", cal10RepName(e), e.noHol ? "祝日休み" : ""];
       const short = (d) => (d.slice(0, 4) === todayKey.slice(0, 4) ? fmtMD(d) : `${Number(d.slice(0, 4))}/${fmtMD(d)}`); // (1/31, 2027/1/31)
       const when = [next ? `次は${fmtDay(next)}` : prev ? `最後は${fmtDay(prev)}` : "", e.repeatUntil ? `${short(e.repeatUntil)}まで` : next ? "ずっと" : "", left ? `あと${left}回` : ""];
       const armed = cal3EndArm === e.id, ends = !!next && e.date <= todayKey && !e.cls; // (a class ends with the timetable's term, or by taking it off there)
@@ -29565,6 +29589,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     ef.hidden = !(timed && en.checked);
     cal5SyncLens(f); // (その5 ①)
     cal9SyncRepeat(f); cal9SyncBusy(f); // (その9 ① 間隔を決める…, ⑥ 目安)
+    cal10SyncNths(f); cal10SyncPrep(f); // (その10 ① 第2・第4, ⑩ 支度)
     ef.textContent = ef.hidden ? "" : "終わる時刻に「おつかれさま」の通知が届きます。開くと、ふりかえりを書けます" + (pushState() === "on" ? "" : "（通知を受け取る設定が必要です）");
   }
   // what the forms add to a plan (その2's calFormExtras calls in, so they are told apart when changed too): each said,
@@ -29592,6 +29617,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     cal7FillForm(f, e); // (その7 ⑩ アイコン)
     cal8FillForm(f, e); // (その8 ③)
     cal9FillForm(f, e); // (その9 ① its interval in the menu)
+    cal10FillForm(f, e); // (その10 ①⑨⑩)
   }
 
   // a plan's row (a day's list, 予定を探す): 中止 (②) and who it is with (⑥)
@@ -29664,7 +29690,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ④ a stamp on a day: one of a few marks, picked in the day's sheet, in the corner of its square in the month. Kept
   // with the calendar's settings, so it goes to the other devices
   const CAL4_STAMPS = ["🎂", "🎉", "✈️", "🏥", "📝", "💼", "🍻", "🏃", "❤️", "⭐"];
-  function cal4StampOf(d) { const s = calFour ? calSet().stamps : null; return s && typeof s[d] === "string" && CAL4_STAMPS.includes(s[d]) ? s[d] : ""; }
+  function cal4StampOf(d) { const s = calFour ? calSet().stamps : null; return s && typeof s[d] === "string" && cal10StampOk(s[d]) ? s[d] : ""; } // (その10 ⑦ one's own too)
   function cal4SetStamp(d, v) {
     const was = cal4StampOf(d), all = { ...(calSet().stamps || {}) };
     if (v) all[d] = v; else delete all[d];
@@ -29686,7 +29712,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const d = calDay, cur = cal4StampOf(d), from = cal4FromWords(d), had = cal4DayBox.contains(document.activeElement) ? document.activeElement.dataset.stamp : null;
     setChildren(cal4DayBox, from ? el("p", { class: "cal4-from" }, from) : null,
       el("div", { class: "cal4-stamps", role: "group", "aria-label": "この日のスタンプ" },
-        CAL4_STAMPS.map((s) => el("button", { type: "button", class: "cal4-stamp-btn", "data-stamp": s, "aria-pressed": String(cur === s), "aria-label": `スタンプ ${s}`, onclick: () => cal4SetStamp(d, cur === s ? "" : s) }, s))));
+        cal10Stamps().map((s) => el("button", { type: "button", class: "cal4-stamp-btn", "data-stamp": s, "aria-pressed": String(cur === s), "aria-label": `スタンプ ${s}`, onclick: () => cal4SetStamp(d, cur === s ? "" : s) }, s))));
     if (had) cal4DayBox.querySelector(`[data-stamp="${had}"]`)?.focus();
   }
   calFour = true;
@@ -29876,15 +29902,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return out;
   }
   function cal5FreeCard() {
-    const lens = [60, 120, 180, 300], found = cal5FreeLen ? cal5FreeDays(cal5FreeLen) : null;
+    const lens = [60, 120, 180, 300, ...(calTen ? [-1] : [])], found = cal5FreeLen === -1 ? cal10EmptyDays() : cal5FreeLen ? cal5FreeDays(cal5FreeLen) : null; // (その10 ⑧ 予定のない日)
     return [el("h3", { class: "group-head" }, "空き時間を探す"), el("div", { class: "card pad cal5-free" },
       el("div", { class: "cal5-lens", role: "group", "aria-label": "探す空き時間の長さ" }, el("span", { class: "cal5-lens-head" }, "これから2週間で"),
-        lens.map((m) => el("button", { type: "button", class: "chip-btn", "data-k": "free-" + m, "aria-pressed": String(cal5FreeLen === m), onclick: () => { cal5FreeLen = cal5FreeLen === m ? 0 : m; renderFind(); } }, `${durText(m)}以上`))),
+        lens.map((m) => el("button", { type: "button", class: "chip-btn", "data-k": "free-" + m, "aria-pressed": String(cal5FreeLen === m), onclick: () => { cal5FreeLen = cal5FreeLen === m ? 0 : m; renderFind(); } }, m === -1 ? "予定のない日" : `${durText(m)}以上`))),
       found ? (found.length ? el("ul", { class: "list cal5-free-list" }, found.map(({ d, slot }) => el("li", { class: "btn-row" },
         el("button", { type: "button", class: "row-btn nav", "aria-label": `${fmtMDW(d)} ${slotText(slot)} が空いています。この日を開く`, onclick: () => openDayFromFind(d) },
           el("span", { class: "body" }, el("span", { class: "text" }, (relLabel(d) ? relLabel(d) + "・" : "") + fmtShort(d)), el("span", { class: "sub" }, `${slotText(slot)}（${durText(slot[1] - slot[0])}）`)),
           el("span", { class: "chev" }, icon("next", 16))))))
-        : el("p", { class: "sub" }, `これから2週間に、${durText(cal5FreeLen)}以上の空き時間はありません。`)) : null)];
+        : el("p", { class: "sub" }, cal5FreeLen === -1 ? "これから2週間に、予定のない日はありません。" : `これから2週間に、${durText(cal5FreeLen)}以上の空き時間はありません。`)) : null)];
   }
 
   // ⑧ 日にち未定の予定: plans with no day yet (いつか行きたい), in 予定 while empty: put in by name, taken off, and 日を
@@ -29951,7 +29977,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("button", { type: "button", class: "btn sm", "data-k": "dup", onclick: () => removeWithUndo(events, extra.map((e) => e.id), `${extra.length}件の同じ予定をまとめました`) }, "1つずつにまとめる"))];
   }
   // 予定 while nothing is typed (renderFind calls in): ⑩, ⑦ and ⑧ over what is coming
-  function cal5FindCards() { return calFive ? [...cal5DupCard(), ...cal7ClashCard(), ...cal5FreeCard(), ...cal5SomeCard(), ...cal9PeopleCard()] : null; } // (その7 ⑦ 重なっている予定, その9 ③④ 人と場所)
+  function cal5FindCards() { return calFive ? [...cal5DupCard(), ...cal7ClashCard(), ...cal10CountCard(), ...cal5FreeCard(), ...cal5SomeCard(), ...cal9PeopleCard()] : null; } // (その7 ⑦ 重なっている予定, その9 ③④ 人と場所)
 
   // drawn with the calendar: ③ in the day's sheet, ⑥'s settings, ① the forms, ⑧ a plan made from the list
   function renderCalFive() {
@@ -30874,6 +30900,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (now < 19 * 60) opts.push(["今夜 19:00", todayKey, 19 * 60]);
     opts.push(["あしたの朝 9:00", addDays(todayKey, 1), 9 * 60]);
     setChildren(cal8Starts, el("span", { class: "cal5-lens-head" }, "開始"), opts.map(([w, d, m]) => el("button", { type: "button", class: "chip-btn", "data-start": w, "aria-label": `開始を${w === "いまから" || w.includes("後") ? `${w}（${relLabel(d) || fmtShort(d)} ${atMin(m)}）` : w}にする`, onclick: () => cal8SetStart(d, m) }, w)));
+    if (calTen) cal8Starts.append(...cal10OftenChips()); // (その10 ⑥ よく使う時刻)
   }
   $("calAdd").addEventListener("click", () => { if (calEight) renderCal8Starts(); }, true);
   $("dayAdd").addEventListener("click", () => { if (calEight) renderCal8Starts(); }, true);
@@ -31237,6 +31264,249 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     cal9SyncBusy("plan"); cal9SyncBusy("ed");
   }
   calNine = true;
+
+  // ---------- カレンダー その10 ①〜⑩ (the user's calls, 2026-11-14): a monthly repeat on a few of its weeks (①), a word
+  // for one turn of a repeat (②), the same day a year ago (③), the countdowns in a list (④), the notifications to come
+  // (⑤), the start times used often (⑥), one's own stamps (⑦), the days with nothing (⑧), how one gets there (⑨), and the
+  // time to get ready (⑩) ----------
+  // (what was there calls in here; before this part has run, as the page opens, these do nothing: those it calls are
+  // function declarations, there from the start)
+  var calTen = false;
+  const cal10NthWas = { plan: null, ed: null };
+
+  // ① 毎月（第2・第4月曜日）: 毎月（第N曜日） on more than one of the month's weeks (nths, the plan's own among them), picked
+  // under the menu; its turns in each month (turnStarts), its name in the lists, .ics out and in (BYDAY=2MO,4MO)
+  function cal10Nths(e) {
+    if (!calTen || e?.repeat !== "monthlyNth" || !Array.isArray(e.nths) || !isDay(e.date || "")) return null;
+    const own = nthOf(e.date), ns = [...new Set([own, ...e.nths.map(Number).filter((n) => Number.isInteger(n) && n >= 1 && n <= 5)])].sort((a, b) => a - b);
+    return ns.length >= 2 ? ns : null;
+  }
+  const cal10NthWords = (ns, date) => `第${ns.join("・第")}${WD[parseYmd(date).getDay()]}`;
+  function cal10RepName(e) {
+    const ns = cal10Nths(e);
+    return ns ? `毎月${cal10NthWords(ns, e.date)}曜` : repeatName(e.repeat, e.date, false, false, e.repeatDays);
+  }
+  for (const f of ["plan", "ed"]) {
+    const box = el("div", { class: "full week-days cal10-nths", id: f + "Nths", role: "group", "aria-label": "繰り返す週", hidden: true },
+      [1, 2, 3, 4, 5].map((n) => el("label", { "data-n": n }, el("input", { type: "checkbox", value: n, "aria-label": `第${n}週` }), el("span", { "aria-hidden": "true" }, `第${n}`))));
+    $(f + "Days3").after(box);
+    box.addEventListener("change", () => cal10SyncNths(f));
+  }
+  const cal10Picked = (f) => [...$(f + "Nths").querySelectorAll("input:checked")].map((x) => Number(x.value)).sort((a, b) => a - b);
+  function cal10SyncNths(f) {
+    if (!calTen) return;
+    const box = $(f + "Nths"), sel = $(f + "Repeat"), date = $(f + "Date").value, on = sel.value === "monthlyNth" && cal3Whole(f) && isDay(date);
+    box.hidden = !on;
+    const own = on ? nthOf(date) : null;
+    for (const x of box.querySelectorAll("input")) {
+      const n = Number(x.value);
+      if (own !== null && n === own) x.checked = true; // (the plan's own week, always one of them)
+      if (own !== null && n === cal10NthWas[f] && n !== own) x.checked = false; // (the day moved: its old week goes)
+      x.disabled = !on || n === own;
+    }
+    cal10NthWas[f] = own;
+    const ns = on ? cal10Picked(f) : [], o = [...sel.options].find((x) => x.value === "monthlyNth");
+    if (o && on && ns.length >= 2) o.textContent = `毎月（${cal10NthWords(ns, date)}曜日）`;
+  }
+  function cal10FillNths(f, e) {
+    const ns = e && e.repeat === "monthlyNth" ? cal10Nths(e) || [] : [];
+    for (const x of $(f + "Nths").querySelectorAll("input")) x.checked = ns.includes(Number(x.value));
+    cal10NthWas[f] = e && isDay(e.date || "") ? nthOf(e.date) : null;
+  }
+  function cal10IcsRule(e) {
+    const ns = cal10Nths(e);
+    return ns ? `FREQ=MONTHLY;BYDAY=${ns.map((n) => n + ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][parseYmd(e.date).getDay()]).join(",")}` : "";
+  }
+  function cal10IcsRep(r, date, by, iv) {
+    if (!calTen || r.FREQ !== "MONTHLY" || iv !== 1 || by.length < 2) return null;
+    const wd = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][parseYmd(date).getDay()], ns = [];
+    for (const x of by) { const m = /^([1-5])([A-Z]{2})$/.exec(x); if (!m || m[2] !== wd) return null; ns.push(Number(m[1])); }
+    return ns.includes(nthOf(date)) ? { repeat: "monthlyNth", nths: [...new Set(ns)].sort((a, b) => a - b) } : null;
+  }
+
+  // ② この回のメモ: a repeat's turn opened has a line of its own (この回のテーマ), under its row in a day's list
+  function cal10TurnNote(e, d) { const v = calTen && e?.turnNotes && typeof e.turnNotes === "object" ? e.turnNotes[d] : ""; return typeof v === "string" ? v : ""; }
+  function cal10SetTurnNote(id, d, text) {
+    const e = events.get(id);
+    if (!e) return;
+    const v = oneLine(text).slice(0, 200), was = cal10TurnNote(e, d);
+    if (v === was) return;
+    const all = { ...(e.turnNotes || {}) };
+    if (v) all[d] = v; else delete all[d];
+    act(() => events.update(id, { turnNotes: Object.keys(all).length ? all : undefined }));
+    flash(v ? `${fmtMD(d)}の回のメモを保存しました` : `${fmtMD(d)}の回のメモを消しました`);
+  }
+  function cal10EditCards(e, d) {
+    if (!calTen || !e.repeat || !isDay(d || "")) return null;
+    const input = el("input", { type: "text", id: "cal10TurnNote", value: cal10TurnNote(e, d), maxlength: 200, enterkeyhint: "done", "aria-label": `${fmtMD(d)}の回のメモ` });
+    input.addEventListener("change", () => cal10SetTurnNote(e.id, d, input.value));
+    input.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing) { ev.preventDefault(); input.blur(); } });
+    return [el("h3", { class: "group-head" }, `この回のメモ（${fmtMD(d)}）`), el("div", { class: "card pad cal10-turn" }, input,
+      el("p", { class: "sub" }, "この回だけのひとこと（テーマ、持っていくものなど）。日の一覧に出ます。"))];
+  }
+
+  // ③ 1年前のきょう: in a day's sheet, the plans of the same date a year before (those not repeating), the day a press away
+  function cal10YearAgo(d) {
+    const y = Number(d.slice(0, 4)) - 1, ago = `${y}${d.slice(4)}`;
+    if (!isDay(ago)) return null;
+    const ts = (turnsByDay(ago, ago).get(ago) || []).filter((t) => !t.e.repeat && !t.e.cand && typeof t.e.title === "string" && !cal4Cx(t.e, t.start));
+    return ts.length ? { d: ago, names: ts.map((t) => oneLine(t.e.title)) } : null;
+  }
+
+  // ④ カウントダウン (予定, empty): the plans with カウントダウン on, how many days to each, the nearest first; pressed, its day
+  function cal10Countdowns() {
+    const out = [];
+    for (const e of events.items) {
+      if (!e.count || typeof e.title !== "string") continue;
+      const next = turnStarts(e, todayKey, addDays(todayKey, 3660)).find((s) => s >= todayKey && !cal4Cx(e, s));
+      if (next) out.push({ e, d: next, left: daysBetween(todayKey, next) });
+    }
+    return out.sort((a, b) => a.left - b.left).slice(0, 10);
+  }
+  function cal10CountCard() {
+    if (!calTen) return [];
+    const xs = cal10Countdowns();
+    if (!xs.length) return [];
+    return [el("h3", { class: "group-head" }, "カウントダウン"), el("ul", { class: "list card cal10-count" }, xs.map((x) => el("li", { class: "btn-row" },
+      el("button", { type: "button", class: "row-btn nav", "aria-label": `「${x.e.title}」まで${x.left ? `あと${x.left}日` : "きょう"}（${fmtMDW(x.d)}）。この日を開く`, onclick: () => openDayFromFind(x.d) },
+        el("span", { class: "num cal10-left" }, x.left ? `あと${x.left}日` : "きょう"),
+        el("span", { class: "body" }, el("span", { class: "text" }, x.e.title), el("span", { class: "sub" }, fmtDay(x.d))),
+        el("span", { class: "chev" }, icon("next", 16))))))];
+  }
+
+  // ⑤ これから届く予定のお知らせ (in the gear): the next ten of the calendar's own, when and what, as they will come
+  const cal10Upcoming = el("div", { class: "cal10-up", id: "cal10Up" });
+  $("cal9OftenBack").after(cal10Upcoming);
+  function renderCal10Upcoming() {
+    const xs = alarmTimes(Date.now()).filter((a) => cal9IsCal(a)).slice(0, 10), st = pushState();
+    setChildren(cal10Upcoming, el("h3", { class: "group-head" }, "これから届く予定のお知らせ"),
+      xs.length ? el("ul", { class: "list card" }, xs.map((a) => { const t = new Date(a.at), d = ymd(t);
+        return el("li", {}, el("span", { class: "chip", style: "--chip-c: var(--c-cal)" }, `${relLabel(d) || fmtMD(d)} ${pad(t.getHours())}:${pad(t.getMinutes())}`),
+          el("span", { class: "body" }, el("span", { class: "text" }, a.title), a.body ? el("span", { class: "sub" }, oneLine(String(a.body).split("\n")[0])) : null)); }))
+        : el("div", { class: "card empty" }, "これから40日に届く予定のお知らせはありません。"),
+      el("p", { class: "group-foot" }, st === "on" ? "通知アラーム・出発・朝と前の晩・来週・大事な予定の前の日・終わったら・支度のお知らせの、近いものから10件です。" : "通知を受け取る設定をすると、これらが届きます（下の「通知」から）。"));
+  }
+
+  $("calSettings").addEventListener("click", () => setTimeout(() => { if (calTen && sheetEl.open) renderCal10Upcoming(); }, 0)); // (drawn as the gear opens)
+
+  // ⑥ よく使う時刻 (開始をボタンで, その8 ⑩): the start times used three times or more in the last four months, the top
+  // three, on the form's day
+  function cal10OftenTimes() {
+    const since = addDays(todayKey, -120), n = new Map();
+    for (const e of events.items) if (!e.repeat && isHm(e.time) && isDay(e.date || "") && e.date >= since && e.date <= todayKey) n.set(e.time, (n.get(e.time) || 0) + 1);
+    return [...n].filter(([, c]) => c >= 3).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3).map(([t]) => t);
+  }
+  function cal10OftenChips() {
+    if (!calTen) return [];
+    return cal10OftenTimes().map((t) => el("button", { type: "button", class: "chip-btn cal10-often", "data-time": t, "aria-label": `開始をよく使う時刻の ${t} にする`, onclick: () => cal8SetStart(isDay($("planDate").value) ? $("planDate").value : todayKey, minOf(t)) }, el("span", { class: "cal10-often-w" }, "よく使う"), t));
+  }
+
+  // ⑦ スタンプを選ぶ (in the gear): the ten stamps a day's sheet offers, from these; the ones on days already stay
+  const CAL10_PALETTE = ["🎂", "🎉", "✈️", "🏥", "📝", "💼", "🍻", "🏃", "❤️", "⭐", "🎓", "📚", "✏️", "💯", "🎤", "🎮", "⚽", "🏀", "🎾", "🏊", "🎸", "🎨", "🎬", "📷", "🛍️", "💇", "💅", "🍰", "🍣", "🍜", "☕", "🚃", "🚗", "🏠", "🏖️", "⛰️", "🎄", "🎁", "💤", "💊", "🧹", "💰"];
+  function cal10Stamps() { const v = calTen ? calSet().stampSet : null; const ok = Array.isArray(v) ? v.filter((x) => CAL10_PALETTE.includes(x)).slice(0, 10) : []; return ok.length ? ok : CAL4_STAMPS; }
+  function cal10StampOk(s) { return CAL4_STAMPS.includes(s) || (calTen && CAL10_PALETTE.includes(s)); }
+  const cal10StampBox = el("div", { class: "card pad cal10-stamps" });
+  $("cal10Up").after(el("h3", { class: "group-head" }, "日のスタンプ"), cal10StampBox, el("p", { class: "group-foot" }, "日のシートに出す10個を選びます（押すと入る・外れる）。付けてあるスタンプはそのままです。"));
+  function renderCal10Stamps() {
+    const cur = cal10Stamps(), had = cal10StampBox.contains(document.activeElement) ? document.activeElement.dataset.s : null;
+    setChildren(cal10StampBox, el("p", { class: "sub" }, `${cur.length} / 10 個`), el("div", { class: "cal10-palette", role: "group", "aria-label": "日のスタンプを選ぶ" }, CAL10_PALETTE.map((s) => el("button", { type: "button", class: "cal4-stamp-btn", "data-s": s, "aria-pressed": String(cur.includes(s)), "aria-label": `スタンプ ${s}`,
+      onclick: () => {
+        const now = cal10Stamps(), on = now.includes(s);
+        if (!on && now.length >= 10) { flash("スタンプは10個までです。ほかのを外してから選んでください"); return; }
+        if (on && now.length <= 1) { flash("1個は残してください"); return; }
+        saveCalSet({ stampSet: on ? now.filter((x) => x !== s) : [...now, s] });
+      } }, s))));
+    if (had) cal10StampBox.querySelector(`[data-s="${had}"]`)?.focus();
+  }
+
+  // ⑧ 予定のない日 (その5 ⑦'s 空き時間を探す): the days of the next two weeks with no plan and no shift at all
+  function cal10EmptyDays() {
+    const last = addDays(todayKey, 13), tb = turnsByDay(todayKey, last), sb = shiftsByDay(todayKey, last), hidden = calHidden(), fh = freeHours(), out = [];
+    for (let i = 0; i < 14; i++) {
+      const d = addDays(todayKey, i), ts = (tb.get(d) || []).filter((t) => onCalendar(t.e, hidden) && !cal4Cx(t.e, t.start));
+      if (!ts.length && !(sb.get(d) || []).length) out.push({ d, slot: [minOf(fh.from), minOf(fh.to)] });
+    }
+    return out;
+  }
+
+  // ⑨ 移動手段 (電車・バス・車・自転車・徒歩) beside 移動時間: in a day's list and in 出発のお知らせ (電車で移動 30 分)
+  const CAL10_BY = ["電車", "バス", "車", "自転車", "徒歩"];
+  function cal10By(e) { return calTen && CAL10_BY.includes(e?.by) ? `${e.by}で` : ""; }
+  // ⑩ 支度の時間: before leaving (or before it starts, with no 移動時間), the time to get ready: under it when to begin,
+  // そろそろ支度 then (with 出発のお知らせ on), and out of the free hours
+  const CAL10_PREP = [[0, "なし"], [10, "10分"], [15, "15分"], [20, "20分"], [30, "30分"], [45, "45分"], [60, "1時間"], [90, "1時間30分"]];
+  for (const f of ["plan", "ed"]) {
+    const by = el("select", { id: f + "By" }, el("option", { value: "" }, "なし"), CAL10_BY.map((w) => el("option", { value: w }, w)));
+    const prep = el("select", { id: f + "Prep" }, CAL10_PREP.map(([v, w]) => el("option", { value: v }, w)));
+    $(f + "TravelMemo").after(...recRow("移動手段", by, { opt: true }));
+    $(f + "TravelBackFoot").after(...recRow("支度の時間", prep), el("p", { class: "full cal-travel-foot", id: f + "PrepFoot", hidden: true }));
+    prep.addEventListener("change", () => cal10SyncPrep(f));
+    for (const k of ["Time", "Travel"]) $(f + k).addEventListener("change", () => cal10SyncPrep(f));
+  }
+  function cal10SyncPrep(f) {
+    if (!calTen) return;
+    const s = calHm($(f + "Time").value), tv = Number($(f + "Travel").value) || 0, pv = Number($(f + "Prep").value) || 0, foot = $(f + "PrepFoot");
+    $(f + "Prep").disabled = s === null; $(f + "By").disabled = !(tv > 0) || s === null;
+    foot.hidden = !(s !== null && pv > 0);
+    if (!foot.hidden) foot.textContent = `${atMin(Math.max(0, s - tv - pv))} から支度` + (tv > 0 ? `（${atMin(Math.max(0, s - tv))} に出発）` : "") + (calLeaveOn() && pushState() === "on" ? "。そのころお知らせが届きます" : "");
+  }
+  const cal10PrepAt = (e) => atMin(Math.max(0, minOf(e.time) - num(e.travel) - num(e.prep)));
+  function cal10Alarms(now) {
+    if (!calTen || !calLeaveOn()) return [];
+    const out = [];
+    for (const [d, list] of turnsByDay(todayKey, addDays(todayKey, PUSH_AHEAD))) for (const t of list) {
+      const e = t.e, pv = num(e.prep);
+      if (t.day !== 0 || !(pv > 0) || !isHm(e.time) || e.ten || typeof e.title !== "string" || cal4Cx(e, t.start)) continue;
+      const at = dayAt(d, e.time) - (num(e.travel) + pv) * 60e3;
+      if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5) continue;
+      out.push({ at, title: `そろそろ支度：${oneLine(e.title).slice(0, 80)}`, body: [num(e.travel) > 0 ? `${calLeaveAt(e)} に出発・${e.time}から` : `${e.time}から`, e.place ? oneLine(e.place) : ""].filter(Boolean).join("\n"), tag: `cal-prep:${e.id}:${d}`, url: `./#calendar:${d}` });
+    }
+    return out;
+  }
+  function cal10Push() {
+    if (!calTen || !calLeaveOn()) return [];
+    const xs = events.items.filter((e) => num(e.prep) > 0).map((e) => [e.id, e.title, e.date, e.time, e.travel, e.prep, e.repeat, e.repeatUntil, e.skip, e.cancel, e.place, !!e.ten, e.repeatDays, !!e.noHol, e.pauseFrom, e.pauseTo, e.nths]);
+    return xs.length ? [["cal10Prep", xs]] : [];
+  }
+
+  // a plan's row (a day's list, 予定を探す): ② this turn's note, ⑩ when to get ready
+  function cal10RowMore(t) {
+    if (!calTen) return null;
+    const note = t.e.repeat ? cal10TurnNote(t.e, t.start) : "", pv = t.day === 0 && isHm(t.e.time) ? num(t.e.prep) : 0;
+    return note || pv ? [pv ? el("span", { class: "sub cal-more" }, `支度 ${durText(pv)}・${cal10PrepAt(t.e)} から`) : null, note ? el("span", { class: "sub cal10-note-line" }, `この回：${note}`) : null] : null;
+  }
+  // the forms: ① its weeks, ⑨⑩
+  function cal10FormExtras(f) {
+    if (!calTen) return {};
+    const x = { nths: undefined, by: undefined, prep: undefined };
+    if ($(f + "Repeat").value === "monthlyNth" && isDay($(f + "Date").value)) { const ns = cal10Picked(f); if (ns.length >= 2) x.nths = ns; } // (whatever part is shown: the form isn't changed by その範囲 alone)
+    const tv = Number($(f + "Travel").value) || 0, pv = Number($(f + "Prep").value) || 0, time = $(f + "Time").value;
+    if (time && tv > 0 && CAL10_BY.includes($(f + "By").value)) x.by = $(f + "By").value;
+    if (time && pv > 0) x.prep = pv;
+    return x;
+  }
+  function cal10FillForm(f, e) {
+    if (!calTen) return;
+    cal10FillNths(f, f === "ed" ? e : null);
+    $(f + "By").value = CAL10_BY.includes(e?.by) ? e.by : "";
+    const pv = num(e?.prep);
+    $(f + "Prep").value = String(CAL10_PREP.some(([v]) => v === pv) ? pv : 0);
+    cal10SyncNths(f); cal10SyncPrep(f);
+  }
+
+  // drawn with the calendar: ③ in the day's sheet, the gear's ⑤⑦
+  function renderCalTen() {
+    if (!calTen) return;
+    const box = $("cal4Day");
+    box.querySelector(".cal10-ago")?.remove();
+    const ago = cal10YearAgo(calDay);
+    if (ago) box.append(el("button", { type: "button", class: "link-btn cal10-ago", "aria-label": `1年前のきょう（${fmtDayLong(ago.d)}）：${ago.names.join("、")}。その日を開く`, onclick: () => { calDay = ago.d; renderCalendar(); } },
+      el("span", { class: "cal10-ago-head" }, "1年前のきょう"), el("span", {}, ago.names.slice(0, 3).join("・") + (ago.names.length > 3 ? ` ほか${ago.names.length - 3}件` : ""))));
+    if (sheetEl.open && sheetMode() === "settings" && settingsScope === "calendar") renderCal10Upcoming();
+    renderCal10Stamps();
+    cal10SyncPrep("plan"); cal10SyncPrep("ed");
+  }
+  calTen = true;
 
   // ---------- 目標: 使わないマスを×で埋める (the user's call, 2026-11-11: a chart can't always be filled in whole; its empty
   // squares crossed out so it reads as finished). An empty cell crossed is { t: "", x: true }: still empty to all that
