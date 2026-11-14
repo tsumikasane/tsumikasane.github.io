@@ -75,7 +75,7 @@ const img = async (p) => Buffer.from(await p.evaluate(() => { const c = document
   await p.fill("#mReflect", "模試を申し込んだ"); await p.click("#mReflectAdd"); await p.waitForTimeout(300);
   let notes = (await goalOf(p, "g1")).notes;
   ok(notes?.length === 2 && notes[0].text === "単語は順調。文法が弱い" && (await txt(p, "#mReflectList")).indexOf("模試を申し込んだ") < (await txt(p, "#mReflectList")).indexOf("単語は順調"), "④ written, the newest first", notes);
-  const del = p.locator("#mReflectList li", { hasText: "模試を申し込んだ" }).locator(".link-btn");
+  const del = p.locator("#mReflectList li", { hasText: "模試を申し込んだ" }).locator(".link-btn.danger"); // (削除: since 目標 その12 ①, 書きなおす is beside it)
   await del.click(); await del.click(); await p.waitForTimeout(300);
   ok((await goalOf(p, "g1")).notes.length === 1 && (await toast(p)).includes("ふりかえりを削除しました"), "④ deleted (a second press), with 元に戻す");
   await p.click(".toast.show .toast-undo"); await p.waitForTimeout(300);
