@@ -50,7 +50,7 @@ const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(
   // ⑦ spend: (60000 − 20000) / 17 days = 2352, less 800 today
   const sp = await H(p, "spend");
   ok(sp.share === 2352 && sp.left === 1552, "⑦ today's share and what's left", sp);
-  ok((await tileTxt(p, "h3spend")).startsWith("きょう使えるお金1,552円"), "⑦ its tile", await tileTxt(p, "h3spend"));
+  ok((await tileTxt(p, "h3spend")).startsWith("使えるお金1,552円"), "⑦ its tile", await tileTxt(p, "h3spend"));
   // ⑧ now: the late ToDo first
   ok((await tileTxt(p, "h3now")).includes("請求書を送る期限が過ぎています"), "⑧ the late ToDo", await tileTxt(p, "h3now"));
   // ⑩ records: 日記 not yet, 体重 done, 勉強 done, 運動 not today, 食事 none kept
