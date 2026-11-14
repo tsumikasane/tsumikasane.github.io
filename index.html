@@ -3317,6 +3317,43 @@ ul.td10-reps > li .body, ul.td10-bells > li { min-width: 0; }
 .td11-switches input.switch::before { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #ffffff; box-shadow: 0 3px 8px rgba(0, 0, 0, .15), 0 1px 1px rgba(0, 0, 0, .16); transition: transform .2s; }
 .td11-switches input.switch:checked { background: var(--accent-fill); }
 .td11-switches input.switch:checked::before { transform: translateX(20px); }
+/* ToDo その19 ①〜⑩ (2026-11-14): ② the bars of three weeks; ③ the money; ④ the ひとこと; ⑤ a list's 絵文字; ⑥ the
+   conditions as buttons; ①⑦⑧⑩ on a row */
+.td19-aft, .td19-cd { color: var(--accent); }
+.td19-per { font-variant-numeric: tabular-nums; }
+.td19-bars { display: grid; gap: 4px; padding-inline: 12px; }
+.td19-bars-head { display: grid; gap: 2px; }
+.td19-bars-month { font-size: var(--t-foot); font-weight: 600; color: var(--muted); }
+.td19-days, .td19-track { display: grid; grid-template-columns: repeat(21, minmax(0, 1fr)); }
+.td19-bd { min-width: 0; font-size: 10px; line-height: 1.6; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+.td19-bd.we { color: color-mix(in srgb, var(--muted) 55%, transparent); }
+.td19-bd.today { border-radius: 4px; background: var(--accent-fill); color: #ffffff; font-weight: 700; }
+.td19-bd.first { font-weight: 700; color: var(--fg); }
+.td19-bars-list { display: grid; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
+.td19-bars-list > li { display: grid; gap: 3px; }
+.td19-bar-name { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-height: 28px; padding: 0; text-align: start; }
+.td19-bar-text { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--fg); }
+.td19-bar-name .sub { flex: none; font-size: var(--t-foot); }
+.td19-track { height: 10px; border-radius: 5px; background: var(--fill); }
+.td19-bar { height: 10px; border-radius: 5px; background: color-mix(in srgb, var(--accent-fill) 70%, var(--surface)); }
+.td19-bar.flag { background: var(--accent-fill); }
+.td19-bar.late { background: var(--warn); }
+.td19-money-sum { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.td19-money-sum strong { font-size: 1.4em; font-variant-numeric: tabular-nums; }
+.td19-money-head { display: flex; justify-content: space-between; gap: 12px; }
+.td19-money > li { align-items: center; }
+.td19-yen { flex: none; font-variant-numeric: tabular-nums; }
+.td19-money-foot { margin-top: 12px; }
+.td19-note-find { margin: 0 0 4px; }
+.td19-note { font-weight: 500; overflow-wrap: anywhere; }
+.td19-emo { margin-inline-end: 4px; }
+.td19-emo-pick { padding: 10px 12px 12px; }
+.td19-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px var(--space-2) 0; }
+.td19-chips[hidden] { display: none; }
+.td19-chip { min-height: 32px; padding-inline: 12px; font-size: var(--t-sub); }
+.td19-chip[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+#sec-todo.td-focus .td19-chips { display: none !important; }
+
 /* ToDo その18 ①〜⑩ (2026-11-14): ① はかる on a row; ② the next steps; ④ the list compact; ⑤ 前回 in a repeat's sheet;
    ⑥ the photos; ⑦ the conditions' line; ⑧ the people; ⑨ the done ones' calendar */
 .td18-run { color: var(--accent); font-variant-numeric: tabular-nums; }
@@ -10706,7 +10743,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderTodoTabs() {
     if (todoTab && (!todoLists.get(todoTab) || (todoEight && todoLists.get(todoTab).archived))) todoTab = ""; // (その8 ⑧)
     const open = todos.items.filter((t) => !t.done && !tdLater(t)); // (⑨ not those waiting for their 開始日)
-    const tab = (id, name, n) => el("button", { type: "button", class: "td-tab", "aria-pressed": String(todoTab === id),
+    const tab = (id, name, n) => el("button", { type: "button", class: "td-tab", "data-list": id || null, "aria-pressed": String(todoTab === id), // (data-list: その19 ⑤)
       "aria-label": `${name}、${n} 件`, onclick: () => { if (todoTab !== id) setTodoTab(id); } }, el("span", { class: "td-tab-name" }, todoFour && td4ShopOn(id) ? icon("cart", 15) : todoFive && td5CheckOn(id) ? icon("checklist", 15) : null, todoEight ? td8TabDot(id) : null, name), el("span", { class: "td-tab-n" }, String(n)));
     setChildren($("todoTabs"), tab("", "すべて", open.length),
       (todoEight ? td8Lists() : sortedTodoLists()).map((l) => tab(l.id, l.name, open.filter((t) => t.listId === l.id).length)), // (その8 ⑧ not those put away)
@@ -10734,6 +10771,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       item("できることの一覧", () => openTdPanel("guide9", false)), // (その9 ③)
       td10MoreItems(item), // (その10 ④ 繰り返しのToDo, ⑤ これから届くお知らせ)
       todoEleven ? td11MoreItems(item) : null, // (その11 ⑨ さっきの操作)
+      todoNineteen ? td19MoreItems(item) : null, // (その19 ② バー, ③ お金, ④ ひとこと, ⑨ まとめて休む, ⑤ 絵文字)
       todoEighteen ? td18MoreItems(item) : null, // (その18 ② 次のサブタスク, ⑧ 人ごと, ⑨ 完了カレンダー, ⑥ 写真, ④ コンパクト, ③ 毎朝リセット)
       todoSeventeen ? td17MoreItems(item) : null, // (その17 ① 授業ごと, ② 予定の準備, ⑨ 期限なし, ⑤ かかる時間, ⑦ いつかやる, ④ 1週間, ⑥ 成績, ③ 決まり)
       todoSixteen ? td16MoreItems(item) : null, // (その16 ⑨ ひな形からリスト)
@@ -11113,6 +11151,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       todoFifteen ? td15HoldItems(t, item) : null, // (その15 ⑦ 時間を決めて集中, ⑩ つづきを追加)
       todoSixteen ? td16HoldItems(t, item) : null, // (その16 ⑥ 期限を文字で, ③ バイトの前, ⑩ 頼まれごと)
       todoEighteen ? td18HoldItems(t, item) : null, // (その18 ① はかる)
+      todoNineteen ? td19HoldItems(t, item) : null, // (その19 ① 予定のあと, ⑩ 毎日知らせる, ⑧ いっしょに)
       t.done ? null : item("このあとにやるToDoを追加", (byKey) => tdAddAfter(t, byKey)), // (その3 ⑦)
       t.done ? null : item("やめる（削除しないで残す）", () => tdCancel(t)), // (その3 ⑤)
       item("複製", (byKey) => { recReturnId = t.id; fillTodoCopy(t); openNewTodo(byKey, "rec"); }),
@@ -22788,7 +22827,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月15日 7:25"; // 54904211 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月15日 7:31"; // c9c34c45 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -44051,7 +44090,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ⑦ 探す条件: in the words looked for, ! (重要), #ラベル, @リスト, 期限:きょう・あした・今週・切れ・なし, 時間:30 (かかる時間
   // が30分まで), the other words as before. A line under the field says what is taken as conditions
-  const TD18_OP = /^(?:!|！|[#＃].+|[@＠].+|期限[:：](?:きょう|今日|あした|明日|今週|切れ|なし)|時間[:：][0-9０-９]+)$/;
+  const TD18_OP = /^(?:!|！|[#＃].+|[@＠].+|期限[:：](?:きょう|今日|あした|明日|今週|来週|今月|切れ|なし)|時間[:：][0-9０-９]+|(?:繰り返し|メモ|サブタスク|写真)[:：]あり)$/; // (来週・今月・あり: その19 ⑥)
   function td18Ops(q) { return String(q || "").split(/[\s　]+/).filter((w) => TD18_OP.test(w)); }
   function td18Plain(q) { return String(q || "").split(/[\s　]+/).filter((w) => w && !TD18_OP.test(w)).join(" "); }
   // the words for renderTodos: those of the field less the conditions ("" alone with conditions only, so it looks as for words)
@@ -44066,13 +44105,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (/^[#＃]/.test(w)) return !!todoLabelOf(t) && f(todoLabelOf(t).name).includes(f(w.slice(1)));
       if (/^[@＠]/.test(w)) return !!todoListOf(t) && f(todoListOf(t).name).includes(f(w.slice(1)));
       const k = w.replace(/^[^:：]+[:：]/, "");
-      if (/^期限/.test(w)) { const d = isDay(t.due || "") ? t.due : ""; return k === "なし" ? !d : !d ? false : /きょう|今日/.test(k) ? d === todayKey : /あした|明日/.test(k) ? d === addDays(todayKey, 1) : k === "今週" ? d >= wk.from && d <= wk.to : k === "切れ" ? d < todayKey && !t.done : false; }
+      if (k === "あり") { const kind = w.replace(/[:：]あり$/, ""); return kind === "繰り返し" ? !!t.repeat : kind === "メモ" ? typeof t.memo === "string" && !!t.memo.trim() : kind === "サブタスク" ? !!tdStepCount(t) : kind === "写真" ? tdPhotosOf(t.id).length > 0 : true; } // (その19 ⑥)
+      if (/^期限/.test(w)) { const d = isDay(t.due || "") ? t.due : ""; return k === "なし" ? !d : !d ? false : /きょう|今日/.test(k) ? d === todayKey : /あした|明日/.test(k) ? d === addDays(todayKey, 1) : k === "今週" ? d >= wk.from && d <= wk.to
+        : k === "来週" ? d >= addDays(wk.from, 7) && d <= addDays(wk.to, 7) : k === "今月" ? d.slice(0, 7) === todayKey.slice(0, 7) : k === "切れ" ? d < todayKey && !t.done : false; }
       if (/^時間/.test(w)) { const m = Number(foldText(k)); return num(t.mins) > 0 && num(t.mins) <= m; }
       return true;
     });
   }
   function td18OpsWord(w) {
     return w === "!" || w === "！" ? "重要" : /^[#＃]/.test(w) ? `ラベル「${w.slice(1)}」` : /^[@＠]/.test(w) ? `リスト「${w.slice(1)}」` : /^期限/.test(w) ? `期限が${w.replace(/^期限[:：]/, "").replace("切れ", "切れている").replace("なし", "ない")}`
+      : /[:：]あり$/.test(w) ? ({ 繰り返し: "繰り返し", メモ: "メモあり", サブタスク: "サブタスクあり", 写真: "写真あり" })[w.replace(/[:：]あり$/, "")] || w // (その19 ⑥)
       : `かかる時間が ${Number(foldText(w.replace(/^時間[:：]/, "")))} 分まで`;
   }
   function td18OpsLine() {
@@ -44087,19 +44129,21 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑧ 人ごとのToDo (その他, while someone is named): who asked (その16 ⑩) and who was asked, or is waited on (返事待ち・
   // 人に頼む), each with their ToDos still to do
   function td18People() {
-    const map = new Map(), add = (who, kind, t) => { const k = oneLine(who).slice(0, 30); if (!k) return; if (!map.has(k)) map.set(k, { from: [], wait: [] }); map.get(k)[kind].push(t); };
+    const map = new Map(), add = (who, kind, t) => { const k = oneLine(who).slice(0, 30); if (!k) return; if (!map.has(k)) map.set(k, { from: [], wait: [], with: [] }); map.get(k)[kind].push(t); };
     for (const t of todos.items) {
       if (t.done || typeof t.text !== "string") continue;
       if (typeof t.from === "string" && t.from.trim()) add(t.from, "from", t);
       if (tdWaiting(t) && typeof t.wait.who === "string" && t.wait.who.trim()) add(t.wait.who, "wait", t);
+      if (todoNineteen && typeof t.with === "string" && t.with.trim()) add(t.with, "with", t); // (その19 ⑧ いっしょにやる人)
     }
-    return [...map].map(([who, v]) => ({ who, ...v })).sort((a, b) => b.from.length + b.wait.length - (a.from.length + a.wait.length) || a.who.localeCompare(b.who, "ja"));
+    const n = (p) => p.from.length + p.wait.length + p.with.length;
+    return [...map].map(([who, v]) => ({ who, ...v })).sort((a, b) => n(b) - n(a) || a.who.localeCompare(b.who, "ja"));
   }
   function renderTd18People() {
     const ps = td18People(), row = (t, kind) => el("li", {}, el("span", { class: "body" }, el("button", { type: "button", class: "text row-link", onclick: () => tdPanelEdit(t.id) }, clip(td14Name(t), 60)),
-      el("span", { class: "sub" }, kind === "from" ? (isDay(t.due || "") ? `頼まれごと・期限 ${fmtDay(t.due)}` : "頼まれごと") : `返事待ち・${daysBetween(t.wait.since, todayKey) + 1}日目`)));
-    setChildren($("tdPanelBody"), el("p", { class: "group-foot td-panel-lead" }, ps.length ? "人ごとの、頼まれごとと、返事を待っているToDoです。" : "人の名前のあるToDoはありません。"),
-      ps.flatMap((p) => [el("h3", { class: "group-head" }, `${p.who}（${p.from.length + p.wait.length} 件）`), el("ul", { class: "list card td18-people" }, [...p.from.map((t) => row(t, "from")), ...p.wait.map((t) => row(t, "wait"))])]));
+      el("span", { class: "sub" }, kind === "from" ? (isDay(t.due || "") ? `頼まれごと・期限 ${fmtDay(t.due)}` : "頼まれごと") : kind === "with" ? (isDay(t.due || "") ? `いっしょにやる・期限 ${fmtDay(t.due)}` : "いっしょにやる") : `返事待ち・${daysBetween(t.wait.since, todayKey) + 1}日目`)));
+    setChildren($("tdPanelBody"), el("p", { class: "group-foot td-panel-lead" }, ps.length ? (todoNineteen ? "人ごとの、頼まれごと・返事待ち・いっしょにやるToDoです。" : "人ごとの、頼まれごとと、返事を待っているToDoです。") : "人の名前のあるToDoはありません。"),
+      ps.flatMap((p) => [el("h3", { class: "group-head" }, `${p.who}（${p.from.length + p.wait.length + p.with.length} 件）`), el("ul", { class: "list card td18-people" }, [...p.from.map((t) => row(t, "from")), ...p.wait.map((t) => row(t, "wait")), ...p.with.map((t) => row(t, "with"))])]));
   }
 
   // ⑨ 完了カレンダー (その他): a month, each day with how many were done then (not やめた), deeper the more; a day pressed
@@ -44217,6 +44261,333 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   td18Init();
   todoEighteen = true;
   td18CompactSync();
+
+  // ---------- ToDo その19 ①〜⑩ (the user's calls, 2026-11-14): told as a class, a shift or a plan ends (①), the 期限 of
+  // three weeks as bars (②), the money the ToDos still to do will take (③), the ひとこと written as they were done (④), a
+  // list's 絵文字 (⑤), the conditions to look for at a press (⑥), how much a day (⑦), who it is done with (⑧), the repeats
+  // put to rest at once (⑨), and each morning until the 期限 (⑩). Function declarations and var, as the page may draw
+  // before this runs ----------
+  var todoNineteen = false;
+  var td19NoteQ = "", td19ChipsDown = false;
+
+  // ① 予定のあとに知らせる (a row's menu): the classes, plans and shifts of today and tomorrow with an end, each a choice;
+  // one picked makes the ToDo's 期限 and time its end, with お知らせ (as 時間をおいて知らせる does), and its row says whose
+  function td19ShiftName(x) { try { const j = jobList().find((j) => j.id === x.jobId); return j && typeof j.name === "string" && j.name.trim() ? oneLine(j.name).slice(0, 20) : "バイト"; } catch { return "バイト"; } }
+  function td19Ends() {
+    const now = nowHm(), tmr = addDays(todayKey, 1), out = [], seen = new Set();
+    const put = (x) => { const k = `${x.n}|${x.d}|${x.time}`; if (!seen.has(k)) { seen.add(k); out.push(x); } };
+    let tb = new Map(), sh = new Map();
+    try { tb = turnsByDay(todayKey, tmr); } catch {}
+    try { sh = shiftsByDay(todayKey, tmr); } catch {}
+    for (const d of [todayKey, tmr]) {
+      for (const { e, day, days } of tb.get(d) || []) {
+        if (day !== 0 || days > 1 || e.cand || e.ten || typeof e.title !== "string" || !e.title.trim() || !isHm(e.time || "") || !isHm(e.endTime || "") || e.endTime <= e.time) continue;
+        if (d === todayKey && e.endTime <= now) continue;
+        put({ n: oneLine(e.title).slice(0, 30), d, time: e.endTime, k: e.cls ? "授業" : "予定" });
+      }
+      for (const p of sh.get(d) || []) {
+        if (!p.first || !(p.end < 1440)) continue;
+        const hm = `${pad(Math.floor(p.end / 60))}:${pad(p.end % 60)}`;
+        if (d === todayKey && hm <= now) continue;
+        put({ n: td19ShiftName(p.x), d, time: hm, k: "バイト" });
+      }
+    }
+    return out.sort((a, b) => (a.d + a.time).localeCompare(b.d + b.time)).slice(0, 8);
+  }
+  const td19When = (c) => `${c.d === todayKey ? "" : relLabel(c.d) === "あした" ? "あした " : fmtDay(c.d) + " "}${Number(c.time.slice(0, 2))}:${c.time.slice(3)}`;
+  function td19AfterAsk(t) {
+    const cs = td19Ends();
+    if (!cs.length) { flash("きょうとあしたに、終わる時刻のある授業・予定・バイトはありません"); return; }
+    tdAsk(`「${clip(td14Name(t), 24)}」を、どの予定のあとに知らせますか`, cs.map((c) => [`${c.n}のあと（${td19When(c)}）`, () => td19After(t, c)]));
+  }
+  function td19After(t, c) {
+    const x = todos.get(t.id);
+    if (!x || x.done) return;
+    const undo = tdUndoOf([x]);
+    act(() => todos.update(x.id, { ...(x.due === c.d ? {} : tdDuePatch(x, c.d)), time: c.time, remind: true, aft: { n: c.n, d: c.d, time: c.time } }));
+    flash(`「${clip(td14Name(x), 20)}」を、${c.n}のあと（${td19When(c)}）にお知らせします`, undo);
+  }
+  function td19AftPart(t) { const a = t.aft; return a && !t.done && a.d === t.due && a.time === t.time && typeof a.n === "string" ? [el("span", { class: "phrase td-x td19-aft" }, `${clip(a.n, 12)}のあと`)] : []; }
+
+  // ② 期限までのバー (その他): the ToDos still to do (in the list showing) due in the coming three weeks, or past it, each a
+  // bar from today (or its 開始日) to its 期限 over the 21 days; past its 期限, red at the start. Pressed, it opens
+  function td19BarList() {
+    const end = addDays(todayKey, 20);
+    return todos.items.filter((t) => !t.done && typeof t.text === "string" && inTodoTab(t) && isDay(t.due || "") && t.due <= end && !(todoEight && td8Away(t)))
+      .sort((a, b) => a.due.localeCompare(b.due) || todoOrder(a, b)).slice(0, 40);
+  }
+  function renderTd19Bars() {
+    const n = 21, days = Array.from({ length: n }, (_, i) => addDays(todayKey, i)), xs = td19BarList(), name = todoTab ? todoLists.get(todoTab)?.name : "";
+    const cell = (d, i) => { const wd = parseYmd(d).getDay(); return el("span", { class: "td19-bd" + (wd === 0 || wd === 6 ? " we" : "") + (i === 0 ? " today" : "") + (parseYmd(d).getDate() === 1 ? " first" : "") }, String(parseYmd(d).getDate())); };
+    setChildren($("tdPanelBody"), el("p", { class: "group-foot td-panel-lead" }, xs.length ? `これから3週間に期限がある${name ? `「${name}」の` : ""}ToDoです。開始日のあるものは開始日から、ほかはきょうから期限まで。` : "これから3週間に期限があるToDoはありません。"),
+      xs.length ? el("div", { class: "card pad td19-bars" }, el("div", { class: "td19-bars-head", "aria-hidden": "true" }, el("span", { class: "td19-bars-month" }, `${parseYmd(todayKey).getMonth() + 1}月`), el("div", { class: "td19-days" }, days.map(cell))),
+        el("ul", { class: "td19-bars-list" }, xs.map((t) => {
+          const late = t.due < todayKey, from = isDay(t.start || "") && t.start > todayKey ? t.start : todayKey, ei = late ? 0 : daysBetween(todayKey, t.due), si = Math.min(ei, daysBetween(todayKey, from));
+          return el("li", {}, el("button", { type: "button", class: "link-btn td19-bar-name", onclick: () => tdPanelEdit(t.id) }, el("span", { class: "td19-bar-text" }, clip(td14Name(t), 26)),
+            el("span", { class: "sub" + (late ? " warn" : "") }, late ? `期限切れ（${fmtDay(t.due)}）` : `${relLabel(t.due) || fmtDay(t.due)}まで`)),
+            el("div", { class: "td19-track", "aria-hidden": "true" }, el("span", { class: "td19-bar" + (late ? " late" : "") + (t.flag ? " flag" : ""), style: `grid-column: ${si + 1} / ${ei + 2}` })));
+        }))) : null);
+  }
+
+  // ③ これからかかるお金 (その他, while some have it): the ToDos still to do with an amount (家計簿とつなぐ) or a price (a
+  // 買い物リスト's), by when: by the end of this week, of this month, later, and with no 期限; each total and all of it
+  function td19MoneyOf(t) { return num(t.amount) > 0 ? Math.round(num(t.amount)) : num(t.price) > 0 ? Math.round(num(t.price)) : 0; }
+  function td19Money() { return todos.items.filter((t) => !t.done && typeof t.text === "string" && td19MoneyOf(t) > 0); }
+  function renderTd19Money() {
+    const xs = td19Money(), wk = td14Week(), me = `${todayKey.slice(0, 7)}-${pad(daysInMonth(todayKey.slice(0, 7)))}`;
+    const groups = [["今週まで", (t) => isDay(t.due || "") && t.due <= wk.to], ["今月", (t) => isDay(t.due || "") && t.due > wk.to && t.due <= me], ["来月から", (t) => isDay(t.due || "") && t.due > me], ["期限なし", (t) => !isDay(t.due || "")]];
+    const all = sum(xs, td19MoneyOf);
+    setChildren($("tdPanelBody"), el("div", { class: "card pad td19-money-sum" }, el("span", { class: "sub" }, `まだのToDo ${xs.length} 件で`), el("strong", {}, fmtYen(all))),
+      groups.flatMap(([head, f]) => {
+        const ys = xs.filter(f).sort((a, b) => (a.due || "9").localeCompare(b.due || "9") || todoOrder(a, b));
+        return ys.length ? [el("h3", { class: "group-head td19-money-head" }, el("span", {}, head), el("span", {}, fmtYen(sum(ys, td19MoneyOf)))),
+          el("ul", { class: "list card td19-money" }, ys.map((t) => el("li", {}, el("span", { class: "body" }, el("button", { type: "button", class: "text row-link", onclick: () => tdPanelEdit(t.id) }, clip(td14Name(t), 40)),
+            el("span", { class: "sub" }, [isDay(t.due || "") ? `期限 ${fmtDay(t.due)}` : "", todoListOf(t)?.name || ""].filter(Boolean).join("・"))), el("span", { class: "td19-yen" }, fmtYen(td19MoneyOf(t))))))] : [];
+      }),
+      el("p", { class: "group-foot td19-money-foot" }, "家計簿とつなぐ金額と、買い物リストの値段です。終えると家計簿に記録されます（金額のあるもの）。"));
+  }
+
+  // ④ ひとことの一覧 (その他, while some have one): the ひとこと written as they were done, the newest first, by the month;
+  // a few words narrow it (the ひとこと or the name). Pressed, its ToDo. The field stays as the list under it is drawn again
+  function td19Notes() { return todos.items.filter((t) => t.done && !t.cancelled && typeof t.text === "string" && typeof t.doneNote === "string" && t.doneNote.trim()).sort((a, b) => num(b.doneAt) - num(a.doneAt)); }
+  function renderTd19Notes() {
+    const body = $("tdPanelBody");
+    let list = $("td19NoteList");
+    if (!list || !body.contains(list)) {
+      const find = el("input", { type: "search", id: "td19NoteFind", class: "full", placeholder: "ひとことや名前で探す", "aria-label": "ひとことを探す", value: td19NoteQ, autocomplete: "off", oninput: (ev) => { td19NoteQ = ev.target.value; renderTd19Notes(); } });
+      list = el("div", { id: "td19NoteList" });
+      setChildren(body, el("p", { class: "group-foot td-panel-lead" }, "終えたときに書いたひとことです。"), el("div", { class: "rec-search td19-note-find" }, icon("search", 18), find), list);
+    }
+    const words = foldText(td19NoteQ).split(/\s+/).filter(Boolean), xs = td19Notes().filter((t) => { const f = foldText(`${t.doneNote} ${t.text}`); return words.every((w) => f.includes(w)); });
+    const by = new Map();
+    for (const t of xs) { const d = doneDay(t) || "", k = d ? d.slice(0, 7) : ""; if (!by.has(k)) by.set(k, []); by.get(k).push(t); }
+    setChildren(list, xs.length ? [...by].flatMap(([k, ys]) => [el("h3", { class: "group-head" }, k ? `${Number(k.slice(0, 4)) === Number(todayKey.slice(0, 4)) ? "" : k.slice(0, 4) + "年"}${Number(k.slice(5))}月（${ys.length}）` : "日付なし"),
+      el("ul", { class: "list card td19-notes" }, ys.map((t) => el("li", {}, el("span", { class: "body" }, el("button", { type: "button", class: "text row-link td19-note", onclick: () => tdPanelEdit(t.id) }, `「${t.doneNote.trim()}」`),
+        el("span", { class: "sub" }, [doneDay(t) ? fmtDay(doneDay(t)) : "", clip(td14Name(t), 30)].filter(Boolean).join("・"))))))])
+      : el("p", { class: "group-foot" }, words.length ? "合うひとことはありません。" : "ひとことはまだありません。"));
+  }
+
+  // ⑤ リストの絵文字 (a list's その他): one of 目標's set, before the list's name on its tab, and on its ToDos' rows under
+  // すべて with the list's name (kept with the list, so on every device)
+  function td19Emo(l) { return l && typeof l.emo === "string" && GOAL_EMOS.includes(l.emo) ? l.emo : ""; }
+  function td19EmoAsk(l) {
+    const now = td19Emo(l);
+    tdAsk(`「${clip(l.name, 16)}」の絵文字`, [el("div", { class: "emo-pick td19-emo-pick", role: "group", "aria-label": "リストの絵文字" }, GOAL_EMOS.map((e) => el("button", { type: "button", class: "emo-btn", "aria-pressed": String(e === now), "aria-label": e,
+      onclick: (ev) => { if (!todoMenuDown && ev.detail !== 0) return; todoMenu.close(); td19SetEmo(l.id, e); } }, e))), now ? ["絵文字をはずす", () => td19SetEmo(l.id, ""), true] : null]);
+  }
+  function td19SetEmo(id, e) {
+    const l = todoLists.get(id);
+    if (!l) return;
+    const was = l.emo;
+    act(() => todoLists.update(id, { emo: e || undefined }));
+    flash(e ? `「${clip(l.name, 16)}」の絵文字を ${e} にしました` : `「${clip(l.name, 16)}」の絵文字をはずしました`, () => act(() => todoLists.update(id, { emo: was })));
+  }
+  function td19TabEmos() {
+    for (const b of $("todoTabs")?.querySelectorAll("[data-list]") || []) {
+      const e = td19Emo(todoLists.get(b.dataset.list)), name = b.querySelector(".td-tab-name");
+      if (!name || !e || name.querySelector(".td19-emo")) continue;
+      name.prepend(el("span", { class: "td19-emo", "aria-hidden": "true" }, e));
+    }
+  }
+  function td19ListPart(t) { const l = !todoTab && !t.done ? todoListOf(t) : null, e = td19Emo(l); return e ? [el("span", { class: "phrase td-x td19-list" }, `${e} ${clip(l.name, 10)}`)] : []; }
+
+  // ⑥ 探す条件のボタン: while the words' field is pressed in, the conditions (その18's ⑦ and more) as buttons under it, and
+  // the labels and lists by name; one pressed is put in (or taken out). その18's conditions take 期限:来週・今月 and
+  // 繰り返し・メモ・サブタスク・写真:あり too
+  const TD19_CHIPS = [["!", "重要"], ["期限:きょう", "きょう"], ["期限:あした", "あした"], ["期限:今週", "今週"], ["期限:来週", "来週"], ["期限:今月", "今月"], ["期限:切れ", "期限切れ"], ["期限:なし", "期限なし"],
+    ["時間:30", "30分まで"], ["繰り返し:あり", "繰り返し"], ["メモ:あり", "メモあり"], ["サブタスク:あり", "サブタスクあり"], ["写真:あり", "写真あり"]];
+  function td19ChipList() {
+    const nameOp = (p, s) => p + String(s).replace(/[\s　]+/g, "");
+    return [...TD19_CHIPS, ...sortedTodoLabels().slice(0, 8).map((x) => [nameOp("#", x.name), `#${x.name}`]), ...(todoEight ? td8Lists() : sortedTodoLists()).slice(0, 8).map((x) => [nameOp("@", x.name), `@${x.name}`])]
+      .filter(([op]) => op.length > 1 || op === "!");
+  }
+  function td19Chips() {
+    let box = $("td19Chips");
+    const anchor = $("td18OpsLine") || $("todoSearchBox");
+    if (!box && anchor) {
+      box = el("div", { class: "td19-chips", id: "td19Chips", role: "group", "aria-label": "探す条件", hidden: true, onmousedown: (ev) => { if (ev.target.closest("button")) ev.preventDefault(); }, // (the field keeps the focus)
+        onfocusout: (ev) => { if (!ev.relatedTarget || (ev.relatedTarget !== $("todoSearch") && !box.contains(ev.relatedTarget))) td19ChipsShow(false); } });
+      anchor.after(box);
+    }
+    return box;
+  }
+  function td19ChipsShow(on) {
+    const box = td19Chips();
+    if (!box) return;
+    if (!on || !todoNineteen || (todayTwo && tdFocusOn())) { box.hidden = true; return; }
+    const ops = new Set(td18Ops(todoQuery));
+    setChildren(box, td19ChipList().map(([op, w]) => el("button", { type: "button", class: "chip-btn td19-chip", "aria-pressed": String(ops.has(op)), "data-op": op, onclick: () => td19ChipPress(op) }, w)));
+    box.hidden = false;
+  }
+  function td19ChipPress(op) {
+    const ws = String(todoQuery || "").split(/[\s　]+/).filter(Boolean), has = ws.includes(op);
+    todoQuery = (has ? ws.filter((w) => w !== op) : [...ws, op]).join(" ");
+    const input = $("todoSearch");
+    input.value = todoQuery ? todoQuery + (has ? "" : " ") : "";
+    todoQuery = input.value;
+    renderTodos();
+    input.focus();
+    td19ChipsShow(true);
+  }
+  function td19ChipsInit() {
+    const input = $("todoSearch");
+    if (!input) return;
+    input.addEventListener("focus", () => td19ChipsShow(true));
+    input.addEventListener("input", () => { if (!$("td19Chips")?.hidden) td19ChipsShow(true); });
+    input.addEventListener("blur", (ev) => { const box = $("td19Chips"); if (box && ev.relatedTarget && box.contains(ev.relatedTarget)) return; setTimeout(() => { if (document.activeElement !== input && !box?.contains(document.activeElement)) td19ChipsShow(false); }, 150); });
+  }
+
+  // ⑦ 1日あたりの目安: on the row of one still to do with a かかる時間 of an hour or more and its 期限 two days or more on,
+  // what is left of it (less its 進み具合, or the time focused on it) shared out over the days to its 期限 (from its 開始日
+  // if later), to five minutes; ten minutes a day or more
+  function td19PerDay(t) {
+    const mins = num(t.mins);
+    if (t.done || mins < 60 || !isDay(t.due || "") || t.due < todayKey) return 0;
+    const from = isDay(t.start || "") && t.start > todayKey ? t.start : todayKey, days = daysBetween(from, t.due) + 1;
+    if (days < 2) return 0;
+    const pct = num(t.pct), left = pct > 0 ? mins * (1 - Math.min(100, pct) / 100) : Math.max(0, mins - num(t.focus)), per = Math.round(left / days / 5) * 5;
+    return per >= 10 ? per : 0;
+  }
+  function td19PerPart(t) { const per = td19PerDay(t); return per ? [el("span", { class: "phrase td-x td19-per" }, keepUnits(`1日 約${durText(per)}`))] : []; }
+
+  // ⑧ いっしょにやる人 (a row's menu; with): who it is done with, the names given before offered; on its row (〇〇と), and
+  // in その18's 人ごとのToDo
+  function td19Withs() {
+    const n = new Map();
+    for (const t of todos.items) for (const w of [t.with, t.from, tdWaiting(t) ? t.wait.who : ""]) if (typeof w === "string" && w.trim()) { const k = oneLine(w).slice(0, 30); n.set(k, (n.get(k) || 0) + 1); }
+    return [...n].sort((a, b) => b[1] - a[1]).map(([k]) => k).slice(0, 6);
+  }
+  function td19WithAsk(t) {
+    const input = el("input", { type: "text", value: t.with || "", maxlength: 30, placeholder: "例：山田さん", "aria-label": "いっしょにやる人", enterkeyhint: "done" });
+    const go = () => { const v = oneLine(input.value).slice(0, 30); todoMenu.close(); td19SetWith(t, v); };
+    input.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing) { ev.preventDefault(); go(); } });
+    tdAsk(`「${clip(td14Name(t), 24)}」を、だれといっしょにやりますか`, [el("div", { class: "ask-field" }, input, el("button", { type: "button", class: "ask-go", onclick: go }, "決める")),
+      ...td19Withs().filter((n) => n !== t.with).map((n) => [n, () => td19SetWith(t, n)]), t.with ? ["いっしょにやる人をはずす", () => td19SetWith(t, ""), true] : null]);
+  }
+  function td19SetWith(t, who) {
+    const x = todos.get(t.id);
+    if (!x) return;
+    const was = x.with;
+    if ((was || "") === who) return;
+    act(() => todos.update(x.id, { with: who || undefined }));
+    flash(who ? `「${clip(td14Name(x), 20)}」を、${clip(who, 12)}といっしょにやります` : `「${clip(td14Name(x), 20)}」のいっしょにやる人をはずしました`, () => act(() => todos.update(x.id, { with: was })));
+  }
+  function td19WithPart(t) { return !t.done && typeof t.with === "string" && t.with.trim() ? [el("span", { class: "phrase td-x td19-with" }, `${clip(oneLine(t.with), 12)}と`)] : []; }
+
+  // ⑨ 繰り返しをまとめて休む (その他): every repeat still going put to rest until a day (旅行, テスト) at once, each as その6's
+  // 休む does, and all taken back at once (元に戻す, or 休みをまとめてやめる)
+  function td19Repeats() { return todos.items.filter((x) => !x.done && x.repeat && isDay(x.due || "") && typeof x.text === "string" && !(todoSix && td6Resting(x))); }
+  function td19Resting() { return todoSix ? todos.items.filter((x) => typeof x.text === "string" && td6Resting(x)) : []; }
+  function td19RestAsk() {
+    const xs = td19Repeats(), day = el("input", { type: "date", value: addDays(todayKey, 7), min: addDays(todayKey, 1), "aria-label": "再開する日" });
+    const go = () => { if (!isDay(day.value) || day.value <= todayKey) { day.focus(); return; } todoMenu.close(); td19RestAll(day.value); };
+    tdAsk(`繰り返しのToDo ${xs.length} 件を、まとめて休みます。いつまで休みますか？`, [["1週間", () => td19RestAll(addDays(todayKey, 7))], ["2週間", () => td19RestAll(addDays(todayKey, 14))],
+      el("div", { class: "ask-field" }, day, el("button", { type: "button", class: "ask-go", onclick: go }, "この日から再開"))]);
+  }
+  function td19RestAll(until) {
+    const patches = [], was = [];
+    for (const x of td19Repeats()) {
+      const due = td6TurnFrom(x, until);
+      if (!due) continue;
+      was.push([x.id, { due: x.due, repeatFrom: x.repeatFrom, start: x.start, rest: x.rest }]);
+      patches.push([x.id, { due, repeatFrom: turnBase(x, due), rest: { until, due: x.due, ...(x.repeatFrom ? { from: x.repeatFrom } : {}) }, ...(isDay(x.start || "") && x.start <= x.due ? { start: addDays(due, -daysBetween(x.start, x.due)) } : {}) }]);
+    }
+    if (!patches.length) { flash("休める繰り返しのToDoはありません"); return; }
+    act(() => todos.updateMany(patches));
+    flash(`繰り返しのToDo ${patches.length} 件を休みます。${fmtDay(until)}から戻ります`, () => act(() => todos.updateMany(was)));
+  }
+  function td19UnrestAll() {
+    const patches = [], was = [];
+    for (const x of td19Resting()) {
+      const r = x.rest;
+      if (!isDay(r.due || "")) continue;
+      const y = { ...x, due: r.due, repeatFrom: r.from };
+      const due = afterDone(x.repeat) || r.due >= todayKey ? (r.due >= todayKey ? r.due : todayKey) : td6IsTurn(y, todayKey) ? todayKey : nextDue(y) || r.due;
+      was.push([x.id, { due: x.due, repeatFrom: x.repeatFrom, start: x.start, rest: x.rest }]);
+      patches.push([x.id, { due, repeatFrom: turnBase(y, due), rest: undefined, ...(isDay(x.start || "") && x.start <= x.due ? { start: addDays(due, -daysBetween(x.start, x.due)) } : {}) }]);
+    }
+    if (!patches.length) return;
+    act(() => todos.updateMany(patches));
+    flash(`繰り返しのToDo ${patches.length} 件の休みをやめました`, () => act(() => todos.updateMany(was)));
+  }
+
+  // ⑩ 期限まで毎日知らせる (a row's menu; cd 3 or 7): each morning (時刻のないToDo's time in ToDo's 編集) from 3 days or a
+  // week before its 期限 to the day before, あと〇日; not while ToDo's お知らせ rest (その15 ①), nor while it waits
+  function td19CdAsk(t) {
+    const x = todos.get(t.id);
+    if (!x || !isDay(x.due || "")) { flash("期限があるToDoで使えます"); return; }
+    tdAsk(`「${clip(td14Name(x), 24)}」の期限（${fmtDay(x.due)}）まで、毎朝 ${tdRemindAt().replace(/^0/, "")} に知らせます`, [["3日前から", () => td19SetCd(x, 3)], ["1週間前から", () => td19SetCd(x, 7)],
+      x.cd ? ["毎日知らせるのをやめる", () => td19SetCd(x, 0), true] : null]);
+  }
+  function td19SetCd(t, n) {
+    const x = todos.get(t.id);
+    if (!x) return;
+    const was = x.cd;
+    act(() => todos.update(x.id, { cd: n || undefined }));
+    flash(n ? `「${clip(td14Name(x), 20)}」を、期限の${n === 7 ? "1週間" : "3日"}前から毎朝お知らせします` : `「${clip(td14Name(x), 20)}」の毎日のお知らせをやめました`, () => act(() => todos.update(x.id, { cd: was })));
+  }
+  function td19CdPart(t) { return !t.done && (t.cd === 3 || t.cd === 7) && isDay(t.due || "") ? [el("span", { class: "phrase td-x td19-cd" }, el("span", { role: "img", "aria-label": "お知らせ" }, icon("bell", 13)), " 毎朝")] : []; }
+  function td19Alarms(now) {
+    const out = [], last = now + PUSH_AHEAD * 864e5, am = tdRemindAt(), until = todoFifteen ? td15Until() : "", end = until ? dayAt(addDays(until, 1), "00:00") : 0;
+    for (const t of todos.items) {
+      if (t.done || !(t.cd === 3 || t.cd === 7) || !isDay(t.due || "") || typeof t.text !== "string" || tdWaiting(t) || (todoEight && td8Away(t))) continue;
+      for (let k = t.cd; k >= 1; k--) {
+        const d = addDays(t.due, -k), at = dayAt(d, am);
+        if (at <= now + 5000 || at > last || (end && at < end)) continue;
+        out.push({ at, title: oneLine(t.text).slice(0, 100) || "ToDo", body: `期限まで、あと${k}日です（${fmtMDW(t.due)}）`, tag: `td-cd:${t.id}:${d}`, url: `./#todo:${t.id}` });
+      }
+    }
+    return out;
+  }
+  const td19AlarmBase = alarmTimes;
+  alarmTimes = function (now = Date.now()) { const out = td19AlarmBase(now); if (todoNineteen) out.push(...td19Alarms(now)); return out; };
+  const td19BellBase = td10BellKind;
+  td10BellKind = function (tag) { return String(tag).startsWith("td-cd:") ? "期限まで毎日" : td19BellBase(tag); };
+
+  // a row's parts, its menu, その他, the panels and their titles, the guide
+  const td19PartsBase = td12Parts;
+  td12Parts = function (t) { const out = td19PartsBase(t); return todoNineteen ? [...out, ...td19AftPart(t), ...td19PerPart(t), ...td19WithPart(t), ...td19CdPart(t), ...td19ListPart(t)] : out; };
+  function td19HoldItems(t, item) {
+    if (t.done) return [];
+    return [item("予定のあとに知らせる", () => td19AfterAsk(t)),
+      isDay(t.due || "") ? item(t.cd ? `期限まで毎日知らせる（${t.cd === 7 ? "1週間" : "3日"}前から）` : "期限まで毎日知らせる", () => td19CdAsk(t)) : null,
+      item(t.with ? `いっしょにやる人を変える（${clip(oneLine(t.with), 8)}）` : "いっしょにやる人（だれと）", () => td19WithAsk(t))];
+  }
+  function td19MoreItems(item) {
+    const l = todoTab ? todoLists.get(todoTab) : null, rest = td19Resting().length;
+    return [item("期限までのバー", () => openTdPanel("bars19", false)),
+      td19Money().length ? item("これからかかるお金", () => openTdPanel("money19", false)) : null,
+      td19Notes().length ? item("ひとことの一覧", () => { td19NoteQ = ""; openTdPanel("notes19", false); }) : null,
+      td19Repeats().length >= 2 ? item("繰り返しをまとめて休む", () => td19RestAsk()) : null,
+      rest ? item(`繰り返しの休みをまとめてやめる（${rest} 件）`, () => td19UnrestAll()) : null,
+      l ? item(td19Emo(l) ? `「${clip(l.name, 12)}」の絵文字を変える（いま ${td19Emo(l)}）` : `「${clip(l.name, 12)}」に絵文字を付ける`, () => td19EmoAsk(l)) : null];
+  }
+  const TD19_PANELS = { bars19: ["期限までのバー", renderTd19Bars], money19: ["これからかかるお金", renderTd19Money], notes19: ["ひとことの一覧", renderTd19Notes] };
+  const td19PanelBase = renderTdPanel;
+  renderTdPanel = function () {
+    if (todoNineteen && sheetEl.open && TD19_PANELS[tdPanel]) { TD19_PANELS[tdPanel][1](); return; }
+    td19PanelBase();
+  };
+  const td19HeadBase = syncSheetHead;
+  syncSheetHead = function () { td19HeadBase(); if (todoNineteen && TD19_PANELS[tdPanel] && sheetMode() === "tdpanel") $("sheetTitle").textContent = TD19_PANELS[tdPanel][0]; };
+  const td19GuideBase = td9Guide;
+  td9Guide = function () {
+    const g = td19GuideBase();
+    if (!todoNineteen) return g;
+    const add = (head, rows) => { const x = g.find(([h]) => h === head); if (x) x[1].push(...rows); else g.push([head, rows]); };
+    add("期限とお知らせ", [["予定のあとに知らせる", "長押し。きょう・あしたの授業・予定・バイトが終わる時刻に"], ["期限まで毎日知らせる", "長押し。3日前か1週間前から、毎朝"]]);
+    add("きょうの計画", [["1日あたりの目安", "かかる時間と期限から、1日にやる時間を行に"], ["期限までのバー", "「その他」。3週間の見通しをバーで"], ["繰り返しをまとめて休む", "「その他」。旅行やテストのあいだ"]]);
+    add("整理する", [["探す条件のボタン", "探す欄を押すと、条件のボタンが出ます"], ["リストの絵文字", "リストを開いて「その他」"], ["いっしょにやる人", "長押し。人ごとのToDoにも"]]);
+    add("ふりかえる", [["ひとことの一覧", "「その他」。終えたときのひとことを新しい順に"]]);
+    add("ほかとつなぐ", [["これからかかるお金", "「その他」。金額のあるToDoと買い物の値段"]]);
+    return g;
+  };
+  // ⑤ on the tabs as they are drawn
+  const td19TabsBase = renderTodoTabs;
+  renderTodoTabs = function () { td19TabsBase(); if (todoNineteen) td19TabEmos(); };
+
+  td19ChipsInit();
+  todoNineteen = true; // (the tabs not drawn here: before the lists are read, the one open would be let go)
 
   // ---------- 天気 その1 ①〜⑩ (the user's calls, 2026-11-13): the tile opens 天気's own page (①) with the hours (②), the
   // day in detail (③), what to wear (④), when rain comes and the rain clouds (⑤), sunrise and sunset (⑥), UV (⑦), a word
