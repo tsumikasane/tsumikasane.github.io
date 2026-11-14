@@ -3649,6 +3649,38 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
   #cal8Print .cal8-p-ev.cx { color: #777777; text-decoration: line-through; }
   #cal8Print .cal8-p-note { margin-top: 2pt; color: #444444; font-style: italic; }
 }
+/* カレンダー その9 ①〜⑩ (2026-11-14). ① 間隔を決める…, under the forms' 繰り返し */
+.cal9-every { display: grid; gap: 8px; padding: 10px; border-radius: 12px; background: var(--fill); }
+.cal9-every .sub, .cal9-bulk .sub, .cal9-people .sub { margin: 0; color: var(--muted); font-size: var(--t-sub); }
+.cal9-every-row { display: flex; align-items: center; gap: 8px; }
+.cal9-every-row input { width: 5em; min-height: 40px; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); }
+.cal9-every-row select { min-height: 40px; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); }
+.cal9-every-acts { display: flex; align-items: center; gap: 14px; }
+/* ② 文字でまとめて入れる, under the day's list */
+.cal9-bulk { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 4px var(--space-2) 14px; }
+.cal9-bulk[hidden] { display: none; }
+.cal9-bulk textarea { min-height: 96px; padding: 8px 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); }
+.cal9-bulk-list { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: var(--t-sub); }
+.cal9-bulk-list:empty { display: none; }
+.cal9-bulk-list li { display: flex; gap: 8px; overflow-wrap: anywhere; }
+.cal9-bulk-when { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cal9-bulk .btn { justify-self: start; }
+/* ③④ 人と場所, in 予定 */
+.cal9-people { display: grid; gap: 10px; }
+.cal9-people-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cal9-people-head { margin-inline-end: 4px; color: var(--muted); font-size: var(--t-sub); }
+.cal9-who { display: inline-flex; align-items: baseline; gap: 6px; background: var(--fill); box-shadow: none; color: var(--fg); }
+.cal9-who-n { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+/* ⑤ お知らせを休む, ⑥ 目安 */
+.cal9-quiet { display: grid; gap: 8px; }
+.cal9-quiet input { flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); }
+.cal9-quiet-acts { display: flex; align-items: center; gap: 14px; }
+.cal5-hours.cal9-over { color: var(--warn); }
+/* ⑧ よく使う, left out at a press */
+.cal9-often-x { display: inline-flex; align-items: center; gap: 4px; background: color-mix(in srgb, var(--warn) 10%, var(--surface)); box-shadow: none; color: var(--fg); }
+.cal9-often-tool[hidden] { display: none; }
+.cal9-often-tool { margin-top: -6px; }
+.cal9-often-edit { min-height: 32px; font-size: var(--t-sub); }
 /* 目標 その2 ①〜⑩ (2026-11-11). ① a counted cell: its ring (a press counts one) and the count by it, the cell filling
    from its foot as the count goes up; ⑦ an element's own colour: its cell tinted, with a line of it along the top */
 .m-cell[data-k] { --m-bg: var(--surface); }
@@ -14683,7 +14715,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const last = e.repeatUntil && e.repeatUntil < to ? e.repeatUntil : to, skip = new Set(e.skip || []), out = [];
     const noHol = !e.toEnd && !!e.noHol; // (カレンダー その3 ③ 祝日はお休み: a plan's turns on a holiday left out)
     const take = (d) => { if (d >= lo && d <= last && !skip.has(d) && !(noHol && (holidayName(d) || cal7OffName(d))) && !cal5Paused(e, d)) out.push(d); }; // (その7 ① 自分の休みの日 too) // (その5 ④ お休みの期間)
-    const by8 = todoEight && e.toEnd ? td8Every(e.repeat) : null; // (ToDo その8 ① 3日ごと, 3か月ごと: a ToDo's own)
+    const by8 = todoEight && e.toEnd ? td8Every(e.repeat) : !e.toEnd ? cal9Every(e.repeat) : null; // (カレンダー その9 ① N日・N週間・Nか月・N年ごと too) // (ToDo その8 ① 3日ごと, 3か月ごと: a ToDo's own)
     const days3 = !e.toEnd && e.repeat === "weekly" ? cal3Days(e) : null; // (カレンダー その3 ① 毎週 月・水・金)
     if (days3) { for (let d = lo > e.date ? lo : e.date; d <= last; d = addDays(d, 1)) if (days3.includes(parseYmd(d).getDay())) take(d); }
     else if (!e.toEnd && cal3Kind(e.repeat)) cal3Monthly(e, lo, last, take); // (カレンダー その3 ① 月末, 最終〇曜日)
@@ -15260,6 +15292,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...jnAlarms(now)); // (日記 ⑨ 書く時間のお知らせ)
     out.push(...st2Alarms(now)); // (勉強 その2 ⑨)
     out.push(...jn2Alarms(now)); // (日記 その2 ⑨ 思い出のお知らせ)
+    if (calNine) cal9Hold(out); // (カレンダー その9 ⑤ 予定のお知らせを休む)
     if (todoEight) td8Hold(out); // (ToDo その8 ②⑧ none for いつかやる nor a list put away)
     return (todoSix ? td6Hold(out) : out).sort((a, b) => a.at - b.at).slice(0, 400); // (ToDo その6 ③ held while put aside, ⑧ 静かな時間)
   }
@@ -15289,6 +15322,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...cal4Push()); // (カレンダー その4 ⑤ 終わったらお知らせ, ② 中止)
     parts.push(...cal5Push()); // (カレンダー その5 ⑥ 来週の予定, ④ お休み)
     parts.push(...cal7Push()); // (カレンダー その7 ④ 大事な予定の前の日, ① 自分の休みの日)
+    parts.push(...cal9Push()); // (カレンダー その9 ⑤ お知らせを休む)
     parts.push(...tdPushParts()); // (① ToDo's お知らせ, and the focus timer's end)
     parts.push(...tdMorningParts(), ...tdWaitParts()); // (ToDo その2 ①⑥)
     parts.push(...tdTenPush()); // (ToDo その3 ②③④)
@@ -15708,7 +15742,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const x = {}, endDate = $(f + "EndDate").value, endTime = $(f + "EndTime").value, rep = $(f + "Repeat").value, until = $(f + "Until").value;
     if (endDate > date) x.endDate = endDate;
     if (time && endTime && (x.endDate || endTime > time)) x.endTime = endTime;
-    if (REPEATS.some(([k]) => k && k === rep) || cal3Kind(rep)) { x.repeat = rep; if (until >= date) x.repeatUntil = until; } // (カレンダー その3 ① 月末, 最終〇曜日 too)
+    if (REPEATS.some(([k]) => k && k === rep) || cal3Kind(rep) || cal9Every(rep)) { x.repeat = rep; if (until >= date) x.repeatUntil = until; } // (その9 ① 3週間ごと too) // (カレンダー その3 ① 月末, 最終〇曜日 too)
     const memo = $(f + "Memo").value.trim(), place = $(f + "Place").value.trim(), url = $(f + "Url").value.trim();
     if (memo) x.memo = memo;
     if (place) x.place = place;
@@ -18156,7 +18190,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   function renderCalendar() {
     syncCalView();
-    draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); draw(renderCalSix); draw(renderCalSeven); draw(renderCalEight); // (その8 ①④⑤⑩; その7 ①③④⑥ the gear and the forms; その6 ①⑤⑧; その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
+    draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); draw(renderCalSix); draw(renderCalSeven); draw(renderCalEight); draw(renderCalNine); // (その9 ②⑤⑥⑦⑧⑩; その8 ①④⑤⑩; その7 ①③④⑥ the gear and the forms; その6 ①⑤⑧; その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
     const title = calTitle();
     if ($("calMonthName").textContent !== title) $("calMonthName").textContent = title; // a live region: only a change is read out
     const todoBy = groupBy(todos.items, (t) => t.due);
@@ -18475,7 +18509,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (e.date >= x.last) { x.last = e.date; x.e = e; }
       by.set(k, x);
     }
-    return [...by.values()].filter((x) => x.n >= 2).sort((a, b) => b.n - a.n || b.last.localeCompare(a.last)).slice(0, 6).map((x) => x.e);
+    return [...by.values()].filter((x) => x.n >= 2 && !cal9OftenHidden(x.e)).sort((a, b) => b.n - a.n || b.last.localeCompare(a.last)).slice(0, 6).map((x) => x.e); // (その9 ⑧ those left out)
   }
   const oftenWhen = (e) => (e.time ? `${e.time}${e.endTime ? "〜" + e.endTime : ""}` : "終日");
   const oftenChip = (e, label, onclick) => el("button", { type: "button", class: "chip-btn often", "aria-label": label, onclick }, e.title, el("small", {}, ` ${oftenWhen(e)}`));
@@ -18490,7 +18524,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderPlanOften() {
     const box = $("planOften"), list = planNew && !planCopy && !$("planTitle").value.trim() ? oftenPlans() : [];
     box.hidden = !list.length;
-    setChildren(box, list.length ? [el("span", { class: "often-head" }, "よく使う"), ...list.map((e) => oftenChip(e, `${e.title}（${oftenWhen(e)}）を入れる`, () => fillOften(e)))] : null);
+    setChildren(box, list.length ? [el("span", { class: "often-head" }, "よく使う"), ...list.map((e) => (calNine && cal9OftenEdit ? cal9OftenChip(e) : oftenChip(e, `${e.title}（${oftenWhen(e)}）を入れる`, () => fillOften(e))))] : null);
+    if (calNine) cal9SyncOftenTool(); // (その9 ⑧ 整理, under it)
   }
   function fillOften(e) {
     $("planTitle").value = e.title;
@@ -18778,7 +18813,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         : r.FREQ === "WEEKLY" && iv <= 2 && (!by.length || by.join() === wd) ? (iv === 2 ? "biweekly" : "weekly")
         : r.FREQ === "MONTHLY" && iv === 1 && !by.length ? "monthly"
         : r.FREQ === "MONTHLY" && iv === 1 && by.length === 1 && by[0] === `${nthOf(st.date)}${wd}` ? "monthlyNth"
-        : r.FREQ === "YEARLY" && iv === 1 ? "yearly" : null;
+        : r.FREQ === "YEARLY" && iv === 1 ? "yearly" : cal9IcsRep(r, by, iv); // (その9 ① INTERVAL)
       if (rep) {
         p.repeat = rep;
         if (c3?.days) p.repeatDays = c3.days;
@@ -18836,7 +18871,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         if (e.endTime && (last > first || e.endTime > e.time)) lines.push(`DTEND:${at(last, e.endTime)}`);
         else lines.push(last > first ? `DTEND:${at(addDays(last, 1), "00:00")}` : "DURATION:PT1H");
       } else lines.push(`DTSTART;VALUE=DATE:${day(first)}`, `DTEND;VALUE=DATE:${day(addDays(last, 1))}`);
-      const rule = cal3IcsRule(e) || (e.repeat === "monthlyNth" ? `FREQ=MONTHLY;BYDAY=${nthOf(e.date)}${DAYS[parseYmd(e.date).getDay()]}` : RULES[e.repeat]); // (カレンダー その3 ①)
+      const rule = cal3IcsRule(e) || (e.repeat === "monthlyNth" ? `FREQ=MONTHLY;BYDAY=${nthOf(e.date)}${DAYS[parseYmd(e.date).getDay()]}` : RULES[e.repeat]) || cal9IcsRule(e); // (カレンダー その3 ①, その9 ① INTERVAL)
       if (rule) {
         lines.push(`RRULE:${rule}${e.repeatUntil ? ";UNTIL=" + day(e.repeatUntil) + (e.time ? "T235959" : "") : ""}`);
         for (const d of [...(e.skip || []), ...cal3IcsHolSkips(e)]) lines.push(e.time ? `EXDATE:${at(d, e.time)}` : `EXDATE;VALUE=DATE:${day(d)}`); // (カレンダー その3 ③ the holidays too)
@@ -22136,7 +22171,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月14日 15:44"; // f8a6e51f (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月14日 15:48"; // 94f15327 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -29135,6 +29170,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     en.disabled = !timed;
     ef.hidden = !(timed && en.checked);
     cal5SyncLens(f); // (その5 ①)
+    cal9SyncRepeat(f); cal9SyncBusy(f); // (その9 ① 間隔を決める…, ⑥ 目安)
     ef.textContent = ef.hidden ? "" : "終わる時刻に「おつかれさま」の通知が届きます。開くと、ふりかえりを書けます" + (pushState() === "on" ? "" : "（通知を受け取る設定が必要です）");
   }
   // what the forms add to a plan (その2's calFormExtras calls in, so they are told apart when changed too): each said,
@@ -29161,6 +29197,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     cal6FillForm(f, e); // (その6 ⑩ 費用, ④)
     cal7FillForm(f, e); // (その7 ⑩ アイコン)
     cal8FillForm(f, e); // (その8 ③)
+    cal9FillForm(f, e); // (その9 ① its interval in the menu)
   }
 
   // a plan's row (a day's list, 予定を探す): 中止 (②) and who it is with (⑥)
@@ -29520,7 +29557,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("button", { type: "button", class: "btn sm", "data-k": "dup", onclick: () => removeWithUndo(events, extra.map((e) => e.id), `${extra.length}件の同じ予定をまとめました`) }, "1つずつにまとめる"))];
   }
   // 予定 while nothing is typed (renderFind calls in): ⑩, ⑦ and ⑧ over what is coming
-  function cal5FindCards() { return calFive ? [...cal5DupCard(), ...cal7ClashCard(), ...cal5FreeCard(), ...cal5SomeCard()] : null; } // (その7 ⑦ 重なっている予定)
+  function cal5FindCards() { return calFive ? [...cal5DupCard(), ...cal7ClashCard(), ...cal5FreeCard(), ...cal5SomeCard(), ...cal9PeopleCard()] : null; } // (その7 ⑦ 重なっている予定, その9 ③④ 人と場所)
 
   // drawn with the calendar: ③ in the day's sheet, ⑥'s settings, ① the forms, ⑧ a plan made from the list
   function renderCalFive() {
@@ -30479,6 +30516,333 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   calEight = true;
   renderCal8Starts();
+
+  // ---------- カレンダー その9 ①〜⑩ (the user's calls, 2026-11-14): a repeat every few days, weeks, months or years (①),
+  // plans from lines of words at once (②), the people (③) and the places (④) of the plans, a while without 予定's
+  // notifications (⑤), a day's hours kept to a limit (⑥), the plans deleted lately (⑦), よく使う tidied (⑧), a week as a
+  // picture (⑨), and a day's own records in its sheet (⑩) ----------
+  // (what was there calls in here; before this part has run, as the page opens, these do nothing: those it calls are
+  // function declarations, there from the start)
+  var calNine = false, cal9BulkOpen = false, cal9BulkFor = null, cal9OftenEdit = false;
+
+  // ① 間隔を決める… in the forms' 繰り返し: every 3 days, 3 weeks, 2 months, 2 years (ToDo その8's keys: every3w); the turns
+  // counted from the plan's first day (turnStarts), in the lists as 3週間ごと, and .ics out and in with its INTERVAL
+  const CAL9_PICK = "cal9:pick";
+  function cal9Every(r) { return calNine ? td8Every(r) : null; }
+  function cal9Opt(sel, key, date) {
+    if (!sel || !td8Every(key) || [...sel.options].some((o) => o.value === key)) return;
+    const pick = [...sel.options].find((o) => o.value === CAL9_PICK);
+    sel.insertBefore(el("option", { value: key }, repeatName(key, date || null, true)), pick || null);
+  }
+  for (const f of ["plan", "ed"]) {
+    const sel = $(f + "Repeat");
+    sel.append(el("option", { value: CAL9_PICK }, "間隔を決める…"));
+    sel.addEventListener("focus", () => { if (sel.value !== CAL9_PICK) sel.dataset.c9Prev = sel.value; });
+    sel.addEventListener("change", () => {
+      if (sel.value !== CAL9_PICK) { sel.dataset.c9Prev = sel.value; return; }
+      sel.value = sel.dataset.c9Prev || "";
+      syncPlanRows(f);
+      cal9Ask(f);
+    });
+  }
+  function cal9Ask(f) {
+    const sel = $(f + "Repeat"), cur = td8Rep(sel.value), wrap = sel.closest(".ffield") || sel;
+    $(f + "Every9")?.remove();
+    const n = el("input", { type: "number", id: f + "Every9N", min: 1, max: 365, step: 1, inputmode: "numeric", value: String(cur?.kind === "every" ? cur.n : 3), "aria-label": "間隔の数" });
+    const u = el("select", { id: f + "Every9U", "aria-label": "間隔の単位" }, [["d", "日"], ["w", "週間"], ["m", "か月"], ["y", "年"]].map(([k, w]) => el("option", { value: k, selected: k === (cur?.kind === "every" ? cur.u : "w") }, w)));
+    const say = el("p", { class: "sub", "aria-live": "polite" });
+    const key = () => td8KeyOf("every", n.value, u.value);
+    const sync = () => { const k = key(), max = { d: 365, w: 52, m: 24, y: 10 }[u.value]; say.textContent = k ? `繰り返しを「${repeatName(k, null)}」にします` : `1〜${max}${{ d: "日", w: "週間", m: "か月", y: "年" }[u.value]}で決めてください`; };
+    const box = el("div", { class: "full cal9-every", id: f + "Every9", role: "group", "aria-label": "繰り返しの間隔" },
+      el("div", { class: "cal9-every-row" }, n, u, el("span", {}, "ごと")), say,
+      el("div", { class: "cal9-every-acts" },
+        el("button", { type: "button", class: "btn sm", "data-k": "every-ok", onclick: () => {
+          const k = key();
+          if (!k) { sync(); n.focus(); return; }
+          cal9Opt(sel, k, $(f + "Date").value);
+          sel.value = k; sel.dataset.c9Prev = k;
+          box.remove();
+          for (const type of ["input", "change"]) sel.dispatchEvent(new Event(type, { bubbles: true }));
+          sel.focus();
+        } }, "決める"),
+        el("button", { type: "button", class: "link-btn", onclick: () => { box.remove(); sel.focus(); } }, "やめる")));
+    wrap.after(box);
+    n.addEventListener("input", sync); u.addEventListener("change", sync);
+    sync();
+    n.focus(); n.select?.();
+  }
+  // the forms: a plan opened puts its own interval in the menu (a copy has none; a new plan's form keeps the option)
+  function cal9FillForm(f, e) {
+    if (!calNine) return;
+    $(f + "Every9")?.remove();
+    if (e?.repeat && td8Every(e.repeat)) { cal9Opt($(f + "Repeat"), e.repeat, e.date); if (f === "ed") $(f + "Repeat").value = e.repeat; }
+  }
+  // the menu's words, put right after syncPlanRows has written each option's (間隔を決める… is none of its repeats)
+  function cal9SyncRepeat(f) {
+    if (!calNine) return;
+    const sel = $(f + "Repeat"), pick = [...sel.options].find((o) => o.value === CAL9_PICK);
+    if (pick) { pick.textContent = "間隔を決める…"; pick.disabled = sel.disabled; }
+  }
+  function cal9IcsRule(e) {
+    const x = td8Rep(e.repeat);
+    return x?.kind === "every" ? `FREQ=${{ d: "DAILY", w: "WEEKLY", m: "MONTHLY", y: "YEARLY" }[x.u]};INTERVAL=${x.n}` : "";
+  }
+  function cal9IcsRep(r, by, iv) {
+    if (!calNine || !(iv >= 1)) return null;
+    const u = { DAILY: "d", WEEKLY: "w", MONTHLY: "m", YEARLY: "y" }[r.FREQ];
+    if (!u || (by.length && u !== "w") || by.length > 1) return null;
+    return td8KeyOf("every", iv, u);
+  }
+
+  // ② 文字でまとめて入れる: in a day's sheet, lines of words (11/20 14時 面接, あした 10:00-11:30 ゼミ, 歯医者), each a plan:
+  // its day and time as 文字で入れる reads them (no day: the day open; a time alone: an hour), what it makes shown under
+  // them; 追加 puts them all in, with 元に戻す
+  function cal9ParseLines(text, d) {
+    return String(text || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean).slice(0, 50).map((line) => {
+      const p = parsePlan(line, todayKey), x = { date: p?.date || d, title: oneLine((p?.title || line)).slice(0, 100) || line.slice(0, 100) };
+      if (p?.time) { x.time = p.time; x.endTime = p.end && p.end > p.time ? p.end : atMin(Math.min(minOf(p.time) + 60, 1439)); }
+      return x;
+    }).filter((x) => x.title);
+  }
+  const cal9BulkBox = el("div", { class: "cal9-bulk", id: "cal9BulkBox", hidden: true });
+  $("cal8TplBox").after(cal9BulkBox);
+  $("dayView").querySelector(".label-tools").append(el("button", { type: "button", class: "link-btn", id: "cal9BulkBtn", "aria-expanded": "false", "aria-controls": "cal9BulkBox",
+    onclick: () => { cal9BulkOpen = !cal9BulkOpen; renderCal9Bulk(); if (cal9BulkOpen) $("cal9BulkText")?.focus(); } }, icon("list", 20), "まとめて入れる"));
+  function renderCal9Bulk() {
+    const d = calDay;
+    if (cal9BulkFor !== d || !sheetEl.open) { cal9BulkOpen = false; cal9BulkFor = d; }
+    $("cal9BulkBtn").setAttribute("aria-expanded", String(cal9BulkOpen));
+    cal9BulkBox.hidden = !cal9BulkOpen;
+    if (!cal9BulkOpen) { cal9BulkBox.replaceChildren(); return; }
+    if ($("cal9BulkText") && cal9BulkBox.contains($("cal9BulkText"))) return; // (drawn once while open: the words typed stay)
+    const ta = el("textarea", { id: "cal9BulkText", rows: 4, maxlength: 3000, "aria-label": "1行に1つの予定" });
+    const list = el("ul", { class: "cal9-bulk-list", id: "cal9BulkList", "aria-live": "polite" });
+    const add = el("button", { type: "button", class: "btn sm", id: "cal9BulkAdd", disabled: true }, "追加");
+    const show = () => {
+      const xs = cal9ParseLines(ta.value, d);
+      setChildren(list, xs.map((x) => el("li", {}, el("span", { class: "cal9-bulk-when" }, `${fmtShort(x.date)} ${x.time ? `${x.time}〜${x.endTime}` : "終日"}`), el("span", {}, x.title))));
+      add.disabled = !xs.length;
+      add.textContent = xs.length ? `${xs.length}件を追加` : "追加";
+    };
+    ta.addEventListener("input", show);
+    add.addEventListener("click", () => {
+      const xs = cal9ParseLines(ta.value, d).map((x) => ({ ...x, createdAt: Date.now() }));
+      if (!xs.length) return;
+      let ids = [];
+      act(async () => { ids = await events.addMany(xs); });
+      cal9BulkOpen = false;
+      flash(`予定を ${xs.length}件追加しました`, () => act(async () => { takeBack(events, ids); flash("元に戻しました"); }));
+    });
+    cal9BulkBox.replaceChildren(el("p", { class: "sub" }, "1行に1つずつ。「11/20 14時 面接」「あした 10:00-11:30 ゼミ」のように日と時刻を書くと、その日時に（日がないときはこの日）。"), ta, list, add);
+  }
+
+  // ③ いっしょの人 and ④ よく行く場所 (予定, empty): each name with how many plans and the last time (to today); pressed,
+  // 予定 looks for it
+  function cal9Tally(key) {
+    const by = new Map();
+    for (const e of events.items) {
+      const v = typeof e[key] === "string" ? oneLine(e[key]) : "";
+      if (!v || typeof e.title !== "string") continue;
+      const k = foldText(v), x = by.get(k) || { v, n: 0, last: "" };
+      const past = turnStarts(e, addDays(todayKey, -730), todayKey).filter((s) => !cal4Cx(e, s));
+      x.n += e.repeat ? past.length || 0 : 1;
+      if (past.length && past[past.length - 1] > x.last) x.last = past[past.length - 1];
+      by.set(k, x);
+    }
+    return [...by.values()].filter((x) => x.n > 0).sort((a, b) => b.n - a.n || b.last.localeCompare(a.last)).slice(0, 12);
+  }
+  function cal9PeopleCard() {
+    if (!calNine) return [];
+    const ppl = cal9Tally("with"), pls = cal9Tally("place");
+    if (!ppl.length && !pls.length) return [];
+    const chip = (x, what) => el("button", { type: "button", class: "chip-btn cal9-who", "data-who": x.v, "aria-label": `${x.v}（${x.n}回${x.last ? `・最後は${fmtDay(x.last)}` : ""}）の予定を探す`,
+      onclick: () => { const t = $("findText"); t.value = x.v; t.dispatchEvent(new Event("input", { bubbles: true })); } },
+      el("span", {}, x.v), el("span", { class: "cal9-who-n" }, `${x.n}回${x.last ? "・" + fmtMD(x.last) : ""}`));
+    return [el("h3", { class: "group-head" }, "人と場所"), el("div", { class: "card pad cal9-people" },
+      ppl.length ? el("div", { class: "cal9-people-row", role: "group", "aria-label": "いっしょの人" }, el("span", { class: "cal9-people-head" }, "いっしょの人"), ppl.map((x) => chip(x, "with"))) : null,
+      pls.length ? el("div", { class: "cal9-people-row", role: "group", "aria-label": "よく行く場所" }, el("span", { class: "cal9-people-head" }, "場所"), pls.map((x) => chip(x, "place"))) : null,
+      el("p", { class: "sub" }, "回数と、最後の日（きょうまで）。押すと、その人・場所の予定を探します。"))];
+  }
+
+  // ⑤ 予定のお知らせを休む (in the gear): from one day to another, none of the calendar's own (通知アラーム, 出発, 朝・前の晩・
+  // 来週・大事な予定の前の日, 終わったら); ToDo's and the others' still come
+  const cal9Quiet = () => { const v = calNine ? calSet().quiet9 : null; return v && isDay(v.from || "") && isDay(v.to || "") && v.to >= v.from ? v : null; };
+  function cal9IsCal(a) { const t = String(a?.tag || ""); return t.startsWith("cal-") || !!events.get(t.split(":")[0]); }
+  function cal9Hold(out) {
+    const q = cal9Quiet();
+    if (!q) return;
+    for (let i = out.length - 1; i >= 0; i--) { const d = ymd(new Date(out[i].at)); if (d >= q.from && d <= q.to && cal9IsCal(out[i])) out.splice(i, 1); }
+  }
+  function cal9Push() { const q = cal9Quiet(); return q ? [["cal9Quiet", q.from, q.to]] : []; }
+  {
+    const from = el("input", { type: "date", id: "cal9QuietFrom", "aria-label": "休むはじまり" }), to = el("input", { type: "date", id: "cal9QuietTo", "aria-label": "休むおわり" });
+    const on = el("button", { type: "button", class: "btn sm", id: "cal9QuietOn" }, "休む"), off = el("button", { type: "button", class: "link-btn", id: "cal9QuietOff" }, "やめる");
+    on.addEventListener("click", () => {
+      const a = from.value, b = to.value || from.value;
+      if (!isDay(a)) { flash("休むはじまりの日を選んでください"); from.focus(); return; }
+      if (b < a) { flash("おわりは、はじまりより後にしてください"); to.focus(); return; }
+      saveCalSet({ quiet9: { from: a, to: b } });
+      flash(`${fmtDay(a)}〜${fmtDay(b)}は予定のお知らせを休みます`);
+    });
+    off.addEventListener("click", () => { const was = cal9Quiet(); saveCalSet({ quiet9: undefined }); flash("お知らせを休むのをやめました", was ? () => saveCalSet({ quiet9: was }) : null); });
+    $("cal7StarFoot").after(el("h3", { class: "group-head" }, "予定のお知らせを休む"),
+      el("div", { class: "card pad cal9-quiet" }, el("div", { class: "cal7-off-row" }, from, el("span", { "aria-hidden": "true" }, "〜"), to), el("div", { class: "cal9-quiet-acts" }, on, off)),
+      el("p", { class: "group-foot", id: "cal9QuietFoot" }));
+  }
+
+  // ⑥ 1日の予定の目安 (in the gear; none at first): over it, the day's sheet says so in red, and the forms as a plan's time
+  // would take its day over
+  const cal9Max = () => { const v = calNine ? Number(calSet().busyMax) : 0; return v >= 1 && v <= 24 ? Math.round(v * 2) / 2 : 0; };
+  {
+    const inp = el("input", { type: "number", id: "cal9Max", min: 1, max: 24, step: 0.5, inputmode: "decimal" });
+    inp.addEventListener("change", () => { const v = Number(inp.value); saveCalSet({ busyMax: v >= 1 && v <= 24 ? Math.round(v * 2) / 2 : undefined }); });
+    $("cal9QuietFoot").after(el("h3", { class: "group-head" }, "1日の予定の目安"),
+      el("form", { class: "add", id: "cal9MaxForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, ...recRow("1日に", inp, { opt: true, unit: "時間まで" })),
+      el("p", { class: "group-foot" }, "時刻のある予定の合計がこれをこえる日は、日のシートと予定を入れるときに知らせます。"));
+  }
+  for (const f of ["plan", "ed"]) {
+    $(f + "Clash").after(el("p", { class: "full plan-clash cal9-busy", id: f + "Busy", role: "status", hidden: true }));
+    for (const k of ["Date", "EndDate", "Time", "EndTime"]) for (const type of ["input", "change"]) $(f + k).addEventListener(type, () => cal9SyncBusy(f));
+  }
+  function cal9SyncBusy(f) {
+    if (!calNine) return;
+    const p = $(f + "Busy"), max = cal9Max(), d = $(f + "Date").value, len = cal5Len(f), one = !$(f + "EndDate").value || $(f + "EndDate").value === d;
+    if (!max || !isDay(d) || !(len > 0) || !one || !$(f + "Time").value) { p.hidden = true; return; }
+    const id = f === "ed" ? editingId : null;
+    const turns = (turnsByDay(d, d).get(d) || []).filter((t) => t.e.id !== id && onCalendar(t.e, calHidden()) && !cal4Cx(t.e, t.start));
+    const spans = turns.map(turnSpan).filter(Boolean).sort((a, b) => a[0] - b[0]);
+    let min = 0, at = -1;
+    for (const [s, e] of spans) { const a = Math.max(s, at); if (e > a) min += e - a; at = Math.max(at, e); }
+    const all = min + len;
+    p.hidden = all <= max * 60;
+    p.textContent = p.hidden ? "" : `この日は予定が合計 ${durText(all)}になります（目安 ${durText(max * 60)}）`;
+  }
+
+  // ⑦ 最近削除した予定 (in the gear): 記録's 最近削除した項目 with the plans alone, and back to the calendar from there
+  {
+    const btn = el("button", { type: "button", class: "link-btn sheet-row", id: "cal9Trash" }, "最近削除した予定");
+    btn.addEventListener("click", () => { closeSheet(true); trashOf = "events"; trashBack = "calendar"; renderTrash(); showTab("trash"); });
+    document.querySelector(".cal6-old").after(el("div", { class: "card cal9-trash" }, btn));
+  }
+  const cal9TrashN = () => trashItems().filter((t) => t.store === "events").length;
+
+  // ⑧ よく使う, tidied: 整理 in the new plan's よく使う, each one × to leave out (元に戻す), 終わる; those left out come
+  // back from the gear
+  const cal9OftenKey = (e) => [foldText(e.title), e.time || "", e.endTime || "", labelOf(e) ? e.labelId : ""].join("\u0001");
+  const cal9Hidden = () => (calNine && Array.isArray(calSet().oftenHide) ? calSet().oftenHide.filter((x) => typeof x === "string") : []);
+  function cal9OftenHidden(e) { return calNine && cal9Hidden().includes(cal9OftenKey(e)); }
+  // (under よく使う, not in it: its chips alone are in that row)
+  const cal9OftenToolBox = el("div", { class: "full cal9-often-tool", id: "planOftenTool", hidden: true });
+  $("planOften").after(cal9OftenToolBox);
+  function cal9SyncOftenTool() {
+    cal9OftenToolBox.hidden = $("planOften").hidden;
+    setChildren(cal9OftenToolBox, cal9OftenToolBox.hidden ? null : el("button", { type: "button", class: "link-btn cal9-often-edit", "aria-pressed": String(cal9OftenEdit),
+      onclick: () => { cal9OftenEdit = !cal9OftenEdit; renderPlanOften(); $("planOftenTool").querySelector("button")?.focus(); } }, cal9OftenEdit ? "整理を終わる" : "よく使うを整理"));
+  }
+  function cal9OftenChip(e) {
+    return el("button", { type: "button", class: "chip-btn cal9-often-x", "aria-label": `「${e.title}」をよく使うに出さない`, onclick: () => {
+      const before = cal9Hidden();
+      saveCalSet({ oftenHide: [...before, cal9OftenKey(e)].slice(-50) });
+      renderPlanOften();
+      flash(`「${e.title}」をよく使うに出さないようにしました`, () => { saveCalSet({ oftenHide: before }); renderPlanOften(); });
+    } }, e.title, icon("close", 14));
+  }
+  for (const id of ["calAdd", "dayAdd"]) $(id).addEventListener("click", () => { cal9OftenEdit = false; }, true); // (a new plan's form: よく使う as it is)
+  const cal9OftenBack = el("div", { class: "cal9-often-back", id: "cal9OftenBack" });
+  $("cal9MaxForm").nextElementSibling.after(cal9OftenBack);
+  function renderCal9OftenBack() {
+    const hid = cal9Hidden();
+    setChildren(cal9OftenBack, hid.length ? [el("h3", { class: "group-head" }, "よく使うに出さない予定"), el("ul", { class: "list card" }, hid.map((k) => el("li", {},
+      el("span", { class: "body" }, el("span", { class: "text" }, k.split("\u0001")[0] || "（名前なし）"), el("span", { class: "sub" }, [k.split("\u0001")[1], k.split("\u0001")[2]].filter(Boolean).join("〜") || "終日")),
+      el("button", { type: "button", class: "link-btn", onclick: () => saveCalSet({ oftenHide: cal9Hidden().filter((x) => x !== k) }) }, "戻す"))))] : null);
+  }
+
+  // ⑨ この週を画像で (文字で送る): the week of the day open as a picture (each day its plans and shifts, in their labels'
+  // colours), to send or keep
+  function cal9Color(v) { const s = el("span", { style: `color: ${v}` }); document.body.append(s); const c = getComputedStyle(s).color; s.remove(); return c; }
+  function cal9WeekCanvas(d) {
+    const ws = weekStart(), first = addDays(d, -((parseYmd(d).getDay() - ws + 7) % 7)), last = addDays(first, 6), hidden = calHidden(), tb = turnsByDay(first, last), sb = shiftsByDay(first, last);
+    const days = Array.from({ length: 7 }, (_, i) => addDays(first, i)).map((x) => ({ d: x, lines: [
+      ...(tb.get(x) || []).filter((t) => onCalendar(t.e, hidden) && !t.e.cand && !cal4Cx(t.e, t.start)).map((t) => ({ k: turnTime(t), w: `${turnTimeText(t)}  ${cal4Name(t)}`, c: labelHue(labelOf(t.e)) })),
+      ...(sb.get(x) || []).filter((p) => p.first).map((p) => ({ k: p.x.start, w: `${shiftText(p.x)}  ${shiftName(p.x)}`, c: "var(--c-money)" }))].sort((a, b) => a.k.localeCompare(b.k)) }));
+    const W = 1080, P = 60, LH = 48, HH = 64, TH = 120, H = TH + days.reduce((s, x) => s + HH + Math.max(1, x.lines.length) * LH + 18, 0) + P;
+    const cv = document.createElement("canvas");
+    cv.width = W; cv.height = H;
+    const g = cv.getContext("2d"), font = (w, px) => `${w} ${px}px -apple-system, "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif`, drawn = [];
+    const say = (text, x, y, color, f) => { g.fillStyle = color; g.font = f; g.fillText(text, x, y); drawn.push(text); };
+    g.fillStyle = "#ffffff"; g.fillRect(0, 0, W, H);
+    say(`${fmtMD(first)}〜${fmtMD(last)}の予定`, P, 84, "#1c1c1e", font(700, 46));
+    let y = TH;
+    for (const x of days) {
+      const wd = parseYmd(x.d).getDay(), hol = calHolName(x.d), red = wd === 0 || !!hol;
+      g.fillStyle = "#e5e5ea"; g.fillRect(P, y, W - 2 * P, 2);
+      say(`${fmtMDW(x.d)}${hol ? "  " + hol : ""}`, P, y + 46, red ? "#d70015" : wd === 6 ? "#0040dd" : "#1c1c1e", font(700, 32));
+      y += HH;
+      if (!x.lines.length) { say("予定なし", P + 24, y + 30, "#8e8e93", font(400, 30)); y += LH; }
+      for (const l of x.lines) {
+        g.fillStyle = cal9Color(l.c); g.fillRect(P + 4, y + 6, 8, 32);
+        say(l.w, P + 28, y + 32, "#1c1c1e", font(400, 30));
+        y += LH;
+      }
+      y += 18;
+    }
+    cv.drawn = drawn;
+    cv.first = first;
+    return cv;
+  }
+  async function cal9WeekImage(d) {
+    const cv = cal9WeekCanvas(d);
+    await savePicture(cv, `tsumikasane-week-${cv.first}.png`, "1週間の予定");
+  }
+  $("dayShareBox").append(el("button", { type: "button", class: "chip-btn", "data-share": "week-image", onclick: () => { $("dayShareBox").hidden = true; cal9WeekImage(calDay); } }, "この週を画像で"));
+
+  // ⑩ この日の記録: in a day's sheet (today and before), the day's 日記, 食事, 運動, 体重, 勉強 and 支出 in a line each;
+  // pressed, that page on that day
+  const cal9RecBox = el("div", { class: "cal9-rec", id: "cal9Rec", hidden: true });
+  $("dayFree").before(cal9RecBox);
+  function cal9RecRows(d) {
+    const rows = [], j = journal.items.find((x) => (x.date || x.id) === d && String(x.text || "").trim());
+    if (j) rows.push(["journal", "日記", clip(oneLine(j.text), 40), "--c-journal"]);
+    const ms = meals.items.filter((m) => m.date === d);
+    if (ms.length) rows.push(["diet", "食事", `${ms.length}件` + (ms.some((m) => m.slot) ? `（${[...new Set(ms.map((m) => m.slot).filter(Boolean))].join("・")}）` : ""), "--c-meal"]);
+    const wo = workouts.items.filter((w) => w.date === d);
+    if (wo.length) rows.push(["diet", "運動", `${wo.length}件（${[...new Set(wo.map((w) => oneLine(w.exercise || w.type || "")).filter(Boolean))].slice(0, 3).join("・")}）`.replace("（）", ""), "--c-workout"]);
+    const w = weights.get(d);
+    if (w && num(w.kg) > 0) rows.push(["diet", "体重", `${fmtKg(w.kg)} kg`, "--c-weight"]);
+    const st = study.items.filter((x) => x.date === d), mins = sum(st, (x) => x.minutes);
+    if (mins > 0) rows.push(["study", "勉強", durText(mins), "--c-study"]);
+    const out = expenses.items.filter((x) => x.date === d && x.kind !== "in"), yen = sum(out, (x) => x.amount);
+    if (yen > 0) rows.push(["money", "支出", fmtYen(yen), "--c-money"]);
+    return rows;
+  }
+  function renderCal9Rec() {
+    const d = calDay, rows = d <= todayKey ? cal9RecRows(d) : [];
+    cal9RecBox.hidden = !rows.length;
+    setChildren(cal9RecBox, rows.length ? [el("h3", { class: "group-head" }, d === todayKey ? "きょうの記録" : "この日の記録"), el("ul", { class: "list card" }, rows.map(([tabKey, name, what, c]) => el("li", { class: "btn-row" },
+      el("button", { type: "button", class: "row-btn nav", "data-rec": name, "aria-label": `${name}：${what}。${name}のページを開く`, onclick: () => { closeSheet(true); setViewDate(d); showTab(tabKey); } },
+        el("span", { class: "chip", style: `--chip-c: var(${c})` }, name), el("span", { class: "body" }, el("span", { class: "text" }, what)), el("span", { class: "chev" }, icon("next", 16))))))] : null);
+  }
+
+  // drawn with the calendar: ② ⑩ the day's sheet, the gear's ⑤⑥⑦⑧, the forms' ⑥
+  function renderCalNine() {
+    if (!calNine) return;
+    renderCal9Bulk();
+    renderCal9Rec();
+    const q = cal9Quiet();
+    if (document.activeElement !== $("cal9QuietFrom")) $("cal9QuietFrom").value = q?.from || "";
+    if (document.activeElement !== $("cal9QuietTo")) $("cal9QuietTo").value = q?.to || "";
+    $("cal9QuietOff").hidden = !q;
+    $("cal9QuietFoot").textContent = q ? `${fmtDay(q.from)}〜${fmtDay(q.to)}は、予定の通知アラーム・出発・朝と前の晩などのお知らせが届きません（ToDoなどのお知らせは届きます）。` : "試験や旅行のあいだなど、予定のお知らせを止めておけます（ToDoなどのお知らせは届きます）。";
+    if (document.activeElement !== $("cal9Max")) $("cal9Max").value = cal9Max() ? String(cal9Max()) : "";
+    const n = cal9TrashN();
+    $("cal9Trash").textContent = n ? `最近削除した予定（${n}件）` : "最近削除した予定";
+    renderCal9OftenBack();
+    const box = $("cal4Day"), h = cal5DayHours(calDay), max = cal9Max();
+    box.querySelector(".cal9-over")?.remove();
+    if (max && h.min > max * 60) box.querySelector(".cal5-hours")?.after(el("p", { class: "cal5-hours cal9-over" }, `目安の ${durText(max * 60)}をこえています`));
+    cal9SyncBusy("plan"); cal9SyncBusy("ed");
+  }
+  calNine = true;
 
   // ---------- 目標: 使わないマスを×で埋める (the user's call, 2026-11-11: a chart can't always be filled in whole; its empty
   // squares crossed out so it reads as finished). An empty cell crossed is { t: "", x: true }: still empty to all that
