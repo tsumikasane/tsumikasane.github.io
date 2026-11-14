@@ -42,7 +42,7 @@ const setting = async (p, id) => (await ls(p, "settings")).find((s) => s.id === 
   await p.waitForTimeout(300);
   const out = await p.evaluate(() => [...document.querySelectorAll("#bt6BulkOut li")].map((li) => li.className + "|" + li.innerText.replace(/\s+/g, " ")));
   ok(out.length === 5 && out[0].includes("12/1（火） 17:00〜22:00") && out[1].includes("12/3（木） 09:00〜14:00・休憩 30分") && out[2].includes("12/6（日） 10:00〜15:00・休憩 45分・仮") && out[3].startsWith("bad|") && out[4].startsWith("dup|"), "② read: " + JSON.stringify(out));
-  ok((await p.textContent("#bt6BulkGo")) === "3 件を入れる", "② the button");
+  ok(/^3\s件を入れる（約 [\d,]+\s円）$/.test(await p.textContent("#bt6BulkGo")), "② the button: " + (await p.textContent("#bt6BulkGo")));
   await p.click("#bt6BulkGo"); await p.waitForTimeout(500);
   const dec = (await ls(p, "shifts")).filter((x) => x.date >= "2026-12-01" && x.date <= "2026-12-06").sort((a, c) => a.date.localeCompare(c.date));
   ok(dec.length === 3 && dec[0].start === "17:00" && dec[1].rest === 30 && dec[1].start === "09:00" && dec[2].rest === 45 && dec[2].tentative === true, "② put in: " + JSON.stringify(dec.map((x) => [x.date, x.start, x.end, x.rest, x.tentative])));
