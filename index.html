@@ -23092,7 +23092,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月15日 8:12"; // f5a15988 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月15日 8:19"; // 503d6833 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -50263,7 +50263,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const list = dt9Badges(), got = list.filter((b) => b.ok), seenSet = settings.get("dietBadgesSeen"), seen = new Set(Array.isArray(seenSet?.ids) ? seenSet.ids : []);
     // (the first time, those there are taken as seen; kept after this drawing, not in it)
     const fresh = seenSet ? got.filter((b) => !seen.has(b.id)) : [];
-    if (!seenSet || fresh.length) setTimeout(() => act(() => settings.set("dietBadgesSeen", { ids: [...new Set([...seen, ...got.map((b) => b.id)])], updatedAt: Date.now() })), 0);
+    // (nothing recorded yet: nothing kept, so an app opened afresh doesn't write the settings as it starts: a write after
+    // its drawing could land over settings put in meanwhile, as the tests do)
+    const any = weights.items.length || meals.items.length || workouts.items.length || bodyDays.items.length;
+    if ((!seenSet && any) || fresh.length) setTimeout(() => act(() => settings.set("dietBadgesSeen", { ids: [...new Set([...seen, ...got.map((b) => b.id)])], updatedAt: Date.now() })), 0);
     if (fresh.length && !dt9BadgeSaid.has(fresh.map((b) => b.id).join())) { dt9BadgeSaid.add(fresh.map((b) => b.id).join()); setTimeout(celebrate, 150); flash(`バッジ「${fresh.map((b) => b.name).join("」「")}」をもらいました`); }
     setChildren(box, el("div", { class: "card-head row-between" }, el("span", {}, "バッジ"), el("span", { class: "num" }, `${got.length} / ${list.length}`)),
       el("ul", { class: "dt9-badge-grid" }, list.map((b) => el("li", { class: b.ok ? "ok" : "", "aria-label": `${b.name}：${b.ok ? "もらった" : `${b.word}（あと ${b.unit === "kg" || b.unit === "km" ? fmtNum(b.left) : Math.ceil(b.left)} ${b.unit}）`}` },
