@@ -1839,6 +1839,20 @@ dialog.h6-clock::backdrop { background: #000; }
 .h6-when-name { flex: 1; min-width: 0; }
 .h6-when-name small { display: block; font-size: var(--t-foot); color: var(--muted); }
 .h6-when-row .chip-btn { flex: none; min-height: 36px; background: var(--fill); box-shadow: none; }
+/* 天気 その3 */
+.wx3-seg { margin: 0 0 6px; }
+.wx3-seg button { min-height: 32px; font-size: var(--t-sub); }
+.wx3-best { display: flex; align-items: flex-start; gap: 6px; margin: 8px 4px 0; font-size: var(--t-sub); line-height: 1.5; }
+.wx3-best .icon { flex: none; margin-top: 3px; color: #ff9f0a; }
+ul.wx3-places > li { padding: 0; }
+.wx3-place { display: grid; grid-template-columns: minmax(0, 1fr) 22px 3em auto 3em; align-items: center; gap: 8px; width: 100%; min-height: 48px; padding: 0 var(--space-2); border: 0; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; font-variant-numeric: tabular-nums; }
+.wx3-place[aria-pressed="true"] { background: var(--fill); cursor: default; }
+.wx3-pn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wx3-pn small { margin-inline-start: 6px; font-size: var(--t-foot); color: var(--accent); }
+.wx3-now { text-align: end; font-weight: 600; }
+.wx3-place .wx-p { min-width: 3em; text-align: end; font-size: var(--t-sub); color: var(--sat); }
+.wx-lines .wx-line.wx3-thunder .icon, .wx-lines .wx-line.wx3-heat.warn .icon { color: var(--warn); }
+.wx3-auto { margin-bottom: 4px; }
 /* 天気 その2 */
 .wx2-share { margin-inline-start: auto; }
 .wx2-graph { padding: 8px 8px 4px; margin-bottom: 8px; }
@@ -19544,7 +19558,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑦ (the user's call): the day's weather where the phone is, from Open-Meteo (free, no key): its place asked for once
   // (the browser's location, to about 1 km) and kept on this device alone, the forecast kept for an hour. Rain likely
   // with a run still to do today, it says the run can be エアロバイク 30分, as the menu's メモ has it for a day it hurts
-  const WX_PLACE = LS_PREFIX + "wxPlace", WX_DATA = LS_PREFIX + "wxData", WX_DAYS = 7, WX_V = 3; // (7 days: 天気's 1週間の天気予報, the user's call 2026-11-12)
+  const WX_PLACE = LS_PREFIX + "wxPlace", WX_DATA = LS_PREFIX + "wxData", WX_DAYS = 7, WX_V = 4; // (7 days: 天気's 1週間の天気予報, the user's call 2026-11-12)
   const lsJson = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
   const lsJsonPut = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch {} };
   let wxBusy = false, wxError = "", wxFailedAt = 0; // (after a failure, not asked again for 5 minutes but by もう一度)
@@ -19568,12 +19582,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!place || wxBusy) return;
     // (a forecast kept from before the calendar wanted 7 days is got afresh once: asked for, not by what came, so a shorter
     // answer isn't asked for again and again)
-    if (!force && kept && kept.day === todayKey && Date.now() - kept.at < 3600000 && kept.lat === place.lat && kept.lon === place.lon && kept.days === WX_DAYS && kept.v === WX_V) return; // (v2: 天気 その1's more; v3: その2's)
+    if (!force && kept && kept.day === todayKey && Date.now() - kept.at < 3600000 && kept.lat === place.lat && kept.lon === place.lon && kept.days === WX_DAYS && kept.v === WX_V) return; // (v2: 天気 その1's more; v3: その2's; v4: その3's)
     if (!navigator.onLine) { wxError = "インターネットにつながっていないので、天気を取得できません"; return; }
     if (!force && Date.now() - wxFailedAt < 300000) return;
     wxBusy = true;
     try {
-      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.lat}&longitude=${place.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,wind_speed_10m_max,precipitation_sum,wind_direction_10m_dominant,wind_gusts_10m_max&hourly=precipitation_probability,temperature_2m,weather_code,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,pressure_msl,cloud_cover,wind_direction_10m&wind_speed_unit=ms&past_days=1&timezone=auto&forecast_days=${WX_DAYS}`);
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.lat}&longitude=${place.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,wind_speed_10m_max,precipitation_sum,wind_direction_10m_dominant,wind_gusts_10m_max&hourly=precipitation_probability,temperature_2m,weather_code,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,pressure_msl,cloud_cover,wind_direction_10m,cloud_cover_low,cloud_cover_mid,cloud_cover_high,snowfall,shortwave_radiation&wind_speed_unit=ms&past_days=1&timezone=auto&forecast_days=${WX_DAYS}`);
       if (!res.ok) throw new Error(String(res.status));
       const j = await res.json();
       if (!Array.isArray(j?.daily?.time)) throw new Error("no daily");
@@ -22678,7 +22692,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月14日 18:01"; // 8d04c5a4 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月15日 7:10"; // 10fc563e (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -43882,6 +43896,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     resetSheet(); calPanel = "wx"; wxSel = null; wxFound = null; wxFindErr = "";
     syncSheetHead(); renderWxPage(); presentSheet(byKey, "wxtile");
     wxFetch();
+    if (wxThree) wx3AutoPlace(); // (天気 その3 ⑩)
   }
   function wxPageSync() { if (calPanel === "wx" && sheetEl.open) renderWxPage(); }
   // the hours from `from` ("YYYY-MM-DDTHH:00"), n of them, from the forecast kept
@@ -43992,15 +44007,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         hum != null ? dl(curH ? "湿度（いま）" : "湿度", `${hum}%`) : null,
         uv ? dl("紫外線", String(uv.n), uv.lv) : null,
         m && m.sunrise ? dl("日の出", wxHm(m.sunrise)) : null,
-        m && m.sunset ? dl("日の入り", wxHm(m.sunset)) : null, wx2DayRows(sel, dl))); // (天気 その2 ④)
+        m && m.sunset ? dl("日の入り", wxHm(m.sunset)) : null, wx2DayRows(sel, dl), wxThree ? wx3DayRows(sel, dl) : null)); // (天気 その2 ④, その3 ④)
     // ② the hours: today from now for 48, another day its own 24
     const hs = sel === todayKey ? wxHours(nowH, 48) : wxHours(sel + "T00:00", 24).filter((x) => x.d === sel);
     const hours = hs.length ? el("div", { class: "card wx-hours", role: "list", "aria-label": "1時間ごとの予報" }, hs.map((x, k) => {
       const ic = wxIconOf(x.code), lead = k === 0 && sel === todayKey ? "いま" : x.h === 0 ? relLabel(x.d) || fmtMD(x.d) : `${x.h}時`;
-      return el("div", { role: "listitem", "aria-label": `${x.h === 0 || k === 0 ? (relLabel(x.d) || fmtMD(x.d)) + " " : ""}${x.h}時、${x.temp != null ? Math.round(num(x.temp)) + "度" : ""}、降水確率${x.rain}%` },
+      return el("div", { role: "listitem", "aria-label": `${x.h === 0 || k === 0 ? (relLabel(x.d) || fmtMD(x.d)) + " " : ""}${x.h}時、${x.temp != null ? Math.round(num(x.temp)) + "度" : ""}、降水確率${x.rain}%${wxThree && wx3View() !== "temp" ? `、${wx3ViewWord()} ${wx3HourVal(x)}` : ""}` },
         el("span", { class: "wx-h" + (x.h === 0 && k > 0 ? " day" : ""), "aria-hidden": "true" }, lead),
         el("span", { class: "wx-icon " + ic, "aria-hidden": "true" }, icon(ic, 22)),
-        el("span", { class: "wx-t", "aria-hidden": "true" }, x.temp != null ? `${Math.round(num(x.temp))}°` : "—"),
+        el("span", { class: "wx-t", "aria-hidden": "true" }, wxThree ? wx3HourVal(x) : x.temp != null ? `${Math.round(num(x.temp))}°` : "—"), // (天気 その3 ⑨)
         el("span", { class: "wx-p" + (x.rain < 30 ? " dry" : ""), "aria-hidden": "true" }, `${x.rain}%`));
     })) : null;
     // ⑤ rain, ④ what to wear, ⑧ the day's word (with ⑦'s)
@@ -44011,13 +44026,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // the week, a day pressed to see it
     const week = Array.from({ length: WX_DAYS }, (_, i) => addDays(todayKey, i)).map((d) => [d, wxDay(d)]).filter(([, x]) => x);
     setChildren(body, head, day,
-      hours ? [el("h3", { class: "group-head" }, sel === todayKey ? "1時間ごと（48時間）" : `1時間ごと（${relLabel(sel) || fmtMDW(sel)}）`), wx2Graph(hs, sel), hours] : null, // (天気 その2 ①)
+      hours ? [el("h3", { class: "group-head" }, sel === todayKey ? "1時間ごと（48時間）" : `1時間ごと（${relLabel(sel) || fmtMDW(sel)}）`), wx2Graph(hs, sel), wxThree ? wx3HourSeg() : null, hours] : null, // (天気 その2 ①, その3 ⑨)
       el("h3", { class: "group-head" }, "雨"),
-      lines([line("rain", rain || (w.rain >= 30 ? `雨の可能性は低めです（いちばん高いときで ${w.rain}%）` : "雨の心配はなさそうです")), wx2Amount(sel), // (天気 その2 ③)
+      lines([line("rain", rain || (w.rain >= 30 ? `雨の可能性は低めです（いちばん高いときで ${w.rain}%）` : "雨の心配はなさそうです")), wx2Amount(sel), ...(wxThree ? wx3RainMore(sel) : []), // (天気 その2 ③, その3 ⑥⑦)
         sel === todayKey ? el("a", { class: "link-btn wx-radar", href: radar, target: "_blank", rel: "noopener" }, "雨雲の動きを見る（気象庁）") : null]),
       wear ? [el("h3", { class: "group-head" }, "服装のめやす"), lines([line("sun", wear.main, wear.more.join("。") + (wear.more.length ? "。" : ""))])] : null,
       life.length || uv ? [el("h3", { class: "group-head" }, "暮らしのひとこと"), lines([...life.map(([k, words]) => line(k === "run" ? "workout" : "sun", words)), uv ? line("sun", `紫外線は${uv.lv}（${uv.n}）。${uv.tip}`) : null])] : null,
       wx2More(sel, place), // (天気 その2 ⑥②⑧⑦⑤)
+      wxThree ? wx3Glow(sel) : null, // (天気 その3 ⑤④)
       week.length ? [el("h3", { class: "group-head" }, "1週間"), el("ul", { class: "list card wx-days" }, week.map(([d, x]) => {
         const wdd = parseYmd(d).getDay(), red = d !== todayKey && (wdd === 0 || !!holidayName(d));
         return el("li", {}, el("button", { type: "button", "aria-pressed": String(d === sel), onclick: () => { wxSel = d; renderWxPage(); sheetEl.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" }); } },
@@ -44025,6 +44041,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           el("span", { class: "wx-icon " + x.icon, "aria-hidden": "true" }, icon(x.icon, 20)),
           el("span", { class: "wx-w" }, x.word), el("span", { class: "wx-hl" }, `${x.hi}° / ${x.lo}°`), el("span", { class: "wx-p" }, `${x.rain}%`), wx2Bar(week, x))); // (天気 その2 ⑩)
       }))] : null,
+      wxThree && week.length ? wx3BestEl() : null, wxThree ? wx3Places(place) : null, // (天気 その3 ③②)
       el("p", { class: "group-foot wx-foot-note" }, "天気と空気は Open-Meteo の予報です。"));
   }
 
@@ -44035,8 +44052,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function wxUse(p) {
     lsJsonPut(WX_PLACE, { lat: p.lat, lon: p.lon, at: Date.now(), name: p.name });
     lsJsonPut(WX_DATA, null); wxError = ""; wxSel = null; wxFound = null; wxFindErr = "";
+    const auto = wxThree && wx3Auto(); // (天気 その3 ⑩: a place picked by hand, no longer followed)
+    if (auto) wx3AutoPut(false);
     syncWxSettings(); renderHome(); wxFetch(true); renderWxPage();
-    flash(`天気の場所を「${p.name}」にしました`);
+    flash(`天気の場所を「${p.name}」にしました${auto ? "（現在地に合わせるのは、やめました）" : ""}`);
   }
   function wxKeep(p, name) {
     const nm = oneLine(name || p.name || "").slice(0, 30) || "場所";
@@ -44083,7 +44102,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function wxMorningPut(p) { lsJsonPut(LS_PREFIX + "wxMorning", { ...wxMorning(), ...p }); wxShare(); pushSoon(); wxMoreSync(); }
   function wxAlarms(now) {
     const m = wxMorning();
-    if (!m.on || !wxPlace()) return [];
+    if (!wxPlace()) return [];
+    if (!m.on) return wxThree ? wx3RainAlarms(now) : []; // (天気 その3 ① 雨の前)
     const [h, mi] = m.at.split(":").map(Number), out = [];
     for (let i = 0; i < WX_DAYS; i++) {
       const d = addDays(todayKey, i), w = wxDay(d);
@@ -44093,7 +44113,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const wear = wxWear(d), rain = w.wet ? wxRainWords(d, h, "朝から") || (w.icon === "snow" ? "雪の予報です" : "雨の予報です") : "";
       out.push({ at, title: `きょうの天気：${w.word} ${w.hi}° / ${w.lo}°`, body: (w.wet ? `${rain}。傘を持っていこう` : `降水確率 ${w.rain}%${wear ? "。" + wear.main : ""}`).slice(0, 200), tag: `wx-morning:${d}`, url: "./#weather" });
     }
-    return out;
+    return wxThree ? [...out, ...wx3RainAlarms(now)] : out; // (天気 その3 ①)
   }
   function wxShare() {
     const l = pushLocal(), mine = l.endpoint && l.id ? l.id : null;
@@ -44111,6 +44131,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const out = [], m = wxMorning();
     if (m.on) out.push(["wxMorning", m.at, m.rainOnly ? 1 : 0, wxAlarms(Date.now()).map((a) => [a.at, a.title, a.body])]);
     for (const x of settings.items) if (typeof x.id === "string" && x.id.startsWith("wxAlarms:")) out.push([x.id, num(x.updatedAt)]);
+    if (wxThree) out.push(...wx3PushParts()); // (天気 その3 ①)
     return out;
   }
   // under the page, drawn once and kept (what is typed in it stays as the page above is drawn again): ⑩ and ⑨
@@ -44168,6 +44189,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren($("wxFoundBox"), wxFindErr ? el("p", { class: "group-foot" }, wxFindErr)
       : wxFound && wxFound.length ? el("ul", { class: "list card wx-places" }, wxFound.map((p) => el("li", {}, el("span", { class: "wx-pname" }, p.name, p.sub ? el("small", {}, p.sub) : null),
         el("button", { type: "button", class: "chip-btn", onclick: () => wxUse(p) }, "使う"), el("button", { type: "button", class: "chip-btn", onclick: () => { wxKeep(p, p.name); wxUse(p); } }, "登録して使う")))) : null);
+    if (wxThree) wx3MoreSync(); // (天気 その3 ①⑩)
   }
   wxMoreBuild();
 
@@ -44339,8 +44361,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return out;
   }
   function wx2More(day, place) {
-    const p = wx2Pressure(day), c = wx2Comfort(day), air = wx2Air(day, place);
-    const body = [p ? wx2Line("wind", p.words, p.sub, "wx2-press" + (p.level ? " warn" : "")) : null, ...c, ...(air || [])].filter(Boolean);
+    const heat = wxThree ? wx3Heat(day) : null, p = wx2Pressure(day), c = wx2Comfort(day).filter((x) => !(heat && x.classList.contains("wx2-muggy"))), air = wx2Air(day, place); // (天気 その3 ⑧)
+    const body = [p ? wx2Line("wind", p.words, p.sub, "wx2-press" + (p.level ? " warn" : "")) : null, heat, ...c, ...(air || [])].filter(Boolean);
     return [...(wx2Plans(day) || []),
       ...(body.length ? [el("h3", { class: "group-head" }, "体調と空気"), el("div", { class: "card wx-lines" }, body)] : []),
       el("h3", { class: "group-head" }, "夜の空"), el("div", { class: "card wx-lines" }, wx2Night(day))].filter(Boolean);
@@ -44363,6 +44385,241 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const a = ((x.lo - bot) / r) * 100, b = ((x.hi - bot) / r) * 100;
     return el("span", { class: "wx2-range", "aria-hidden": "true" }, el("span", { style: `left:${a.toFixed(1)}%;width:${Math.max(3, b - a).toFixed(1)}%` }));
   }
+
+  // ---------- 天気 その3 ①〜⑩ (the user's calls, 2026-11-14): a notification before rain or snow begins (①), the places
+  // kept with their weather (②), the week's best days to go out and to dry the washing (③), the day's length (④), the
+  // morning's and the evening's glow (⑤), thunder (⑥), snow (⑦), the heat index WBGT (⑧), the hours' figures to pick
+  // (⑨), and the place kept at where the phone is (⑩). The forecast as before (v4 asks for clouds by height, snowfall and
+  // the sun's radiation); the choices on this device, as its place is. Function declarations and var ----------
+  var wxThree = false, wx3Busy = false, wx3FailedAt = 0, wx3AutoBusy = false;
+  const wx3Line = (ic, words, sub, cls) => el("div", { class: "wx-line" + (cls ? " " + cls : "") }, icon(ic, 18), el("p", {}, words, sub ? el("span", { class: "sub" }, el("br"), sub) : null));
+  const wx3Hm = (m) => `${Math.floor(m / 60)}:${pad(m % 60)}`;
+  const wx3Min = (s) => (typeof s === "string" && s.length >= 16 ? Number(s.slice(11, 13)) * 60 + Number(s.slice(14, 16)) : null);
+  // (the hours' value of a field, by the hour, for a day: from now for today)
+  function wx3Hours(key, day, all = false) { return wx2H(key, all ? day + "T00:00" : wx2From(day), 24).filter((x) => x.d === day && x.v !== null); }
+
+  // ① before rain or snow begins (today from now, and tomorrow): 30 minutes or an hour before, 6:00〜22:00 only; this device's,
+  // with 朝の天気のお知らせ (shared to the account's other devices as those are)
+  function wx3Rain() { const v = lsJson(LS_PREFIX + "wxRainAlert"); return { on: !!(v && v.on), before: v && v.before === 30 ? 30 : 60 }; }
+  function wx3RainPut(p) { lsJsonPut(LS_PREFIX + "wxRainAlert", { ...wx3Rain(), ...p }); wxShare(); pushSoon(); wxMoreSync(); }
+  function wx3RainAlarms(now) {
+    const r = wx3Rain();
+    if (!r.on || !wxPlace()) return [];
+    const out = [];
+    for (const d of [todayKey, addDays(todayKey, 1)]) {
+      const w = wxDay(d), snow = w && w.icon === "snow", nowH = d === todayKey ? new Date(now).getHours() : -1;
+      for (const s of wxRainSpans(d, d === todayKey ? null : 0).slice(0, 2)) {
+        if (s.a <= nowH) continue; // (raining already)
+        const p = parseYmd(d), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), s.a, 0).getTime() - r.before * 60000, h = new Date(at).getHours();
+        if (at <= now + 5000 || h < 6 || h >= 22) continue;
+        const prob = Math.max(0, ...wxHours(`${d}T${pad(s.a)}:00`, s.b - s.a).filter((x) => x.d === d).map((x) => x.rain));
+        out.push({ at, title: `${r.before === 30 ? "30分" : "1時間"}ほどで${snow ? "雪" : "雨"}が降りそうです`, body: `${s.a}時ごろから${s.b >= 24 ? "夜おそくまで" : s.b + "時ごろまで"}、${snow ? "雪" : "雨"}の予報です（降水確率 ${prob}%）。傘を持っていこう`, tag: `wx-rain:${d}:${s.a}`, url: "./#weather" });
+      }
+    }
+    return out.slice(0, 4);
+  }
+  function wx3PushParts() { const r = wx3Rain(); return r.on ? [["wxRain", r.before, wx3RainAlarms(Date.now()).map((a) => [a.at, a.title])]] : []; }
+  // (under the page, after 朝の天気のお知らせ: built once, kept)
+  function wx3MoreBuild() {
+    if ($("wx3RainBox") || !$("wxMornNote")) return;
+    const on = el("input", { type: "checkbox", id: "wx3RainOn", class: "switch", role: "switch", onchange: (ev) => wx3RainPut({ on: ev.target.checked }) });
+    const before = el("select", { id: "wx3RainBefore", "aria-label": "どのくらい前に", onchange: (ev) => wx3RainPut({ before: Number(ev.target.value) }) }, [[60, "1時間前"], [30, "30分前"]].map(([v, w]) => el("option", { value: v }, w)));
+    const auto = el("input", { type: "checkbox", id: "wx3AutoOn", class: "switch", role: "switch", onchange: (ev) => { wx3AutoPut(ev.target.checked); if (ev.target.checked) wx3AutoPlace(true); } });
+    $("wxMornNote").after(el("div", { id: "wx3RainBox" }, el("h3", { class: "group-head" }, "雨の前のお知らせ"),
+      el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, recRow("お知らせ", on), recRow("いつ", before)),
+      el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "きょうとあした、雨や雪が降り出す前にお知らせします（6時〜22時）。"), el("span", { class: "phrase" }, "アプリを開いたときの予報から決めるので、ときどき開いてください。"))));
+    $("wxPlaceList").before(el("form", { class: "add wx3-auto", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, recRow("現在地に合わせる", auto)));
+    $("wxPlaceList").before(el("p", { class: "group-foot", id: "wx3AutoNote" }, "オンにすると、天気を開いたときに、いる場所が3km以上変わっていれば現在地に切りかえます（位置情報を許可しているとき）。"));
+  }
+  function wx3MoreSync() {
+    wx3MoreBuild();
+    if (!$("wx3RainBox")) return;
+    const r = wx3Rain();
+    $("wx3RainOn").checked = r.on; $("wx3RainBefore").value = String(r.before); $("wx3RainBefore").disabled = !r.on;
+    $("wx3AutoOn").checked = wx3Auto();
+  }
+
+  // ② the places kept, with today's weather (one request for them all, kept for an hour); one pressed is used
+  function wx3PlacesKey(l) { return l.map((p) => `${p.lat},${p.lon}`).join("|"); }
+  async function wx3PlacesFetch() {
+    const l = wxPlaces(), kept = lsJson(LS_PREFIX + "wxPlacesData");
+    if (l.length < 2 || wx3Busy) return;
+    if (kept && kept.key === wx3PlacesKey(l) && kept.day === todayKey && Date.now() - kept.at < 3600000) return;
+    if (navigator.onLine === false || Date.now() - wx3FailedAt < 300000) return;
+    wx3Busy = true;
+    try {
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${l.map((p) => p.lat).join(",")}&longitude=${l.map((p) => p.lon).join(",")}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&current=temperature_2m&timezone=auto&forecast_days=1`);
+      if (!res.ok) throw new Error(String(res.status));
+      const j = await res.json(), arr = Array.isArray(j) ? j : [j];
+      if (arr.length !== l.length) throw new Error("count");
+      const list = arr.map((x) => { const D = x && x.daily, c = D && D.weather_code ? num(D.weather_code[0]) : null;
+        return { code: c, hi: D ? Math.round(num(D.temperature_2m_max?.[0])) : null, lo: D ? Math.round(num(D.temperature_2m_min?.[0])) : null, rain: D ? Math.round(num(D.precipitation_probability_max?.[0])) : null, now: x && x.current && x.current.temperature_2m != null ? Math.round(num(x.current.temperature_2m)) : null }; });
+      lsJsonPut(LS_PREFIX + "wxPlacesData", { key: wx3PlacesKey(l), day: todayKey, at: Date.now(), list });
+      wx3FailedAt = 0;
+    } catch { wx3FailedAt = Date.now(); }
+    wx3Busy = false;
+    wxPageSync();
+  }
+  const wx3Word = (c) => (c == null ? "" : c <= 1 ? "晴れ" : c === 2 ? "晴れ時々くもり" : c === 3 ? "くもり" : c === 45 || c === 48 ? "霧" : WX_SNOW(c) ? "雪" : c >= 95 ? "雷雨" : WX_RAIN(c) ? "雨" : "くもり");
+  function wx3Places(place) {
+    const l = wxPlaces();
+    if (l.length < 2) return null;
+    const kept = lsJson(LS_PREFIX + "wxPlacesData"), ok = kept && kept.key === wx3PlacesKey(l) && kept.day === todayKey && Array.isArray(kept.list);
+    wx3PlacesFetch();
+    if (!ok) return [el("h3", { class: "group-head" }, "登録した場所のきょう"), el("div", { class: "card empty" }, wx3Busy ? "調べています…" : "天気を調べています…")];
+    return [el("h3", { class: "group-head" }, "登録した場所のきょう"), el("ul", { class: "list card wx3-places" }, l.map((p, i) => {
+      const x = kept.list[i] || {}, using = wxSame(p, place), ic = wxIconOf(x.code);
+      return el("li", {}, el("button", { type: "button", class: "wx3-place", "aria-pressed": String(using), "aria-label": `${p.name}、${wx3Word(x.code)}、最高${x.hi}度、最低${x.lo}度、降水確率${x.rain}%${using ? "、いま使っている場所" : "。押すとこの場所にします"}`, onclick: () => { if (!using) wxUse(p); } },
+        el("span", { class: "wx3-pn" }, p.name, using ? el("small", {}, "いま") : null), el("span", { class: "wx-icon " + ic, "aria-hidden": "true" }, icon(ic, 20)),
+        el("span", { class: "wx3-now", "aria-hidden": "true" }, x.now != null ? `${x.now}°` : ""), el("span", { class: "wx-hl", "aria-hidden": "true" }, `${x.hi}° / ${x.lo}°`), el("span", { class: "wx-p", "aria-hidden": "true" }, `${x.rain}%`)));
+    }))];
+  }
+
+  // ③ the week's best: the day best to go out (little rain, 体感 near 20°, little wind) and those to dry the washing on
+  function wx3Best() {
+    const days = Array.from({ length: WX_DAYS }, (_, i) => addDays(todayKey, i)).map((d) => ({ d, w: wxDay(d), m: wxDayMore(d) })).filter((x) => x.w);
+    if (days.length < 3) return null;
+    const score = (x) => x.w.rain * 2 + Math.abs((x.m && x.m.feelHi != null ? num(x.m.feelHi) : x.w.hi) - 20) * 3 + (x.m && x.m.wind != null ? Math.max(0, num(x.m.wind) - 5) * 4 : 0) + (x.w.wet ? 100 : 0);
+    const best = [...days].sort((a, b) => score(a) - score(b) || a.d.localeCompare(b.d))[0];
+    const dry = days.filter((x) => !x.w.wet && x.w.rain < 20 && x.w.icon === "sun").slice(0, 3);
+    const day = (d) => relLabel(d) || fmtShort(d);
+    return { best: best.w.wet ? null : best, dry, say: [best.w.wet ? "この1週間は、雨の日が多そうです" : `外に出やすいのは ${day(best.d)}：${best.w.word} ${best.w.hi}°、降水確率 ${best.w.rain}%`,
+      dry.length ? `洗濯日和は ${dry.map((x) => day(x.d)).join("・")}` : "晴れて乾きやすい日は、なさそうです"].join("。") + "。" };
+  }
+
+  function wx3BestEl() { const b = wx3Best(); return b ? el("p", { class: "wx3-best", id: "wx3Best" }, icon("sun", 16), b.say) : null; }
+
+  // ④ the day's length (sunrise to sunset) against the day before, and the next solstice (その4's 二十四節気)
+  function wx3DayLen(day) {
+    const m = wxDayMore(day), y = wxDayMore(addDays(day, -1)), a = m && wx3Min(m.sunrise), b = m && wx3Min(m.sunset);
+    if (a == null || b == null || b <= a) return null;
+    const len = b - a, ya = y && wx3Min(y.sunrise), yb = y && wx3Min(y.sunset), diff = ya != null && yb != null && yb > ya ? len - (yb - ya) : null;
+    return { len, diff };
+  }
+  function wx3Solstice(day) {
+    if (typeof h4At !== "function") return null;
+    for (let d = addDays(day, 1), i = 0; i < 190; i++, d = addDays(d, 1)) {
+      const k = h4At(d);
+      if ((k === 18 || k === 6) && h4At(addDays(d, -1)) !== k) return { d, name: k === 18 ? "冬至" : "夏至", left: daysBetween(day, d) };
+    }
+    return null;
+  }
+  function wx3DayRows(day, dl) {
+    const x = wx3DayLen(day);
+    if (!x) return null;
+    const v = `${Math.floor(x.len / 60)}時間${x.len % 60}分`, say = x.diff == null || x.diff === 0 ? "" : `きのうより${Math.abs(x.diff)}分${x.diff < 0 ? "短い" : "長い"}`;
+    return el("div", {}, el("dt", {}, "日の長さ"), el("dd", { "aria-label": say ? `${v}、${say}` : v }, v, say ? el("small", { "aria-hidden": "true" }, ` ${x.diff < 0 ? "−" : "+"}${Math.abs(x.diff)}分`) : null));
+  }
+
+  // ⑤ the morning's and the evening's glow, by the clouds at sunrise and sunset (low ones hide it; middle and high ones
+  // catch the light), and the softer light an hour before sunset
+  function wx3GlowAt(day, hm) {
+    const m = wx3Min(hm);
+    if (m == null) return null;
+    const h = Math.min(23, Math.round(m / 60)), at = (k) => { const x = wx2H(k, `${day}T${pad(h)}:00`, 1)[0]; return x && x.d === day ? x.v : null; };
+    const low = at("cloud_cover_low"), mid = at("cloud_cover_mid"), high = at("cloud_cover_high"), all = at("cloud_cover"), rain = (wxHours(`${day}T${pad(h)}:00`, 1)[0] || {}).rain;
+    if (low == null && all == null) return null;
+    const mh = mid != null && high != null ? (mid + high) / 2 : null;
+    return rain >= 50 || (low != null && low >= 70) || (low == null && all >= 85) ? "見えにくそう（雲が厚い）"
+      : mh != null && mh >= 20 && mh <= 75 && (low == null || low < 40) ? "きれいに色づきそう"
+      : all != null && all < 15 ? "雲が少なく、すっきりした空" : "雲が多め";
+  }
+  function wx3Glow(day) {
+    const m = wxDayMore(day);
+    if (!m) return null;
+    const nowM = day === todayKey ? nowMinutes() : -1, rise = wx3Min(m.sunrise), set = wx3Min(m.sunset), out = [];
+    const am = rise != null && rise > nowM ? wx3GlowAt(day, m.sunrise) : null, pm = set != null && set > nowM ? wx3GlowAt(day, m.sunset) : null;
+    if (am) out.push(wx3Line("sun", `朝焼け：${am}`, `日の出 ${wxHm(m.sunrise)}`, "wx3-glow-am"));
+    if (pm) out.push(wx3Line("sun", `夕焼け：${pm}`, `日の入り ${wxHm(m.sunset)}。${wx3Hm(Math.max(0, set - 60))}ごろから、光がやわらかくなります`, "wx3-glow-pm"));
+    const sol = wx3Solstice(day), len = wx3DayLen(day);
+    if (sol && len) out.push(wx3Line("sun", `${sol.name}（${fmtMD(sol.d)}）まで、日は${sol.name === "冬至" ? "短く" : "長く"}なっていきます`, `あと${sol.left}日`, "wx3-sol"));
+    return out.length ? [el("h3", { class: "group-head" }, "朝焼け・夕焼け"), el("div", { class: "card wx-lines" }, out)] : null;
+  }
+
+  // ⑥ thunder (its weather 95〜99) and ⑦ snow (cm), the day's from now, with the rain
+  function wx3Spans(l, ok) {
+    const out = [];
+    let cur = null;
+    for (const x of l) { if (ok(x)) { if (cur && cur.b === x.h) cur.b = x.h + 1; else out.push((cur = { a: x.h, b: x.h + 1 })); } else cur = null; }
+    return out;
+  }
+  function wx3RainMore(day) {
+    const out = [], from = day === todayKey ? new Date().getHours() : 0;
+    const th = wx3Spans(wxHours(day + "T00:00", 24).filter((x) => x.d === day && x.h >= from), (x) => x.code != null && x.code >= 95);
+    if (th.length) out.push(wx3Line("rain", `雷のおそれ：${th.slice(0, 2).map(({ a, b }) => `${a}時ごろから${b >= 24 ? "夜おそくまで" : b + "時ごろまで"}`).join("、")}`, "外にいるときは、建物や車の中へ。高い木の下はさけて", "wx3-thunder warn"));
+    const sn = wx3Hours("snowfall", day);
+    const tot = sum(sn, (x) => x.v);
+    if (tot >= 0.5) {
+      const top = sn.reduce((a, x) => (!a || x.v > a.v ? x : a), null);
+      out.push(wx3Line("snow", `雪：つもる量は ${tot >= 10 ? Math.round(tot) : Math.round(tot * 10) / 10} cm ほど`, `いちばん降るのは ${top.h}時ごろ。足もとと、車の運転に気をつけて`, "wx3-snow"));
+    }
+    return out;
+  }
+
+  // ⑧ the heat index WBGT, from the temperature, humidity, the sun's radiation and the wind (小野・登内, 2014), 9時〜18時:
+  // 21 and more said with what to do (環境省's five steps)
+  function wx3Wbgt(t, rh, sr, ws) { const s = num(sr) / 1000; return 0.735 * t + 0.0374 * rh + 0.00292 * t * rh + 7.619 * s - 4.557 * s * s - 0.0572 * num(ws) - 4.064; }
+  function wx3Heat(day) {
+    const T = wx3Hours("temperature_2m", day, true), RH = wx3Hours("relative_humidity_2m", day, true), SR = wx3Hours("shortwave_radiation", day, true), WS = wx3Hours("wind_speed_10m", day, true);
+    const from = day === todayKey ? new Date().getHours() : 9;
+    let top = null;
+    for (const t of T) {
+      if (t.h < Math.max(9, from) || t.h > 18) continue;
+      const rh = RH.find((x) => x.h === t.h), sr = SR.find((x) => x.h === t.h), ws = WS.find((x) => x.h === t.h);
+      if (!rh || !sr) continue;
+      const v = wx3Wbgt(t.v, rh.v, sr.v, ws ? ws.v : 0);
+      if (!top || v > top.v) top = { v, h: t.h };
+    }
+    if (!top || top.v < 21) return null;
+    const n = Math.round(top.v), [lv, tip] = n >= 31 ? ["危険", "外での運動は、やめましょう。すずしい室内で"] : n >= 28 ? ["厳重警戒", "激しい運動はやめて、こまめに休んで水分を"] : n >= 25 ? ["警戒", "こまめに休んで、水分と塩分を"] : ["注意", "運動するときは、水分をこまめに"];
+    return wx3Line("sun", `暑さ指数（WBGT）は ${top.h}時ごろ ${n}（${lv}）`, tip, "wx3-heat" + (n >= 28 ? " warn" : ""));
+  }
+
+  // ⑨ the hours' figure: 気温, 体感, 風, 湿度 or 雨量 (this device)
+  const WX3_VIEWS = [["temp", "気温"], ["feel", "体感"], ["wind", "風"], ["hum", "湿度"], ["mm", "雨量"]];
+  function wx3View() { const v = lsJson(LS_PREFIX + "wxHourView"); return WX3_VIEWS.some(([k]) => k === v) ? v : "temp"; }
+  function wx3HourSeg() {
+    const v = wx3View();
+    return el("div", { class: "seg wx3-seg", id: "wx3Seg", role: "group", "aria-label": "1時間ごとに出すもの" }, WX3_VIEWS.map(([k, w]) => el("button", { type: "button", "data-view": k, "aria-pressed": String(k === v),
+      onclick: () => { lsJsonPut(LS_PREFIX + "wxHourView", k === "temp" ? null : k); const y = sheetEl.scrollTop; renderWxPage(); sheetEl.scrollTop = y; } }, w)));
+  }
+  function wx3HourVal(x) {
+    const v = wx3View(), r = (n) => Math.round(num(n));
+    if (v === "feel") return x.feel != null ? `${r(x.feel)}°` : "—";
+    if (v === "wind") return x.wind != null ? `${r(x.wind)}m` : "—";
+    if (v === "hum") return x.hum != null ? `${r(x.hum)}%` : "—";
+    if (v === "mm") { const p = wx2H("precipitation", x.t, 1)[0]; return p && p.v != null ? `${Math.round(p.v * 10) / 10}` : "—"; }
+    return x.temp != null ? `${r(x.temp)}°` : "—";
+  }
+  const wx3ViewWord = () => (WX3_VIEWS.find(([k]) => k === wx3View()) || WX3_VIEWS[0])[1];
+
+  // ⑩ the place kept at where this phone is: on opening 天気 (and the app), where the browser already may tell it, moved
+  // 3 km and more from the place in use; a place picked by hand turns it off
+  function wx3Auto() { return !!lsJson(LS_PREFIX + "wxAuto"); }
+  function wx3AutoPut(on) { lsJsonPut(LS_PREFIX + "wxAuto", on ? 1 : null); }
+  function wx3Km(a, b) {
+    const r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r;
+    const h = Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2;
+    return 12742 * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  async function wx3AutoPlace(asked = false) {
+    if (!wx3Auto() || wx3AutoBusy || !navigator.geolocation) return;
+    let st = "prompt";
+    try { st = (await navigator.permissions?.query({ name: "geolocation" }))?.state || "prompt"; } catch {}
+    if (st !== "granted" && !asked) return; // (never asked for on its own)
+    wx3AutoBusy = true;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      wx3AutoBusy = false;
+      const r2 = (v) => Math.round(v * 100) / 100, here = { lat: r2(pos.coords.latitude), lon: r2(pos.coords.longitude) }, cur = wxPlace();
+      if (cur && wx3Km(cur, here) < 3) return;
+      lsJsonPut(WX_PLACE, { ...here, at: Date.now(), name: "現在地" });
+      lsJsonPut(WX_DATA, null); wxError = ""; wxSel = null;
+      syncWxSettings(); renderHome(); wxFetch(true); wxPageSync();
+      flash(cur ? `天気の場所を、現在地（${Math.round(wx3Km(cur, here))} km 移動）に合わせました` : "天気の場所を、現在地にしました");
+    }, () => { wx3AutoBusy = false; if (asked) flash("現在地がわかりませんでした"); }, { timeout: 20000, maximumAge: 600000 });
+  }
+  wxThree = true;
+  setTimeout(() => wx3AutoPlace(), 1500); // (the app opened: the place followed, where it may)
 
   // ---------- きょう その2 ①〜⑩ (the user's calls, 2026-11-13): a tile held down opens what can be done to it there (①),
   // a tile half a row or a whole one (②), a tile whose day is done marked (③), what yesterday is missing of what is
