@@ -2915,6 +2915,11 @@ ul.list.ts-diary > li { flex-direction: column; align-items: stretch; gap: 2px; 
 .ty-times li.top .bar i { background: var(--accent); }
 .ty-times .num { text-align: end; font-variant-numeric: tabular-nums; }
 .ty-memos { margin: 0 calc(-1 * var(--space-2)) -6px; }
+/* つみかさね その10 (2026-11-14). 2 drawn with その8's chart (.ts8-chart); 10 under きょうの目標; 9 a year's day heading its blocks */
+.ts10-goal { margin-top: 8px; }
+.ts10-goal .sub { font-size: var(--t-foot); color: var(--muted); }
+#ts10New > li > .dot, #ts10Same > li > .dot, #ts10Kind > li > .dot, #ts10Ago .tsumi-hit > .dot { flex: none; width: 12px; height: 12px; border-radius: 3px; }
+#ts10Ago li.dayhead { padding-top: 12px; }
 /* つみかさね その9 (2026-11-14). 1 the card: 30 rounds, six to a row, the stamped ones in the accent with a check */
 .ts9-stamps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; justify-items: center; }
 .ts9-stamp { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1.5px dashed var(--separator); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -7256,6 +7261,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <p class="tsumi-past" id="ts9StampLine" hidden><button type="button" class="link-btn" id="ts9StampBtn"></button></p>
           <p class="tsumi-past" id="ts9SpecialLine" hidden><button type="button" class="link-btn" id="ts9SpecialBtn"></button></p>
           <p class="tsumi-past" id="ts9LongLine" hidden><button type="button" class="link-btn" id="ts9LongBtn"></button></p>
+          <!-- その10 1 きょうのペース (the user's call, 2026-11-14) -->
+          <p class="tsumi-past" id="ts10PaceLine" hidden><button type="button" class="link-btn" id="ts10PaceBtn"></button></p>
           <!-- 1年前のきょう (the user's call): what went on this day a year ago, or else a month ago, said quietly; pressed, there -->
           <p class="tsumi-past" id="tsumiPast" hidden><button type="button" class="link-btn" id="tsumiPastBtn"></button></p>
           <!-- 1か月前・1年前の旗 (the user's call): how many since then; pressed, the block with the flag -->
@@ -7677,6 +7684,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- その5 5 きょうの思い出 (the user's call, 2026-11-13): a block of a month ago or more, one a day -->
         <h3 class="group-head" id="tsumiMemoryHead">きょうの思い出</h3>
         <div class="card ts-memory" id="tsumiMemory"></div>
+        <!-- その10 9 1年前のきょうのブロック (the user's call, 2026-11-14) -->
+        <h3 class="group-head" id="ts10AgoHead" hidden>1年前のきょうのブロック</h3>
+        <ul class="list card tsumi-found" id="ts10Ago" hidden></ul>
         <!-- その6 2 1日のタイムライン (the user's call, 2026-11-14): a day's blocks in the order of their time -->
         <h3 class="group-head" id="ts6DayHead">1日のタイムライン</h3>
         <div class="ts6-daynav">
@@ -7699,6 +7709,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- その8 6 この30日の積み方, 7 連続の記録ベスト5 (the user's calls, 2026-11-14) -->
         <h3 class="group-head" id="ts8ChartHead" hidden>この30日の積み方</h3>
         <div class="card ts8-chart" id="ts8Chart" hidden></div>
+        <!-- その10 2 時間ごとの積み方 (the user's call, 2026-11-14): drawn as この30日の積み方 is -->
+        <h3 class="group-head" id="ts10HourHead" hidden>時間ごとの積み方（この30日）</h3>
+        <div class="card ts8-chart" id="ts10Hour" hidden></div>
         <h3 class="group-head" id="ts8RunsHead" hidden>連続の記録ベスト5</h3>
         <ul class="list card" id="ts8Runs" hidden></ul>
         <h3 class="group-head" id="ts7QuizHead" hidden>思い出クイズ</h3>
@@ -7713,6 +7726,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- その9 8 去年とくらべる (the user's call, 2026-11-14) -->
         <h3 class="group-head" id="ts9LastHead" hidden>去年とくらべる</h3>
         <ul class="list card" id="ts9Last" hidden></ul>
+        <!-- その10 8 週のランキング, 7 種類ごとに先月とくらべる (the user's calls, 2026-11-14) -->
+        <h3 class="group-head" id="ts10WeekHead" hidden>週のランキング</h3>
+        <ul class="list card" id="ts10Week" hidden></ul>
+        <p class="group-foot" id="ts10WeekFoot" hidden></p>
+        <h3 class="group-head" id="ts10KindHead" hidden>種類ごとに先月とくらべる</h3>
+        <ul class="list card" id="ts10Kind" hidden></ul>
         <!-- その6 5 朝のつみかさね (the user's call, 2026-11-14): when the day's first block goes on -->
         <h3 class="group-head" id="ts6MornHead" hidden>朝のつみかさね</h3>
         <ul class="list card" id="ts6Morn" hidden></ul>
@@ -7720,6 +7739,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- その6 6 しばらく積んでいない種類 (the user's call, 2026-11-14) -->
         <h3 class="group-head" id="ts6IdleHead" hidden>しばらく積んでいない種類</h3>
         <ul class="list card" id="ts6Idle" hidden></ul>
+        <!-- その10 4 まだ積んだことのない種類, 5 重なっているかもしれない記録 (the user's calls, 2026-11-14) -->
+        <h3 class="group-head" id="ts10NewHead" hidden>まだ積んだことのない種類</h3>
+        <ul class="list card" id="ts10New" hidden></ul>
+        <h3 class="group-head" id="ts10SameHead" hidden>重なっているかもしれない記録</h3>
+        <ul class="list card" id="ts10Same" hidden></ul>
+        <p class="group-foot" id="ts10SameFoot" hidden>同じ日に同じ中身で、10分以内に2回記録したものです。まちがえて2回記録していたら、開いて消せます。</p>
         <!-- その6 7 いっしょに積んでいる種類 (the user's call, 2026-11-14): of the days with one kind, how many have another -->
         <h3 class="group-head" id="ts6PairHead" hidden>いっしょに積んでいる種類</h3>
         <ul class="list card" id="ts6Pair" hidden></ul>
@@ -7741,6 +7766,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <h3 class="group-head" id="ts9BodyHead" hidden>体調・睡眠とつみかさね</h3>
         <ul class="list card" id="ts9Body" hidden></ul>
         <p class="group-foot" id="ts9BodyFoot" hidden>からだに体調や睡眠を記録した日の、1日のブロックの数の平均です（きょうはのぞきます）。</p>
+        <!-- その10 3 予定とつみかさね (the user's call, 2026-11-14): read from the calendar -->
+        <h3 class="group-head" id="ts10PlanHead" hidden>予定とつみかさね</h3>
+        <ul class="list card" id="ts10Plan" hidden></ul>
+        <p class="group-foot" id="ts10PlanFoot" hidden>この60日（きょうはのぞく）を、カレンダーの予定の数（くり返しの予定もふくむ）で分けた、1日のブロックの数の平均です。</p>
         <!-- 期間をえらんで数える (the user's call): what went on between two days -->
         <h3 class="group-head" id="tsumiSpanHead">期間をえらんで数える</h3>
         <div class="card ts-span">
@@ -7858,6 +7887,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </form>
         <p class="group-foot" id="tsumiDayGoalFoot">毎日同じ数です。階段のカードの下に、きょうの進み具合が出ます。</p>
         <p class="group-foot ts7-sug" id="ts7SugDay" hidden></p>
+        <!-- その10 10 きょうの目標の達成記録 (the user's call, 2026-11-14) -->
+        <div class="card ts-mgoal ts10-goal" id="ts10Goal" hidden></div>
         <!-- その8 2 きょう・あしたのめあて (the user's call, 2026-11-14): the kinds to stack on a day -->
         <h3 class="group-head" id="ts8AimHead">きょう・あしたのめあて</h3>
         <div class="card ts8-aim">
@@ -7932,6 +7963,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <h3 class="group-head">お休みの日</h3>
         <ul class="list card" id="tsumiRestList"></ul>
         <p class="group-foot">お休みの日は、積み忘れのお知らせもアイコンのしるしも来ません。ルーティーンのお休みと同じ日になり、ルーティーンの連続も途切れません。</p>
+        <!-- その10 6 お休みの日のふりかえり (the user's call, 2026-11-14) -->
+        <h3 class="group-head" id="ts10RestHead" hidden>お休みの日のふりかえり</h3>
+        <ul class="list card ts10-rest" id="ts10Rest" hidden></ul>
         <!-- 積み忘れのお知らせ (the user's call): each day at the time set, a day with no block yet gets a notification -->
         <h3 class="group-head" id="tsumiRemindHead">積み忘れのお知らせ</h3>
         <form class="add" id="tsumiRemindForm" autocomplete="off" onsubmit="return false">
@@ -22499,7 +22533,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月14日 17:26"; // 6f1ea978 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月14日 17:35"; // f605cfc3 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -25556,6 +25590,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     renderTsumiGear7(); // (その7)
     renderTsumiGear8(); // (その8)
     renderTsumiGear9(); // (その9)
+    renderTsumiGear10(); // (その10)
   }
   // ---------- つみかさね, ten more (the user's calls, 2026-11-10) ----------
   // 1 アイコンのしるし: while today has no block yet and isn't お休み, a 1 on the app's icon on the home screen, gone once
@@ -26066,6 +26101,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     renderTsumiFoot7(); // (その7 1, 2, 3, 4)
     renderTsumiFoot8(); // (その8 1, 2)
     renderTsumiFoot9(); // (その9 1, 2, 6)
+    renderTsumiFoot10(); // (その10 1)
     syncTsumiScene();
   }
   sheetEl.addEventListener("close", () => { if (tab === "tsumi") setTimeout(() => { tsLetterCheck(); tsMonthGoalCheck(); tsDailyChecks(); }, 700); });
@@ -27743,6 +27779,207 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const x = ts9Special();
     if (x.today && mark(LS_PREFIX + "tsumiSpecialSeen")) { celebrate(); said.push(`きょう ${fmtN(x.today.s)} こ目（${x.today.what}）を積みました！`); }
   }
+
+  // ---------- つみかさね その10 (the user's calls, 2026-11-14): 1 きょうのペース, 2 時間ごとの積み方, 3 予定とつみかさね,
+  // 4 まだ積んだことのない種類, 5 重なっているかもしれない記録, 6 お休みの日のふりかえり, 7 種類ごとに先月とくらべる,
+  // 8 週のランキング, 9 1年前のきょうのブロック, 10 きょうの目標の達成記録. (var, not const: the gear and the card's
+  // foot, above, may be drawn before this runs) ----------
+  var ts10Diff = (a, b, word) => (a > b ? `${word}より +${fmtN(a - b)}` : a < b ? `${word}より −${fmtN(b - a)}` : `${word}と同じ`);
+
+  // 1 きょうのペース: of the 28 days before today (14 of them with blocks at least), the blocks a day put on by this time
+  // of day, against today's; from 6 in the morning to 9 at night, when they are a block or more apart
+  function ts10Pace(now = new Date()) {
+    const m = now.getHours() * 60 + now.getMinutes();
+    if (m < 360 || m >= 1260) return null;
+    const from = addDays(todayKey, -28), days = new Set();
+    let by = 0;
+    for (const b of tsumiList()) {
+      if (b.day < from || b.day >= todayKey) continue;
+      days.add(b.day);
+      if (!realT(b)) continue;
+      const t = new Date(b.t);
+      if (ymd(t) === b.day && t.getHours() * 60 + t.getMinutes() <= m) by++;
+    }
+    if (days.size < 14) return null;
+    const avg = by / 28, today = tsumiList().filter((b) => b.day === todayKey).length;
+    return Math.abs(today - avg) >= 1 ? { avg: (Math.round(avg * 10) / 10).toFixed(1), today, ahead: today > avg } : null;
+  }
+  function renderTs10Pace() {
+    const x = ts10Pace();
+    $("ts10PaceLine").hidden = !x;
+    if (!x) return;
+    $("ts10PaceBtn").textContent = x.ahead ? `いつもよりいいペースです（いつもはこの時間までに ${x.avg} こ、きょうは ${fmtN(x.today)} こ）` : `いつもはこの時間までに ${x.avg} こ。きょうは ${fmtN(x.today)} こです`;
+    $("ts10PaceBtn").onclick = (ev) => tsGearAt(ev, "ts10HourHead");
+  }
+
+  // 2 時間ごとの積み方: the last 30 days' blocks with their time, a column an hour (0時 to 23時), drawn as この30日の積み方 is
+  // (one series, no key; each column a button named with its hour and count); pressed or pointed at, its count first
+  var ts10HourAt = null;
+  function ts10Hours() {
+    const from = addDays(todayKey, -29), hs = Array(24).fill(0);
+    for (const b of tsumiList()) if (b.day >= from && realT(b)) hs[new Date(b.t).getHours()]++;
+    return hs;
+  }
+  function ts10HourRead(hs) {
+    const box = $("ts10HourRead"), total = sum(hs, (x) => x);
+    if (ts10HourAt != null) { setChildren(box, el("strong", {}, `${fmtN(hs[ts10HourAt])} こ`), ` ${ts10HourAt}時台`); return; }
+    let top = 0;
+    hs.forEach((n, h) => { if (n > hs[top]) top = h; });
+    setChildren(box, `いちばん多いのは ${top}時台（${fmtN(hs[top])} こ）・時刻のわかるブロック ${fmtN(total)} こ`);
+  }
+  function renderTs10Hours() {
+    const hs = ts10Hours(), show = hs.some((n) => n);
+    $("ts10HourHead").hidden = $("ts10Hour").hidden = !show;
+    if (!show) return;
+    const max = Math.max(...hs), top = max <= 5 ? max : Math.ceil(max / 5) * 5;
+    const mark = (h) => { ts10HourAt = h; for (const b of $("ts10Hour").querySelectorAll(".ts8-bar")) b.classList.toggle("on", Number(b.dataset.h) === h); ts10HourRead(hs); };
+    setChildren($("ts10Hour"),
+      el("div", { class: "ts8-plot" }, el("span", { class: "ts8-top", "aria-hidden": "true" }, `${fmtN(top)} こ`),
+        el("div", { class: "ts8-bars", role: "group", "aria-label": "この30日の、時間ごとのブロックの数" }, hs.map((n, h) => el("button", { type: "button", class: "ts8-bar" + (h === ts10HourAt ? " on" : ""), "data-h": String(h), "aria-label": `${h}時台、${n} こ`,
+          onpointerenter: () => mark(h), onfocus: () => mark(h), onclick: () => mark(h) }, n ? el("i", { style: `height: ${Math.max(4, Math.round((n / top) * 100))}%` }) : null)))),
+      el("div", { class: "ts8-x", "aria-hidden": "true" }, el("span", {}, "0時"), el("span", {}, "12時"), el("span", {}, "23時")),
+      el("p", { class: "ts8-read", id: "ts10HourRead", "aria-live": "polite" }));
+    ts10HourRead(hs);
+  }
+
+  // 3 予定とつみかさね: the last 60 days (not today) by how many plans the calendar had on them (くり返しも): none, 1〜2,
+  // 3 or more, 3 days or more each and two of them at least, each one's blocks a day on average
+  function ts10Plans() {
+    const from = addDays(todayKey, -60), to = addDays(todayKey, -1), per = ts7PerDay(), turns = turnsByDay(from, to), g = { none: [], few: [], many: [] };
+    for (let d = from; d <= to; d = addDays(d, 1)) { const n = (turns.get(d) || []).length; g[n === 0 ? "none" : n <= 2 ? "few" : "many"].push(per.get(d) || 0); }
+    const rows = [["none", "予定がない日"], ["few", "予定が1〜2こある日"], ["many", "予定が3こ以上ある日"]].filter(([k]) => g[k].length >= 3).map(([k, label]) => ({ label, days: g[k].length, avg: ts9Avg(g[k]) }));
+    return rows.length >= 2 && events.items.length ? rows : [];
+  }
+  function renderTs10Plans() {
+    const xs = ts10Plans();
+    $("ts10PlanHead").hidden = $("ts10Plan").hidden = $("ts10PlanFoot").hidden = !xs.length;
+    if (xs.length) setChildren($("ts10Plan"), xs.map((x) => ts9Row(x.label, `1日 ${x.avg} こ`, `${fmtN(x.days)} 日`)));
+  }
+
+  // 4 まだ積んだことのない種類: the kinds with no block yet, each with the way to stack it (once there are blocks)
+  function renderTs10New() {
+    const all = tsumiList(), have = new Set(all.map((b) => b.kind)), xs = all.length ? Object.keys(TSUMI_KINDS).filter((k) => !have.has(k)) : [];
+    $("ts10NewHead").hidden = $("ts10New").hidden = !xs.length;
+    setChildren($("ts10New"), xs.map((k) => {
+      const add = TS_ADD.find(([x]) => x === k);
+      return el("li", { class: "ts6-row" }, el("span", { class: "dot blk", style: `--k: ${tsumiInk(k)}` }), el("span", { class: "ts6-name" }, ts7Label(k)),
+        add ? el("button", { type: "button", class: "link-btn", "aria-label": `${ts7Label(k)}：${add[1]}`, onclick: () => { closeSheet(true); setTimeout(() => add[2](false), 60); } }, "積んでみる") : null);
+    }));
+  }
+
+  // 5 重なっているかもしれない記録: 食事・運動・勉強・家計簿 the same on the same day, made 10 minutes apart or less (twice
+  // by mistake?): each pair once, the later one a press away to put right or delete
+  var TS10_SAME = {
+    meal: [() => meals.items, (x) => [x.slot, x.text, x.kcal].join("|"), (x) => [x.slot, x.text, typeof x.kcal === "number" ? `${fmtN(x.kcal)} kcal` : ""].filter(Boolean).join("・")],
+    workout: [() => workouts.items, (x) => [x.type, x.exercise, x.minutes, x.km, x.note].join("|"), (x) => [x.type, workoutDetail(x)].filter(Boolean).join(" ")],
+    study: [() => study.items, (x) => [x.subjectId, x.minutes, x.note].join("|"), (x) => `${subjectOf(x)?.name || "科目なし"} ${num(x.minutes)} 分`],
+    money: [() => expenses.items, (x) => [x.kind, x.category, x.amount, x.memo].join("|"), (x) => [expenseCat(x) || (x.kind === "in" ? "収入" : "支出"), x.memo, fmtYen(num(x.amount))].filter(Boolean).join(" ")],
+  };
+  function ts10Same() {
+    const out = [];
+    for (const [kind, [items, sig, say]] of Object.entries(TS10_SAME)) {
+      const by = new Map();
+      for (const x of items()) { if (!isDay(x.date || "") || !(num(x.createdAt) > 0)) continue; const k = x.date + "|" + sig(x); (by.get(k) || by.set(k, []).get(k)).push(x); }
+      for (const xs of by.values()) {
+        xs.sort((a, b) => num(a.createdAt) - num(b.createdAt));
+        for (let i = 1; i < xs.length; i++) if (num(xs[i].createdAt) - num(xs[i - 1].createdAt) <= 10 * 60000) { out.push({ kind, a: xs[i - 1], b: xs[i], words: say(xs[i]) }); i++; }
+      }
+    }
+    return out.sort((x, y) => num(y.b.createdAt) - num(x.b.createdAt));
+  }
+  function renderTs10Same() {
+    const xs = ts10Same(), hm = (x) => ts6Hm(new Date(num(x.createdAt)).getHours() * 60 + new Date(num(x.createdAt)).getMinutes());
+    $("ts10SameHead").hidden = $("ts10Same").hidden = $("ts10SameFoot").hidden = !xs.length;
+    setChildren($("ts10Same"), xs.map((x) => el("li", { class: "ts6-row" }, el("span", { class: "dot blk", style: `--k: ${tsumiInk(x.kind)}` }),
+      el("span", { class: "ts6-name" }, `${ts7Label(x.kind)} ${fmtShort(x.b.date)}`, el("small", {}, `${x.words}・${hm(x.a)} と ${hm(x.b)}`)),
+      el("button", { type: "button", class: "link-btn", "aria-label": `${hm(x.b)}の${ts7Label(x.kind)}「${x.words}」を開く`, onclick: () => { closeSheet(true); setTimeout(() => openRecEdit(x.kind, x.b.id, false), 300); } }, "あとのほうを開く"))));
+  }
+
+  // 6 お休みの日のふりかえり: the last 60 days (to yesterday): the お休みの日, the weekday most of them were, and the days
+  // after them with blocks
+  function ts10Rest() {
+    const per = ts7PerDay(), rest = [];
+    for (let i = 60; i >= 1; i--) { const d = addDays(todayKey, -i); if (rtRest(d)) rest.push(d); }
+    if (!rest.length) return null;
+    const wd = Array(7).fill(0);
+    for (const d of rest) wd[parseYmd(d).getDay()]++;
+    const top = wd.indexOf(Math.max(...wd)), after = rest.filter((d) => !rtRest(addDays(d, 1)) && addDays(d, 1) <= todayKey), back = after.filter((d) => per.has(addDays(d, 1))).length;
+    return { n: rest.length, top, topN: wd[top], after: after.length, back };
+  }
+  function renderTs10Rest() {
+    const x = ts10Rest();
+    $("ts10RestHead").hidden = $("ts10Rest").hidden = !x;
+    if (x) setChildren($("ts10Rest"), ts9Row("この60日のお休み", `${fmtN(x.n)} 日`), ts9Row("いちばん多い曜日", `${WD[x.top]}曜日`, `${fmtN(x.topN)} 日`),
+      x.after ? ts9Row("お休みの次の日に積んだ日", `${fmtN(x.back)} / ${fmtN(x.after)} 日`) : null);
+  }
+
+  // 7 種類ごとに先月とくらべる: each kind's blocks this month to today, against last month to the same day (its last, in a
+  // shorter month); the kinds with any in either
+  function ts10Kinds() {
+    const dom = Number(todayKey.slice(8)), mo = todayKey.slice(0, 7), lastStart = addMonthsDay(mo + "-01", -1), lastLen = daysBetween(lastStart, mo + "-01");
+    const lastTo = addDays(lastStart, Math.min(dom, lastLen) - 1), all = tsumiList();
+    return Object.keys(TSUMI_KINDS).map((k) => ({ k, now: all.filter((b) => b.kind === k && b.day >= mo + "-01" && b.day <= todayKey).length, was: all.filter((b) => b.kind === k && b.day >= lastStart && b.day <= lastTo).length }))
+      .filter((x) => x.now || x.was).map((x) => ({ ...x, lastTo }));
+  }
+  function renderTs10Kinds() {
+    const xs = ts10Kinds(), show = xs.some((x) => x.was);
+    $("ts10KindHead").hidden = $("ts10Kind").hidden = !show;
+    if (show) setChildren($("ts10Kind"), xs.map((x) => el("li", { class: "ts6-row" }, el("span", { class: "dot blk", style: `--k: ${tsumiInk(x.k)}` }),
+      el("span", { class: "ts6-name" }, ts7Label(x.k), el("small", {}, `先月の同じころ ${fmtN(x.was)} こ・${ts10Diff(x.now, x.was, "先月")}`)), el("span", { class: "ts6-val" }, `${fmtN(x.now)} こ`))));
+  }
+
+  // 8 週のランキング: the weeks (from the calendar's first day) with the most blocks, five (equal ones, the earlier first),
+  // this week marked, and its place when it isn't among them; pressed, the week's first block on the stairs
+  function ts10Weeks() {
+    const per = new Map(), first = new Map();
+    for (const b of tsumiList()) { const w = tsWeekFrom(b.day); per.set(w, (per.get(w) || 0) + 1); if (!first.has(w) || b.day < first.get(w)) first.set(w, b.day); }
+    return [...per].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([w, n], i) => ({ w, n, rank: i + 1, first: first.get(w) }));
+  }
+  function renderTs10Weeks() {
+    const xs = ts10Weeks(), now = tsWeekFrom(todayKey), me = xs.find((x) => x.w === now), show = xs.length > 1;
+    $("ts10WeekHead").hidden = $("ts10Week").hidden = !show;
+    $("ts10WeekFoot").hidden = !show || !me || me.rank <= 5;
+    if (!show) return;
+    if (me && me.rank > 5) $("ts10WeekFoot").textContent = `今週は ${xs.length} 週のうち ${me.rank} 位・${fmtN(me.n)} こです。`;
+    setChildren($("ts10Week"), xs.slice(0, 5).map((x) => el("li", { class: "btn-row" }, el("button", { type: "button", class: "row-btn ts6-row" + (x.w === now ? " now" : ""), "aria-label": `${x.rank} 位、${fmtDayLong(x.w)}からの週${x.w === now ? "（今週）" : ""}、${x.n} こ`, onclick: () => tsGoDay(x.first) },
+      el("span", { class: "ts6-rank" }, `${x.rank}位`), el("span", { class: "ts6-name" }, `${shortDay(x.w)}〜${shortDay(addDays(x.w, 6))}${x.w === now ? "（今週）" : ""}`), el("span", { class: "ts6-val" }, `${fmtN(x.n)} こ`), icon("next", 16)))));
+  }
+
+  // 9 1年前のきょうのブロック: every block of this day a year ago, two years ago… (to 5), each a press away on the stairs
+  function ts10YearsAgo() {
+    const out = [];
+    for (let y = 1; y <= 5; y++) { const d = addMonthsDay(todayKey, -12 * y), bs = tsumiList().filter((b) => b.day === d).sort((a, b) => a.t - b.t); if (bs.length) out.push({ y, d, bs }); }
+    return out;
+  }
+  function renderTs10Ago() {
+    const xs = ts10YearsAgo();
+    $("ts10AgoHead").hidden = $("ts10Ago").hidden = !xs.length;
+    setChildren($("ts10Ago"), xs.flatMap((x) => [el("li", { class: "dayhead" }, `${x.y}年前・${fmtDayLong(x.d)}（${fmtN(x.bs.length)} こ）`), ...x.bs.map((b) => ts9BlockRow(b, b.text, ts6TimeOf(b) || ""))]));
+  }
+
+  // 10 きょうの目標の達成記録: with きょうの目標 set, the days its number was reached (as it is now) in the last 30, the
+  // days on end now (to today when reached, else to yesterday) and the longest run in the last 365
+  function ts10Goal() {
+    const g = tsDayGoal();
+    if (!g) return null;
+    const per = ts7PerDay(), ok = (d) => (per.get(d) || 0) >= g;
+    let n30 = 0;
+    for (let i = 0; i < 30; i++) if (ok(addDays(todayKey, -i))) n30++;
+    let run = 0;
+    for (let d = ok(todayKey) ? todayKey : addDays(todayKey, -1); ok(d); d = addDays(d, -1)) run++;
+    let best = 0, cur = 0;
+    for (let i = 364; i >= 0; i--) { cur = ok(addDays(todayKey, -i)) ? cur + 1 : 0; best = Math.max(best, cur); }
+    return { g, n30, run, best };
+  }
+  function renderTs10Goal() {
+    const x = ts10Goal();
+    $("ts10Goal").hidden = !x;
+    if (x) setChildren($("ts10Goal"), el("p", {}, `この30日で `, el("b", {}, String(x.n30)), ` 日、1日 ${fmtN(x.g)} こに届きました`),
+      el("p", { class: "sub" }, `いま ${fmtN(x.run)} 日続けて届いています・この1年でいちばん長く続いたのは ${fmtN(x.best)} 日（いまの目標の数で数えます）`));
+  }
+
+  function renderTsumiGear10() { renderTs10Hours(); renderTs10Plans(); renderTs10New(); renderTs10Same(); renderTs10Rest(); renderTs10Kinds(); renderTs10Weeks(); renderTs10Ago(); renderTs10Goal(); }
+  function renderTsumiFoot10() { renderTs10Pace(); }
 
   // ---------- ToDo その2 ①〜⑩ (the user's calls, 2026-11-11): the morning's ToDos as one notification (①), 紙ふぶき once
   // what was due by today is all done (②), an order of one's own (③), 勉強 (④) and 家計簿 (⑤) joined to a ToDo, 返事待ち
