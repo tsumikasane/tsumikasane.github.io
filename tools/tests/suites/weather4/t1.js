@@ -27,7 +27,7 @@ const redraw = async (p) => { await W(p, "redraw"); await p.waitForTimeout(200);
   const b = await chromium.launch();
   // (two days of 暑かった kept already: 2° lighter)
   let p = await open(b, "2026-11-14T10:00:00+09:00", { settings: [{ id: "wxWearFb", list: [{ d: "2026-11-12", v: 1 }, { d: "2026-11-13", v: 1 }], updatedAt: 1 }] });
-  ok(p.calls.some((u) => u.includes("hourly=") && u.includes("uv_index&")), "⑥ the forecast asks for UV by the hour", p.calls[0]);
+  ok(p.calls.some((u) => /hourly=[^&]*uv_index/.test(u)), "⑥ the forecast asks for UV by the hour", p.calls[0]);
 
   // ① the normal and last year's
   ok(p.calls.some((u) => u.includes("archive-api") && u.includes("start_date=2016-11-06") && u.includes("end_date=2025-12-04")), "① the archive asked once for the 10 years", p.calls.filter((u) => u.includes("archive")));
