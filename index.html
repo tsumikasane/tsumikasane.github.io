@@ -3535,6 +3535,28 @@ ul.td10-reps > li .body, ul.td10-bells > li { min-width: 0; }
 .td11-switches input.switch::before { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #ffffff; box-shadow: 0 3px 8px rgba(0, 0, 0, .15), 0 1px 1px rgba(0, 0, 0, .16); transition: transform .2s; }
 .td11-switches input.switch:checked { background: var(--accent-fill); }
 .td11-switches input.switch:checked::before { transform: translateX(20px); }
+/* ToDo その21 ①〜⑩ (2026-11-15): ② the guide's field; ③ the turns to come; ④ a list's お知らせ stopped; ⑥ the budget;
+   ⑧ a ToDo's story; ⑨ the faces; ⑩ the week's goal */
+.td21-guide-find { margin: 0 0 8px; }
+.td-note.td21-turns { grid-column: 1 / -1; color: var(--muted); } /* (in .form-rows, display: contents, where .full does nothing) */
+.td21-mute { margin-inline-start: 4px; font-size: .85em; }
+.td21-budget { margin: 2px 0 0; font-size: var(--t-sub); color: var(--muted); }
+.td21-budget.over .td21-budget-left { color: var(--warn); font-weight: 600; }
+.td21-story-name { min-height: 32px; padding: 0; text-align: start; font-weight: 600; }
+ul.list.td21-story > li { display: grid; grid-template-columns: 8.6em minmax(0, 1fr); gap: 2px 10px; align-items: baseline; }
+.td21-story-at { font-size: var(--t-foot); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.td21-story-w { overflow-wrap: anywhere; }
+.td21-moods { display: flex; gap: 8px; padding: 6px 12px 10px; justify-content: center; }
+.td9-ask-card .td21-moods, #td9AskCard .td21-moods { justify-content: flex-start; padding: 2px 0 4px; }
+.td21-mood { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 12px; background: var(--fill); font-size: 22px; line-height: 1; cursor: pointer; }
+.td21-mood[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); box-shadow: inset 0 0 0 2px var(--accent); }
+.td21-week { display: grid; gap: 6px; }
+.td21-week + *, * + .td21-week { margin-top: 6px; }
+.td21-week-head { display: flex; align-items: baseline; justify-content: space-between; font-weight: 600; }
+.td21-week-bar { display: block; flex: none; height: 6px; }
+.td21-week-bar i { background: var(--c-todo); }
+.td21-steps-note { color: var(--accent); }
+
 /* ToDo その20 ①〜⑩ (2026-11-15): ① 次に会う日 on a row and by a name; ② the ways of looking kept; ③ where the time
    went; ⑤ 今月やる; ⑥ the tags; ⑦ うながした */
 .td20-meet, .td20-month { color: var(--accent); }
@@ -11408,6 +11430,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       item("できることの一覧", () => openTdPanel("guide9", false)), // (その9 ③)
       td10MoreItems(item), // (その10 ④ 繰り返しのToDo, ⑤ これから届くお知らせ)
       todoEleven ? td11MoreItems(item) : null, // (その11 ⑨ さっきの操作)
+      todoTwentyOne ? td21MoreItems(item) : null, // (その21 ④ お知らせを止める, ⑥ 予算, ⑤ 古い完了)
       todoTwenty ? td20MoreItems(item) : null, // (その20 ⑤ 今月やる, ③ 時間の使いかた, ⑥ タグ, ② 探し方)
       todoNineteen ? td19MoreItems(item) : null, // (その19 ② バー, ③ お金, ④ ひとこと, ⑨ まとめて休む, ⑤ 絵文字)
       todoEighteen ? td18MoreItems(item) : null, // (その18 ② 次のサブタスク, ⑧ 人ごと, ⑨ 完了カレンダー, ⑥ 写真, ④ コンパクト, ③ 毎朝リセット)
@@ -11791,6 +11814,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       todoEighteen ? td18HoldItems(t, item) : null, // (その18 ① はかる)
       todoNineteen ? td19HoldItems(t, item) : null, // (その19 ① 予定のあと, ⑩ 毎日知らせる, ⑧ いっしょに)
       todoTwenty ? td20HoldItems(t, item) : null, // (その20 ⑤ 今月やる, ④ サブタスクにする, ⑦ うながす)
+      todoTwentyOne ? td21HoldItems(t, item) : null, // (その21 ⑧ 歩み, ⑨ 気分)
       t.done ? null : item("このあとにやるToDoを追加", (byKey) => tdAddAfter(t, byKey)), // (その3 ⑦)
       t.done ? null : item("やめる（削除しないで残す）", () => tdCancel(t)), // (その3 ⑤)
       item("複製", (byKey) => { recReturnId = t.id; fillTodoCopy(t); openNewTodo(byKey, "rec"); }),
@@ -23543,7 +23567,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月15日 13:14"; // ca2f0c9c (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月15日 13:17"; // 8a623bfd (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -46719,7 +46743,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("div", { class: "td14-wk", "aria-hidden": "true" }, Array.from({ length: 7 }, (_, i) => el("span", {}, WD[(ws + i) % 7]))),
       el("div", { class: "td18-grid" }, cells)),
       td18Day ? [el("h3", { class: "group-head" }, `${fmtDayLong(td18Day)}に終えたToDo（${picked.length} 件）`),
-        picked.length ? el("ul", { class: "list card td18-day" }, picked.map((t) => el("li", {}, el("span", { class: "body" }, el("button", { type: "button", class: "text row-link", onclick: () => tdPanelEdit(t.id) }, clip(td14Name(t), 60))),
+        picked.length ? el("ul", { class: "list card td18-day" }, picked.map((t) => el("li", {}, el("span", { class: "body" }, el("button", { type: "button", class: "text row-link", onclick: () => tdPanelEdit(t.id) }, clip(td14Name(t), 60), todoTwentyOne && td21Mood(t) ? ` ${td21Mood(t)}` : "")), /* (その21 ⑨) */
           el("span", { class: "sub" }, hm(t))))) : el("p", { class: "group-foot" }, "この日に終えたToDoはありません。")]
         : el("p", { class: "group-foot" }, "日を押すと、その日に終えたToDoが出ます。"));
   }
@@ -46915,7 +46939,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const by = new Map();
     for (const t of xs) { const d = doneDay(t) || "", k = d ? d.slice(0, 7) : ""; if (!by.has(k)) by.set(k, []); by.get(k).push(t); }
     setChildren(list, xs.length ? [...by].flatMap(([k, ys]) => [el("h3", { class: "group-head" }, k ? `${Number(k.slice(0, 4)) === Number(todayKey.slice(0, 4)) ? "" : k.slice(0, 4) + "年"}${Number(k.slice(5))}月（${ys.length}）` : "日付なし"),
-      el("ul", { class: "list card td19-notes" }, ys.map((t) => el("li", {}, el("span", { class: "body" }, el("button", { type: "button", class: "text row-link td19-note", onclick: () => tdPanelEdit(t.id) }, `「${t.doneNote.trim()}」`),
+      el("ul", { class: "list card td19-notes" }, ys.map((t) => el("li", {}, el("span", { class: "body" }, el("button", { type: "button", class: "text row-link td19-note", onclick: () => tdPanelEdit(t.id) }, todoTwentyOne && td21Mood(t) ? `${td21Mood(t)} ` : "", `「${t.doneNote.trim()}」`), /* (その21 ⑨ its face) */
         el("span", { class: "sub" }, [doneDay(t) ? fmtDay(doneDay(t)) : "", clip(td14Name(t), 30)].filter(Boolean).join("・"))))))])
       : el("p", { class: "group-foot" }, words.length ? "合うひとことはありません。" : "ひとことはまだありません。"));
   }
@@ -47497,6 +47521,319 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   td20InitSettings();
   todoTwenty = true;
+
+  // ---------- ToDo その21 ①〜⑩ (the user's calls, 2026-11-15): the screen kept on while focusing (①), the guide looked
+  // through (②), a repeat's turns to come (③), a list's お知らせ stopped (④), old done ones tidied away (⑤), a 買い物リスト's
+  // budget (⑥), the steps of the last of a name (⑦), a ToDo's story (⑧), how it felt once done (⑨), and a week's goal
+  // (⑩). Function declarations and var, as the page may draw before this runs ----------
+  var todoTwentyOne = false;
+  var td21Wake = null, td21WakeAsk = false, td21GuideQ = "", td21GuideFocus = false, td21LogId = "";
+  // kept with the account (td21): ⑩ how many to finish a week (0: none)
+  const TD21_WEEK = [10, 15, 20, 30, 40];
+  function td21Set() { const v = settings.get("td21") || {}; return { week: TD21_WEEK.includes(v.week) ? v.week : 0 }; }
+  function td21Put(patch) { act(() => settings.set("td21", { ...td21Set(), ...patch, updatedAt: Date.now() })); }
+
+  // ① 集中しているあいだは画面を消さない (this device's; on at first): while the focus timer counts down 集中 or 休憩, or a
+  // ToDo is on its own screen (その7 ⑥), the screen stays on (Screen Wake Lock), let go as it stops or the app goes away
+  const TD21_WAKE_KEY = LS_PREFIX + "td21Wake";
+  function td21WakeOn() { return lsJson(TD21_WAKE_KEY) !== false; }
+  function td21WakeWant() { const v = focusNow(); return !!todoTwentyOne && td21WakeOn() && document.visibilityState === "visible" && ((!!v && num(v.end) > 0) || (todoSeven && !!td7FocusId)); }
+  async function td21WakeSync() {
+    const want = td21WakeWant();
+    if (want && !td21Wake && !td21WakeAsk && navigator.wakeLock?.request) {
+      td21WakeAsk = true;
+      try { td21Wake = await navigator.wakeLock.request("screen"); td21Wake.addEventListener?.("release", () => { td21Wake = null; }); } catch { td21Wake = null; }
+      td21WakeAsk = false;
+      if (td21Wake && !td21WakeWant()) td21WakeSync();
+    } else if (!want && td21Wake) {
+      const w = td21Wake;
+      td21Wake = null;
+      try { await w.release(); } catch {}
+    }
+  }
+  const td21TickBase = focusTick;
+  focusTick = function () { const r = td21TickBase(); td21WakeSync(); return r; };
+  document.addEventListener("visibilitychange", () => { if (todoTwentyOne) td21WakeSync(); });
+  setInterval(() => { if (todoTwentyOne && !!td21Wake !== td21WakeWant()) td21WakeSync(); }, 5000); // (その7 ⑥'s screen opened and closed)
+
+  // ② できることを探す: a field over できることの一覧; the words typed keep the rows holding them (the name or where it is),
+  // and the headings over them
+  function td21GuideFilter() {
+    const body = $("tdPanelBody"), words = foldText(td21GuideQ).split(/\s+/).filter(Boolean);
+    let n = 0;
+    for (const ul of body.querySelectorAll("ul.td9-guide")) {
+      let any = false;
+      for (const li of ul.children) { const hit = !words.length || words.every((w) => foldText(li.textContent).includes(w)); li.hidden = !hit; if (hit) { any = true; n++; } }
+      ul.hidden = !any;
+      if (ul.previousElementSibling?.matches("h3")) ul.previousElementSibling.hidden = !any;
+    }
+    const none = $("td21GuideNone");
+    if (none) none.hidden = !!n;
+  }
+  function td21GuideFind() {
+    const body = $("tdPanelBody");
+    if (!body || $("td21GuideFind")) return;
+    const input = el("input", { type: "search", id: "td21GuideFind", placeholder: "できることを探す（例：お知らせ）", "aria-label": "できることを探す", autocomplete: "off", value: td21GuideQ,
+      oninput: (ev) => { td21GuideQ = ev.target.value; td21GuideFilter(); }, onfocus: () => { td21GuideFocus = true; }, onblur: () => { td21GuideFocus = false; } });
+    body.prepend(el("div", { class: "rec-search td21-guide-find" }, icon("search", 18), input));
+    body.append(el("p", { class: "group-foot", id: "td21GuideNone", hidden: true }, "見つかりません。ほかの言葉で探してください。"));
+    td21GuideFilter();
+    if (td21GuideFocus) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+  }
+
+  // ③ これからの回: in a repeat's sheet (not one counted from the day it is done), under its repeat, its next five turns as
+  // kept (祝日はとばす and いつまで too); its repeat or 期限 changed there, it says to save first
+  function td21Turns(t, n = 5) {
+    const out = [], max = num(t.repeatLeft) >= 1 ? Math.min(n, Math.round(num(t.repeatLeft))) : n; // (repeatLeft: the turns left, this one counted)
+    let x = { ...t };
+    while (out.length < max && isDay(x.due || "") && !(t.repeatUntil && x.due > t.repeatUntil)) {
+      out.push(x.due);
+      const d = nextDue(x);
+      if (!d || d <= x.due) break;
+      x = { ...x, due: d, repeatFrom: turnBase(x, d) };
+    }
+    return out;
+  }
+  function td21TurnsRow(t) {
+    if (!t.repeat || t.done || !isDay(t.due || "") || afterDone(t.repeat)) return null;
+    const ds = td21Turns(t);
+    if (!ds.length) return null;
+    return el("p", { class: "full td-note td21-turns", id: "reTurns21" }, el("span", { class: "phrase" }, "これからの回："), ds.map((d, i) => el("span", { class: "phrase" }, `${i ? "・" : ""}${fmtDay(d)}`)));
+  }
+
+  // ④ リストのお知らせを止める (a list's その他; mute on the list, so on every device): the お知らせ of its ToDos each (お知らせ,
+  // 前もって, 再通知, 期限まで毎日, …) not sent until 再開する; a mark on its tab. The morning's and the evening's, of many,
+  // stay as they are
+  function td21Muted(t) { const l = t && todoListOf(t); return !!l && !!l.mute; }
+  function td21MuteToggle(l) {
+    if (!l) return;
+    const on = !l.mute;
+    act(() => todoLists.update(l.id, { mute: on || undefined }));
+    flash(on ? `「${clip(l.name, 16)}」のToDoのお知らせを止めました（再開するまで）` : `「${clip(l.name, 16)}」のToDoのお知らせを再開しました`, () => act(() => todoLists.update(l.id, { mute: on ? undefined : true })));
+  }
+  function td21Unmuted(list) {
+    return list.filter((a) => { const m = /^\.\/#todo:([^/?#]+)$/.exec(String(a.url || "")); return !m || !td21Muted(todos.get(m[1])); });
+  }
+
+  // ⑤ 古い完了を片づける (その他, while there are some): the ToDos done (or やめた) before 3 months, 6 months or a year ago
+  // deleted at once (to 最近削除, 元に戻す), a checklist's and a 買い物リスト's too; how many said for each
+  function td21Old(months) {
+    const d = new Date(parseYmd(todayKey)); d.setMonth(d.getMonth() - months);
+    const cut = d.getTime();
+    return todos.items.filter((t) => t.done && num(t.doneAt) > 0 && num(t.doneAt) < cut);
+  }
+  function td21TidyAsk() {
+    const xs = [[3, "3か月"], [6, "半年"], [12, "1年"]].map(([m, w]) => [m, w, td21Old(m)]).filter(([, , l]) => l.length);
+    if (!xs.length) { flash("3か月より前に終えたToDoはありません"); return; }
+    tdAsk("前に終えたToDoを、最近削除に移します。完了の記録（ふりかえりなど）からも消えます", xs.map(([m, w, l]) => [`${w}より前に終えたToDo（${l.length} 件）を削除`, () => removeWithUndo(todos, td21Old(m).map((t) => t.id), `${w}より前に終えたToDo ${l.length} 件を削除しました`), true]));
+  }
+
+  // ⑥ 買い物リストの予算 (a 買い物リスト's その他; budget on the list): in its card, the budget against what is in the basket
+  // and the prices of those still to buy, and what is left (red over it)
+  function td21BudgetAsk(l) {
+    const input = el("input", { type: "number", inputmode: "numeric", min: 1, max: 9999999, value: num(l.budget) > 0 ? String(l.budget) : "", placeholder: "例：3000", "aria-label": "予算（円）" });
+    const go = () => { const v = Math.round(Number(input.value)); todoMenu.close(); td21SetBudget(l.id, v >= 1 && v <= 9999999 ? v : 0); };
+    input.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing) { ev.preventDefault(); go(); } });
+    tdAsk(`「${clip(l.name, 16)}」の予算（円）`, [el("div", { class: "ask-field" }, input, el("button", { type: "button", class: "ask-go", onclick: go }, "決める")), num(l.budget) > 0 ? ["予算をはずす", () => td21SetBudget(l.id, 0), true] : null]);
+  }
+  function td21SetBudget(id, v) {
+    const l = todoLists.get(id);
+    if (!l) return;
+    const was = l.budget;
+    act(() => todoLists.update(id, { budget: v || undefined }));
+    flash(v ? `「${clip(l.name, 16)}」の予算を ${fmtYen(v)}にしました` : `「${clip(l.name, 16)}」の予算をはずしました`, () => act(() => todoLists.update(id, { budget: was })));
+  }
+  function td21BudgetLine(id) {
+    const l = todoLists.get(id), b = num(l?.budget);
+    if (!(b > 0)) return null;
+    const basket = sum(td4Basket(id), td4Price), rest = sum(todos.items.filter((t) => t.listId === id && !t.done && typeof t.text === "string"), td4Price), left = b - basket - rest;
+    return el("p", { class: "td21-budget" + (left < 0 ? " over" : ""), id: "td21Budget" }, el("span", { class: "phrase" }, keepUnits(`予算 ${fmtYen(b)}`)),
+      el("span", { class: "phrase" }, keepUnits(`・カゴ ${fmtYen(basket)}・まだの分 ${fmtYen(rest)}`)), el("span", { class: "phrase td21-budget-left" }, keepUnits(left >= 0 ? `・のこり ${fmtYen(left)}` : `・${fmtYen(-left)} こえています`)));
+  }
+  const td21ShopBase = td4ShopCard;
+  td4ShopCard = function () {
+    const r = td21ShopBase();
+    const box = $("td4ShopCard");
+    if (todoTwentyOne && box && !box.hidden && todoTab) { $("td21Budget")?.remove(); const line = td21BudgetLine(todoTab); if (line) (box.querySelector(".td-fc-head") || box.firstChild)?.after(line); }
+    return r;
+  };
+
+  // ⑦ 前回のサブタスクも: a name picked from 前に使った (その4 ⑦) brings that one's steps too, all to do, while the new
+  // ToDo has none of its own; said under the name
+  const td21SugBase = td4ApplySug;
+  td4ApplySug = function (t) {
+    const r = td21SugBase(t);
+    const fresh = todoTwentyOne ? tdFreshSteps(t.steps) : null;
+    $("td21StepsNote")?.remove();
+    if (fresh && !tdNewSteps.read().length) {
+      tdNewSteps.fill(fresh);
+      $("todoText").closest("form")?.querySelector("#todoSuggest")?.after(el("p", { class: "full td-note td21-steps-note", id: "td21StepsNote" }, `前回のサブタスク ${fresh.length} 件も入れました（サブタスクの欄）`));
+    }
+    return r;
+  };
+  document.addEventListener("submit", (ev) => { if (ev.target?.id === "todoForm") setTimeout(() => $("td21StepsNote")?.remove(), 0); }, true);
+
+  // ⑧ このToDoの歩み (a row's menu): what happened to it, in order: added, each 期限 moved, 経過メモ, 返事待ち and うながした,
+  // いつかやる, done or やめた (with its ひとこと and ⑨'s face), and a repeat's turns before; the time focused in all
+  function td21Story(t) {
+    const out = [], put = (at, w, dayOnly = false) => { if (num(at) > 0) out.push([num(at), w, dayOnly]); }, day = (d) => (isDay(d || "") ? fmtDay(d) : "なし");
+    put(t.createdAt, "追加しました");
+    for (const e of Array.isArray(t.dueLog) ? t.dueLog : []) if (e && num(e.at) > 0) put(e.at, !e.to ? "期限をはずしました" : !e.from ? `期限を ${day(e.to)} にしました` : `期限を ${day(e.from)} から ${day(e.to)} へ`);
+    for (const e of tdLogOf(t)) put(e.at, `経過メモ「${clip(oneLine(e.text), 40)}」`);
+    if (t.wait && isDay(t.wait.since || "")) put(parseYmd(t.wait.since).getTime() + 1, `返事待ちに${t.wait.who ? `（${clip(oneLine(t.wait.who), 12)}）` : ""}`, true);
+    if (t.wait && isDay(t.wait.nudge || "")) put(parseYmd(t.wait.nudge).getTime() + 2, "返事をうながしました", true);
+    if (num(t.someAt) > 0 && t.someday) put(t.someAt, "いつかやるにしました");
+    for (const d of t.repeat || t.next || Array.isArray(t.history) ? turnsBefore(t) : []) put(parseYmd(d).getTime() + 3, "この繰り返しの前の回を完了", true);
+    if (t.done) put(t.doneAt, t.cancelled ? "やめました" : `完了しました${td21Mood(t) ? " " + td21Mood(t) : ""}${t.doneNote ? `「${clip(oneLine(t.doneNote), 40)}」` : ""}`);
+    return out.sort((a, b) => a[0] - b[0]);
+  }
+  function renderTd21Story() {
+    const t = todos.get(td21LogId);
+    if (!t) { setChildren($("tdPanelBody"), el("p", { class: "group-foot td-panel-lead" }, "このToDoはありません。")); return; }
+    const xs = td21Story(t), moved = Math.round(num(t.moved)), focus = Math.round(num(t.focus));
+    const hm = (at, dayOnly) => { const d = new Date(at); return dayOnly ? fmtDay(ymd(d)) : `${fmtDay(ymd(d))} ${d.getHours()}:${pad(d.getMinutes())}`; };
+    setChildren($("tdPanelBody"), el("p", { class: "group-foot td-panel-lead" }, el("button", { type: "button", class: "link-btn td21-story-name", onclick: () => tdPanelEdit(t.id) }, clip(td14Name(t), 40))),
+      [moved ? `先送り ${moved} 回` : "", focus ? keepUnits(`集中した時間 ${durText(focus)}`) : ""].some(Boolean) ? el("p", { class: "group-foot" }, [moved ? `先送り ${moved} 回` : "", focus ? keepUnits(`集中した時間 ${durText(focus)}`) : ""].filter(Boolean).join("・")) : null,
+      xs.length ? el("ul", { class: "list card td21-story" }, xs.map(([at, w, dayOnly]) => el("li", {}, el("span", { class: "td21-story-at" }, hm(at, dayOnly)), el("span", { class: "td21-story-w" }, w)))) : el("p", { class: "group-foot" }, "まだ記録がありません。"));
+  }
+
+  // ⑨ 終えたときの気分 (mood 1〜4): a done one's menu, and under 「〇〇はどうだった？」 (その9 ⑧); said in その19's ひとことの
+  // 一覧 and その18's 完了カレンダー, and in this story
+  const TD21_MOODS = [[1, "😄", "よかった"], [2, "🙂", "まあまあ"], [3, "😐", "ふつう"], [4, "😣", "たいへんだった"]];
+  function td21Mood(t) { const m = TD21_MOODS.find(([k]) => k === t?.mood); return m ? m[1] : ""; }
+  function td21SetMood(id, k) {
+    const x = todos.get(id);
+    if (!x || !x.done) return;
+    const was = x.mood, next = x.mood === k ? undefined : k, m = TD21_MOODS.find(([v]) => v === next);
+    act(() => todos.update(id, { mood: next }));
+    flash(m ? `「${clip(oneLine(x.text), 20)}」の気分を ${m[1]}（${m[2]}）にしました` : "気分をはずしました", () => act(() => todos.update(id, { mood: was })));
+  }
+  function td21MoodButtons(t, after) {
+    return el("div", { class: "td21-moods", role: "group", "aria-label": "終えたときの気分" }, TD21_MOODS.map(([k, e, w]) => el("button", { type: "button", class: "td21-mood", "aria-pressed": String(t.mood === k), "aria-label": w,
+      onclick: (ev) => { if (after && !todoMenuDown && ev.detail !== 0) return; after?.(); td21SetMood(t.id, k); } }, e)));
+  }
+  function td21MoodAsk(t) { tdAsk(`「${clip(oneLine(t.text), 24)}」を終えたときの気分`, [td21MoodButtons(t, () => todoMenu.close()), t.mood ? ["気分をはずす", () => td21SetMood(t.id, t.mood), true] : null]); }
+  const td21AskBase = td9AskCard;
+  td9AskCard = function () {
+    const r = td21AskBase(), box = $("td9AskCard"), t = box && !box.hidden && box.dataset.for ? todos.get(box.dataset.for) : null;
+    if (todoTwentyOne && t && !box.querySelector(".td21-moods")) box.querySelector(".td9-ask-row")?.after(td21MoodButtons(t, null));
+    else if (todoTwentyOne && t) for (const b of box.querySelectorAll(".td21-mood")) b.setAttribute("aria-pressed", String(TD21_MOODS.find(([, e]) => e === b.textContent)?.[0] === t.mood));
+    return r;
+  };
+
+  // ⑩ 1週間の目標 (編集; none at first): how many to finish in a week (as 1日の目標 counts), with this week's on 1日の目標's
+  // card (the card for it alone when there is no day's); met, 紙ふぶき once that week
+  const TD21_WEEK_HIT = LS_PREFIX + "td21WeekHit";
+  function td21WeekStat() {
+    const n = td21Set().week, wk = td14Week(), got = todos.items.filter((t) => t.done && td8Counts(t) && doneDay(t) >= wk.from && doneDay(t) <= wk.to).length;
+    return { n, got, met: !!n && got >= n, from: wk.from };
+  }
+  function td21WeekLine(s) {
+    const pct = Math.min(100, Math.round((s.got / s.n) * 100));
+    return el("div", { class: "td21-week", id: "td21Week" }, el("div", { class: "td21-week-head" }, el("span", {}, "今週の目標"), el("span", { class: "td-fc-n" }, `${s.got} / ${s.n}`)),
+      el("span", { class: "bar-track td21-week-bar", role: "img", "aria-label": `今週 ${s.n} 件のうち ${s.got} 件完了` }, el("i", { style: `width:${pct}%` })),
+      el("p", { class: "td-fc-text" }, s.met ? "今週の目標を達成しました！" : keepUnits(`今週はあと ${s.n - s.got} 件です。`)));
+  }
+  const td21GoalBase = td8GoalCard;
+  td8GoalCard = function () {
+    const r = td21GoalBase(), box = $("td8GoalCard");
+    if (!todoTwentyOne || !box) return r;
+    $("td21Week")?.remove();
+    const s = td21WeekStat();
+    if (!s.n || todoTab || td4Looking()) return r;
+    if (box.hidden) { box.replaceChildren(); box.classList.remove("met"); box.hidden = false; }
+    box.append(td21WeekLine(s));
+    return r;
+  };
+  function td21WeekCheck() {
+    const s = td21WeekStat();
+    if (!s.met) return;
+    try { if (localStorage.getItem(TD21_WEEK_HIT) === s.from) return; localStorage.setItem(TD21_WEEK_HIT, s.from); } catch { return; }
+    setTimeout(celebrate, 350);
+    flash(`今週の目標 ${s.n} 件を達成しました！`);
+  }
+  const td21ToggleBase = toggleTodo;
+  toggleTodo = function (t) { const done = !!t && !t.done, r = td21ToggleBase(t); if (todoTwentyOne && done) setTimeout(td21WeekCheck, 500); return r; };
+
+  // ToDo's 編集: ① this device's, ⑩
+  function td21InitSettings() {
+    const foot = $("td20BusyFoot");
+    if (!foot) return;
+    foot.after(el("h3", { class: "group-head" }, "1週間の目標"),
+      el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, el("label", { class: "flabel", for: "td21Week" + "Sel" }, "1週間に"),
+        el("div", { class: "ffield" }, el("select", { id: "td21WeekSel", onchange: (ev) => td21Put({ week: Number(ev.target.value) || 0 }) }, [[0, "決めない"], ...TD21_WEEK.map((n) => [n, `${n} 件`])].map(([v, w]) => el("option", { value: String(v) }, w))))),
+      el("p", { class: "group-foot" }, "1週間に終えるToDoの数です（1日の目標と同じ数え方）。「すべて」の上の目標のカードに出ます。"),
+      el("h3", { class: "group-head" }, "集中しているあいだ"),
+      el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, el("label", { class: "flabel", for: "td21WakeOn" }, "画面を消さない"),
+        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "td21WakeOn", class: "switch", role: "switch", onchange: (ev) => { lsJsonPut(TD21_WAKE_KEY, ev.target.checked ? null : false); td21WakeSync(); } }))),
+      el("p", { class: "group-foot" }, "集中タイマーが動いているあいだと、1件に集中する画面のあいだ、画面が暗くならないようにします（この端末だけ）。"));
+    renderTd21Settings();
+  }
+  function renderTd21Settings() {
+    const s = $("td21WeekSel"), w = $("td21WakeOn");
+    if (s && document.activeElement !== s) s.value = String(td21Set().week);
+    if (w) w.checked = td21WakeOn();
+  }
+  const td21SettingsBase = renderTd11Settings;
+  renderTd11Settings = function () { td21SettingsBase(); if (todoTwentyOne) renderTd21Settings(); };
+
+  // the panels (②'s and ⑧'s), a row's menu, その他, the guide, ④ on the alarms and the tabs, ③ in the sheet
+  const td21PanelBase = renderTdPanel;
+  renderTdPanel = function () {
+    if (todoTwentyOne && sheetEl.open && tdPanel === "story21") { renderTd21Story(); return; }
+    td21PanelBase();
+    if (todoTwentyOne && sheetEl.open && tdPanel === "guide9") td21GuideFind();
+  };
+  const td21HeadBase = syncSheetHead;
+  syncSheetHead = function () { td21HeadBase(); if (todoTwentyOne && tdPanel === "story21" && sheetMode() === "tdpanel") $("sheetTitle").textContent = "このToDoの歩み"; };
+  function td21HoldItems(t, item) {
+    return [item("このToDoの歩み", () => { td21LogId = t.id; openTdPanel("story21", false); }),
+      t.done && !t.cancelled ? item(td21Mood(t) ? `終えたときの気分（${td21Mood(t)}）` : "終えたときの気分", () => td21MoodAsk(t)) : null];
+  }
+  function td21MoreItems(item) {
+    const l = todoTab ? todoLists.get(todoTab) : null, old = td21Old(3).length;
+    return [l ? item(l.mute ? `「${clip(l.name, 12)}」のお知らせを再開する` : `「${clip(l.name, 12)}」のお知らせを止める`, () => td21MuteToggle(todoLists.get(l.id))) : null,
+      l && todoFour && td4ShopOn(l.id) ? item(num(l.budget) > 0 ? `「${clip(l.name, 12)}」の予算（${fmtYen(l.budget)}）` : `「${clip(l.name, 12)}」の予算を決める`, () => td21BudgetAsk(todoLists.get(l.id))) : null,
+      old ? item(`古い完了を片づける（3か月より前 ${old} 件）`, () => td21TidyAsk()) : null];
+  }
+  const td21GuideBase = td9Guide;
+  td9Guide = function () {
+    const g = td21GuideBase();
+    if (!todoTwentyOne) return g;
+    const add = (head, rows) => { const x = g.find(([h]) => h === head); if (x) x[1].push(...rows); else g.push([head, rows]); };
+    add("期限とお知らせ", [["リストのお知らせを止める", "リストを開いて「その他」"], ["繰り返しのこれからの回", "繰り返しのToDoの画面。次の5回"]]);
+    add("きょうの計画", [["1週間の目標", "「編集」。目標のカードに今週の数"]]);
+    add("集中する", [["集中中は画面を消さない", "「編集」（この端末）。はじめはオン"]]);
+    add("整理する", [["古い完了を片づける", "「その他」。3か月・半年・1年より前"], ["前回のサブタスクも入れる", "新しいToDoの「前に使った」から選ぶと"], ["できることを探す", "この一覧の上の欄"]]);
+    add("ふりかえる", [["このToDoの歩み", "長押し。追加・期限の変更・経過メモ・完了を順に"], ["終えたときの気分", "完了したToDoの長押し。ひとことを聞くときにも"]]);
+    add("ほかとつなぐ", [["買い物リストの予算", "買い物リストを開いて「その他」"]]);
+    return g;
+  };
+  const td21AlarmBase = alarmTimes;
+  alarmTimes = function (now = Date.now()) { const out = td21AlarmBase(now); return todoTwentyOne ? td21Unmuted(out) : out; };
+  const td21TabsBase = renderTodoTabs;
+  renderTodoTabs = function () {
+    td21TabsBase();
+    if (!todoTwentyOne) return;
+    for (const b of $("todoTabs")?.querySelectorAll("[data-list]") || []) { const l = todoLists.get(b.dataset.list), name = b.querySelector(".td-tab-name"); if (l?.mute && name && !name.querySelector(".td21-mute")) name.append(el("span", { class: "td21-mute", role: "img", "aria-label": "お知らせを止めています" }, "🔕")); }
+  };
+  // ③ in a repeat's sheet, under its repeat; said to be saved first once its repeat or 期限 is changed there
+  function td21InitSheet() {
+    new MutationObserver(() => {
+      const rep = $("reRepeat");
+      if (!todoTwentyOne || recEdit?.kind !== "todo" || recEdit.fresh || !rep || rep.dataset.td21) return;
+      rep.dataset.td21 = "1";
+      const t = todos.get(recEdit.id), p = t ? td21TurnsRow(t) : null;
+      if (!p) return;
+      (rep.closest(".ffield") || rep).after(p);
+      const stale = () => { p.replaceChildren("これからの回は、保存すると出ます。"); };
+      rep.addEventListener("change", stale);
+      $("reDue")?.addEventListener("change", stale);
+    }).observe($("recForm"), { childList: true });
+  }
+  td21InitSheet();
+  td21InitSettings();
+  todoTwentyOne = true;
 
   // ---------- 天気 その1 ①〜⑩ (the user's calls, 2026-11-13): the tile opens 天気's own page (①) with the hours (②), the
   // day in detail (③), what to wear (④), when rain comes and the rain clouds (⑤), sunrise and sunset (⑥), UV (⑦), a word
