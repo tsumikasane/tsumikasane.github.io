@@ -50,7 +50,8 @@ const redraw = async (p) => { await W(p, "redraw"); await p.waitForTimeout(200);
   // ⑤ an hour pressed
   ok(await p.evaluate(() => document.getElementById("wx4HourBox").hidden), "⑤ no hour open at first");
   await p.click('.wx4-hb[data-t="2026-11-14T15:00"]'); await p.waitForTimeout(300);
-  ok((await txt(p, "#wx4HourBox")) === "きょう15時雨閉じる気温16°体感15°降水確率70%雨量2mm風北2m/s湿度65%雲の量50%気圧1015hPa紫外線1（弱い）" && (await p.getAttribute('.wx4-hb[data-t="2026-11-14T15:00"]', "aria-expanded")) === "true",
+  ok((await txt(p, "#wx4HourBox")).startsWith("きょう15時雨閉じる気温16°体感15°降水確率70%雨量2mm風北2m/s湿度65%雲の量50%気圧1015hPa紫外線1（弱い）") && // (その5 adds the same hour yesterday after it)
+    (await p.getAttribute('.wx4-hb[data-t="2026-11-14T15:00"]', "aria-expanded")) === "true",
     "⑤ 15時 in full", await txt(p, "#wx4HourBox"));
   await p.screenshot({ path: out + "/wx4-hour.png" });
   await p.click('.wx4-hb[data-t="2026-11-14T15:00"]'); await p.waitForTimeout(200);
