@@ -53,7 +53,7 @@ const download = async (p, click) => { const [d] = await Promise.all([p.waitForE
   for (const [d, m] of ev) { got += m; if (!day50 && got >= 3000) day50 = d; }
   const ms = await card(p, "milestone");
   const md = (d) => `${Number(d.slice(5, 7))}/${Number(d.slice(8))}`;
-  ok(ms.includes(`${md(day50)}`) && ms.includes("勉強 50 時間") && ms.includes("記録した日 30 日") && /記録した日 50 日まで あと 9 日/.test(ms), "⑤ reached (勉強 50 時間 on its day) and next (記録した日 50 日まで あと 9 日)", { day50, ms });
+  ok(ms.includes(`${md(day50)}`) && ms.includes("勉強 50 時間") && ms.includes("記録した日 30 日") && /記録した日 50 日まで このペースで \d+\/\d+ごろ あと 9 日/.test(ms), "⑤ reached (勉強 50 時間 on its day) and next (記録した日 50 日まで あと 9 日, with its pace: 記録 その6 ⑦)", { day50, ms });
   await p.locator('[data-card="milestone"] .link-btn.more').click(); await p.waitForTimeout(200);
   ok((await p.locator('[data-card="milestone"] .rec-rows').first().locator("li").count()) === 6 && (await card(p, "milestone")).includes("しまう"), "⑤ all of them at a press");
   // ⑥ the bests
