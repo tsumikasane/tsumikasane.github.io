@@ -58,7 +58,7 @@ const DATA = {
   await p.click("#rec3NumBtn"); await wait(p);
   ok(await p.isVisible("#rec3NumBox") && (await txt(p, "#rec3UnitLo")) === "kcal", "② the number's fields, in kcal");
   await p.fill("#rec3Lo", "600"); await wait(p);
-  ok((await txt(p, "#recListNote")) === "600 kcal以上の記録 5 件・5 日分・合計 3,650 kcal", "② 600 kcal and more", await txt(p, "#recListNote"));
+  ok((await txt(p, "#recListNote")) === "600 kcal以上の記録 5 件・5 日分・合計 3,650 kcal・平均 730 kcal", "② 600 kcal and more", await txt(p, "#recListNote"));
   await p.fill("#rec3Hi", "800"); await wait(p);
   ok((await txt(p, "#recListNote")).startsWith("600〜800 kcalの記録 4 件・4 日分"), "② from 600 to 800", await txt(p, "#recListNote"));
   await p.fill("#recSearch", "ラーメン"); await wait(p);

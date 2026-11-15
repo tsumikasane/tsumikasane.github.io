@@ -67,9 +67,9 @@ const DATA = {
 
   // ① ② ③ 家計簿's list: 「病院」, the days between, a span, the table
   await p.locator('#sumCards .sum-open[data-kind="money"]').click(); await wait(p, 800);
-  ok(await p.isHidden("#rec4Gaps") && await p.isHidden("#rec4CsvBtn") && await p.isHidden("#rec4SpanBox") && (await txt(p, "#rec4SpanBtn")) === "期間でしぼる", "whole: no days between, no table, the span's field put away");
+  ok(await p.isHidden("#rec4Gaps") && await p.isHidden("#rec4CsvBtn") && await p.isHidden("#rec4SpanBox") && (await txt(p, "#rec4SpanBtn")) === "期間・曜日でしぼる", "whole: no days between, no table, the span's field put away");
   await p.fill("#recSearch", "病院"); await wait(p, 400);
-  ok((await txt(p, "#recListNote")) === "「病院」の記録 3 件・3 日分・支出 6,500 円", "the words: 3", await txt(p, "#recListNote"));
+  ok((await txt(p, "#recListNote")) === "「病院」の記録 3 件・3 日分・支出 6,500 円・平均 2,167 円", "the words: 3", await txt(p, "#recListNote"));
   ok((await txt(p, "#rec4Gaps")) === "はじめて 2025年3月2日（日）・最後は 277 日前・平均 173 日ごと", "② the first, the last and the mean", await txt(p, "#rec4Gaps"));
   ok(JSON.stringify(await rows(p, "#recList li.dayhead .rec4-gap")) === JSON.stringify(["前回から 52 日", "前回から 293 日", "はじめて"]), "② each day's", await rows(p, "#recList li.dayhead .rec4-gap"));
   ok((await rows(p, "#recList mark.rec4-hit")).length === 3, "④ marked in the list too");
@@ -77,7 +77,7 @@ const DATA = {
   await p.click("#rec4SpanBtn"); await wait(p, 300);
   ok(await p.isVisible("#rec4SpanBox") && (await p.getAttribute("#rec4SpanBtn", "aria-expanded")) === "true", "① the span's fields");
   await p.fill("#rec4From", "2025-12-31"); await p.fill("#rec4To", "2025-01-01"); await p.dispatchEvent("#rec4To", "change"); await wait(p, 400);
-  ok((await txt(p, "#recListNote")) === "「病院」・2025/1/1〜2025/12/31の記録 2 件・2 日分・支出 5,000 円" && await p.inputValue("#rec4From") === "2025-01-01", "① 2025 only (picked the other way round)", await txt(p, "#recListNote"));
+  ok((await txt(p, "#recListNote")) === "「病院」・2025/1/1〜2025/12/31の記録 2 件・2 日分・支出 5,000 円・平均 2,500 円" && await p.inputValue("#rec4From") === "2025-01-01", "① 2025 only (picked the other way round)", await txt(p, "#recListNote"));
   ok((await txt(p, "#rec4Gaps")) === "最後は 329 日前・平均 293 日ごと" && JSON.stringify(await rows(p, "#recList li.dayhead .rec4-gap")) === JSON.stringify(["前回から 293 日"]), "② within the span (no はじめて)", { g: await txt(p, "#rec4Gaps"), r: await rows(p, "#recList li.dayhead .rec4-gap") });
   ok((await txt(p, "#rec4CsvBtn")) === "2 件を表にして書き出す", "③ two");
   const [dl] = await Promise.all([p.waitForEvent("download"), p.click("#rec4CsvBtn")]);

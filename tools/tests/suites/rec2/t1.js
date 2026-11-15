@@ -113,7 +113,7 @@ const DATA = {
   ds = await p.evaluate(() => [...document.querySelectorAll("#recList li[data-day]")].map((x) => x.dataset.day));
   ok(ds[0] === "2026-11-10", "⑦ back to newest first", ds);
   await p.fill("#recSearch", "ラーメン"); await wait(p);
-  ok((await txt(p, "#recListNote")) === "「ラーメン」の記録 2 件・2 日分・支出 1,630 円", "⑥ the money of what was found", await txt(p, "#recListNote"));
+  ok((await txt(p, "#recListNote")) === "「ラーメン」の記録 2 件・2 日分・支出 1,630 円・平均 815 円", "⑥ the money of what was found", await txt(p, "#recListNote"));
   await p.click("#recSearchClear"); await wait(p);
   await p.fill("#rec2Go", "2026-11-04"); await wait(p, 400);
   ok(await p.evaluate(() => document.querySelector("#recList li.rec2-lit")?.dataset.day) === "2026-11-05" && (await toast(p)).includes("近い11月5日（木）へ移りました"), "⑧ 11/4 (none): the nearest, 11/5, lit", await toast(p));
