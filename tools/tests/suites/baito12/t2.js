@@ -42,7 +42,7 @@ const shift = async (p, id) => (await ls(p, "shifts")).find((x) => x.id === id);
   const n1 = await shift(p, "n1");
   ok(n1.start === "17:00" && n1.end === "22:00" && n1.clocked === true && !(await setting(p, "bt2Clock")), "⑨ 退勤: " + JSON.stringify(n1));
   const dn = await txt(p, "#bt2Clock .bt12-done");
-  ok(dn === "おつかれさまでした この勤務 5 時間・約 5,300 円 11月分は ここまで 3 回・約 13,900 円（あと 4 回の予定をふくめると 約 35,300 円）", "② " + dn);
+  ok(dn === "おつかれさまでした この勤務 5 時間・約 5,300 円 11月分は ここまで 3 回・約 13,900 円（あと 4 回の予定をふくめると 約 35,300 円） 帰る連絡を送る", "② " + dn); // (その13 ⑤ 帰る連絡 too)
   await p.click('#bt2Clock .bt12-done button[aria-label="まとめを閉じる"]'); await p.waitForTimeout(300);
   ok(!(await p.$("#bt2Clock .bt12-done")), "② closed");
   // ③ しんどい three in a row: f5, f6, n1
