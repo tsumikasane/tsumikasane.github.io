@@ -36,7 +36,7 @@ let b;
   // ⑦ the way there too short after ゼミ
   await openDayOf(p, "11月16日");
   const list = nos(await txt(p, "#calDayList"));
-  ok(list.includes("移動が間に合いません（「ゼミ」が16:45まで・15分おくれ）"), "⑦ in the day's list", list);
+  ok(list.includes("移動が間に合いません（15分おくれ）"), "⑦ in the day's list", list);
   // ③ 帰る時刻 in it (その8's 帰り said from it)
   ok(list.includes("23:30に帰る・帰り30分・00:00ごろ着く") && !list.includes("22:30ごろ着く"), "③ 帰る時刻 in the day's list", list);
   await p.locator("#calDayList .row-btn", { hasText: "面接" }).first().click(); await p.waitForTimeout(700);
