@@ -26,7 +26,7 @@ async function open(b, when, o = {}) {
   ok(p.calls.some((u) => u.includes("cloud_cover_low") && u.includes("snowfall") && u.includes("shortwave_radiation")), "the forecast asks for その3's more", p.calls[0]);
 
   // ④ the day's length
-  ok((await txt(p, ".wx-dl")).includes("日の長さ10時間18分−2分") && (await p.getAttribute(".wx-dl div:last-child dd", "aria-label")) === "10時間18分、きのうより2分短い", "④ the day's length, against yesterday", await txt(p, ".wx-dl"));
+  ok((await txt(p, ".wx-dl")).includes("日の長さ10時間18分−2分") && (await p.evaluate(() => [...document.querySelectorAll(".wx-dl > div")].find((d) => d.querySelector("dt")?.textContent === "日の長さ")?.querySelector("dd")?.getAttribute("aria-label"))) === "10時間18分、きのうより2分短い", "④ the day's length, against yesterday", await txt(p, ".wx-dl"));
   // ⑥ thunder with the rain
   ok((await txt(p, ".wx3-thunder")).startsWith("雷のおそれ：16時ごろから17時ごろまで"), "⑥ thunder", await txt(p, ".wx3-thunder"));
   // ⑤ the glow, ④ the solstice
