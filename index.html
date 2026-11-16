@@ -2540,6 +2540,26 @@ textarea.bt10-ta { min-height: 5.6em; }
 .bt13-key { display: inline-block; width: 14px; height: 8px; border-radius: 4px; background: var(--jc, var(--c-money)); }
 .bt13-key.plan { height: 5px; background: color-mix(in srgb, var(--muted) 70%, transparent); }
 #bt13BreakFor { min-height: 36px; padding: 0 8px; border: 1px solid var(--line); border-radius: 10px; background-color: var(--surface); color: var(--fg); font: inherit; }
+/* バイト その14: ⑤ the people, ⑥ the days free, ⑦ もしも, ⑧ after leaving, ⑨ the list in two */
+.bt14-people-job { display: grid; gap: 6px; }
+.bt14-people-job + .bt14-people-job { padding-top: 8px; border-top: .5px solid var(--separator); }
+#bt14PeopleBody p, #bt14HelpBody p, #bt14WhatBody p { margin: 0; }
+.bt14-people-job .bt10-items a.btn { text-decoration: none; }
+.bt14-acts { display: inline-flex; align-items: center; gap: 6px; }
+.bt14-people-job .bt4-adv-form input { flex: 1 1 8em; width: auto; }
+.bt14-help { display: grid; margin: 0; padding: 0; list-style: none; }
+.bt14-help .check-row > span:last-child { display: grid; gap: 0; line-height: 1.4; }
+.bt14-what-out { display: grid; gap: 2px; line-height: 1.5; }
+.bt14-what-big { font-size: var(--t-title, 1.15em); font-weight: 600; font-variant-numeric: tabular-nums; }
+#bt14WhatWage { width: 7em; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background-color: var(--surface); color: var(--fg); font: inherit; text-align: right; }
+.bt14-left-card { display: grid; gap: 6px; }
+.bt14-left-card p { margin: 0; }
+.bt14-left-job { display: grid; gap: 4px; }
+.bt14-left { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.bt14-left li { display: grid; grid-template-columns: 1.2em minmax(0, 1fr); gap: 4px; line-height: 1.45; }
+.bt14-left li > span:last-child { display: grid; }
+.bt14-left li.ok .bt14-mark { color: var(--c-money); font-weight: 700; }
+#shiftList li.bt14-sep { min-height: 0; padding: 10px var(--space-2) 4px; font-size: var(--t-foot); font-weight: 600; color: var(--muted); background: transparent; }
 #bt11Print { display: none; }
 @media print {
   body:has(#bt11Print) > :not(#bt11Print) { display: none !important; }
@@ -10248,6 +10268,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield below"><input type="date" id="bt13MuteTo"><button type="button" class="link-btn" id="bt13MuteOff" hidden>休むのをやめる</button></div>
         </form>
         <p class="group-foot" id="bt13MuteFoot"></p>
+        <!-- (バイト その14 ③) 給料の入金のたしかめ, ④ 年の目安のお知らせ -->
+        <h3 class="group-head">給料の入金のたしかめ</h3>
+        <form class="add" id="bt14PayForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="bt14PayChk">お知らせ</label>
+          <div class="ffield"><input type="checkbox" id="bt14PayChk" class="switch" role="switch"></div>
+        </form>
+        <p class="group-foot" id="bt14PayFoot"></p>
+        <h3 class="group-head">年の目安のお知らせ</h3>
+        <form class="add" id="bt14WallForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="bt14WallChk">お知らせ</label>
+          <div class="ffield"><input type="checkbox" id="bt14WallChk" class="switch" role="switch"></div>
+        </form>
+        <p class="group-foot" id="bt14WallFoot"></p>
       </div>
       <!-- 運動のメニューを編集 (the user's call): a day at a time, its テーマ, run and moves, then the メモ under the menu -->
       <div class="sheet-view" id="woMenuGroup" hidden>
@@ -13872,7 +13905,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const leave = bt5LeaveIn(job, p.start, p.end); // (バイト その5 ② 有給を使った日の分)
     const fareMonth = job.fareMode === "month" && list.length ? num(job.fare) : 0; // (バイト その6 ③ 1か月ごとの交通費)
     const extra = bt7ExtraSum(job, ym, list); // (バイト その7 ⑥ 手当・ボーナス)
-    return { ...p, list, mins, night, leave, fareMonth, extra, amount: Math.round(pay + leave.pay + fareMonth + extra.sum) };
+    const fareCut = bt14FareCut(job, list); // (バイト その14 ② 交通費の上限)
+    return { ...p, list, mins, night, leave, fareMonth, extra, fareCut, amount: Math.round(pay + leave.pay + fareMonth + extra.sum - fareCut) };
   }
   // the year's pay: each month's that is paid in it (by its 締め日 when it has no 給料日)
   function yearPay(y) {
@@ -13907,6 +13941,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     draw(renderBt11); // (バイト その11)
     draw(renderBt12); // (バイト その12)
     draw(renderBt13); // (バイト その13)
+    draw(renderBt14); // (バイト その14)
     const jobs = jobList(), many = jobs.length > 1, mo = `${Number(viewMonth.slice(5))}月分`;
     $("shiftForm").hidden = $("shiftCard").hidden = $("jobYear").hidden = !jobs.length;
     if (!jobs.length) {
@@ -13939,6 +13974,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         bt5Notes(j, p, key, inBook), // (バイト その5 ② 有給, ③ 明細, ⑤ 移動もふくめて, ⑥ 行かなかった勤務)
         bt10Notes(j, p), // (バイト その10 ⑦ 出来高, ⑧ 契約)
         bt11Notes(j, p), // (バイト その11 ⑤ 休業手当)
+        bt14Notes(j, p, key, inBook), // (バイト その14 ① 週40時間, ② 交通費の上限, ③ 給料日をすぎて)
         bt9Notes(j, p), // (バイト その9 ⑨ 給料の内訳)
         bt8Notes(j, p, key, inBook), // (バイト その8 ⑤ 予定とのちがい, ⑧ 手取りの見込み, ⑩ 時給が変わる日)
         bt7Notes(j, p, key), // (バイト その7 ⑥ 手当・ボーナス)
@@ -13961,6 +13997,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         bt9Picking ? null : delButton(() => removeWithUndo(shifts, x.id), "削除", name));
     }) : el("li", { class: "empty" }, `${mo}の勤務はまだありません。上の欄から追加できます。`));
     bt9SelSync(rows.map(([, x]) => x)); // (バイト その9 ⑩)
+    draw(bt14ListSplit); // (バイト その14 ⑨ これからとすんだ)
     // the year's pay, by the day each month's is paid, against the mark
     const y = Number(viewMonth.slice(0, 4)), total = yearPay(y), wall = num(jobSet().wall);
     const parts = [el("div", { class: "job-period" }, `${y}年に入る給料の見込み`), el("div", { class: "job-pay" }, fmtN(total), el("small", {}, "円"))];
@@ -14008,7 +14045,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const jobFromForm = (f, j) => {
     const v = (k) => f.querySelector(`[data-f="${k}"]`);
     return { ...j, name: v("name").value.trim(), wage: Math.max(0, Math.round(num(v("wage").value))), fare: Math.max(0, Math.round(num(v("fare").value))),
-      night: v("night").checked, cutoff: clampTo(Math.round(num(v("cutoff").value)), 0, 28), payday: clampTo(Math.round(num(v("payday").value)), 0, 31), plusHol: v("plusHol") ? clampTo(Math.round(num(v("plusHol").value)), 0, 10000) : num(j.plusHol), ...bt4FromForm(f, j), ...bt5FromForm(f, j), ...bt6FromForm(f, j), ...bt7FromForm(f, j), ...bt10FromForm(f, j), ...bt11FromForm(f), ...bt12FromForm(f) }; // (バイト その2 ⑤, その4 ①②③⑥, その5 ④⑤)
+      night: v("night").checked, cutoff: clampTo(Math.round(num(v("cutoff").value)), 0, 28), payday: clampTo(Math.round(num(v("payday").value)), 0, 31), plusHol: v("plusHol") ? clampTo(Math.round(num(v("plusHol").value)), 0, 10000) : num(j.plusHol), ...bt4FromForm(f, j), ...bt5FromForm(f, j), ...bt6FromForm(f, j), ...bt7FromForm(f, j), ...bt10FromForm(f, j), ...bt11FromForm(f), ...bt12FromForm(f), ...bt14FromForm(f) }; // (バイト その2 ⑤, その4 ①②③⑥, その5 ④⑤)
   };
   function jobWhen(j) {
     const ym = periodMonthOf(j, todayKey), p = payPeriod(j, ym), mo = `${Number(ym.slice(5))}月分`, ph = (w) => el("span", { class: "phrase" }, w);
@@ -14038,6 +14075,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           bt10JobRows(j, id), // (バイト その10 ①⑦⑧)
           bt11JobRows(j, id), // (バイト その11 ⑨ 色)
           bt12JobRows(j, id), // (バイト その12 ⑦ 定休日)
+          bt14JobRows(j, id), // (バイト その14 ② 交通費の上限)
           recRow("締め日", cut),
           recRow("給料日", pay)),
         el("p", { class: "group-foot job-when" }, jobWhen(j)),
@@ -17538,6 +17576,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...bt11Alarms(now)); // (バイト その11 ④ 週のはじめ, ⑩ 有給)
     out.push(...bt12CutAlarms(now)); // (バイト その12 ① 締め日)
     out.push(...bt13Alarms(now)); // (バイト その13 ① 来週のシフト, ⑩ 休憩の終わり)
+    out.push(...bt14Alarms(now)); // (バイト その14 ③ 給料の入金, ④ 年の目安)
     out.push(...goalReviewAlarms(now)); // 目標 ⑤ 見直しのお知らせ
     out.push(...tsWeekAlarms(now)); // つみかさね ⑩ 週のまとめのお知らせ
     out.push(...tsDaySumAlarms(now)); // つみかさね 1日のまとめのお知らせ
@@ -17621,6 +17660,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...bt11Push()); // (バイト その11 ④⑩)
     parts.push(...bt12Push()); // (バイト その12 ①)
     parts.push(...bt13Push()); // (バイト その13 ①④⑩)
+    parts.push(...bt14Push()); // (バイト その14 ③④)
     parts.push(...goalReviewParts()); // (目標 ⑤)
     parts.push(...tsWeekParts()); // (つみかさね ⑩)
     parts.push(...tsDaySumParts()); // (つみかさね 1日のまとめ)
@@ -24530,7 +24570,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月16日 10:19"; // 86a32e44 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月16日 10:32"; // e1644fc1 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -27771,7 +27811,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // what one is, by what it belongs to: its folder in the ZIP and the page it is on
   function rec8PhWhat(db, x) {
     if (db === "tsumikasane-plan-photos") return "予定の写真";
-    if (db === "tsumikasane-baito-photos") return "シフト表の写真";
+    if (db === "tsumikasane-baito-photos") return x.kind === "pay" ? "給料明細の写真" : "シフト表の写真"; // (バイト その14 ⑩ 給料明細は分けて)
     if (db === "tsumikasane-files") return "ToDoのファイル";
     return typeof x.jnVoiceDay === "string" ? "日記の声" : typeof x.jnDay === "string" ? "日記の写真" : typeof x.mealId === "string" ? "食事の写真"
       : typeof x.todoId === "string" ? "ToDoの写真" : typeof x.goalId === "string" || typeof x.cellOf === "string" ? "目標の写真" : typeof x.date === "string" ? "からだの写真" : "そのほか";
@@ -62165,7 +62205,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑥ the pay as it came (収入に入れた), against the estimate; ⑦ what an hour came to; ⑩ the month against the one before;
   // ③ 6 days or more in a row
   function bt3Notes(j, p, key, inBook) {
-    const out = [], fare = j.fareMode === "month" ? (p.list.length ? num(j.fare) : 0) : sum(p.list, (x) => bt12Fare(x, j)); // (その12 ⑧ この回の交通費)
+    const out = [], fare = j.fareMode === "month" ? (p.list.length ? num(j.fare) : 0) : sum(p.list, (x) => bt12Fare(x, j)) - num(p.fareCut); // (その12 ⑧ この回の交通費, その14 ② 上限)
     if (inBook) {
       const got = sum(expenses.items.filter((e) => e.pay === key), (e) => e.amount), d = got - (p.amount - bt4AdvSum(j, key.split("|")[1])); // (その4 ⑦ 前払いの分をのぞく)
       out.push(el("p", {}, bt3Ph(`実際の給料 ${fmtYen(got)}`), d === 0 ? bt3Ph("（見込みどおり）") : el("span", { class: "phrase" + (d < 0 ? " warn" : "") }, keepUnits(`（見込みより ${d > 0 ? "+" : "−"}${fmtYen(Math.abs(d))}）`))));
@@ -62701,7 +62741,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function bt4PayAdj(x, job, m, wage) {
     let add = 0;
-    if (job.ot !== false) add += (wage * 0.25 * bt4OverMin(x, m)) / 60;
+    if (job.ot !== false) add += (wage * 0.25 * (bt4OverMin(x, m) + bt14WeekOver(x, m))) / 60; // (その14 ① 週40時間をこえた分も)
     const b = bt4Band(job);
     if (b) add += (num(b.plus) * bt4BandMin(x, job, m)) / 60;
     return add + bt10Units(x, job) - Math.max(0, num(job.deduct)); // (その10 ⑦ 出来高)
@@ -62710,7 +62750,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function bt4JobRows(j, id) {
     const b = j.band || {};
     return [
-      el("label", { class: "check-row full", for: id("Ot") }, el("input", { type: "checkbox", id: id("Ot"), "data-f": "ot", checked: j.ot !== false }), el("span", {}, "1日8時間をこえた分は、時給を1.25倍にする")),
+      el("label", { class: "check-row full", for: id("Ot") }, el("input", { type: "checkbox", id: id("Ot"), "data-f": "ot", checked: j.ot !== false }), el("span", {}, "1日8時間・週40時間をこえた分は、時給を1.25倍にする")),
       el("div", { class: "full bt4-band" }, el("span", { class: "bt2-wages-head" }, "時間帯の時給アップ（早朝など）"),
         el("div", { class: "bt4-band-row" },
           el("input", { type: "time", id: id("BandFrom"), "data-f": "bandFrom", value: isHm(b.from || "") ? b.from : "", "aria-label": "時給アップの始まり" }), el("span", {}, "〜"),
@@ -65028,7 +65068,7 @@ ${parts.join("\n")}
   }
   const bt7Url = (x) => { if (!bt7Urls.has(x.id)) bt7Urls.set(x.id, URL.createObjectURL(x.blob)); return bt7Urls.get(x.id); };
   async function renderBt7Photos() {
-    const box = $("bt7PhotoList"), ym = viewMonth, list = (await bt7Load()).filter((x) => x.ym === ym).sort((a, b) => num(b.at) - num(a.at));
+    const box = $("bt7PhotoList"), ym = viewMonth, list = (await bt7Load()).filter((x) => x.ym === ym && x.kind !== "pay").sort((a, b) => num(b.at) - num(a.at));
     $("bt7PhotoHead").textContent = `${Number(ym.slice(5))}月のシフト表の写真${list.length ? `（${list.length}）` : ""}`;
     setChildren(box, list.length ? list.map((x) => el("div", { class: "bt7-photo" },
       el("button", { type: "button", class: "bt7-photo-open", "aria-label": `${fmtShort(new Date(num(x.at)).toISOString().slice(0, 10))}の写真を大きく見る`, onclick: () => bt7Show(x) }, el("img", { src: bt7Url(x), alt: "シフト表の写真" })),
@@ -65108,7 +65148,7 @@ ${parts.join("\n")}
     renderBt7Settings();
     if (!has) { $("bt7Total").hidden = true; return; }
     draw(renderBt7Total); draw(bt7FormPay);
-    if ($("bt7Photos").open) renderBt7Photos(); else bt7Load().then((l) => { const n = l.filter((x) => x.ym === viewMonth).length; $("bt7PhotoHead").textContent = `${Number(viewMonth.slice(5))}月のシフト表の写真${n ? `（${n}）` : ""}`; });
+    if ($("bt7Photos").open) renderBt7Photos(); else bt7Load().then((l) => { const n = l.filter((x) => x.ym === viewMonth && x.kind !== "pay").length; $("bt7PhotoHead").textContent = `${Number(viewMonth.slice(5))}月のシフト表の写真${n ? `（${n}）` : ""}`; });
   }
 
   // ---------- 日記 その6 ①〜⑩ (the user's calls, 2026-11-14): the 見出し of every 日記 as a 目次 (①), tags offered from the
@@ -65722,20 +65762,20 @@ ${parts.join("\n")}
 
   // ⑨ 給料の内訳: the month's pay in its parts, as 給料の見込み adds them
   function bt9Parts(j, p) {
-    let base = 0, day = 0, plus = 0, night = 0, ot = 0, band = 0, fare = 0, ded = 0;
+    let base = 0, day = 0, plus = 0, night = 0, ot = 0, wot = 0, band = 0, fare = 0, ded = 0;
     for (const x of p.list) {
       fare += bt12Fare(x, j); // (その12 ⑧) ded += Math.max(0, num(j.deduct));
       if (num(x.dayPay) > 0) { day += num(x.dayPay); continue; }
       const m = shiftMinutes(x), w = bt5Wage(x, j), b0 = num(x.wage) > 0 ? num(x.wage) : bt2WageOn(j, x.date), bd = bt4Band(j);
       base += (b0 * m.all) / 60; plus += ((w - b0) * m.all) / 60;
       if (j.night !== false) night += (w * 0.25 * m.night) / 60;
-      if (j.ot !== false) ot += (w * 0.25 * bt4OverMin(x, m)) / 60;
+      if (j.ot !== false) { ot += (w * 0.25 * bt4OverMin(x, m)) / 60; wot += (w * 0.25 * bt14WeekOver(x, m)) / 60; } // (その14 ①)
       if (bd) band += (num(bd.plus) * bt4BandMin(x, j, m)) / 60;
     }
     fare += p.fareMonth || 0;
-    return [["基本（時給 × 時間）", base], ["日給", day], ["土日祝・期間の時給アップ", plus], ["深夜の割増", night], ["8時間をこえた分の割増", ot], ["時間帯の時給アップ", band],
+    return [["基本（時給 × 時間）", base], ["日給", day], ["土日祝・期間の時給アップ", plus], ["深夜の割増", night], ["8時間をこえた分の割増", ot], ["週40時間をこえた分の割増", wot], ["時間帯の時給アップ", band],
       ["出来高", sum(p.list, (x) => bt10Units(x, j))], // (その10 ⑦)
-      ["交通費", fare], ["有給", p.leave ? p.leave.pay : 0], ["手当・ボーナス", p.extra ? p.extra.sum : 0], ["引かれる額", -ded]].filter(([, v]) => Math.round(v) !== 0);
+      ["交通費", fare], ["交通費の上限", -num(p.fareCut)], ["有給", p.leave ? p.leave.pay : 0], ["手当・ボーナス", p.extra ? p.extra.sum : 0], ["引かれる額", -ded]].filter(([, v]) => Math.round(v) !== 0);
   }
   function bt9Notes(j, p) {
     if (!p.amount && !p.list.length) return null;
@@ -68270,6 +68310,283 @@ ${parts.join("\n")}
   }
   rt5Build();
   rt5Ready = true;
+
+  // ---------- バイト その14 ①〜⑩ (the user's calls, 2026-11-16): 25% more past 40 hours in a week (①), a 交通費 cap a month
+  // (②), お知らせ the day after a 給料日 not yet in 家計簿 (③), the year's mark on the 1st of each month (④), a job's people to
+  // call (⑤), the days free for ヘルプ in words (⑥), what another 時給 would come to (⑦), what to do once a job is left (⑧),
+  // the month's shifts in two, to come and done (⑨), and 給料明細 photos (⑩). Function declarations and var, as the page may
+  // draw before this runs ----------
+  function bt14Set() { const v = settings.get("bt14") || {}; return { payChk: !!v.payChk, wallChk: !!v.wallChk }; }
+  function bt14Save(patch) { act(() => settings.set("bt14", { ...(settings.get("bt14") || {}), ...patch, updatedAt: Date.now() })); }
+
+  // ① 週40時間: a job's weeks from 日曜 (the law's when nothing else is set), the minutes of each shift not already over 8
+  // hours that day, in order; past 2,400 of them, 25% more (with その4 ①'s switch)
+  var bt14WIdx = null;
+  function bt14WeekKey(d) { return addDays(d, -parseYmd(d).getDay()); }
+  function bt14WeekShifts(x) {
+    if (!bt14WIdx || bt14WIdx.gen !== tsumiGen || bt14WIdx.n !== shifts.items.length) {
+      const by = new Map();
+      for (const y of shifts.items) { if (!isDay(y.date || "")) continue; const k = `${bt14WeekKey(y.date)}|${bt2JobIdOf(y)}`; if (!by.has(k)) by.set(k, []); by.get(k).push(y); }
+      bt14WIdx = { gen: tsumiGen, n: shifts.items.length, by };
+    }
+    return bt14WIdx.by.get(`${bt14WeekKey(x.date)}|${bt2JobIdOf(x)}`) || [];
+  }
+  function bt14Reg(y, m) { return Math.max(0, m.all - bt4OverMin(y, m)); }
+  function bt14WeekOver(x, m) {
+    if (!(m.all > 0) || !isDay(x.date || "")) return 0;
+    const first = (y) => y.date < x.date || (y.date === x.date && (String(y.start) < String(x.start) || (y.start === x.start && num(y.createdAt) < num(x.createdAt))));
+    const before = sum(bt14WeekShifts(x).filter((y) => y !== x && !(y.id && y.id === x.id) && first(y)), (y) => bt14Reg(y, shiftMinutes(y))), mine = bt14Reg(x, m);
+    return Math.max(0, Math.min(mine, before + mine - 2400));
+  }
+
+  // ② 交通費の上限: a job's most a month (its period's), what is past it taken off the pay
+  function bt14FareCut(job, list) { const max = num(job.fareMax); return max > 0 && job.fareMode !== "month" ? Math.max(0, sum(list, (x) => bt12Fare(x, job)) - max) : 0; }
+  function bt14JobRows(j, id) {
+    return recRow([el("span", { class: "phrase" }, "交通費の"), el("span", { class: "phrase" }, "上限")], el("input", { type: "number", id: id("FareMax"), "data-f": "fareMax", value: num(j.fareMax) > 0 ? j.fareMax : "", min: 0, max: 1000000, step: 1, inputmode: "numeric", placeholder: "なし" }), { opt: true, unit: "円（1か月）", long: true });
+  }
+  function bt14FromForm(f) { const v = f.querySelector('[data-f="fareMax"]'); if (!v) return {}; const n = Math.round(num(v.value)); return { fareMax: n > 0 ? Math.min(1000000, n) : undefined }; }
+
+  // the month's block: ① 週40時間, ② the cap, ③ a 給料日 past and not in 家計簿
+  function bt14Notes(j, p, key, inBook) {
+    const out = [];
+    if (j.ot !== false) {
+      let mins = 0, yen = 0;
+      for (const x of p.list) { if (num(x.dayPay) > 0) continue; const m = shiftMinutes(x), o = bt14WeekOver(x, m); mins += o; yen += (bt5Wage(x, j) * 0.25 * o) / 60; }
+      if (mins > 0) out.push(el("p", {}, bt4Ph("週40時間をこえた分：", `${bt4Hours(mins)}・+${fmtYen(yen)}`)));
+    }
+    if (num(p.fareCut) > 0) out.push(el("p", {}, bt4Ph(`交通費は1か月 ${fmtYen(num(j.fareMax))} まで：`, `−${fmtYen(p.fareCut)}`)));
+    if (!inBook && p.payday && p.payday < todayKey && p.amount > 0) out.push(el("p", { class: "warn" }, bt4Ph(`給料日（${fmtMD(p.payday)}）をすぎています。`, "入った額を「収入に入れる」で家計簿に入れましょう")));
+    return out.length ? el("div", { class: "bt3-notes bt14-notes" }, out) : null;
+  }
+
+  // ③ 給料の入金のたしかめ: the day after a 給料日 at 9:00, while its pay isn't in 家計簿 (nor on its way there itself, その4 ⑥)
+  function bt14PayAlarms(now) {
+    const out = [];
+    for (const j of jobList()) for (let i = -1; i <= 2; i++) {
+      const ym = addMonths(periodMonthOf(j, todayKey), i), p = paySummary(j, ym), key = `${j.id}|${ym}`;
+      if (!p.payday || !(p.amount > 0) || expenses.items.some((e) => e.pay === key) || (isDay(j.autoIn || "") && j.autoIn <= p.payday)) continue;
+      const at = dayAt(addDays(p.payday, 1), "09:00");
+      if (at > now + 5000 && at <= now + PUSH_AHEAD * 864e5) out.push({ at, title: "給料は入りましたか？", body: `${j.name ? j.name + "の" : ""}${Number(ym.slice(5))}月分（見込み 約 ${fmtN(p.amount)}円）。入っていたら、家計簿の収入に入れましょう`, tag: `bt14-pay:${key}`, url: "./#job" });
+    }
+    return out;
+  }
+  // ④ 年の目安: the 1st of each month at 9:00, when the year's pay (its shifts planned too) comes to 80% of the mark or more
+  function bt14WallAlarms(now) {
+    const wall = num(jobSet().wall), out = [];
+    if (!(wall > 0)) return out;
+    const y = Number(todayKey.slice(0, 4)), total = yearPay(y);
+    if (total < wall * 0.8) return out;
+    for (let ym = addMonths(monthOf(todayKey), 1); ym <= monthOf(addDays(todayKey, PUSH_AHEAD)); ym = addMonths(ym, 1)) {
+      if (Number(ym.slice(0, 4)) !== y) continue;
+      const at = dayAt(`${ym}-01`, "09:00");
+      if (at > now + 5000 && at <= now + PUSH_AHEAD * 864e5) out.push({ at, title: total >= wall ? "年の目安をこえる見込みです" : "年の目安に近づいています",
+        body: `${y}年の見込み 約 ${fmtN(total)}円・目安 ${fmtN(wall)}円${total >= wall ? `を 約 ${fmtN(total - wall)}円こえます` : `まで あと 約 ${fmtN(wall - total)}円`}`, tag: `bt14-wall:${ym}`, url: "./#job" });
+    }
+    return out;
+  }
+  function bt14Alarms(now) {
+    const s = bt14Set(), out = [];
+    if (!jobList().length) return out;
+    if (s.payChk) out.push(...bt14PayAlarms(now));
+    if (s.wallChk) out.push(...bt14WallAlarms(now));
+    return out;
+  }
+  function bt14Push() {
+    const s = bt14Set();
+    if (!s.payChk && !s.wallChk) return [];
+    const pays = s.payChk ? jobList().flatMap((j) => [-1, 0, 1, 2].map((i) => { const ym = addMonths(periodMonthOf(j, todayKey), i), p = paySummary(j, ym); return [j.id, ym, p.payday || "", Math.round(p.amount), expenses.items.some((e) => e.pay === `${j.id}|${ym}`)]; })) : 0;
+    return [["bt14", s.payChk, s.wallChk, pays, s.wallChk ? [num(jobSet().wall), Math.round(yearPay(Number(todayKey.slice(0, 4))))] : 0]];
+  }
+  function renderBt14Settings() {
+    const s = bt14Set(), st = pushState(), say = (x) => pushWords(x).replaceAll("通知アラーム", "お知らせ");
+    $("bt14PayChk").checked = s.payChk; $("bt14WallChk").checked = s.wallChk;
+    $("bt14PayFoot").textContent = !s.payChk ? "給料日の次の日の朝に、その給料がまだ家計簿の収入に入っていなければ、お知らせします。" : st === "on" ? "給料日の次の日の 9:00 に、この端末に届きます。" : say(st);
+    $("bt14WallFoot").textContent = !s.wallChk ? "毎月1日の朝に、今年の見込みが年の目安の8割をこえていたら、あといくらかをお知らせします。" : st === "on" ? "毎月1日の 9:00 に、この端末に届きます（年の目安を決めているときだけ）。" : say(st);
+  }
+  function bt14SaveAlarm(patch) { bt14Save(patch); renderBt14Settings(); if ((patch.payChk || patch.wallChk) && pushState() === "off") pushEnable().then(renderBt14Settings); }
+  $("bt14PayChk").addEventListener("change", (ev) => bt14SaveAlarm({ payChk: ev.target.checked }));
+  $("bt14WallChk").addEventListener("change", (ev) => bt14SaveAlarm({ wallChk: ev.target.checked }));
+
+  // ⑤ バイト先の連絡先: each job's { id, name, tel } (店長・社員…), kept with the account; pressed, the phone calls
+  function bt14People(j) { return (Array.isArray(j.people) ? j.people : []).filter((x) => x && x.name); }
+  function bt14Tel(t) { return String(t || "").normalize("NFKC").replace(/[^\d+]/g, ""); }
+  function renderBt14People() {
+    const box = $("bt14PeopleBody"), jobs = bt9Active(jobList()), many = jobs.length > 1;
+    if (bt10Typing(box)) return;
+    setChildren(box, jobs.map((j) => {
+      const list = bt14People(j), name = el("input", { type: "text", "data-p": "name", maxlength: 20, placeholder: "店長 田中さん など", "aria-label": "名前" }), tel = el("input", { type: "tel", "data-p": "tel", maxlength: 20, placeholder: "電話番号", "aria-label": "電話番号", inputmode: "tel" });
+      const add = () => {
+        const n = name.value.trim().replace(/\s+/g, " ").slice(0, 20), t = tel.value.trim().slice(0, 20);
+        if (!n) { name.focus(); return; }
+        bt10Unfocus(box);
+        bt10SaveJob(j.id, { people: [...bt14People(j), dropUndef({ id: uid(), name: n, tel: bt14Tel(t) ? t : undefined })] });
+        renderBt14People();
+        flash(`連絡先に「${n}」を入れました`);
+      };
+      const drop = (x) => { const was = bt14People(j); bt10Unfocus(box); bt10SaveJob(j.id, { people: was.filter((y) => y.id !== x.id) }); renderBt14People(); flash(`「${x.name}」を消しました`, () => { bt10SaveJob(j.id, { people: was }); renderBt14People(); }); };
+      const row = (w, t, x) => el("li", {}, el("span", {}, w), el("span", { class: "bt14-acts" }, t && bt14Tel(t) ? el("a", { class: "btn ghost sm", href: `tel:${bt14Tel(t)}`, "aria-label": `${w}に電話する（${t}）` }, "電話") : el("span", { class: "sub" }, "番号なし"),
+        x ? el("button", { type: "button", class: "icon-btn bt4-adv-x", "aria-label": `「${w}」を消す`, onclick: () => drop(x) }, icon("close", 16)) : null));
+      return el("div", { class: "bt14-people-job", "data-job": j.id }, many ? el("p", { class: "bt9-cmp-name" }, j.name || "バイト先") : null,
+        el("ul", { class: "bt10-items" }, j.tel ? row("お店", j.tel, null) : null, list.map((x) => row(x.name, x.tel, x))),
+        el("div", { class: "bt4-adv-form" }, name, tel, el("button", { type: "button", class: "btn ghost sm", onclick: add }, "入れる")));
+    }));
+  }
+
+  // ⑥ ヘルプに入れる日: the next 14 days without a shift, those with plans unticked at first; in words (LINE…) or copied
+  var bt14Help = { picked: null, note: "" };
+  function bt14HelpDays() {
+    const out = [];
+    let plans;
+    try { plans = turnsByDay(addDays(todayKey, 1), addDays(todayKey, 14)); } catch { plans = new Map(); }
+    for (let i = 1; i <= 14; i++) {
+      const d = addDays(todayKey, i);
+      if (shifts.items.some((x) => x.date === d)) continue;
+      const ps = (plans.get(d) || []).filter((t) => !cal4Cx(t.e, t.start)).map((t) => `${oneLine(t.e.title) || "予定"}（${turnTimeText(t)}）`);
+      out.push({ d, ps });
+    }
+    return out;
+  }
+  function renderBt14Help() {
+    const box = $("bt14HelpBody"), days = bt14HelpDays();
+    if (bt10Typing(box)) return;
+    if (!bt14Help.picked) bt14Help.picked = new Set(days.filter((x) => !x.ps.length).map((x) => x.d));
+    const note = el("input", { type: "text", maxlength: 60, value: bt14Help.note, placeholder: "ひとこと（例：17時から入れます）", "aria-label": "ひとこと", oninput: (ev) => { bt14Help.note = ev.target.value; } });
+    setChildren(box, days.length ? el("ul", { class: "bt14-help" }, days.map((x) => el("li", {}, el("label", { class: "check-row" },
+        el("input", { type: "checkbox", "data-day": x.d, checked: bt14Help.picked.has(x.d), onchange: (ev) => { if (ev.currentTarget.checked) bt14Help.picked.add(x.d); else bt14Help.picked.delete(x.d); } }),
+        el("span", {}, el("span", {}, fmtShort(x.d)), x.ps.length ? el("small", { class: "sub" }, `予定：${x.ps.join("、")}`) : null)))))
+        : el("p", { class: "sub" }, "この先2週間は、どの日も勤務が入っています。"),
+      note, el("div", { class: "bt3-ask-row" }, el("button", { type: "button", class: "btn sm", id: "bt14HelpSend", onclick: () => bt14HelpSend() }, "文字で送る")));
+  }
+  function bt14HelpSend() {
+    const days = bt14HelpDays().filter((x) => bt14Help.picked && bt14Help.picked.has(x.d));
+    if (!days.length) { flash("入れる日を選んでください"); return; }
+    const t = ["ヘルプに入れる日です。", ...days.map((x) => fmtShort(x.d)), bt14Help.note.trim() ? bt14Help.note.trim() : ""].filter(Boolean).join("\n");
+    bt3SendText(t, "ヘルプに入れる日", "入れる日を文字でコピーしました。LINEなどに貼り付けられます");
+  }
+
+  // ⑦ 時給が変わったら: a 時給 typed, at the last 3 months' hours a month (the job's), a month's and a year's difference, and the
+  // hours left under the year's mark
+  var bt14What = { job: "", wage: "" };
+  function bt14WhatOut() {
+    const box = $("bt14WhatOut"), jobs = bt9Active(jobList()), j = jobs.find((x) => x.id === bt14What.job) || jobs[0];
+    if (!box || !j) return;
+    const now = bt2WageOn(j, todayKey), w = Math.round(num(bt14What.wage)), from = addDays(todayKey, -91);
+    const mins = sum(jobShifts(j).filter((x) => isDay(x.date || "") && x.date > from && x.date <= todayKey && !(num(x.dayPay) > 0)), (x) => shiftMinutes(x).all), h = mins / 60 / 3;
+    if (!(w > 0) || !(now > 0)) { box.textContent = "時給を入れると、月と年でいくら変わるかが出ます。"; return; }
+    if (!(h > 0)) { box.textContent = "この3か月の勤務がないので、数えられません。"; return; }
+    const d = (w - now) * h, wall = num(jobSet().wall), left = wall > 0 ? wall - yearPay(Number(todayKey.slice(0, 4))) : 0, sign = (v) => (v >= 0 ? "+" : "−") + fmtYen(Math.abs(Math.round(v)));
+    setChildren(box, el("p", {}, bt4Ph(`いまの ${fmtN(now)}円 から ${fmtN(w)}円 になると、`, `この3か月の平均（月 約 ${fmtN(Math.round(h))} 時間）で`)),
+      el("p", { class: "bt14-what-big" }, bt4Ph(`月 ${sign(d)}`, `・年 ${sign(d * 12)}`)),
+      left > 0 ? el("p", { class: "sub" }, bt4Ph(`年の目安まで働けるのは あと 約 ${fmtN(Math.floor(left / now))} 時間`, `→ 約 ${fmtN(Math.floor(left / w))} 時間`)) : null);
+  }
+  function renderBt14What() {
+    const box = $("bt14WhatBody"), jobs = bt9Active(jobList());
+    if (bt10Typing(box) || box.contains(document.activeElement)) { bt14WhatOut(); return; }
+    const j = jobs.find((x) => x.id === bt14What.job) || jobs[0];
+    if (!j) { box.replaceChildren(); return; }
+    if (bt14What.wage === "") bt14What.wage = String(bt2WageOn(j, todayKey) + 50);
+    const sel = jobs.length > 1 ? el("select", { "aria-label": "バイト先", onchange: (ev) => { bt14What = { job: ev.target.value, wage: "" }; renderBt14What(); } }, jobs.map((x) => el("option", { value: x.id, selected: x.id === j.id }, x.name || "バイト先"))) : null;
+    setChildren(box, el("div", { class: "bt4-adv-form" }, sel, el("span", {}, "時給"),
+        el("input", { type: "number", id: "bt14WhatWage", min: 1, max: 100000, step: 1, inputmode: "numeric", value: bt14What.wage, "aria-label": "もしもの時給（円）", oninput: (ev) => { bt14What.wage = ev.target.value; bt14WhatOut(); } }), el("span", { class: "unit" }, "円なら")),
+      el("div", { class: "bt14-what-out", id: "bt14WhatOut", role: "status" }));
+    bt14WhatOut();
+  }
+
+  // ⑧ やめたあとにすること: a job left in the last 4 months: its last 給料日 (in 家計簿 yet?), the 源泉徴収票 (その9 ②, within a
+  // month of leaving by law), and things lent (その10 ⑨)
+  function renderBt14Left() {
+    const box = $("bt14Left"), jobs = jobList().filter((j) => isDay(j.ended || "") && j.ended <= todayKey && j.ended >= addDays(todayKey, -122));
+    box.hidden = !jobs.length;
+    if (!jobs.length) { box.replaceChildren(); return; }
+    const item = (ok, w, more) => el("li", { class: ok ? "ok" : "" }, el("span", { class: "bt14-mark", "aria-hidden": "true" }, ok ? "✓" : "・"), el("span", {}, el("span", {}, w), more ? el("small", { class: "sub" }, more) : null));
+    setChildren(box, el("strong", { class: "bt2-head" }, "やめたあとにすること"), jobs.map((j) => {
+      const ym = periodMonthOf(j, j.ended), p = paySummary(j, ym), inBook = expenses.items.some((e) => e.pay === `${j.id}|${ym}`), y = j.ended.slice(0, 4), g = bt9Gensen()[`${y}|${j.id}`], lent = bt10Lent(j);
+      return el("div", { class: "bt14-left-job", "data-job": j.id }, el("p", { class: "bt9-cmp-name" }, `${j.name || "バイト先"}（${bt4Ymd(j.ended)}にやめた）`),
+        el("ul", { class: "bt14-left" },
+          p.payday ? item(inBook, `最後の給料日 ${fmtMDW(p.payday)}（${Number(ym.slice(5))}月分 約 ${fmtYen(p.amount)}）`, inBook ? "家計簿に入れました" : p.payday < todayKey ? "入った額を、月の欄の「収入に入れる」で家計簿に入れましょう" : `あと ${daysBetween(todayKey, p.payday)} 日`) : null,
+          item(!!g, `${y}年の源泉徴収票`, g ? "記録しました" : "やめてから1か月以内にもらえる決まりです。もらったら「源泉徴収票」に記録しましょう"),
+          item(!lent.length, lent.length ? `返していないもの：${lent.map((x) => x.name).join("・")}` : "借りていたものは、ぜんぶ返しました", lent.length ? "返したら「借りているもの」で「返した」を押します" : "")));
+    }));
+  }
+
+  // ⑨ これからとすんだ: the month's list (newest first) with a line above each part, when both are there
+  function bt14ListSplit() {
+    const list = $("shiftList");
+    if (!list) return;
+    list.querySelectorAll("li.bt14-sep").forEach((x) => x.remove());
+    const rows = [...list.querySelectorAll(":scope > li[data-shift]")], now = Date.now();
+    const done = (li) => { const x = shifts.get(li.dataset.shift), s = x && bt11Span(x); return !x || (s ? s[1] <= now : x.date < todayKey); };
+    const k = rows.findIndex(done);
+    if (k <= 0 || rows.slice(k).some((li) => !done(li))) return; // (in two parts only: none to come among those done)
+    const sep = (w, n) => el("li", { class: "bt14-sep", "aria-hidden": "true" }, keepUnits(`${w}（${n}）`));
+    rows[0].before(sep("これからの勤務", k));
+    rows[k].before(sep("すんだ勤務", rows.length - k));
+  }
+
+  // ⑩ 給料明細の写真: on その7 ⑤'s device-only store (kind: "pay"), the month shown's, a job's each
+  var bt14Busy = false;
+  async function renderBt14Slips() {
+    const box = $("bt14SlipList"), ym = viewMonth, jobs = jobList(), list = (await bt7Load()).filter((x) => x.kind === "pay" && x.ym === ym).sort((a, b) => num(b.at) - num(a.at));
+    $("bt14SlipHead").textContent = `${Number(ym.slice(5))}月分の給料明細の写真${list.length ? `（${list.length}）` : ""}`;
+    setChildren(box, list.length ? list.map((x) => el("div", { class: "bt7-photo" },
+      el("button", { type: "button", class: "bt7-photo-open", "aria-label": `${jobs.length > 1 ? (jobOf(x.jobId)?.name || "バイト先") + "の" : ""}給料明細の写真を大きく見る`, onclick: () => bt14SlipShow(x) }, el("img", { src: bt7Url(x), alt: "" })),
+      jobs.length > 1 ? el("span", { class: "sub" }, jobOf(x.jobId)?.name || "バイト先") : null,
+      delButton(() => bt14SlipDrop(x.id), "削除", "この写真"))) : el("p", { class: "sub" }, "まだありません。紙の給料明細を撮っておくと、ここで見返せます。"));
+    const pick = $("bt14SlipJob");
+    pick.hidden = jobs.length < 2;
+    if (jobs.length > 1 && pick.options.length !== jobs.length) setChildren(pick, jobs.map((j) => el("option", { value: j.id }, j.name || "バイト先")));
+  }
+  async function bt14SlipAdd(file) {
+    if (bt14Busy || !file) return;
+    bt14Busy = true;
+    try {
+      const blob = await bt7Shrink(file), jobs = jobList(), x = { id: uid(), kind: "pay", ym: viewMonth, jobId: (jobs.length > 1 ? $("bt14SlipJob").value : jobs[0]?.id) || "", at: Date.now(), blob };
+      await bt7Tx("readwrite", (os) => os.put(x));
+      (await bt7Load()).push(x);
+      flash(`${Number(viewMonth.slice(5))}月分の給料明細の写真を残しました（この端末だけ）`);
+    } catch { flash("写真を残せませんでした。もう一度お試しください。"); }
+    finally { bt14Busy = false; renderBt14Slips(); }
+  }
+  async function bt14SlipDrop(id) {
+    const list = await bt7Load(), i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    const [x] = list.splice(i, 1);
+    try { await bt7Tx("readwrite", (os) => os.delete(id)); } catch {}
+    renderBt14Slips();
+    flash("写真を削除しました", async () => { try { await bt7Tx("readwrite", (os) => os.put(x)); list.push(x); renderBt14Slips(); } catch {} });
+  }
+  function bt14SlipShow(x) {
+    const d = $("bt7PhotoView");
+    setChildren(d, el("img", { src: bt7Url(x), alt: "給料明細の写真" }), el("button", { type: "button", class: "btn bt7-photo-close", onclick: () => d.close() }, "閉じる"));
+    d.showModal();
+  }
+
+  // made once into バイト's part: ⑧ after 次の給料日, ⑤⑥⑦ after 働く前のチェック, ⑩ after シフト表の写真
+  function bt14Build() {
+    if ($("bt14Left")) return;
+    $("bt10Next").after(el("div", { class: "card pad bt14-left-card", id: "bt14Left", hidden: true }));
+    const card = (id, head, body, fn) => el("details", { class: "card bt3-ask", id, hidden: true, ontoggle: () => { if ($(id).open) fn(); } }, el("summary", {}, head), el("div", { class: "bt3-ask-body", id: body }));
+    $("bt12Terms").after(card("bt14People", "バイト先の連絡先", "bt14PeopleBody", renderBt14People), card("bt14Help", "ヘルプに入れる日を文字で", "bt14HelpBody", () => { bt14Help.picked = null; renderBt14Help(); }),
+      card("bt14What", "時給が変わったら（もしもの計算）", "bt14WhatBody", renderBt14What));
+    const file = el("input", { type: "file", accept: "image/*", id: "bt14SlipFile", hidden: true, onchange: (ev) => { const f = ev.target.files?.[0]; ev.target.value = ""; bt14SlipAdd(f); } });
+    $("bt7Photos").after(el("details", { class: "card bt3-ask bt7-photos", id: "bt14Slips", hidden: true, ontoggle: () => { if ($("bt14Slips").open) renderBt14Slips(); } },
+      el("summary", { id: "bt14SlipHead" }, "給料明細の写真"),
+      el("div", { class: "bt3-ask-body" }, el("div", { class: "bt7-photo-list", id: "bt14SlipList" }),
+        el("div", { class: "bt3-ask-row" }, el("select", { id: "bt14SlipJob", "aria-label": "どのバイト先の明細か", hidden: true }), el("button", { type: "button", class: "btn sm", onclick: () => file.click() }, "写真を入れる"), file),
+        el("p", { class: "sub" }, "写真はこの端末だけに残ります（同期や書き出しには入りません）。"))));
+  }
+  function renderBt14() {
+    bt14Build();
+    renderBt14Settings();
+    const has = jobList().length > 0;
+    for (const id of ["bt14People", "bt14Help", "bt14What", "bt14Slips"]) $(id).hidden = !has;
+    if (!has) { $("bt14Left").hidden = true; return; }
+    draw(renderBt14Left);
+    if ($("bt14People").open) draw(renderBt14People);
+    if ($("bt14Help").open) draw(renderBt14Help);
+    if ($("bt14What").open) draw(renderBt14What);
+    if ($("bt14Slips").open) renderBt14Slips(); else bt7Load().then((l) => { const n = l.filter((x) => x.kind === "pay" && x.ym === viewMonth).length; $("bt14SlipHead").textContent = `${Number(viewMonth.slice(5))}月分の給料明細の写真${n ? `（${n}）` : ""}`; });
+  }
 
   // ---------- boot ----------
   function renderAll() {
