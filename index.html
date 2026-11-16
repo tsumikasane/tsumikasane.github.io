@@ -4994,6 +4994,31 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
 .cal16-year-k { flex: none; width: 8.5em; color: var(--muted); font-size: var(--t-sub); }
 .cal16-year-v { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .tt-card .cal16-credits { margin: 8px 0 0; padding: 0 var(--space-2) 10px; color: var(--muted); font-size: var(--t-sub); }
+/* カレンダー その17: ② ラベルをまとめる, ④ 時限の帯, ⑦ この週を印刷, ⑧ ほかの回, ⑨ 写真のある予定, ⑩ 月のメモ */
+.cal17-merge { display: grid; gap: 8px; }
+.cal17-merge-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cal17-merge-row select { flex: 1 1 7em; min-width: 0; min-height: 40px; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); }
+.cal17-merge-w { color: var(--muted); font-size: var(--t-sub); }
+.cal17-merge .btn { align-self: flex-start; }
+.cal17-merge .sub { margin: 0; color: var(--muted); font-size: var(--t-sub); }
+.cal17-band { position: absolute; left: 0; right: 0; background: color-mix(in srgb, var(--c-cal) 6%, transparent); border-top: 1px dashed color-mix(in srgb, var(--c-cal) 30%, transparent); pointer-events: none; }
+.cal17-band span { position: absolute; top: 1px; right: 3px; color: var(--muted); font-size: 9px; line-height: 1; }
+.cal17-past .chip.soon { opacity: .7; }
+.cal17-past .text { overflow-wrap: anywhere; }
+.cal17-album { padding: 10px; }
+.cal17-album-row { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; }
+.cal17-album-item { position: relative; flex: none; display: grid; gap: 2px; width: 104px; padding: 0; background: none; border: 0; color: var(--fg); text-align: start; }
+.cal17-album-item img { display: block; width: 104px; height: 104px; object-fit: cover; border-radius: 10px; background: var(--fill); }
+.cal17-album-n { position: absolute; top: 6px; right: 6px; min-width: 20px; padding: 0 6px; border-radius: 10px; background: rgba(0, 0, 0, .55); color: #ffffff; font-size: 11px; line-height: 20px; text-align: center; }
+.cal17-album-t { overflow: hidden; font-size: var(--t-sub); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.cal17-album-d { color: var(--muted); font-size: var(--t-foot); }
+.cal17-memo { display: block; width: 100%; margin: 0; padding: 2px var(--space-2) 8px; overflow: hidden; background: none; border: 0; color: var(--muted); font-size: var(--t-sub); text-align: start; text-overflow: ellipsis; white-space: nowrap; }
+.cal17-note-field { align-items: flex-end; }
+.cal17-note-field textarea { flex: 1; min-width: 0; min-height: 76px; padding: 8px 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); font: inherit; resize: vertical; }
+@media print {
+  #cal8Print.cal17-wk th { width: 18%; padding: 4pt; text-align: left; vertical-align: top; font-size: 10pt; }
+  #cal8Print.cal17-wk td { height: 70pt; padding: 4pt; overflow: visible; font-size: 9.5pt; }
+}
 /* 目標 その2 ①〜⑩ (2026-11-11). ① a counted cell: its ring (a press counts one) and the count by it, the cell filling
    from its foot as the count goes up; ⑦ an element's own colour: its cell tinted, with a line of it along the top */
 .m-cell[data-k] { --m-bg: var(--surface); }
@@ -18290,6 +18315,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...cal13Alarms(now)); // (カレンダー その13 ② ゴミの日)
     out.push(...cal14Alarms(now)); // (カレンダー その14 ② まもなく出発, ⑦ 1日のふりかえり)
     out.push(...cal15Alarms(now)); // (カレンダー その15 ① 時刻で決めた通知)
+    out.push(...cal17GapAlarms(now)); // (カレンダー その17 ⑥ すきま時間)
     out.push(...tdAlarms(now)); // ① ToDo's お知らせ (the user's call, 2026-11-10)
     out.push(...tdMorningAlarms(now), ...tdWaitAlarms(now)); // (ToDo その2 ① 朝のまとめ, ⑥ 返事待ち)
     out.push(...tdPreAlarms(now), ...tdEveningAlarms(now)); // (ToDo その3 ② 前もって, ③ 夜のお知らせ)
@@ -18379,6 +18405,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...cal14Push()); // (カレンダー その14 ② まもなく出発, ⑦ ふりかえり)
     parts.push(...cal15Push()); // (カレンダー その15 ① 時刻で決めた通知)
     parts.push(...cal16Push()); // (カレンダー その16 ⑩ 通知に持ち物)
+    parts.push(...cal17Push()); // (カレンダー その17 ⑥ すきま時間)
     parts.push(...tdPushParts()); // (① ToDo's お知らせ, and the focus timer's end)
     parts.push(...tdMorningParts(), ...tdWaitParts()); // (ToDo その2 ①⑥)
     parts.push(...tdTenPush()); // (ToDo その3 ②③④)
@@ -18665,7 +18692,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a new plan starts at the next full hour, as the iPhone's does (9:37 → 10:00), and ends an hour after
   const nextHour = () => `${pad(Math.min(new Date().getHours() + 1, 23))}:00`;
   function freshPlanTimes() {
-    $("planTime").value = nextHour(); $("planEndTime").value = atMin(Math.min(minOf($("planTime").value) + 60, 23 * 60 + 59));
+    $("planTime").value = nextHour(); $("planEndTime").value = atMin(Math.min(minOf($("planTime").value) + cal17Len(), 23 * 60 + 59)); // (カレンダー その17 ① 長さ)
   }
   // a field written by a picker, as typing would (the form counts as changed)
   function putWhen(f, key, v) {
@@ -18927,7 +18954,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const turn = () => {
       if (calView === "month" || calView === "year") calMonth = addMonths(calMonth, calView === "year" ? step * 12 : step); // (その2 ⑦ 年: a year)
       else {
-        const by = calView === "day" ? 1 : weekDays;
+        const by = calView === "day" ? 1 : cal17Step(weekDays); // (カレンダー その17 ③ 平日: a week at a turn)
         calDay = addDays(calDay, step * by);
         if (calView === "week" && weekDays !== 7 && viewFirst) viewFirst = addDays(viewFirst, step * by);
         calMonth = monthOf(calDay);
@@ -21131,7 +21158,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function viewDays() {
     if (calView === "day") return [calDay];
     let first;
-    if (weekDays === 7) first = addDays(calDay, -((parseYmd(calDay).getDay() - weekStart() + 7) % 7));
+    if (cal17Wd()) first = cal17Mon(calDay); // (カレンダー その17 ③ 平日)
+    else if (weekDays === 7) first = addDays(calDay, -((parseYmd(calDay).getDay() - weekStart() + 7) % 7));
     else {
       if (!viewFirst || calDay < viewFirst || calDay > addDays(viewFirst, weekDays - 1)) viewFirst = calDay;
       first = viewFirst;
@@ -21256,7 +21284,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       }), ...(shiftBy.get(d) || []).map((p) => ({ p, s: p.s, end: Math.max(p.end, p.s + 30) }))];
       layoutCols(blocks);
       const free = freeSlots(d, turnsBy.get(d) || [], shiftBy.get(d) || []); // ⑥
-      return el("div", { class: "tg-col" + (d === todayKey && n > 1 ? " today" : ""), "data-day": d, role: "group", "aria-label": fmtMDW(d) + (blocks.length ? "" : "、予定なし") },
+      return el("div", { class: "tg-col" + (d === todayKey && n > 1 ? " today" : ""), "data-day": d, role: "group", "aria-label": fmtMDW(d) + (blocks.length ? "" : "、予定なし") }, cal17Bands(d), // (カレンダー その17 ④ 時限の帯)
         free.map((sl) => el("button", { type: "button", class: "tg-free" + (n === 1 ? " one" : ""), style: `top: ${sl[0] / 14.4}%; height: ${(sl[1] - sl[0]) / 14.4}%`,
           "aria-label": `${fmtMDW(d)} ${slotText(sl)} は空いています。ここに予定を追加`, onclick: () => openNewPlanAt(d, atMin(sl[0])) }, n === 1 && sl[1] - sl[0] >= 45 ? el("span", {}, `空き ${durText(sl[1] - sl[0])}`) : null)),
         calTravelBands(blocks, n), cal8BackBands(blocks, n), // (カレンダー その2 ②, その8 ③ 帰り)
@@ -21300,7 +21328,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     resetSheet();
     if (!$("planTitle").value.trim()) clearPlanForm(); // (what was typed before stays, on this day and hour)
     $("planDate").value = d; $("planEndDate").value = ""; whenKeep.plan = null;
-    $("planTime").value = hm; $("planEndTime").value = atMin(Math.min(minOf(hm) + 60, 23 * 60 + 59));
+    $("planTime").value = hm; $("planEndTime").value = atMin(Math.min(minOf(hm) + cal17Len(), 23 * 60 + 59)); // (カレンダー その17 ①)
     syncPlanRows("plan"); remember("plan");
     whenOpen.plan = null; syncWhen("plan");
     planNew = true; renderPlanLabels(); syncSheetHead(); syncPlanSave(); renderPlanParse(); renderPlanOften();
@@ -21318,7 +21346,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   function renderCalendar() {
     syncCalView();
-    draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); draw(renderCalSix); draw(renderCalSeven); draw(renderCalEight); draw(renderCalNine); draw(renderCalTen); draw(renderCalTwelve); draw(renderCalThirteen); draw(renderCalFourteen); draw(renderCalSixteen); // (その16 ④ 地図でつなぐ; その14 ⑨⑩ and the gear; その13 ①②⑤ the day's sheet, ①②⑨ the gear; その12 ②⑨ the gear; その10 ③⑤⑦; その9 ②⑤⑥⑦⑧⑩; その8 ①④⑤⑩; その7 ①③④⑥ the gear and the forms; その6 ①⑤⑧; その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
+    draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); draw(renderCalSix); draw(renderCalSeven); draw(renderCalEight); draw(renderCalNine); draw(renderCalTen); draw(renderCalTwelve); draw(renderCalThirteen); draw(renderCalFourteen); draw(renderCalSixteen); draw(renderCalSeventeen); // (その17 ②③⑩ and the gear; その16 ④ 地図でつなぐ; その14 ⑨⑩ and the gear; その13 ①②⑤ the day's sheet, ①②⑨ the gear; その12 ②⑨ the gear; その10 ③⑤⑦; その9 ②⑤⑥⑦⑧⑩; その8 ①④⑤⑩; その7 ①③④⑥ the gear and the forms; その6 ①⑤⑧; その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
     const title = calTitle();
     if ($("calMonthName").textContent !== title) $("calMonthName").textContent = title; // a live region: only a change is read out
     const todoBy = groupBy(todos.items, (t) => t.due);
@@ -21372,8 +21400,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         // day's name lists the labels too
         const sh = (shiftBy.get(d) || []).filter((p) => p.first), mk = markBy.get(d);
         const plans = [
-          ...[...own.map((t) => ({ k: cal14SortKey(t), text: cal4Name(t), hue: labelHue(labelOf(t.e)), plain: !labelOf(t.e), ten: !!t.e.ten, cx: cal4Cx(t.e, t.start) })), // (カレンダー その4 ①③ ★ and 20歳, ② 中止)
-            ...sh.map((p) => ({ k: p.x.start, text: shiftName(p.x), hue: "var(--c-money)" }))].sort((a, b) => a.k.localeCompare(b.k)),
+          ...[...own.map((t) => ({ k: cal14SortKey(t), text: cal17BarTime(t) + cal4Name(t), hue: labelHue(labelOf(t.e)), plain: !labelOf(t.e), ten: !!t.e.ten, cx: cal4Cx(t.e, t.start) })), // (カレンダー その4 ①③ ★ and 20歳, ② 中止)
+            ...sh.map((p) => ({ k: p.x.start, text: cal17ShiftTime(p) + shiftName(p.x), hue: "var(--c-money)" }))].sort((a, b) => a.k.localeCompare(b.k)),
           ...todosDue.map((t) => ({ text: t.text, hue: "var(--c-todo)", due: true })),
           ...goalsDue.map((g) => ({ text: g.title, hue: goalHue(g), due: true })),
         ];
@@ -21614,7 +21642,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("planEndDate").value = "";
     if (p.time) {
       $("planTime").value = p.time;
-      const end = p.end || atMin(Math.min(minOf(p.time) + 60, 23 * 60 + 59));
+      const end = p.end || atMin(Math.min(minOf(p.time) + cal17Len(), 23 * 60 + 59)); // (カレンダー その17 ①)
       $("planEndTime").value = end;
       if (end <= p.time) $("planEndDate").value = addDays($("planDate").value, 1); // (past midnight: the next day's)
     } else if (p.date) { $("planTime").value = ""; $("planEndTime").value = ""; }
@@ -21695,7 +21723,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a free time pressed in a day's sheet: the new plan's form there, at its start, for an hour (or what is left of it)
   function openPlanFromDayAt(a, b) {
     openPlanFromDay();
-    $("planTime").value = atMin(a); $("planEndTime").value = atMin(Math.min(a + 60, b, 23 * 60 + 59)); $("planEndDate").value = "";
+    $("planTime").value = atMin(a); $("planEndTime").value = atMin(Math.min(a + cal17Len(), b, 23 * 60 + 59)); $("planEndDate").value = "";
     whenOpen.plan = null; syncPlanRows("plan"); syncPlanSave();
   }
 
@@ -25324,7 +25352,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月16日 13:43"; // 145c92c1 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月16日 14:03"; // 519fb065 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -34309,7 +34337,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!e) { box.replaceChildren(); return; }
     const d = e.repeat ? editingStart || e.date : e.date, act0 = document.activeElement, k = box.contains(act0) ? act0.dataset.k || act0.id : null;
     const typed = act0?.id === "edNoteText" ? act0.value : null;
-    setChildren(box, cal11QuickCard(e), cal12MeetCard(e, d), cal13LinkCard(e), cal14TopCards(e, d), cal15ResvCard(e), calThree ? cal3EditCards(e, d) : null, cal4EditCards(e, d), cal5EditCards(e, d), cal6EditCards(e, d), cal7EditCards(e, d), cal10EditCards(e, d), cal11StudyCard(e, d), cal12EditCards(e, d), cal13EditCards(e), cal14EditCards(e), cal16EditCards(e, d), calDecideCard(e, editingStart), calChecksCard(e, d), calNoteCard(e, d)); // (カレンダー その3 ②⑧ first; その11 ⑦⑧ 参加する・電話 over all)
+    setChildren(box, cal11QuickCard(e), cal12MeetCard(e, d), cal13LinkCard(e), cal14TopCards(e, d), cal15ResvCard(e), calThree ? cal3EditCards(e, d) : null, cal4EditCards(e, d), cal5EditCards(e, d), cal6EditCards(e, d), cal7EditCards(e, d), cal10EditCards(e, d), cal11StudyCard(e, d), cal12EditCards(e, d), cal13EditCards(e), cal14EditCards(e), cal16EditCards(e, d), cal17EditCards(e, d), calDecideCard(e, editingStart), calChecksCard(e, d), calNoteCard(e, d)); // (カレンダー その3 ②⑧ first; その11 ⑦⑧ 参加する・電話 over all)
     cal15RenderNav(e, d); // (カレンダー その15 ⑥ 前の予定・次の予定, under the form)
     if (k) { const n = box.querySelector(`[data-k="${k}"]`) || $(k); if (n) { if (typed !== null && n.id === "edNoteText") n.value = typed; n.focus(); } }
   }
@@ -35412,7 +35440,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("button", { type: "button", class: "btn sm", "data-k": "dup", onclick: () => removeWithUndo(events, extra.map((e) => e.id), `${extra.length}件の同じ予定をまとめました`) }, "1つずつにまとめる"))];
   }
   // 予定 while nothing is typed (renderFind calls in): ⑩, ⑦ and ⑧ over what is coming
-  function cal5FindCards() { return calFive ? [...cal5DupCard(), ...cal7ClashCard(), ...cal10CountCard(), ...cal5FreeCard(), ...cal5SomeCard(), ...cal13RecentCard(), ...cal9PeopleCard()] : null; } // (その7 ⑦ 重なっている予定, その9 ③④ 人と場所)
+  function cal5FindCards() { return calFive ? [...cal5DupCard(), ...cal7ClashCard(), ...cal10CountCard(), ...cal5FreeCard(), ...cal5SomeCard(), ...cal13RecentCard(), ...cal17Album(), ...cal9PeopleCard()] : null; } // (その7 ⑦ 重なっている予定, その9 ③④ 人と場所)
 
   // drawn with the calendar: ③ in the day's sheet, ⑥'s settings, ① the forms, ⑧ a plan made from the list
   function renderCalFive() {
@@ -36326,7 +36354,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("planLens").before(cal8Starts);
   function cal8SetStart(d, m) {
     if ($("planAllDay")?.checked) { $("planAllDay").checked = false; setAllDay("plan", false); }
-    const len = cal5Len("plan") > 0 ? cal5Len("plan") : 60;
+    const len = cal5Len("plan") > 0 ? cal5Len("plan") : cal17Len(); // (その17 ①)
     putWhen("plan", "Date", d); putWhen("plan", "Time", atMin(m));
     const end = m + len;
     putWhen("plan", "EndDate", end >= 1440 ? addDays(d, Math.floor(end / 1440)) : d); putWhen("plan", "EndTime", atMin(end % 1440));
@@ -38316,7 +38344,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     return null;
   }
-  const cal15Len = () => { const v = cal5Len("plan"); return v > 0 ? v : 60; };
+  const cal15Len = () => { const v = cal5Len("plan"); return v > 0 ? v : cal17Len(); }; // (その17 ①)
   function cal15FreeChip() {
     if (!calFifteen) return [];
     const x = cal15NextFree(cal15Len());
@@ -38897,6 +38925,271 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return xs.length ? [["cal16Left", xs]] : [];
   }
   calSixteen = true;
+
+  // ---------- カレンダー その17 ①〜⑩ (the user's calls, 2026-11-16): a new plan's length (①), two labels made one (②), 平日
+  // in 週 (③), the timetable's periods behind 週・日 (④), the start times in the month (⑤), a notification of the time
+  // between plans (⑥), the week printed (⑦), a repeat's other turns' memos (⑧), the plans with photos (⑨), and a note
+  // for the month (⑩) ----------
+  // (what was there calls in here; before this part has run, as the page opens, these do nothing: those it calls are
+  // function declarations, there from the start)
+  var calSeventeen = false;
+
+  // ① 新しい予定の長さ (the gear): how long a new plan is at first (an hour, as before), wherever its end is put for it
+  const CAL17_LENS = [[30, "30分"], [45, "45分"], [60, "1時間"], [90, "1時間30分"], [120, "2時間"], [180, "3時間"]];
+  function cal17Len() { const v = calSeventeen ? num(calSet().len17) : 0; return CAL17_LENS.some(([m]) => m === v) ? v : 60; }
+
+  // ② ラベルをまとめる (ラベル, under the list): one label's plans given another, and the first taken away; 元に戻す puts
+  // both back
+  const cal17Merge = el("div", { class: "card pad cal17-merge", id: "cal17Merge" }), cal17MergeHead = el("h3", { class: "group-head" }, "ラベルをまとめる");
+  $("labelList").parentElement.after(cal17MergeHead, cal17Merge);
+  function renderCal17Merge() {
+    const ls = sortedLabels();
+    cal17Merge.hidden = cal17MergeHead.hidden = ls.length < 2;
+    if (ls.length < 2) { cal17Merge.replaceChildren(); return; }
+    if (cal17Merge.contains(document.activeElement) && document.activeElement.tagName === "SELECT") return;
+    const was = [$("cal17From")?.value, $("cal17To")?.value], n = (id) => events.items.filter((e) => e.labelId === id).length;
+    const from = el("select", { id: "cal17From", "aria-label": "まとめるラベル" }, ls.map((l) => el("option", { value: l.id }, `${l.name}（${n(l.id)}件）`)));
+    const to = el("select", { id: "cal17To", "aria-label": "まとめ先のラベル" }, ls.map((l) => el("option", { value: l.id }, l.name)));
+    from.value = ls.some((l) => l.id === was[0]) ? was[0] : ls[0].id;
+    to.value = ls.some((l) => l.id === was[1]) && was[1] !== from.value ? was[1] : (ls.find((l) => l.id !== from.value) || ls[0]).id;
+    setChildren(cal17Merge, el("div", { class: "cal17-merge-row" }, from, el("span", { class: "cal17-merge-w" }, "を"), to, el("span", { class: "cal17-merge-w" }, "に")),
+      el("button", { type: "button", class: "btn sm", id: "cal17MergeGo", onclick: () => cal17DoMerge(from.value, to.value) }, "まとめる"),
+      el("p", { class: "sub" }, "はじめのラベルの予定が、まとめ先のラベルになります。はじめのラベルは消えます。"));
+  }
+  function cal17DoMerge(a, b) {
+    const la = labels.get(a), lb = labels.get(b);
+    if (!la || !lb || a === b) { flash("ちがうラベルを2つ選んでください"); return; }
+    const before = JSON.parse(JSON.stringify(la)), ids = events.items.filter((e) => e.labelId === a).map((e) => e.id);
+    act(async () => { if (ids.length) await events.updateMany(ids.map((id) => [id, { labelId: b }])); await labels.remove(a); });
+    flash(`「${clip(la.name, 12)}」の予定 ${ids.length}件を「${clip(lb.name, 12)}」にまとめました`,
+      () => act(async () => { await labels.set(before.id, before); if (ids.length) await events.updateMany(ids.map((id) => [id, { labelId: a }])); flash("元に戻しました"); }));
+  }
+
+  // ③ 平日 (週, beside 7日・5日・3日): Monday to Friday of the week of the day picked (the next week's from a Saturday or
+  // Sunday), a week at a turn; kept on this device as the others are
+  const CAL17_WD_KEY = LS_PREFIX + "calWd";
+  let cal17WdWant = (() => { try { return localStorage.getItem(CAL17_WD_KEY) === "1"; } catch { return false; } })();
+  function cal17Wd() { return !!calSeventeen && cal17WdWant && weekDays === 5; }
+  function cal17Mon(d) { const wd = parseYmd(d).getDay(); return addDays(d, wd === 6 ? 2 : wd === 0 ? 1 : 1 - wd); }
+  function cal17Step(n) { return cal17Wd() ? 7 : n; }
+  {
+    $("calDays").append(el("button", { type: "button", "data-days": "wd", "aria-pressed": "false" }, "平日"));
+    $("calDays").addEventListener("click", (ev) => {
+      const b = ev.target.closest("button[data-days]");
+      if (!b || !calSeventeen) return;
+      const wd = b.dataset.days === "wd";
+      if (wd || (b.dataset.days === "5" && cal17WdWant && weekDays === 5)) {
+        ev.stopImmediatePropagation();
+        cal17WdWant = wd;
+        try { localStorage.setItem(CAL17_WD_KEY, wd ? "1" : "0"); } catch {}
+        weekDays = 5; viewFirst = null; saveCalView(); renderCalendar();
+        return;
+      }
+      cal17WdWant = false;
+      try { localStorage.setItem(CAL17_WD_KEY, "0"); } catch {}
+    }, true);
+  }
+
+  // ④ 時限の帯 (the gear; off at first): in 週 and 日, the timetable's periods as pale bands behind the plans on the days
+  // its classes run (Monday to Friday, Saturday when it has one, within its term), each with its number
+  function cal17Bands(d) {
+    if (!calSeventeen || !calSet().bands17 || !isDay(d || "")) return null;
+    const tt = ttGet(), wd = parseYmd(d).getDay();
+    if (!tt.items.length || wd === 0 || (wd === 6 && !tt.sat) || d < tt.from || d > tt.to) return null;
+    return tt.periods.map((p, i) => (isHm(p.from) && isHm(p.to) && p.to > p.from ? el("div", { class: "cal17-band", "aria-hidden": "true", style: `top: ${minOf(p.from) / 14.4}%; height: ${(minOf(p.to) - minOf(p.from)) / 14.4}%` }, el("span", {}, `${i + 1}限`)) : null));
+  }
+
+  // ⑤ 月のマスに時刻 (the gear; off at first): the start time before a plan's name (and a shift's) in the month
+  function cal17BarTime(t) { return calSeventeen && calSet().barTime17 && t.day === 0 && isHm(t.e.time) ? t.e.time.replace(/^0/, "") + " " : ""; }
+  function cal17ShiftTime(p) { return calSeventeen && calSet().barTime17 && isHm(p.x.start) ? p.x.start.replace(/^0/, "") + " " : ""; }
+
+  // ⑥ すきま時間のお知らせ (the gear; off at first, 1時間 or more): as a plan with a time (or a shift) ends, when the next
+  // one that day begins that long after or more (its time to leave counted), how long there is until it
+  const CAL17_GAPS = [[30, "30分以上"], [60, "1時間以上"], [90, "1時間30分以上"], [120, "2時間以上"]];
+  function cal17Gap() { const v = calSet().gap17 || {}; return { on: !!v.on, min: CAL17_GAPS.some(([m]) => m === num(v.min)) ? num(v.min) : 60 }; }
+  function cal17Spans(d, tb, sb, hidden) {
+    return [...(tb.get(d) || []).filter((t) => !t.e.cand && !t.e.ten && !cal4Cx(t.e, t.start) && onCalendar(t.e, hidden) && typeof t.e.title === "string").map((t) => {
+      const sp = turnSpan(t);
+      return sp && { s: sp[0], end: sp[1], name: oneLine(t.e.title), tv: t.day === 0 && !t.e.online ? num(t.e.travel) : 0 };
+    }).filter(Boolean), ...(sb.get(d) || []).map((p) => ({ s: p.s, end: p.end, name: shiftName(p.x), tv: 0 }))].sort((a, b) => a.s - b.s);
+  }
+  function cal17GapAlarms(now) {
+    const g = cal17Gap();
+    if (!calSeventeen || !g.on) return [];
+    const out = [], last = addDays(todayKey, PUSH_AHEAD), tb = turnsByDay(todayKey, last), sb = shiftsByDay(todayKey, last), hidden = calHidden();
+    for (let i = 0; i <= PUSH_AHEAD; i++) {
+      const d = addDays(todayKey, i), xs = cal17Spans(d, tb, sb, hidden);
+      let end = -1;
+      for (let k = 0; k < xs.length - 1; k++) {
+        end = Math.max(end, xs[k].end);
+        const nx = xs[k + 1], gap = nx.s - nx.tv - end;
+        if (end >= 1440 || gap < g.min) continue;
+        const at = dayAt(d, atMin(end));
+        if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5) continue;
+        out.push({ at, title: `すきま時間 ${durText(gap)}`, body: `次の「${clip(nx.name, 30)}」（${atMin(nx.s)}${nx.tv ? `、${atMin(nx.s - nx.tv)}に出発` : ""}）まで、${durText(gap)}あります`, tag: `cal-gap:${d}:${atMin(end)}`, url: `./#calendar:${d}` });
+      }
+    }
+    return out;
+  }
+  function cal17Push() {
+    const g = cal17Gap();
+    if (!calSeventeen || !g.on) return [];
+    const last = addDays(todayKey, PUSH_AHEAD), tb = turnsByDay(todayKey, last), sb = shiftsByDay(todayKey, last), hidden = calHidden(), days = [];
+    for (let i = 0; i <= PUSH_AHEAD; i++) { const d = addDays(todayKey, i), xs = cal17Spans(d, tb, sb, hidden); if (xs.length > 1) days.push(d + xs.map((x) => `${x.s}-${x.end}-${x.tv}-${x.name}`).join(",")); }
+    return [["cal17Gap", g.min, days]];
+  }
+
+  // ⑦ この週を印刷 (a day's 文字で送る, beside この週を画像で): the week of the day open as a table on paper, a line a day
+  // with its plans (中止 struck through), places, shifts, holidays and its note
+  function cal17WeekBox(d) {
+    const ws = weekStart(), first = addDays(d, -((parseYmd(d).getDay() - ws + 7) % 7)), last = addDays(first, 6), hidden = calHidden(), tb = turnsByDay(first, last), sb = shiftsByDay(first, last);
+    const rows = Array.from({ length: 7 }, (_, i) => {
+      const x = addDays(first, i), wd = parseYmd(x).getDay(), hol = calHolName(x), note = cal8NoteOf(x);
+      const ts = (tb.get(x) || []).filter((t) => onCalendar(t.e, hidden) && !t.e.cand), sh = (sb.get(x) || []).filter((p) => p.first);
+      const lines = [...ts.map((t) => ({ k: cal14SortKey(t), w: `${turnTimeText(t)}　${cal4Name(t)}${t.e.place && t.day === 0 ? `（${oneLine(t.e.place)}）` : ""}`, cx: cal4Cx(t.e, t.start) })),
+        ...sh.map((p) => ({ k: p.x.start, w: `${shiftText(p.x)}　${shiftName(p.x)}` }))].sort((a, b) => a.k.localeCompare(b.k));
+      return el("tr", {}, el("th", { class: (wd === 0 || hol ? "sun" : wd === 6 ? "sat" : "") }, fmtShort(x), hol ? el("span", { class: "cal8-p-hol" }, hol) : null),
+        el("td", {}, lines.length ? lines.map((l) => el("div", { class: "cal8-p-ev" + (l.cx ? " cx" : "") }, l.w)) : null, note ? el("div", { class: "cal8-p-note" }, note) : null));
+    });
+    return el("div", { id: "cal8Print", class: "cal17-wk" }, el("h1", {}, `${fmtMD(first)}〜${fmtMD(last)}の予定`), el("table", {}, el("tbody", {}, rows)));
+  }
+  function cal17PrintWeek(d) {
+    $("cal8Print")?.remove();
+    const box = cal17WeekBox(d);
+    document.body.append(box);
+    const gone = () => { box.remove(); window.removeEventListener("afterprint", gone); };
+    window.addEventListener("afterprint", gone);
+    setTimeout(() => { try { window.print(); } catch { gone(); flash("この端末では印刷できません"); } }, 60);
+  }
+  $("dayShareBox").append(el("button", { type: "button", class: "chip-btn", "data-share": "week-print", onclick: () => { $("dayShareBox").hidden = true; cal17PrintWeek(calDay); } }, "この週を印刷"));
+
+  // ⑧ ほかの回のメモ (a repeat opened): its other turns with a 回のメモ or a ふりかえり, the latest first (12 at most), a line
+  // each with the mood and the words; pressed, that turn
+  function cal17PastCard(e, d) {
+    if (!calSeventeen || !e?.repeat || !isDay(d || "")) return null;
+    const days = [...new Set([...Object.keys(e.turnNotes || {}), ...Object.keys(e.notes || {})])].filter((x) => isDay(x) && x !== d).sort().reverse();
+    const rows = days.map((x) => ({ x, memo: cal10TurnNote(e, x), n: calNoteOf(e, x) })).filter((r) => r.memo || r.n).slice(0, 12);
+    if (!rows.length) return null;
+    return [el("h3", { class: "group-head" }, "ほかの回のメモ・ふりかえり"), el("ul", { class: "list card cal17-past" }, rows.map((r) => el("li", { class: "btn-row" },
+      el("button", { type: "button", class: "row-btn nav", "data-k": "past-" + r.x, "aria-label": `${fmtMDW(r.x)}の回を開く`, onclick: () => cal17OpenTurn(e.id, r.x) },
+        el("span", { class: "chip" + (r.x > todayKey ? " soon" : "") }, fmtMD(r.x)),
+        el("span", { class: "body" }, r.memo ? el("span", { class: "text" }, r.memo) : null,
+          r.n ? el("span", { class: "sub" }, r.n.mood ? el("span", { class: "cal-mood m-" + r.n.mood }, calMoodWord(r.n.mood)) : null, r.n.text ? el("span", {}, (r.n.mood ? " " : "") + oneLine(r.n.text)) : null) : null)))))];
+  }
+  function cal17OpenTurn(id, d) {
+    leaveRec(() => {
+      if (!events.get(id)) return;
+      if (calDay !== d) { calDay = d; renderCalendar(); }
+      editEvent(id, d);
+    });
+  }
+  function cal17EditCards(e, d) { return calSeventeen ? cal17PastCard(e, d) : null; }
+
+  // ⑨ 写真のある予定 (予定, nothing typed): the plans with photos on this device, the latest first, each its first photo,
+  // its name and day; pressed, the plan
+  let cal17AlbumAsked = false;
+  function cal17Album() {
+    if (!calSeventeen) return [];
+    if (cal13Ph === null) { if (!cal17AlbumAsked) { cal17AlbumAsked = true; cal13PhLoad().then(() => { if (cal13Ph?.length) renderFind(); }); } return []; }
+    const by = new Map();
+    for (const ph of cal13Ph || []) {
+      const e = events.get(ph.planId);
+      if (!e || typeof e.title !== "string") continue;
+      const x = by.get(e.id) || { e, ph: [], at: 0 };
+      x.ph.push(ph); x.at = Math.max(x.at, num(ph.createdAt));
+      by.set(e.id, x);
+    }
+    const xs = [...by.values()].sort((a, b) => b.at - a.at).slice(0, 12);
+    if (!xs.length) return [];
+    return [el("h3", { class: "group-head" }, "写真のある予定"), el("div", { class: "card pad cal17-album" }, el("div", { class: "cal17-album-row" }, xs.map((x) => {
+      const first = [...x.ph].sort((a, b) => num(a.createdAt) - num(b.createdAt))[0], d = x.e.date;
+      return el("button", { type: "button", class: "cal17-album-item", "data-plan": x.e.id, "aria-label": `${oneLine(x.e.title)}（${fmtMDW(d)}・写真 ${x.ph.length}枚）を開く`, onclick: () => cal17OpenPlan(x.e.id, d) },
+        el("img", { src: cal13PhUrl(first), alt: "", loading: "lazy" }), x.ph.length > 1 ? el("span", { class: "cal17-album-n" }, String(x.ph.length)) : null,
+        el("span", { class: "cal17-album-t" }, oneLine(x.e.title)), el("span", { class: "cal17-album-d" }, fmtShort(d)));
+    })))];
+  }
+  function cal17OpenPlan(id, d) {
+    if (!events.get(id)) return;
+    openDayFromFind(d); // (戻る comes back through its day to 予定)
+    editEvent(id, d);
+  }
+
+  // ⑩ 月のメモ (a day's list, 〇月のメモ; and over the month's days, pressed to change it): a few words for a month (テスト
+  // 期間, その月の目標) in a small window of its own (月を選ぶ has no room left), kept with the account
+  function cal17Note(ym) { const v = calSet().monthNotes17?.[ym]; return typeof v === "string" ? v : ""; }
+  function cal17SetNote(ym, text) {
+    const v = String(text || "").trim().slice(0, 300), all = { ...(calSet().monthNotes17 || {}) };
+    if (!/^\d{4}-\d{2}$/.test(ym || "") || v === cal17Note(ym)) return;
+    if (v) all[ym] = v; else delete all[ym];
+    saveCalSet({ monthNotes17: Object.keys(all).length ? all : undefined });
+    flash(v ? `${fmtMonth(ym)}のメモを保存しました` : `${fmtMonth(ym)}のメモを消しました`);
+  }
+  const cal17Ask = el("dialog", { class: "ask", id: "cal17NoteAsk", "aria-labelledby": "cal17NoteTitle" },
+    el("div", { class: "ask-group" }, el("p", { class: "ask-msg", id: "cal17NoteTitle" }),
+      el("div", { class: "ask-field cal17-note-field" }, el("textarea", { id: "cal17MonthNote", rows: 3, maxlength: 300, "aria-labelledby": "cal17NoteTitle" }),
+        el("button", { type: "button", class: "ask-go", id: "cal17NoteSave" }, "保存"))),
+    el("button", { type: "button", class: "ask-btn ask-keep", id: "cal17NoteNo", onclick: () => cal17Ask.close() }, "やめる"));
+  document.body.append(cal17Ask);
+  let cal17NoteFor = "";
+  function cal17OpenNote(ym) {
+    if (!calSeventeen || !/^\d{4}-\d{2}$/.test(ym || "") || cal17Ask.open) return;
+    cal17NoteFor = ym;
+    $("cal17NoteTitle").textContent = `${fmtMonth(ym)}のメモ`;
+    $("cal17MonthNote").value = cal17Note(ym);
+    cal17Ask.showModal();
+    $("cal17MonthNote").focus();
+  }
+  $("cal17NoteSave").addEventListener("click", () => { cal17SetNote(cal17NoteFor, $("cal17MonthNote").value); cal17Ask.close(); });
+  const cal17MemoLine = el("button", { type: "button", class: "cal17-memo", id: "cal17Memo", hidden: true, onclick: () => cal17OpenNote(calMonth) });
+  $("calDays").after(cal17MemoLine); // (over the month's card, under its bar: the card holds the weekdays and the days alone)
+  const cal17NoteBtn = el("button", { type: "button", class: "link-btn", id: "cal17NoteBtn", onclick: () => cal17OpenNote(monthOf(calDay)) }, icon("journal", 20), el("span", { id: "cal17NoteBtnText" }, "月のメモ"));
+  $("dayView").querySelector(".label-tools").append(cal17NoteBtn);
+
+  // the gear: ① 新しい予定の長さ, ⑤ 月のマスに時刻, ④ 時限の帯, ⑥ すきま時間のお知らせ
+  {
+    const len = el("select", { id: "cal17Len" }, CAL17_LENS.map(([m, w]) => el("option", { value: String(m) }, w)));
+    const bar = el("input", { type: "checkbox", id: "cal17BarTime", class: "switch", role: "switch" });
+    const bands = el("input", { type: "checkbox", id: "cal17Bands", class: "switch", role: "switch" });
+    const gapOn = el("input", { type: "checkbox", id: "cal17GapOn", class: "switch", role: "switch" });
+    const gapMin = el("select", { id: "cal17GapMin" }, CAL17_GAPS.map(([m, w]) => el("option", { value: String(m) }, w)));
+    $("cal14DimForm").after(
+      el("h3", { class: "group-head" }, "新しい予定と表示"),
+      el("form", { class: "add", id: "cal17Form", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
+        ...recRow("新しい予定の長さ", len),
+        el("label", { class: "flabel", for: "cal17BarTime" }, "月のマスに時刻"), el("div", { class: "ffield" }, bar),
+        el("label", { class: "flabel", for: "cal17Bands" }, "週・日に時限の帯"), el("div", { class: "ffield" }, bands)),
+      el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "時限の帯は、時間割の授業がある曜日に、"), el("span", { class: "phrase" }, "学期のあいだ出ます。")),
+      el("h3", { class: "group-head" }, "すきま時間のお知らせ"),
+      el("form", { class: "add", id: "cal17GapForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
+        el("label", { class: "flabel", for: "cal17GapOn" }, "お知らせ"), el("div", { class: "ffield" }, gapOn), ...recRow("あいている時間", gapMin)),
+      el("p", { class: "group-foot", id: "cal17GapFoot" }));
+    len.addEventListener("change", () => saveCalSet({ len17: Number(len.value) === 60 ? undefined : Number(len.value) }));
+    bar.addEventListener("change", () => saveCalSet({ barTime17: bar.checked || undefined }));
+    bands.addEventListener("change", () => saveCalSet({ bands17: bands.checked || undefined }));
+    gapOn.addEventListener("change", () => { saveCalSet({ gap17: { ...cal17Gap(), on: gapOn.checked } }); if (gapOn.checked && pushState() === "off") pushEnable().then(renderCalSeventeen); });
+    gapMin.addEventListener("change", () => saveCalSet({ gap17: { ...cal17Gap(), min: Number(gapMin.value) } }));
+  }
+
+  // drawn with the calendar: ②, ③'s button, ⑩'s line, the gear
+  function renderCalSeventeen() {
+    if (!calSeventeen) return;
+    renderCal17Merge();
+    for (const b of $("calDays").children) b.setAttribute("aria-pressed", String(b.dataset.days === "wd" ? cal17Wd() : Number(b.dataset.days) === weekDays && !cal17Wd()));
+    if (isDay(calDay || "")) $("cal17NoteBtnText").textContent = `${Number(calDay.slice(5, 7))}月のメモ`;
+    const note = calView === "month" ? cal17Note(calMonth) : "";
+    cal17MemoLine.hidden = !note;
+    if (note) { cal17MemoLine.textContent = `メモ：${oneLine(note)}`; cal17MemoLine.setAttribute("aria-label", `${fmtMonth(calMonth)}のメモ：${oneLine(note)}（押すと変えられます）`); }
+    const s = calSet();
+    if (document.activeElement !== $("cal17Len")) $("cal17Len").value = String(cal17Len());
+    $("cal17BarTime").checked = !!s.barTime17;
+    $("cal17Bands").checked = !!s.bands17;
+    const g = cal17Gap();
+    $("cal17GapOn").checked = g.on;
+    if (document.activeElement !== $("cal17GapMin")) $("cal17GapMin").value = String(g.min);
+    $("cal17GapMin").disabled = !g.on;
+    $("cal17GapFoot").textContent = `予定（バイトも）が終わって、次の予定まで${durText(g.min)}以上あくときに、その時間を通知で届けます。` + (g.on && pushState() !== "on" ? "通知を受け取る設定が必要です。" : "");
+  }
+  calSeventeen = true;
 
   // ---------- 目標: 使わないマスを×で埋める (the user's call, 2026-11-11: a chart can't always be filled in whole; its empty
   // squares crossed out so it reads as finished). An empty cell crossed is { t: "", x: true }: still empty to all that
