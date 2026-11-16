@@ -62,7 +62,9 @@ const pick = async (p, n) => { await p.click(`.wx-days li:nth-child(${n}) button
   await p.click("#wxMornOn"); await p.waitForTimeout(400);
   ok((await txt(p, "#wx6NextSum")) === "これから届く天気のお知らせ（6件）", "⑨ the count", await txt(p, "#wx6NextSum"));
   await p.click("#wx6NextSum"); await p.waitForTimeout(200);
-  ok((await txt(p, "#wx6NextList li")).startsWith("あした7:00きょうの天気：晴れ16°/6°｜11/18（水）7:00きょうの天気：くもり14°/5°"), "⑨ the next, by when", await txt(p, "#wx6NextList li"));
+  // (each row's time and words; その12 ⑩ puts a 止める button after them)
+  const nexts = await p.$$eval("#wx6NextList li", (l) => l.map((x) => [...x.querySelectorAll(".wx6-nt, .wx6-nn")].map((y) => y.textContent).join("")).join("｜")).then(flat);
+  ok(nexts.startsWith("あした7:00きょうの天気：晴れ16°/6°｜11/18（水）7:00きょうの天気：くもり14°/5°"), "⑨ the next, by when", nexts);
   await p.fill("#wx6QuietUntil", "2026-11-18"); await p.waitForTimeout(400);
   let al = await W(p, "alarms", T("10:00"));
   ok(al.length === 4 && al[0].at === T("07:00", "2026-11-19") && (await txt(p, "#wx6NextSum")) === "これから届く天気のお知らせ（4件）" && (await txt(p, "#wx6QuietNote")) === "11/18（水）まで、この端末の天気のお知らせ（朝・夜・雨・体調）を休んでいます。",
