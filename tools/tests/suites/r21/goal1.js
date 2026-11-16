@@ -38,7 +38,7 @@ const img = async (p) => Buffer.from(await p.evaluate(() => { const c = document
   // ①②③ in the sheet
   await openGoal(p, "TOEIC");
   let prog = await txt(p, "#mProgress");
-  ok(prog.includes("マス 37%") && prog.includes("記録 15%") && prog.includes("勉強の時間 15.0 / 100 時間") && prog.includes("遅れています。期限に間に合うには、1週間に 7 時間 11 分") && prog.includes("最後に進めたのは 2 日前"), "①②③ the sheet's progress", prog);
+  ok(prog.includes("マス 37%") && prog.includes("記録 15%") && prog.includes("勉強の時間 15.0 / 100 時間") && prog.includes("遅れています（予定より 22日分おくれています）。期限に間に合うには、1週間に 7 時間 11 分") && prog.includes("最後に進めたのは 2 日前"), "①②③ the sheet's progress", prog);
   ok(await p.inputValue("#mLinkKind") === "study" && await p.inputValue("#mLinkTarget") === "100" && await p.inputValue("#mLinkSince") === "2026-10-01" && (await txt(p, "#mLinkFoot")).includes("10/1（木）からの記録"), "① its link in the form");
   // ① a subject: only 英語's 10 hours
   await p.selectOption("#mLinkSub", "sb1"); await p.waitForTimeout(300);
