@@ -101,7 +101,7 @@ const download = async (p, click) => { const [d] = await Promise.all([p.waitForE
   // ⑨ the cards: hidden and moved, kept
   await p.click("#recSettings"); await p.waitForTimeout(500);
   const names = await p.evaluate(() => [...document.querySelectorAll("#recCardList .tname")].map((x) => x.textContent));
-  ok(names.join(",") === "続けた日,1か月前・1年前のきょう,書き忘れた日,日記,食事,運動,からだ,勉強,ルーティーン,家計簿,節目,これまでのいちばん,はじめた日,よく記録するもの,最近の記録,ふりかえる日,しおりの日", "⑨ the cards in 設定", names);
+  ok(names.join(",") === "続けた日,1か月前・1年前のきょう,書き忘れた日,日記,食事,運動,からだ,勉強,ルーティーン,家計簿,節目,これまでのいちばん,はじめた日,よく記録するもの,最近の記録,ふりかえる日,しおりの日,タグ", "⑨ the cards in 設定", names);
   await p.locator("#recCardList li", { hasText: "書き忘れた日" }).locator(".tile-pick").click(); await p.waitForTimeout(300);
   await p.locator("#recCardList li", { hasText: "これまでのいちばん" }).locator(".grip").focus();
   for (let i = 0; i < 11; i++) { await p.keyboard.press("ArrowUp"); await p.waitForTimeout(80); }

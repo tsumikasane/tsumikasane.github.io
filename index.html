@@ -3214,6 +3214,39 @@ ul.list li.rec7-kind-li { min-height: 0; padding-block: 8px 0; font-size: var(--
 ul.list li.rec7-kind-li::before { display: none; }
 .rec7-find-tools { justify-content: flex-start; gap: 0 18px; margin: -4px 0 -6px; }
 .rec7-find-tools .link-btn { min-height: 40px; padding-inline: 6px; border-radius: 8px; font-size: var(--t-sub); font-weight: 600; }
+/* 記録 その8 (2026-11-16). ② a deleted one beside what is there now; ③ the kinds' chips; ④ the two days' table; ⑥ the
+   first and latest days found; ⑦ the tags; ⑧ はじめて; ⑨ the totals so far; ⑩ any of the words */
+.rec8-cmp-btn { display: inline; min-height: 0; padding: 0; font-size: inherit; font-weight: 600; }
+ul.list li.rec8-cmp { display: block; padding-block: 4px 12px; }
+ul.list li.rec8-cmp::before { display: none; }
+.rec8-cmp-in { display: grid; gap: 4px; padding: 10px 12px; border-radius: 10px; background: var(--fill); }
+.rec8-cmp-head { margin: 4px 0 0; font-size: var(--t-foot); font-weight: 600; color: var(--muted); }
+.rec8-diff { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 40vh; overflow-y: auto; }
+.rec8-diff mark { border-radius: 3px; padding: 0 1px; color: inherit; }
+.rec8-diff mark.rec8-del { background: color-mix(in srgb, var(--warn) 22%, transparent); text-decoration: line-through; text-decoration-color: var(--warn); }
+.rec8-diff mark.rec8-ins { background: color-mix(in srgb, var(--accent) 20%, transparent); text-decoration: underline; text-decoration-color: var(--accent); }
+.rec8-cmp-in .notice-actions { margin-top: 6px; }
+.rec8-trash-kinds .chip-btn[aria-pressed="true"], .rec8-with .chip-btn[aria-pressed="true"] { background: var(--accent-fill); color: var(--accent-ink); }
+.rec8-with { display: grid; gap: 10px; margin-top: 4px; }
+.rec8-with[hidden] { display: none; }
+.rec8-with-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.rec8-with-pick .link-btn { margin-inline-start: auto; }
+.rec8-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: var(--t-sub); }
+.rec8-table th, .rec8-table td { padding: 6px 4px; text-align: end; border-bottom: .5px solid var(--separator); }
+.rec8-table thead th { font-size: var(--t-foot); font-weight: 600; color: var(--muted); }
+.rec8-table tbody th { text-align: start; font-weight: 600; white-space: nowrap; }
+.rec8-table td:last-child { color: var(--muted); }
+.rec8-with-go { margin: 0; }
+.rec8-span { margin: -4px 0 0; padding: 0 var(--space-2); }
+.rec8-span .rec8-day { display: inline; min-height: 0; padding: 0; font-size: inherit; font-weight: 600; }
+.rec8-tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 2px; }
+.rec8-tags .chip-btn small { color: var(--muted); font-weight: 400; }
+.rec8-firsts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: var(--space-2); }
+.rec8-firsts strong { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); }
+.rec8-firsts small { color: var(--muted); }
+.rec8-first { display: inline-block; margin-inline-start: 6px; padding: 0 6px; border-radius: 6px; font-size: var(--t-foot); font-weight: 600; line-height: 1.6; vertical-align: 1px; background: var(--accent-fill); color: var(--accent-ink); }
+.rec8-cum { display: block; width: 100%; margin-top: -2px; font-size: var(--t-foot); color: var(--muted); text-align: end; }
+.rec8-toggle[aria-pressed="true"], #rec8Any[aria-pressed="true"] { background: var(--accent-fill); color: var(--accent-ink); border-radius: 8px; }
 /* ⑨ 記録's cards in its 設定, as きょう's tiles there */
 #recCardList > li { padding-block: 0; padding-inline-end: 0; transition: transform .2s ease; }
 #recCardList > li:has(.tile-pick:active) { background: var(--fill-press); }
@@ -7681,6 +7714,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <button type="button" class="link-btn" id="rec4CsvBtn" hidden></button>
           <!-- 記録 その5 ③ what was found, as words (the user's call, 2026-11-15) -->
           <button type="button" class="link-btn" id="rec5TextBtn" hidden>文字で送る</button>
+          <!-- 記録 その8 ⑩ any of the words, ⑨ each day's total so far (the user's calls, 2026-11-16) -->
+          <button type="button" class="link-btn rec8-toggle" id="rec8AnyList" aria-pressed="false" hidden>どれかをふくむ</button>
+          <button type="button" class="link-btn rec8-toggle" id="rec8CumBtn" aria-pressed="false" hidden>ここまでの合計</button>
         </div>
         <div class="rec3-num" id="rec3NumBox" hidden>
           <input type="number" id="rec3Lo" inputmode="decimal" step="any" aria-label="この数から"><span id="rec3UnitLo"></span><span>〜</span><input type="number" id="rec3Hi" inputmode="decimal" step="any" aria-label="この数まで"><span id="rec3UnitHi"></span>
@@ -7718,6 +7754,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <p class="rec-page rec2-share"><button type="button" class="link-btn" id="rec3DayJn"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-journal"/></svg>この日の記録を日記に書き足す</button></p>
         <!-- 記録 その4 ⑨ the day on つみかさね's stairs (the user's call, 2026-11-14) -->
         <p class="rec-page rec2-share" hidden><button type="button" class="link-btn" id="rec4DayStairs"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-stairs"/></svg><span id="rec4DayStairsText"></span></button></p>
+        <!-- 記録 その8 ④ another day beside this one (the user's call, 2026-11-16) -->
+        <p class="rec-page rec2-share"><button type="button" class="link-btn" id="rec8WithBtn" aria-expanded="false" aria-controls="rec8With"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>ほかの日とくらべる</button></p>
+        <div class="card pad rec8-with" id="rec8With" hidden>
+          <div class="rec8-with-pick">
+            <label class="rec2-go"><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-calendar"/></svg><span>くらべる日</span><input type="date" id="rec8WithDay" aria-label="くらべる日"></label>
+            <button type="button" class="chip-btn" id="rec8WithPrev">前の記録の日</button>
+            <button type="button" class="link-btn" id="rec8WithClose">とじる</button>
+          </div>
+          <div id="rec8WithTable"></div>
+        </div>
       </section>
 
       <!-- つみかさね › a year looked back on (the user's call, 2026-11-10): its count, days, months, kinds, times of day and 記念,
@@ -7740,6 +7786,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <input type="search" id="rec2TrashFind" autocomplete="off" enterkeyhint="search" placeholder="削除した項目から探す" aria-label="削除した項目から探す">
           <button type="button" class="rec-search-clear" id="rec2TrashClear" aria-label="探す言葉を消す" hidden><svg class="icon" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
         </div>
+        <!-- 記録 その8 ③ by its kinds (the user's call, 2026-11-16) -->
+        <div class="rec3-sug rec8-trash-kinds" id="rec8TrashKinds" role="group" aria-label="種類でしぼる" hidden></div>
         <!-- 記録 その5 ⑩ picked, to put back or delete for good at once (the user's call, 2026-11-15) -->
         <div class="rec2-tools rec5-trash-tools" id="rec5TrashTools" hidden><button type="button" class="link-btn" id="rec5TrashPick"></button><button type="button" class="link-btn" id="rec5TrashAll" hidden>すべて選ぶ</button></div>
         <ul class="list card" id="trashList"></ul>
@@ -8835,6 +8883,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="rec2-tools rec7-find-tools" id="rec7FindTools" hidden>
           <button type="button" class="link-btn" id="rec7ByDay" aria-pressed="false">日ごとに見る</button>
           <button type="button" class="link-btn" id="rec7SpanBtn" aria-controls="rec7SpanBox" aria-expanded="false">期間でしぼる</button>
+          <!-- 記録 その8 ⑩ any of the words (the user's call, 2026-11-16) -->
+          <button type="button" class="link-btn" id="rec8Any" aria-pressed="false" hidden>どれかをふくむ</button>
         </div>
         <div class="rec3-num rec4-span" id="rec7SpanBox" hidden>
           <input type="date" id="rec7From" aria-label="探すのはこの日から"><span>〜</span><input type="date" id="rec7To" aria-label="この日まで">
@@ -9198,6 +9248,22 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <ul class="list card" id="rec7FileList"></ul>
           <p class="group-foot" id="rec7FileFoot"></p>
         </div>
+        <!-- 記録 その8 ① what is kept on this device alone, as one ZIP, and read back (the user's call, 2026-11-16) -->
+        <h3 class="group-head">写真とファイル</h3>
+        <ul class="list card" id="rec8PhRow">
+          <li class="btn-row"><button type="button" class="row-btn" id="rec8PhOut"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-photo"/></svg><span id="rec8PhOutText">写真とファイルを書き出す</span></button></li>
+          <li class="btn-row"><button type="button" class="row-btn" id="rec8PhIn"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-import"/></svg>写真とファイルを読み込む</button></li>
+        </ul>
+        <div class="card import-ask" id="rec8PhAsk" hidden>
+          <strong id="rec8PhAskHead">写真とファイルを読み込みますか？</strong>
+          <span class="nudge-text" id="rec8PhAskText"></span>
+          <div class="notice-actions">
+            <button type="button" class="btn sm" id="rec8PhGo">読み込む</button>
+            <button type="button" class="link-btn" id="rec8PhCancel">やめる</button>
+          </div>
+        </div>
+        <p class="group-foot" id="rec8PhFoot"></p>
+        <input type="file" id="rec8PhFile" accept=".zip,application/zip" hidden>
         <!-- ⑧ a kind of record as a table, for Excel or Numbers; ⑩ 日記 as one book (the user's calls, 2026-11-10) -->
         <h3 class="group-head">表にして書き出す（CSV）</h3>
         <!-- 記録 その3 ⑩ a span of days for 表 and 日記の本 (the user's call, 2026-11-14) -->
@@ -23799,7 +23865,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         rtDays.length ? `${rtDays.length} 日チェック` : "まだチェックしていません", "list", topList(byRoutine, () => "var(--c-routine)", (n) => `${n} 回`), "routine"), "routine"),
       money: () => withStreak(sumCard("var(--c-money)", "money", "家計簿", fmtN(Math.round(out)), "円 支出", `収入 ${fmtYen(inn)}・収支 ${net > 0 ? "+" : ""}${fmtYen(net)}`, "list",
         topList(byCat, () => "var(--c-money)", fmtYen), "money"), "money"),
-      memory: recMemoryCard, missed: recMissedCard, milestone: recMilestoneCard, best: recBestCard, first: rec2FirstCard, often: rec3OftenCard, recent: rec3RecentCard, pick: rec5PickCard, marks: rec7MarksCard, // (その5 ⑨, その7 ⑦)
+      memory: recMemoryCard, missed: recMissedCard, milestone: recMilestoneCard, best: recBestCard, first: rec2FirstCard, often: rec3OftenCard, recent: rec3RecentCard, pick: rec5PickCard, marks: rec7MarksCard, tags: rec8TagsCard, // (その5 ⑨, その7 ⑦, その8 ⑦)
     };
     const hidden = recCardHidden();
     setChildren($("sumCards"), recCardOrder().filter((k) => !hidden.has(k) && cards[k]).map((k) => cards[k]()).filter(Boolean));
@@ -23872,7 +23938,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderRecList() {
     const spec = RECORD_LISTS[recListKind];
     if (!spec) return;
-    const words = spec.text ? foldText(recQuery).split(/\s+/).filter(Boolean) : [];
+    const words = spec.text ? rec8Words(foldText(recQuery).split(/\s+/).filter(Boolean)) : []; // (その8 ⑩ any of them)
     const all = spec.items().filter((x) => x.date && x.date <= todayKey);
     const found = (words.length ? all.filter((x) => rec5Match(words, foldText(spec.text(x)))) : all).filter((x) => rec3NumOk(x) && rec4SpanOk(x) && rec5DowOk(x) && rec7WxOk(x)); // (その3 ② a number, その4 ① a span, その5 ① words left out and ④ the days of the week, その7 ⑤ the weather)
     const narrowed = words.length > 0 || rec3NumOn() || rec4SpanOn() || rec5DowOn() || rec7WxOn(); // (その3 ②, その4 ①, その5 ④, その7 ⑤)
@@ -23906,6 +23972,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     rec5AfterList(); // (その5 ③ ④ ⑤)
     rec6AfterList(); // (その6 ① ②)
     rec7AfterList(); // (その7 ④ ⑤)
+    rec8AfterList(found); // (その8 ⑧ ⑨ ⑩)
   }
   $("recListPage").addEventListener("click", () => openFromHome(pageOf(recListKind), isDietPart(recListKind) ? recListKind : null));
   $("recSearch").addEventListener("input", (ev) => { recQuery = ev.target.value; renderRecList(); });
@@ -24463,7 +24530,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月16日 10:14"; // 1bec7961 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月16日 10:19"; // 86a32e44 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -24602,6 +24669,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     rec4Mark($("trashList"), rec2TrashQ, ".text"); // (記録 その4 ④ the words, marked)
     rec5TrashAfter(); // (記録 その5 ⑩ picked)
     rec6TrashSoon(); // (記録 その6 ⑧ what goes soon)
+    rec8TrashAfter(); // (記録 その8 ② beside what is there now, ③ by kind)
   }
   function renderTrashRow() {
     const n = trashItems().length;
@@ -26016,6 +26084,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     rec4DayExtras(d); // (その4 ⑤ ⑥ ⑦ ⑨)
     rec6DayExtras(d); // (その6 ④ ⑥)
     rec7DayExtras(d); // (その7 ① ⑥ ⑦)
+    rec8DayExtras(d); // (その8 ④ ⑤ ⑧)
   }
   $("recDayPrev").addEventListener("click", () => { recDayAt = addDays(recDayAt, -1); renderRecDay(); });
   $("recDayNext").addEventListener("click", () => { if (recDayAt < todayKey) { recDayAt = addDays(recDayAt, 1); renderRecDay(); } });
@@ -26026,7 +26095,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   let recAllQuery = "";
   const REC_FIND = ["journal", "meal", "workout", "study", "routine", "money"]; // (からだ: numbers only)
   function renderRecFound() {
-    const q = recAllQuery.trim(), words = foldText(q).split(/\s+/).filter(Boolean), box = $("recFound");
+    const q = recAllQuery.trim(), words = rec8Words(foldText(q).split(/\s+/).filter(Boolean)), box = $("recFound"); // (その8 ⑩ any of them)
     $("recAllClear").hidden = !recAllQuery;
     box.hidden = !words.length; $("sumCards").hidden = !!words.length;
     rec2RenderRecent(); // (その2 ⑤)
@@ -26060,6 +26129,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (rec7ByDayOn()) parts.splice(0, parts.length, ...rec7DayParts(byKind, words)); // (その7 ② by day)
     setChildren(box, rec2DateRow(q), el("p", { class: "sub rec-found-say", role: "status" }, total ? `${rec7Say(q)}の記録 ${total} 件` : `${rec7Say(q)}に合う記録はありません。`), rec2KindChips(counts), parts); // (rec7Say: その7 ③ the span)
     rec4Mark(box, q); // (その4 ④ the words, marked)
+    rec8FoundAfter(byKind, q); // (その8 ⑥ the first and latest days, ⑩ any of the words)
   }
   $("recAll").addEventListener("input", (ev) => { recAllQuery = ev.target.value; renderRecFound(); });
   $("recAll").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing) ev.target.blur(); });
@@ -26224,6 +26294,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     { key: "often", label: "よく記録するもの", icon: "heart" }, { key: "recent", label: "最近の記録", icon: "records" }, // (その3 ⑨ ⑧)
     { key: "pick", label: "ふりかえる日", icon: "calendar" }, // (その5 ⑨)
     { key: "marks", label: "しおりの日", icon: "pin" }, // (その7 ⑦)
+    { key: "tags", label: "タグ", icon: "search" }, // (その8 ⑦)
   ];
   const recCard = (k) => REC_CARDS.find((c) => c.key === k);
   const recCardPrefs = () => settings.get("recordCards") || {};
@@ -26327,6 +26398,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     renderRecCardList(); renderCsvList();
     const n = journal.items.filter((j) => j.text?.trim() && (!rec3Ranged() || rec3InRange(j.date || j.id))).length; // (その3 ⑩)
     $("journalBookFoot").textContent = n ? `書いた ${fmtN(n)} 日分を、古い日から順に1つのテキストファイルにします。` : "日記を書くと、ここから1冊にまとめて書き出せます。";
+    rec8PhCount(); // (その8 ① 写真とファイル)
   }
 
   // ---------- 記録 その2 ①〜⑩ (the user's calls, 2026-11-14): on a day's page the nearest days with records past those with
@@ -26505,6 +26577,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // field once there are four or more
   var rec2TrashQ = "";
   function rec2TrashFilter(items) {
+    items = rec8TrashKindOf(items); // (その8 ③ a kind)
     const words = foldText(rec2TrashQ).split(/\s+/).filter(Boolean);
     if (!words.length) return items;
     return items.filter((t) => rec5Match(words, foldText(`${trashText(t)} ${t.store === "tsumi" ? "ブロック" : STORE_NAMES[t.store] || ""}`))); // (その5 ① -ことば)
@@ -26998,8 +27071,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   var rec5Ready = false;
 
   // ① -カレー: the records without カレー. Every word in t, those with - in front not (a - alone is looked for as it is)
-  function rec5Match(words, t) { return words.every((w) => (w.length > 1 && w[0] === "-" ? !t.includes(w.slice(1)) : t.includes(w))); }
-  function rec5Plain(words) { return words.filter((w) => !(w.length > 1 && w[0] === "-")); }
+  function rec5Match(words, t) { const any = (w) => w.split("|").some((v) => v && t.includes(v)); return words.every((w) => (w.length > 1 && w[0] === "-" ? !any(w.slice(1)) : any(w))); } // (a|b: either, 記録 その8 ⑩)
+  function rec5Plain(words) { return words.filter((w) => !(w.length > 1 && w[0] === "-")).flatMap((w) => w.split("|")).filter(Boolean); }
 
   // ② a 日記 found in 記録's search: a long one round where the first of the words is (a little before it, more after),
   // with how many more times it is there; pressed, it opens whole, as before
@@ -27662,6 +27735,529 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (how) flash(how === "shared" ? "このコピーを書き出しました" : `「${name}」を書き出しました`);
   });
   rec7Ready = true;
+
+  // ---------- 記録 その8 ①〜⑩ (the user's calls, 2026-11-16): what is kept on this device alone (photos, drawings,
+  // voices, files) written out as one ZIP and read back (①); in 最近削除した項目 one written over set beside what is there
+  // now, the changes marked (②), and its kinds to narrow it to (③); on a day's page another day beside it (④), the day's
+  // records deleted, to put back (⑤), and what was recorded for the first time (⑧, marked in a kind's list too); in
+  // 記録's search the first and the latest day found (⑥) and any of the words in place of all (⑩); the #タグ written in
+  // the records, as a card (⑦); and in a kind's list each day's total so far (⑨). Still no weeks, months or years in the
+  // cards, no charts, nothing typed in but words, numbers and days to look for (the user's calls before). (var and
+  // function declarations: the pages above may draw before this; rec8Ready, set at its end) ----------
+  var rec8Ready = false;
+
+  // ① 写真とファイル: 日記's photos, drawings and voices, からだ・食事・ToDo・目標・予定・バイト's photos and ToDo's files,
+  // kept on this device alone (never synced nor in the records' file), written out as one ZIP: each a file of its own
+  // (to look at on a computer too) and a list of what each belonged to. Read back on another device, those not there are
+  // added; those whose record is not there (yet) are left out, as their pages would let them go a day on
+  var REC8_PH_DBS = [["tsumikasane-photos", "photos"], ["tsumikasane-plan-photos", "photos"], ["tsumikasane-baito-photos", "photos"], ["tsumikasane-files", "files"]];
+  var REC8_PH_LIST = "tsumikasane-photos.json", rec8PhPending = null, rec8PhSaid = { at: 0, n: 0, size: 0 };
+  function rec8PhOpen(name, store) {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(name); // (its own version, whatever it is now; new, as its page makes it)
+      req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains(store)) req.result.createObjectStore(store, { keyPath: "id" }); };
+      req.onsuccess = () => { const db = req.result; db.onversionchange = () => db.close(); resolve(db); };
+      req.onerror = () => reject(req.error);
+      req.onblocked = () => reject(new Error("blocked"));
+    });
+  }
+  async function rec8PhRead(name, store, keys = false) {
+    const db = await rec8PhOpen(name, store);
+    try {
+      if (!db.objectStoreNames.contains(store)) return [];
+      return await new Promise((resolve, reject) => { const os = db.transaction(store).objectStore(store), r = keys ? os.getAllKeys() : os.getAll(); r.onsuccess = () => resolve(r.result || []); r.onerror = () => reject(r.error); });
+    } finally { db.close(); }
+  }
+  // what one is, by what it belongs to: its folder in the ZIP and the page it is on
+  function rec8PhWhat(db, x) {
+    if (db === "tsumikasane-plan-photos") return "予定の写真";
+    if (db === "tsumikasane-baito-photos") return "シフト表の写真";
+    if (db === "tsumikasane-files") return "ToDoのファイル";
+    return typeof x.jnVoiceDay === "string" ? "日記の声" : typeof x.jnDay === "string" ? "日記の写真" : typeof x.mealId === "string" ? "食事の写真"
+      : typeof x.todoId === "string" ? "ToDoの写真" : typeof x.goalId === "string" || typeof x.cellOf === "string" ? "目標の写真" : typeof x.date === "string" ? "からだの写真" : "そのほか";
+  }
+  function rec8PhDay(x) { const d = [x.jnDay, x.jnVoiceDay, x.date].find((v) => isDay(v || "")); return d || (/^\d{4}-\d{2}$/.test(x.ym || "") ? x.ym : num(x.createdAt) > 0 ? ymd(new Date(num(x.createdAt))) : ""); }
+  const rec8Safe = (s) => String(s).replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 80);
+  function rec8Ext(type, name) {
+    const m = /\.([A-Za-z0-9]{1,8})$/.exec(name || "");
+    if (m) return m[1].toLowerCase();
+    return { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/heic": "heic", "audio/mp4": "m4a", "audio/aac": "aac", "audio/webm": "webm", "audio/mpeg": "mp3", "audio/ogg": "ogg", "audio/wav": "wav", "application/pdf": "pdf" }[String(type || "").split(";")[0].trim()] || "bin";
+  }
+  // every one kept, with its blobs (a record with none is not one)
+  async function rec8PhAll() {
+    const out = [];
+    for (const [db, store] of REC8_PH_DBS) {
+      let xs = [];
+      try { xs = await rec8PhRead(db, store); } catch {}
+      for (const x of xs) if (x && x.id != null && Object.values(x).some((v) => v instanceof Blob)) out.push({ db, store, x });
+    }
+    return out;
+  }
+  // a ZIP as any computer opens it: stored (photos are squeezed already), names in UTF-8, each one's bytes read once for
+  // its CRC and left where they are (the file is made of the blobs themselves)
+  var rec8CrcT = null;
+  function rec8Crc(u8) {
+    if (!rec8CrcT) { rec8CrcT = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; rec8CrcT[n] = c >>> 0; } }
+    let c = 0xffffffff;
+    for (let i = 0; i < u8.length; i++) c = rec8CrcT[(c ^ u8[i]) & 255] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  }
+  async function rec8Zip(files) {
+    const enc = new TextEncoder(), parts = [], cd = [];
+    let off = 0;
+    for (const f of files) {
+      const data = new Uint8Array(await f.blob.arrayBuffer()), name = enc.encode(f.name), crc = rec8Crc(data), d = new Date(f.at || Date.now());
+      const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), date = (Math.max(0, d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+      const h = new DataView(new ArrayBuffer(30)), c = new DataView(new ArrayBuffer(46));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(10, time, true); h.setUint16(12, date, true);
+      h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, name.length, true);
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(12, time, true); c.setUint16(14, date, true);
+      c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+      parts.push(h.buffer, name, f.blob); cd.push(c.buffer, name);
+      off += 30 + name.length + data.length;
+    }
+    const size = cd.reduce((n, p) => n + p.byteLength, 0), e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, size, true); e.setUint32(16, off, true);
+    return new Blob([...parts, ...cd, e.buffer], { type: "application/zip" });
+  }
+  // a ZIP's names and where each is (null for what is not one); one of them, stored, as a blob of its own
+  async function rec8Unzip(file) {
+    const tailN = Math.min(file.size, 22 + 65535), tail = new DataView(await file.slice(file.size - tailN).arrayBuffer());
+    let at = -1;
+    for (let i = tailN - 22; i >= 0; i--) if (tail.getUint32(i, true) === 0x06054b50) { at = i; break; }
+    if (at < 0) return null;
+    const n = tail.getUint16(at + 10, true), size = tail.getUint32(at + 12, true), from = tail.getUint32(at + 16, true);
+    if (from + size > file.size) return null;
+    const cd = new DataView(await file.slice(from, from + size).arrayBuffer()), dec = new TextDecoder(), out = new Map();
+    for (let i = 0, p = 0; i < n && p + 46 <= cd.byteLength; i++) {
+      if (cd.getUint32(p, true) !== 0x02014b50) return null;
+      const nl = cd.getUint16(p + 28, true), xl = cd.getUint16(p + 30, true), cl = cd.getUint16(p + 32, true);
+      out.set(dec.decode(new Uint8Array(cd.buffer, cd.byteOffset + p + 46, nl)), { method: cd.getUint16(p + 10, true), len: cd.getUint32(p + 20, true), off: cd.getUint32(p + 42, true) });
+      p += 46 + nl + xl + cl;
+    }
+    return out;
+  }
+  async function rec8ZipPart(file, e, type = "") {
+    if (!e || e.method !== 0) return null;
+    const h = new DataView(await file.slice(e.off, e.off + 30).arrayBuffer());
+    if (h.getUint32(0, true) !== 0x04034b50) return null;
+    const start = e.off + 30 + h.getUint16(26, true) + h.getUint16(28, true);
+    return new Blob([await file.slice(start, start + e.len).arrayBuffer()], { type });
+  }
+  async function rec8PhOut() {
+    if (!window.indexedDB) { flash("この端末では、写真とファイルを書き出せません。"); return; }
+    const btn = $("rec8PhOut"), said = $("rec8PhOutText");
+    if (btn.disabled) return;
+    btn.disabled = true;
+    try {
+      const all = await rec8PhAll();
+      if (!all.length) { flash("書き出す写真やファイルはありません。"); return; }
+      said.textContent = `${fmtN(all.length)} 個をまとめています…`;
+      const files = [], items = [], used = new Set();
+      for (const { db, store, x } of all) {
+        const folder = rec8PhWhat(db, x), day = rec8PhDay(x), rec = {}, blobs = {};
+        for (const [k, v] of Object.entries(x)) {
+          if (!(v instanceof Blob)) { rec[k] = v; continue; }
+          const own = typeof x.name === "string" && x.name.trim() ? rec8Safe(x.name.trim().replace(/\.[^.]*$/, "")) : String(x.id).slice(-6);
+          const stem = `${folder}/${day ? day + "_" : ""}${own}${k === "blob" ? "" : "_" + rec8Safe(k)}`, ext = rec8Ext(v.type, x.name);
+          let name = `${stem}.${ext}`;
+          for (let i = 2; used.has(name); i++) name = `${stem}_${i}.${ext}`;
+          used.add(name); blobs[k] = [name, v.type || ""];
+          files.push({ name, blob: v, at: num(x.createdAt) || num(x.at) || Date.now() });
+        }
+        items.push({ db, store, rec, blobs });
+      }
+      const list = new Blob([JSON.stringify({ app: "tsumikasane", kind: "photos", version: 1, exportedAt: new Date().toISOString(), items })], { type: "application/json" });
+      let zip = null;
+      try { zip = await rec8Zip([{ name: REC8_PH_LIST, blob: list, at: Date.now() }, ...files]); } catch { flash("書き出せませんでした。もう一度お試しください。"); return; }
+      const name = `tsumikasane-photos-${todayKey}.zip`, how = await handOut(zip, name);
+      if (how) flash(how === "shared" ? `写真とファイル ${fmtN(all.length)} 個を書き出しました。` : `「${name}」（写真とファイル ${fmtN(all.length)} 個）を書き出しました。`);
+    } finally { btn.disabled = false; said.textContent = "写真とファイルを書き出す"; }
+  }
+  // its record kept here (or in 最近削除した項目): a ToDo's, a meal's and a goal's photos and a ToDo's files go a day
+  // after theirs has (their pages tidy them), so none is put back without it
+  function rec8PhOwner(db, x) {
+    const kept = (st, id) => typeof id === "string" && (!!st.get(id) || !!deleted.get(delKey(st, id))?.data);
+    if (db === "tsumikasane-files" || typeof x.todoId === "string") return kept(todos, x.todoId);
+    if (typeof x.mealId === "string") return kept(meals, x.mealId);
+    if (typeof x.goalId === "string") return kept(goals, x.goalId);
+    if (typeof x.cellOf === "string") return kept(goals, x.cellOf.split("|")[0]);
+    return true;
+  }
+  function rec8PhHide() { rec8PhPending = null; $("rec8PhAsk").hidden = true; }
+  async function rec8PhIn(file) {
+    rec8PhHide();
+    let zip = null, meta = null;
+    try { zip = await rec8Unzip(file); const b = zip ? await rec8ZipPart(file, zip.get(REC8_PH_LIST), "application/json") : null; meta = b ? JSON.parse(await b.text()) : null; } catch {}
+    if (!meta || meta.app !== "tsumikasane" || meta.kind !== "photos" || !Array.isArray(meta.items)) { flash("このファイルは読み込めません。「写真とファイルを書き出す」で作ったファイルを選んでください。"); return; }
+    if (num(meta.version) > 1) { flash("このアプリより新しい版で書き出したファイルです。アプリを開き直して新しくしてから、もう一度読み込んでください。"); return; }
+    const known = new Map(REC8_PH_DBS), here = new Map();
+    for (const [db, store] of REC8_PH_DBS) { try { here.set(db, new Set(await rec8PhRead(db, store, true))); } catch { here.set(db, new Set()); } }
+    const add = [], kinds = new Map();
+    let have = 0, alone = 0, total = 0;
+    for (const it of meta.items) {
+      if (!it || known.get(it.db) !== it.store || !it.rec || typeof it.rec !== "object" || it.rec.id == null || !it.blobs || typeof it.blobs !== "object") continue;
+      const bs = Object.values(it.blobs);
+      if (!bs.length || !bs.every((b) => Array.isArray(b) && zip.has(String(b[0])))) continue;
+      total++;
+      if (here.get(it.db).has(it.rec.id)) { have++; continue; }
+      if (!rec8PhOwner(it.db, it.rec)) { alone++; continue; }
+      add.push(it);
+      const w = rec8PhWhat(it.db, it.rec); kinds.set(w, (kinds.get(w) || 0) + 1);
+    }
+    const later = alone ? `もとの記録（ToDo・食事・目標）がこの端末にない ${fmtN(alone)} 個は戻しません。先に「記録を読み込む」で記録を戻してから、もう一度読み込んでください。` : "";
+    if (!add.length) { flash(total && have === total ? "このファイルの写真とファイルは、すべてこの端末にあります。" : later || "このファイルに、戻せる写真やファイルはありませんでした。", null, later ? 9000 : undefined); return; }
+    rec8PhPending = { file, zip, add };
+    $("rec8PhAskHead").textContent = "写真とファイルを読み込みますか？";
+    $("rec8PhAskText").textContent = `このファイルの ${fmtN(total)} 個のうち、この端末にない ${fmtN(add.length)} 個（${[...kinds].map(([w, n]) => `${w} ${fmtN(n)}`).join("・")}）を戻します。いまある写真やファイルは変わりません。${later}`;
+    $("rec8PhGo").textContent = "読み込む"; $("rec8PhGo").disabled = false; $("rec8PhCancel").textContent = "やめる"; $("rec8PhCancel").hidden = false;
+    $("rec8PhAsk").dataset.done = "";
+    $("rec8PhAsk").hidden = false;
+    $("rec8PhAsk").scrollIntoView({ block: "nearest" });
+    $("rec8PhGo").focus();
+  }
+  async function rec8PhGo() {
+    const p = rec8PhPending;
+    if (!p) { if ($("rec8PhAsk").dataset.done) location.reload(); else rec8PhHide(); return; } // (開き直す, or とじる)
+    $("rec8PhGo").disabled = true;
+    let n = 0, failed = 0;
+    for (const [db, store] of REC8_PH_DBS) {
+      const its = p.add.filter((it) => it.db === db);
+      if (!its.length) continue;
+      let conn = null;
+      try { conn = await rec8PhOpen(db, store); } catch { failed += its.length; continue; }
+      for (let i = 0; i < its.length; i += 10) {
+        const batch = [];
+        for (const it of its.slice(i, i + 10)) {
+          const x = { ...it.rec };
+          try { for (const [k, [name, type]] of Object.entries(it.blobs)) { const b = await rec8ZipPart(p.file, p.zip.get(String(name)), String(type || "")); if (!b) throw new Error("part"); x[k] = b; } batch.push(x); }
+          catch { failed++; }
+        }
+        try {
+          if (batch.length) await new Promise((resolve, reject) => { const tx = conn.transaction(store, "readwrite"), os = tx.objectStore(store); for (const x of batch) os.put(x); tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error); });
+          n += batch.length;
+        } catch { failed += batch.length; }
+        $("rec8PhAskText").textContent = `戻しています… ${fmtN(n)} / ${fmtN(p.add.length)}`;
+      }
+      conn.close();
+    }
+    rec8PhPending = null;
+    rec8PhSaid.at = 0;
+    // the pages read their photos once, so they show them from the next start
+    $("rec8PhAsk").dataset.done = n ? "1" : "";
+    $("rec8PhAskHead").textContent = n ? "戻しました" : "戻せませんでした";
+    $("rec8PhAskText").textContent = n ? `写真とファイル ${fmtN(n)} 個を戻しました${failed ? `（${fmtN(failed)} 個は戻せませんでした）` : ""}。アプリを開き直すと、それぞれのページに出ます。` : "端末の空き容量が足りているか確かめて、もう一度お試しください。";
+    $("rec8PhGo").textContent = n ? "開き直す" : "とじる"; $("rec8PhGo").disabled = false;
+    $("rec8PhCancel").textContent = "あとで";
+    $("rec8PhCancel").hidden = !n;
+  }
+  // how many there are here, and how big, under the buttons: read while the sheet shows them (every redraw draws this,
+  // the sheet shut too), again at most every few seconds
+  var rec8PhLater = 0;
+  function rec8PhCount() {
+    if (!rec8Ready) return;
+    const foot = $("rec8PhFoot"), say = () => { foot.textContent = (rec8PhSaid.n ? `いまこの端末に ${fmtN(rec8PhSaid.n)} 個（およそ ${rec8PhSaid.size >= 1048576 ? `${(rec8PhSaid.size / 1048576).toFixed(rec8PhSaid.size >= 10485760 ? 0 : 1)} MB` : `${fmtN(Math.max(1, Math.round(rec8PhSaid.size / 1024)))} KB`}）。` : "")
+      + "日記の写真・絵・声や、からだ・食事・ToDo・目標・予定・バイトの写真、ToDoのファイルは、この端末の中だけにあり、記録の書き出しや同期には入りません。1つのファイル（ZIP）にして、別の端末で読み込めます。パソコンで開くと、写真を見ることもできます。"; };
+    $("rec8PhRow").hidden = !window.indexedDB;
+    say();
+    clearTimeout(rec8PhLater);
+    rec8PhLater = setTimeout(async () => {
+      if (!window.indexedDB || foot.offsetParent === null || Date.now() - rec8PhSaid.at < 5000) return;
+      rec8PhSaid.at = Date.now();
+      const all = await rec8PhAll();
+      rec8PhSaid.n = all.length; rec8PhSaid.size = sum(all, ({ x }) => sum(Object.values(x).filter((v) => v instanceof Blob), (b) => b.size));
+      say();
+    }, 400);
+  }
+  $("rec8PhOut").addEventListener("click", () => rec8PhOut());
+  $("rec8PhIn").addEventListener("click", () => { $("rec8PhFile").value = ""; $("rec8PhFile").click(); });
+  $("rec8PhFile").addEventListener("change", (ev) => { const f = ev.target.files?.[0]; if (f) rec8PhIn(f); });
+  $("rec8PhGo").addEventListener("click", () => rec8PhGo());
+  $("rec8PhCancel").addEventListener("click", () => { $("rec8PhAsk").dataset.done = ""; rec8PhHide(); });
+
+  // ② a deleted one whose record is here again (a 日記 written over, the two of a change made in two places at once, one
+  // put back in place of another): beside what is there now, what changed marked on both sides, and 戻す from there
+  var rec8Cmp = new Set();
+  function rec8NowOf(t) {
+    const st = t?.data && ALL_STORES.find((s) => s.name === t.store), now = st && t.data.id != null ? st.get(t.data.id) : null;
+    return now && JSON.stringify(now) !== JSON.stringify(t.data) ? now : null;
+  }
+  function rec8CmpText(store, x) { return store === "journal" ? String(x.text || "").trim() : trashText({ store, data: x }); }
+  // the changes from a to b, by character (what both start and end with left aside first), as [=, -, +] runs; a long
+  // change both ways, as a whole
+  function rec8Diff(a, b) {
+    const A = [...a], B = [...b], ops = [];
+    const put = (k, cs) => { if (!cs.length) return; const last = ops[ops.length - 1]; if (last && last[0] === k) last[1] += cs.join(""); else ops.push([k, cs.join("")]); };
+    let p = 0, s = 0;
+    while (p < A.length && p < B.length && A[p] === B[p]) p++;
+    while (s < A.length - p && s < B.length - p && A[A.length - 1 - s] === B[B.length - 1 - s]) s++;
+    const x = A.slice(p, A.length - s), y = B.slice(p, B.length - s);
+    put("=", A.slice(0, p));
+    if (x.length * y.length > 2e6) { put("-", x); put("+", y); }
+    else {
+      const n = x.length, m = y.length, L = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+      for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = x[i] === y[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+      let i = 0, j = 0;
+      while (i < n && j < m) { if (x[i] === y[j]) { put("=", [x[i]]); i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) { put("-", [x[i]]); i++; } else { put("+", [y[j]]); j++; } }
+      put("-", x.slice(i)); put("+", y.slice(j));
+    }
+    put("=", A.slice(A.length - s));
+    return ops;
+  }
+  function rec8DiffEl(ops, side) {
+    return el("p", { class: "rec8-diff" }, ops.filter(([k]) => k === "=" || k === side).map(([k, s]) => (k === "=" ? s : el("mark", { class: side === "-" ? "rec8-del" : "rec8-ins" }, s))));
+  }
+  function rec8CmpRow(t, now) {
+    const a = rec8CmpText(t.store, t.data), b = rec8CmpText(t.store, now), ops = rec8Diff(a, b), name = STORE_NAMES[t.store] || "記録";
+    return el("li", { class: "rec8-cmp" }, el("div", { class: "rec8-cmp-in" },
+      el("p", { class: "rec8-cmp-head" }, "削除した内容"), a === b ? el("p", { class: "rec8-diff" }, a) : rec8DiffEl(ops, "-"),
+      el("p", { class: "rec8-cmp-head" }, `いまの${name}`), a === b ? el("p", { class: "rec8-diff" }, b) : rec8DiffEl(ops, "+"),
+      a === b ? el("p", { class: "sub" }, "文は同じで、ほかのところ（時刻や数など）がちがいます。") : null,
+      el("div", { class: "notice-actions" },
+        el("button", { type: "button", class: "btn sm", onclick: () => { rec8Cmp.delete(t.id); restoreFromTrash(t.id); } }, "削除した内容に戻す"),
+        el("button", { type: "button", class: "link-btn", onclick: () => { rec8Cmp.delete(t.id); renderTrash(); } }, "とじる"))));
+  }
+  // ③ 最近削除した項目 by its kinds (two or more), with how many each; one pressed, that kind alone (all of it with 「すべ
+  // て完全に削除」 kept away meanwhile)
+  var rec8TrashOf = "";
+  const rec8TrashName = (s) => (s === "tsumi" ? "ブロック" : STORE_NAMES[s] || s);
+  function rec8TrashKindOf(items) { return rec8Ready && rec8TrashOf && !trashOf ? items.filter((t) => t.store === rec8TrashOf) : items; }
+  function rec8TrashAfter() {
+    if (!rec8Ready) return;
+    const box = $("rec8TrashKinds"), all = trashShown(), counts = new Map();
+    for (const t of all) counts.set(t.store, (counts.get(t.store) || 0) + 1);
+    if (rec8TrashOf && (!counts.has(rec8TrashOf) || trashOf)) { rec8TrashOf = ""; renderTrash(); return; }
+    box.hidden = !!trashOf || counts.size < 2;
+    if (box.hidden) box.replaceChildren();
+    else {
+      const chip = (s, label) => el("button", { type: "button", class: "chip-btn", "aria-pressed": String(rec8TrashOf === s), onclick: () => { rec8TrashOf = s; rec8Cmp.clear(); renderTrash(); } }, label);
+      setChildren(box, chip("", `ぜんぶ ${fmtN(all.length)}`), [...counts].sort((a, b) => b[1] - a[1]).map(([s, n]) => chip(s, `${rec8TrashName(s)} ${fmtN(n)}`)));
+    }
+    if (rec8TrashOf) { $("trashNote").prepend(`${rec8TrashName(rec8TrashOf)}・`); $("trashFoot").hidden = true; }
+    // ② each one written over, its comparing a press away (not while picking)
+    const picking = !!(rec5Ready && rec5TrashSel);
+    for (const k of [...rec8Cmp]) if (!deleted.get(k)?.data) rec8Cmp.delete(k);
+    for (const li of $("trashList").querySelectorAll("li[data-key]")) {
+      const t = deleted.get(li.dataset.key), now = !picking && rec8NowOf(t);
+      if (!now) continue;
+      const open = rec8Cmp.has(t.id);
+      li.querySelector(".sub")?.append("・", el("button", { type: "button", class: "link-btn rec8-cmp-btn", "aria-expanded": String(open),
+        onclick: () => { if (rec8Cmp.has(t.id)) rec8Cmp.delete(t.id); else rec8Cmp.add(t.id); renderTrash(); } }, open ? "くらべるのをやめる" : "いまの内容とくらべる"));
+      if (open) li.after(rec8CmpRow(t, now));
+    }
+  }
+
+  // ④ another day beside the day's page: each thing recorded on either, the two side by side and how far apart (この日
+  // less the other); the other kept while going from day to day, so many days can be set beside one
+  var rec8With = "", rec8WithOpen = false;
+  function rec8Stats(d) {
+    const ms = meals.items.filter((m) => m.date === d), ks = ms.filter((m) => typeof m.kcal === "number" && isFinite(m.kcal));
+    const wo = workouts.items.filter((w) => w.date === d), w = weights.items.find((x) => (x.date || x.id) === d), b = bodyDays.get(d) || {};
+    const rt = routineDays.items.find((x) => x.date === d), ex = expenses.items.filter((x) => x.date === d), j = journal.items.find((x) => (x.date || x.id) === d && x.text?.trim());
+    let blocks = 0;
+    try { blocks = tsumiList().filter((x) => x.day === d).length; } catch {}
+    const n = (v) => `${fmtN(Math.round(v))}`, mins = (v) => durText(Math.round(v));
+    return [
+      ["食事", ms.length, (v) => `${n(v)} 回`], ["摂取", ks.length ? sum(ks, (m) => m.kcal) : null, (v) => `${n(v)} kcal`],
+      ["運動", wo.length, (v) => `${n(v)} 回`], ["運動の時間", sum(wo, (x) => x.minutes), mins], ["消費", sum(wo, (x) => x.kcal), (v) => `${n(v)} kcal`],
+      ["勉強", sum(study.items.filter((x) => x.date === d), (x) => x.minutes), mins],
+      ["体重", w ? num(w.kg) : null, (v) => `${fmtKg(v)} kg`, "level"], ["体脂肪率", w && num(w.fat) > 0 ? num(w.fat) : null, (v) => `${fmtFat(v)}%`, "level"],
+      ["睡眠", rec5SleepMins(b) || null, mins, "level"], ["歩数", num(b.steps) > 0 ? num(b.steps) : null, (v) => `${n(v)} 歩`, "level"], ["水分", num(b.water) > 0 ? num(b.water) : null, (v) => `${n(v)} ml`, "level"],
+      ["ルーティーン", rt?.done?.length || 0, (v) => `${n(v)} 回`], ["完了したToDo", todos.items.filter((t) => t.done && !t.cancelled && doneDay(t) === d).length, (v) => `${n(v)} 件`],
+      ["支出", sum(ex.filter((x) => x.kind !== "in"), (x) => x.amount), fmtYen], ["収入", sum(ex.filter((x) => x.kind === "in"), (x) => x.amount), fmtYen],
+      ["日記", j ? [...j.text.trim()].length : 0, (v) => `${n(v)} 字`], ["つみかさね", blocks, (v) => `${n(v)} こ`],
+    ];
+  }
+  function rec8WithDraw(d) {
+    const box = $("rec8With"), btn = $("rec8WithBtn");
+    btn.setAttribute("aria-expanded", String(rec8WithOpen));
+    box.hidden = !rec8WithOpen;
+    if (!rec8WithOpen) return;
+    const pick = $("rec8WithDay");
+    pick.max = todayKey;
+    if (pick.value !== rec8With) pick.value = rec8With;
+    const prev = rec2RecDays().filter((x) => x < d).pop();
+    $("rec8WithPrev").hidden = !prev;
+    $("rec8WithPrev").onclick = () => { rec8With = prev; rec8WithDraw(d); };
+    const out = $("rec8WithTable"), w = rec8With;
+    if (!isDay(w || "")) { setChildren(out, el("p", { class: "sub" }, "くらべる日を選んでください。")); return; }
+    if (w === d) { setChildren(out, el("p", { class: "sub" }, "同じ日です。ほかの日を選んでください。")); return; }
+    const a = rec8Stats(d), b = rec8Stats(w), head = (x) => `${shortDay(x)}（${WD[parseYmd(x).getDay()]}）`;
+    // (a number each, 0 for none; 体重 and the like, a level, compared only when both days have one)
+    const rows = a.map(([label, va, f, kind], i) => ({ label, va: num(va), vb: num(b[i][1]), f, level: kind === "level" })).filter((r) => r.va > 0 || r.vb > 0);
+    if (!rows.length) { setChildren(out, el("p", { class: "sub" }, "どちらの日も、記録がありません。")); return; }
+    setChildren(out, el("table", { class: "rec8-table" },
+      el("thead", {}, el("tr", {}, el("th", { scope: "col" }, el("span", { class: "sr-only" }, "記録")), el("th", { scope: "col" }, head(d)), el("th", { scope: "col" }, head(w)), el("th", { scope: "col" }, "差"))),
+      el("tbody", {}, rows.map((r) => {
+        const gap = r.level && !(r.va > 0 && r.vb > 0) ? null : r.va - r.vb;
+        const say = gap === null ? "" : Math.abs(gap) < 1e-9 ? "±0" : (gap > 0 ? "+" : "−") + r.f(Math.abs(gap));
+        return el("tr", {}, el("th", { scope: "row" }, r.label), el("td", {}, r.va > 0 ? keepUnits(r.f(r.va)) : "—"), el("td", {}, r.vb > 0 ? keepUnits(r.f(r.vb)) : "—"),
+          el("td", {}, keepUnits(say)));
+      }))),
+      el("p", { class: "rec8-with-go" }, el("button", { type: "button", class: "link-btn", onclick: () => { const was = recDayAt; recDayAt = w; rec8With = was; renderRecDay(); window.scrollTo(0, 0); } }, `${head(w)}の記録を見る（入れかえる）`)));
+  }
+  $("rec8WithBtn").addEventListener("click", () => { rec8WithOpen = !rec8WithOpen; rec8WithDraw(recDayAt); if (rec8WithOpen) $("rec8With").scrollIntoView({ block: "nearest" }); });
+  $("rec8WithDay").addEventListener("change", (ev) => { rec8With = isDay(ev.target.value || "") && ev.target.value <= todayKey ? ev.target.value : ""; rec8WithDraw(recDayAt); });
+  $("rec8WithClose").addEventListener("click", () => { rec8WithOpen = false; rec8With = ""; rec8WithDraw(recDayAt); });
+
+  // ⑤ the day's records deleted (in 最近削除した項目 still), at the foot of its records, each with 戻す (one written again
+  // since, the two changing places, as 最近削除した項目 does it)
+  function rec8TrashDay(t) {
+    const x = t.data || {};
+    if (t.store === "todos") return doneDay(x);
+    if (t.store === "tsumi" || !STORE_NAMES[t.store]) return "";
+    return isDay(x.date || "") ? x.date : ["journal", "weights", "bodyDays"].includes(t.store) && isDay(String(x.id || "")) ? String(x.id) : "";
+  }
+  function rec8DayTrash(d) {
+    const ts = trashItems().filter((t) => rec8TrashDay(t) === d);
+    if (!ts.length) return;
+    const grp = el("div", { class: "rec4-grp rec8-day-trash" },
+      el("h3", { class: "group-head rec-day-head" }, el("span", { class: "rec-day-kind", style: "--kc: var(--muted)" }, icon("trash", 16), "この日の削除した記録"), el("span", { class: "rec-total" }, `${fmtN(ts.length)} 件`)),
+      el("ul", { class: "list card" }, ts.map((t) => {
+        const ago = daysBetween(ymd(new Date(t.at)), todayKey), text = t.store === "journal" ? clip(oneLine(t.data.text || ""), 80) : trashText(t).replace(/^[^　]*日（.）　/, "");
+        return el("li", {}, el("span", { class: "body" }, el("span", { class: "text clamp" }, text || "（中身なし）"),
+          el("span", { class: "sub" }, keepUnits(`${STORE_NAMES[t.store]}・${ago <= 0 ? "きょう" : ago === 1 ? "きのう" : `${ago} 日前に`}削除・あと ${Math.max(1, TRASH_DAYS - ago)} 日`))),
+          el("button", { type: "button", class: "link-btn", "aria-label": `「${text}」を戻す`, onclick: () => restoreFromTrash(t.id) }, "戻す"));
+      })));
+    const go = $("recDayBody").querySelector(".rec-day-go")?.previousElementSibling;
+    if (go) go.before(grp); else $("recDayBody").append(grp);
+  }
+
+  // ⑧ はじめて: what a kind had for the first time (運動's 種類 and 種目, 勉強's 科目, 家計簿's 費目, ルーティーン's 項目), by
+  // the first day it was recorded on (the first written that day); on that day's page at the top (under its photos),
+  // and in a kind's list its entry marked
+  var REC8_FIRST = {
+    workout: (w) => [w.type, w.exercise], study: (x) => [subjectOf(x)?.name], money: (e) => [expenseCat(e)],
+    routine: (x) => (x.done || []).map((id) => routines.get(id)?.name),
+  };
+  function rec8Firsts(kind) {
+    const out = new Map(), f = REC8_FIRST[kind];
+    if (!f) return out;
+    for (const x of RECORD_LISTS[kind].items()) {
+      if (!isDay(x.date || "") || x.date > todayKey) continue;
+      for (const raw of f(x)) {
+        const name = typeof raw === "string" ? raw.trim() : "";
+        if (!name) continue;
+        const k = foldText(name), was = out.get(k), t = num(x.createdAt);
+        if (!was || x.date < was.d || (x.date === was.d && t < was.t)) out.set(k, { d: x.date, id: x.id, name, t });
+      }
+    }
+    return out;
+  }
+  function rec8DayFirsts(d) {
+    const list = [];
+    for (const kind of Object.keys(REC8_FIRST)) for (const f of rec8Firsts(kind).values()) if (f.d === d) list.push(`${f.name}（${RECORD_LISTS[kind].label}）`);
+    if (!list.length) return;
+    const card = el("div", { class: "card pad rec8-firsts" }, el("strong", {}, icon("flag", 16), "この日はじめて"), el("span", {}, phrasesOf(list.slice(0, 12))),
+      list.length > 12 ? el("small", {}, `ほか ${fmtN(list.length - 12)}`) : null);
+    const ph = $("recDayBody").querySelector(".rec4-photos"); // (the day's photos stay over all, 記録 その4 ⑤)
+    if (ph) ph.after(card); else $("recDayBody").prepend(card);
+  }
+
+  // ⑥ in 記録's search, the first day and the latest day it was found on, and on how many (the kind pressed above alone);
+  // pressed, that day whole. ⑩ also there and in a kind's list: any of two or more words, in place of all of them (this
+  // device's choice), said so in what was found
+  var REC8_ANY = LS_PREFIX + "recFindAny";
+  function rec8AnyOn() { try { return localStorage.getItem(REC8_ANY) === "1"; } catch { return false; } }
+  const rec8Minus = (w) => w.length > 1 && w[0] === "-";
+  function rec8Words(words) {
+    if (!rec8Ready || !rec8AnyOn()) return words;
+    const inc = words.filter((w) => !rec8Minus(w));
+    return inc.length > 1 ? [inc.join("|"), ...words.filter(rec8Minus)] : words;
+  }
+  function rec8AnyPaint(btn, q) {
+    const inc = q.split(/\s+/).filter((w) => w && !rec8Minus(w));
+    btn.hidden = inc.length < 2;
+    btn.setAttribute("aria-pressed", String(rec8AnyOn()));
+    return !btn.hidden && rec8AnyOn() ? inc : null;
+  }
+  // 「a b」 said as 「a」か「b」 (words left out kept as they were said)
+  function rec8AnySay(node, q, inc) {
+    if (!node || !inc) return;
+    const out = q.split(/\s+/).filter(rec8Minus).map((w) => w.slice(1));
+    node.textContent = node.textContent.replace(`「${q}」`, inc.map((w) => `「${w}」`).join("か") + (out.length ? `（${out.map((w) => `「${w}」`).join("・")}をのぞく）` : ""));
+  }
+  function rec8AnyFlip(then) { try { if (rec8AnyOn()) localStorage.removeItem(REC8_ANY); else localStorage.setItem(REC8_ANY, "1"); } catch {} then(); }
+  $("rec8Any").addEventListener("click", () => rec8AnyFlip(renderRecFound));
+  $("rec8AnyList").addEventListener("click", () => rec8AnyFlip(renderRecList));
+  function rec8FoundAfter(byKind, q) {
+    if (!rec8Ready) return;
+    const box = $("recFound"), say = box.querySelector(".rec-found-say");
+    rec8AnySay(say, q, rec8AnyPaint($("rec8Any"), q));
+    const days = new Set();
+    for (const [k, xs] of Object.entries(byKind)) if (!rec2Kind || rec2Kind === k) for (const x of xs) { const d = k === "todo" ? (x.done ? doneDay(x) : "") : x.date; if (isDay(d || "") && d <= todayKey) days.add(d); }
+    if (!say || !days.size) return;
+    const ds = [...days].sort(), first = ds[0], last = ds[ds.length - 1];
+    const day = (d, word) => el("button", { type: "button", class: "link-btn rec8-day", "aria-label": `${word}、${fmtDayLong(d)}の記録を見る`, onclick: () => openRecDay(d, "records") }, fmtDayLong(d));
+    say.after(el("p", { class: "sub rec8-span" }, ds.length === 1 ? [day(first, "見つかった日"), "の 1 日だけ"]
+      : ["はじめて ", day(first, "はじめて"), "・いちばん最近 ", day(last, "いちばん最近"), keepUnits(`・${fmtN(ds.length)} 日に`)]));
+  }
+
+  // ⑦ タグ: the words after # (or ＃) in the records (日記, 食事, 運動, 勉強, 家計簿's メモ, ToDo…), each with how many
+  // records hold it, the most first (twelve, all at a press); pressed, looked for in all the records
+  var REC8_TAG = /[#＃]([^\s#＃、。，．,.!！?？「」『』()（）\[\]【】]{1,20})/gu, rec8TagsAll = false;
+  function rec8Tags() {
+    const tally = new Map(), strip = (t) => (typeof jn4Strip === "function" ? jn4Strip(t) : String(t || "")); // (日記's 伏せ字 not shown)
+    const add = (text) => { for (const t of new Set([...strip(text).matchAll(REC8_TAG)].map((m) => m[1]))) { const k = foldText(t), v = tally.get(k); if (v) v[1]++; else tally.set(k, [t, 1]); } };
+    for (const kind of REC_FIND) { const spec = RECORD_LISTS[kind]; for (const x of spec.items()) if (x.date && x.date <= todayKey) add(spec.text(x)); }
+    for (const t of todos.items) if (typeof t.text === "string") add([t.text, t.memo || ""].join(" "));
+    return [...tally.values()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ja"));
+  }
+  function rec8TagsCard() {
+    if (!rec8Ready) return null;
+    const tags = rec8Tags();
+    if (!tags.length) return null;
+    return el("div", { class: "card sum-card wide rec-extra", "data-card": "tags", style: "--sum-c: var(--accent)" },
+      el("h3", { class: "sum-head" }, icon("search", 18), el("span", {}, "タグ")),
+      el("div", { class: "rec8-tags" }, (rec8TagsAll ? tags : tags.slice(0, 12)).map(([t, n]) => el("button", { type: "button", class: "chip-btn", "aria-label": `#${t}、${n} 件。すべての記録から探す`,
+        onclick: () => { recAllQuery = "#" + t; $("recAll").value = recAllQuery; rec2Kind = ""; renderRecFound(); $("recAllBox").scrollIntoView({ block: "start" }); } }, "#" + t, el("small", {}, ` ${fmtN(n)}`)))),
+      tags.length > 12 ? el("button", { type: "button", class: "link-btn more", "aria-expanded": String(rec8TagsAll), onclick: () => { rec8TagsAll = !rec8TagsAll; renderSummary(); } }, rec8TagsAll ? "しまう" : `すべてのタグ（${tags.length}）`) : null);
+  }
+
+  // ⑨ ここまでの合計: in a kind's list each day's total up to it (食事's kcal, 運動's and 勉強's time, 家計簿's money out and
+  // in, ルーティーン's checks), of what is shown (with words, those found); this device's choice
+  var REC8_CUM_KEY = LS_PREFIX + "recCum";
+  var REC8_CUM = {
+    meal: [[(m) => (typeof m.kcal === "number" && isFinite(m.kcal) ? m.kcal : 0), (v) => `${fmtN(Math.round(v))} kcal`]],
+    workout: [[(w) => num(w.minutes), (v) => durText(Math.round(v))]], study: [[(x) => num(x.minutes), (v) => durText(Math.round(v))]],
+    money: [[(e) => (e.kind === "in" ? 0 : num(e.amount)), (v) => `支出 ${fmtYen(v)}`], [(e) => (e.kind === "in" ? num(e.amount) : 0), (v) => `収入 ${fmtYen(v)}`]],
+    routine: [[(x) => (x.done || []).length, (v) => `${fmtN(v)} 回`]],
+  };
+  function rec8CumOn() { try { return localStorage.getItem(REC8_CUM_KEY) === "1"; } catch { return false; } }
+  $("rec8CumBtn").addEventListener("click", () => { try { if (rec8CumOn()) localStorage.removeItem(REC8_CUM_KEY); else localStorage.setItem(REC8_CUM_KEY, "1"); } catch {} renderRecList(); });
+  function rec8Cum(found) {
+    const parts = REC8_CUM[recListKind], btn = $("rec8CumBtn"), on = rec8CumOn();
+    btn.hidden = !parts || !found.length || rec6RankOn();
+    btn.setAttribute("aria-pressed", String(on));
+    if (btn.hidden || !on) return;
+    const days = [...new Set(found.map((x) => x.date))].sort(), runs = parts.map(() => 0), upTo = new Map(), byDay = groupBy(found, (x) => x.date);
+    for (const d of days) { parts.forEach(([v], i) => { runs[i] += sum(byDay.get(d), v); }); upTo.set(d, [...runs]); }
+    for (const li of $("recList").querySelectorAll("li.dayhead[data-day]")) {
+      const vs = upTo.get(li.dataset.day);
+      if (!vs) continue;
+      const said = vs.map((v, i) => (v > 0 ? parts[i][1](v) : null)).filter(Boolean);
+      if (said.length) li.append(el("span", { class: "rec8-cum" }, keepUnits(`ここまで ${said.join("・")}`)));
+    }
+  }
+  // a kind's list, drawn: ⑧ its firsts marked, ⑨ the totals so far, ⑩ any of the words
+  function rec8AfterList(found) {
+    if (!rec8Ready) return;
+    const q = recQuery.trim(), inc = rec8AnyPaint($("rec8AnyList"), q);
+    rec8AnySay($("recListNote"), q, inc);
+    rec8Cum(found || []);
+    if (!REC8_FIRST[recListKind]) return;
+    const firsts = new Set([...rec8Firsts(recListKind).values()].map((f) => f.id));
+    for (const b of $("recList").querySelectorAll("[data-edit]")) if (firsts.has(b.dataset.edit) && !b.querySelector(".rec8-first")) b.append(el("span", { class: "rec8-first" }, "はじめて"));
+  }
+  // a day's page, drawn: ⑧ its firsts, ⑤ its records deleted, ④ another day beside it
+  function rec8DayExtras(d) {
+    if (!rec8Ready) return;
+    rec8DayFirsts(d);
+    rec8DayTrash(d);
+    rec8WithDraw(d);
+  }
+
+  rec8Ready = true;
 
   // ---------- 目標 ①〜⑩ (the user's calls, 2026-11-10): joined to the records (①), the pace against its 期限 (②), the
   // steps taken (③), ふりかえり (④), 見直しのお知らせ (⑤), a copy (⑥), a cell's memo (⑦), a photo (⑧), goals and cells
