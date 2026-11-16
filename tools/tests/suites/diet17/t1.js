@@ -1,0 +1,125 @@
+// ダイエット その17 ①〜⑩, through the hook build at 8895 and as a user would
+process.env.URL0 = process.env.URL0 || "http://localhost:8895/";
+const { chromium } = require("playwright");
+const { P, phone, seed } = require("./lib");
+const D = require("./data");
+let fails = 0;
+const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
+const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P + k) || "[]"), { P, k });
+const put = (p, k, v) => p.evaluate(({ P, k, v }) => localStorage.setItem(P + k, JSON.stringify(v)), { P, k, v });
+const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerText.replace(/\s+/g, " ").trim() ?? null, sel);
+const setting = async (p, id) => (await ls(p, "settings")).find((x) => x.id === id);
+const W = (p, f, ...a) => p.evaluate(({ f, a }) => window.__dt17[f](...a), { f, a });
+const WHEN = new Date("2026-11-16T12:00:00+09:00"), N = new Intl.NumberFormat("ja-JP");
+const base = () => ({ weights: D.weights(), meals: D.meals(), workouts: D.workouts(), bodyDays: D.bodyDays(), settings: D.settings() });
+async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(P + "dietPart", k), { P, k }); await p.reload(); await p.waitForTimeout(1000); }
+// the 7日平均 of the records to a day, as the app reckons it
+const avg7 = (ws, d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.addDays(d, -6)); return xs.reduce((s, w) => s + w.kg, 0) / xs.length; };
+(async () => {
+  const b = await chromium.launch();
+  const p = await phone(b, WHEN, { deviceScaleFactor: 1 });
+  p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
+  await p.goto(process.env.URL0);
+  await seed(p, base(), "diet");
+  await part(p, "meal");
+
+  // ① 食後の満足度: the 30 days, then トースト 食べすぎた and taken off again
+  let r = await txt(p, "#dt17Full");
+  ok(/^食後の満足度 きょう 朝食 トースト 足りない ちょうど 食べすぎ 朝食 ゆで卵 足りない ちょうど 食べすぎ この30日 10 回・物足りない 2・ちょうど 5・食べすぎた 3 食べすぎた食事は平均 900 kcal、ちょうどの食事は 700 kcal でした。 食べすぎたことが多いのは ラーメン（3 回）$/.test(r), "① the 30 days", r);
+  const toast = '#dt17Full [aria-label="「トースト」の満足度"] button[aria-label="食べすぎた"]';
+  await p.click(toast); await p.waitForTimeout(400);
+  let m = (await ls(p, "meals")).find((x) => x.text === "トースト" && x.date === D.DAY);
+  ok(m.full === 3 && (await p.getAttribute(toast, "aria-pressed")) === "true" && /この30日 11 回・物足りない 2・ちょうど 5・食べすぎた 4/.test(await txt(p, "#dt17Full")), "① 食べすぎた pressed", [m, await txt(p, "#dt17Full")]);
+  await p.click(toast); await p.waitForTimeout(400);
+  m = (await ls(p, "meals")).find((x) => x.text === "トースト" && x.date === D.DAY);
+  ok(!("full" in m) && m.kcal === 300 && (await p.getAttribute(toast, "aria-pressed")) === "false" && /この30日 10 回/.test(await txt(p, "#dt17Full")), "① taken off", m);
+  // ② 主食・主菜・副菜: the breakfasts without 副菜, then みそ汁 added to today's
+  r = await txt(p, "#dt17Bal");
+  ok(/^主食・主菜・副菜 そろった食事 12 \/ 19 区分 主食 主菜 副菜 朝食 ◯ ◯ — 昼食 まだ 夕食 まだ この7日の朝・昼・夕 19 食のうち、3つそろったのは 12 食・いちばん抜けやすいのは副菜（7 食） サラダやみそ汁、野菜の小鉢を1品足しましょう。$/.test(r), "② the 7 days", r);
+  await put(p, "meals", [...(await ls(p, "meals")), { id: "miso", date: D.DAY, slot: "朝食", text: "みそ汁", kcal: 40, createdAt: D.T(D.DAY, 8) }]);
+  await part(p, "meal");
+  r = await txt(p, "#dt17Bal");
+  ok(/そろった食事 13 \/ 19 .* 朝食 ◯ ◯ ◯ /.test(r) && (await p.locator("#dt17Bal td.yes").count()) === 3, "② みそ汁 added", r);
+  // ③ 揚げ物・甘い飲みもの: 4 and 3 these 7 days, 1 and 1 the 7 before
+  r = await txt(p, "#dt17Fry");
+  ok(/^揚げ物・甘い飲みもの この7日 揚げ物 4 回 1,400 kcal・前の7日は 1 回・週2回までにすると、カロリーと脂質をおさえられます 甘い飲みもの 3 回 525 kcal・前の7日は 1 回・お茶や無糖のものにかえると、それだけで減らせます 食べたものの名前から数えています。$/.test(r) && (await p.locator("#dt17Fry .num.over").count()) === 2, "③ the 7 days", r);
+
+  // ⑤ 自重トレのステップアップ
+  await part(p, "workout");
+  r = await txt(p, "#dt17Ladder");
+  ok(/^自重トレのステップアップ 腕立て伏せ いまは 膝つき腕立て伏せ（ベスト 20 回） 壁腕立て伏せ 膝つき腕立て伏せ 腕立て伏せ 足上げ腕立て伏せ 20 回できたので、次は「腕立て伏せ」へ進めます。 スクワット いまは スクワット（ベスト 20 回） 椅子スクワット スクワット ブルガリアンスクワット ピストルスクワット スクワットで 30 回できたら、次は「ブルガリアンスクワット」へ（あと 10 回）。 プランク いまは プランク（ベスト 30 秒） 膝つきプランク プランク 片足プランク プランクで 90 秒できたら、次は「片足プランク」へ（あと 60 秒）。 この8週の記録から。/.test(r), "⑤ the steps", r);
+  ok((await p.locator("#dt17Ladder li.now").count()) === 3 && (await p.locator("#dt17Ladder .dt17-lad-up").count()) === 1, "⑤ the steps marked");
+  await p.click('#dt17Ladder button[aria-label="腕立て伏せを記録に入れる"]'); await p.waitForTimeout(300);
+  ok((await p.inputValue("#woType")) === "筋トレ" && (await p.inputValue("#woExercise")) === "腕立て伏せ", "⑤ a step put in the form", [await p.inputValue("#woType"), await p.inputValue("#woExercise")]);
+  await p.fill("#woExercise", ""); await p.evaluate(() => document.activeElement?.blur());
+  // ⑥ ランの強さの配分: 20 km ゆっくり (6:30), 10 ふつう (5:30), 5 速め (5:00)
+  const z = await W(p, "zones");
+  r = await txt(p, "#dt17Zones");
+  ok(z.km.join() === "20,10,5" && z.easy === 57 && /^ランの強さの配分 ゆっくり 57% ゆっくり 20 km ふつう 10 km 速め 5 km ゆっくり走が少なめです。ふだんのランの8割をゆっくりにすると、疲れにくく、速くもなりやすいと言われています。 この4週のラン 7 回・35 km。ゆっくりは 6:00\/km より遅いペースです。$/.test(r), "⑥ the runs", [z, r]);
+  ok((await p.locator("#dt17Zones .dt17-z-bar i").count()) === 3, "⑥ the bar");
+  // ④ きょうのおすすめ: the menu (月曜), つかれ, a knee, 6 days in a row, then done
+  r = await txt(p, "#dt17Today");
+  ok(/^きょうのおすすめ ▶ ラン 4 km（ゆっくり）とレッグプレス・チェストプレス・プランク きょうのメニューです。$/.test(r), "④ the menu", r);
+  const days = await ls(p, "bodyDays"), withPain = (pain) => days.map((x) => (x.id === D.DAY ? { ...x, pain } : x));
+  await put(p, "bodyDays", withPain(["tired"])); await part(p, "workout");
+  r = await txt(p, "#dt17Today");
+  ok(/2種目だけにしましょう つかれが残っている日です。レッグプレス・チェストプレスだけでも十分です（メニューのメモ）。$/.test(r), "④ tired", r);
+  await put(p, "bodyDays", withPain(["knee", "tired"])); await part(p, "workout");
+  r = await txt(p, "#dt17Today");
+  ok(/ランはエアロバイク30分にしましょう ひざが痛む日です（メニューのメモ）。筋トレは脚以外のチェストプレス・プランクにしましょう。$/.test(r), "④ a knee", r);
+  const wos = await ls(p, "workouts");
+  await put(p, "workouts", [...wos, { id: "walk", date: D.addDays(D.DAY, -1), type: "ウォーキング", minutes: 30, createdAt: D.T(D.addDays(D.DAY, -1), 18) }]); await part(p, "workout");
+  r = await txt(p, "#dt17Today");
+  ok(/^きょうのおすすめ 休 休養日にしましょう 6 日続けて運動しています。/.test(r), "④ 6 days in a row", r);
+  await put(p, "workouts", [...(await ls(p, "workouts")), { id: "sq", date: D.DAY, type: "筋トレ", exercise: "スクワット", reps: 30, sets: 2, createdAt: D.T(D.DAY, 11) }]); await part(p, "workout");
+  r = await txt(p, "#dt17Today");
+  ok(/^きょうのおすすめ 済 きょうは運動ずみです スクワットをしました。/.test(r), "④ done", r);
+  ok(/スクワット いまは スクワット（ベスト 30 回） .* 30 回できたので、次は「ブルガリアンスクワット」へ進めます。/.test(await txt(p, "#dt17Ladder")), "⑤ the next step ready", await txt(p, "#dt17Ladder"));
+
+  // ⑦ 脈拍の変化: 68 against 60
+  await part(p, "weight");
+  r = await txt(p, "#dt17Pulse");
+  ok(/^脈拍の変化 68 拍 11\/16（月）は、いつも（60 拍）より 8 拍高めです。疲れや寝不足のサインかもしれません。運動は軽めにしましょう。 この2週の平均 60\.6 拍・その前の2週 63 拍・下がっていて、体力がついてきたサインです 朝起きてすぐ/.test(r) && (await p.locator("#dt17Pulse .dt17-p-dots i").count()) === 28, "⑦ the pulse", r);
+  // ⑧ 去年とくらべるグラフ
+  const ws = D.weights(), diff = Math.round((avg7(ws, D.DAY) - avg7(ws, "2025-11-16")) * 10) / 10, ly = await W(p, "lastYear");
+  r = await txt(p, "#dt17LastYear");
+  ok(ly.diff === diff && diff < 0 && r.startsWith(`去年とくらべるグラフ −${Math.abs(diff).toFixed(1)} kg`) && r.includes(`去年のいまごろより ${Math.abs(diff).toFixed(1)} kg 軽くなっています。`) && (await p.locator("#dt17LastYear polyline").count()) === 2, "⑧ the two lines", [ly.diff, diff, r]);
+  // ⑨ 週のふりかえりメモ: the week's numbers, last week's 来週やること, one written and kept
+  const wk = await W(p, "week"), kg = Math.round((avg7(ws, D.DAY) - avg7(ws, "2026-11-15")) * 10) / 10;
+  r = await txt(p, "#dt17Review");
+  ok(wk.s === "2026-11-15" && wk.kg === kg && wk.kcal === 2820 && wk.wo === 2 && r.includes("週のふりかえりメモ 11/15〜11/21") && r.includes("摂取 平均 2,820 kcal・運動 2 日") && r.includes("先週決めたこと：ランを3回する"), "⑨ the week", [wk, kg, r]);
+  await p.fill('#dt17Review textarea[aria-label="よかったこと"]', "野菜を毎日食べた");
+  await p.click('#dt17Review textarea[aria-label="来週やること"]'); await p.waitForTimeout(400);
+  await p.fill('#dt17Review textarea[aria-label="来週やること"]', "早く寝る"); await p.click("#dt17Review .card-head"); await p.waitForTimeout(400);
+  let notes = (await setting(p, "weekNotes"))?.list || [];
+  ok(notes.length === 2 && notes[1].week === "2026-11-15" && notes[1].good === "野菜を毎日食べた" && notes[1].next === "早く寝る", "⑨ written", notes);
+  await part(p, "weight");
+  ok((await p.inputValue('#dt17Review textarea[aria-label="よかったこと"]')) === "野菜を毎日食べた", "⑨ kept after a reload");
+  // ⑩ 体重以外の変化: one, then a common one pressed, one typed, one taken out and back
+  r = await txt(p, "#dt17Nsv");
+  ok(/^体重以外の変化 1 こ 残す ＋ ベルトの穴がひとつ縮んだ ＋ 階段で息が切れにくい ＋ 朝すっきり起きられる ＋ 体が軽く感じる 前のズボンが入った 11\/1（日） 消す$/.test(r), "⑩ the one", r);
+  await p.click('#dt17Nsv button[aria-label="「階段で息が切れにくい」を残す"]'); await p.waitForTimeout(400);
+  await p.fill("#dt17Nsv input", "寝つきがよくなった"); await p.press("#dt17Nsv input", "Enter"); await p.waitForTimeout(400);
+  let nsv = (await setting(p, "nsv"))?.list || [];
+  r = await txt(p, "#dt17Nsv");
+  ok(nsv.length === 3 && nsv.filter((x) => x.date === D.DAY).length === 2 && /^体重以外の変化 3 こ .* 寝つきがよくなった 11\/16（月） 消す 階段で息が切れにくい 11\/16（月） 消す 前のズボンが入った 11\/1（日） 消す$/.test(r), "⑩ two added", [nsv, r]);
+  await p.click('#dt17Nsv button[aria-label="「前のズボンが入った」を消す"]'); await p.waitForTimeout(400);
+  ok(((await setting(p, "nsv"))?.list || []).length === 2, "⑩ taken out");
+  await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
+  ok(((await setting(p, "nsv"))?.list || []).length === 3 && /前のズボンが入った/.test(await txt(p, "#dt17Nsv")), "⑩ brought back");
+
+  const wide = await p.evaluate(() => document.documentElement.scrollWidth);
+  ok(wide <= 393, "no sideways scroll", wide);
+  ok(!p.errs.length, "no errors", p.errs);
+
+  // a new account: none of them shown
+  await seed(p, { settings: [] }, "diet");
+  for (const k of ["meal", "workout", "weight"]) {
+    await part(p, k);
+    const shown = await p.evaluate(() => ["dt17Full", "dt17Bal", "dt17Fry", "dt17Ladder", "dt17Zones", "dt17Pulse", "dt17LastYear", "dt17Review", "dt17Nsv"].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }));
+    ok(!shown.length, `nothing shown on a new account (${k})`, shown);
+  }
+  ok(!p.errs.length, "no errors on a new account", p.errs);
+  await b.close();
+  console.log(fails ? `FAIL ${fails}` : "ALL OK");
+})().catch((e) => { console.log("FAIL Error " + e.message); process.exit(1); });
