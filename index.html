@@ -888,10 +888,6 @@ span.rtc-d { background: transparent; color: var(--muted); cursor: default; }
 .rt3-y.now { outline: 1.5px solid var(--fg); outline-offset: 1px; }
 .rt3-year-sum { margin: 0; padding: 0 var(--space-2) 12px; font-size: var(--t-sub); color: var(--muted); }
 /* ⑩ 候補, under the form: a line of chips that wraps, each with what it comes with */
-.rt3-ideas { display: grid; justify-items: start; gap: 4px; margin-top: -8px; }
-.rt3-ideas-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.rt3-idea { min-height: 36px; }
-.rt3-idea small { margin-inline-start: 6px; font-size: var(--t-foot); font-weight: 400; color: var(--muted); }
 /* ルーティーン その4 (the user's calls, 2026-11-15): ② an item's 絵文字 beside its name, and picked in ⋯ */
 .rt4-emoji { flex: none; width: 26px; font-size: 22px; line-height: 1; text-align: center; }
 .rt4-emoji-field { flex: 0 0 5em; width: 5em; text-align: center; font-size: 20px; }
@@ -2003,7 +1999,6 @@ ul.wx-days > li { padding: 0; }
 .h4-s.h4-job { color: var(--c-money); }
 .h4-foot { margin: 4px 0 0; font-size: var(--t-foot); color: var(--muted); }
 .h4-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0 10px; margin-top: 2px; }
-.h4-speak { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0; font-size: var(--t-sub); }
 .h4-breath { text-align: center; }
 .h4-ring { display: grid; place-items: center; width: 180px; height: 180px; margin: 12px auto 4px; }
 .h4-ring i { width: 100%; height: 100%; border-radius: 50%; background: color-mix(in srgb, var(--sat) 35%, transparent); transform: scale(.55); transition: transform 6s ease-in-out; }
@@ -2054,9 +2049,6 @@ ul.wx-days > li { padding: 0; }
 #homeTiles.h6-large { --t-sub: calc(1rem + 1px); --t-foot: calc(1rem - 1px); --t-title1: calc(1rem + 15px); --t-title2: calc(1rem + 8px); font-size: calc(1rem + 2px); }
 #homeTiles.h6-hide > .tile.h6-secret > :not(.tile-head) { filter: blur(9px); pointer-events: none; -webkit-user-select: none; user-select: none; }
 .h6-more-btn, .h6-show-btn { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0; font-size: var(--t-sub); }
-.h6-rest { flex-basis: 100%; margin: 2px 0 0; font-size: var(--t-sub); color: var(--muted); line-height: 1.45; }
-.h6-mic { flex: none; display: grid; place-items: center; width: 40px; min-height: 40px; padding: 0; background: var(--fill); box-shadow: none; color: var(--accent); }
-.h6-mic.on { background: var(--warn); color: #fff; }
 .ask-btn.h6-cur { font-weight: 700; }
 dialog.h6-clock { inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: env(safe-area-inset-top, 0px) 16px env(safe-area-inset-bottom, 0px); border: 0; background: #000; color: #fff; text-align: center; }
 dialog.h6-clock[open] { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
@@ -16144,7 +16136,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     renderRtFoot(st, rest);
     renderRtPaused(list);
     rt2Wake(); // (その2 ③ the time to do one by, passed while the page is open)
-    rt3Render(); // (その3 ③ きのうのチェック忘れ, ⑩ 候補, ② お休みの予定 in the gear)
+    rt3Render(); // (その3 ③ きのうのチェック忘れ, ② お休みの予定 in the gear)
     rt4Render(); // (その4 ⑧ コンパクト表示, ① 文字で送る)
     rt5Render(list); // (その5 ③ おまもり, ① ごほうび, ② 見なおし, ④ これからの項目, ⑨ タイムライン, ⑥ 声でチェック)
     rt6Render(list); // (その6 ① やめる習慣, ⑨ 画像で送る; ⑤ 月ごとの達成率, ⑦ 時間帯)
@@ -22683,6 +22675,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   $("wxHere").addEventListener("click", wxAsk);
   $("wxForget").addEventListener("click", () => { lsJsonPut(WX_PLACE, null); lsJsonPut(WX_DATA, null); wxError = ""; syncWxSettings(); renderHome(); flash("天気の場所を消しました"); });
+  // カウントダウン with no plan marked for it (the user's call, 2026-11-16: the nearest plan in place of the word on how to mark
+  // one): today's still to come or going on, else the first day ahead with any, a year at most
+  function homeNearestPlan(evNow) {
+    const left = evNow.filter((x) => !x.past);
+    if (left.length) return { d: todayKey, t: left[0].t };
+    for (const span of [31, 366]) {
+      const by = turnsByDay(addDays(todayKey, 1), addDays(todayKey, span)), d = [...by.keys()].sort()[0];
+      if (d) return { d, t: by.get(d)[0] };
+    }
+    return null;
+  }
   function renderHome() {
     const focusRow = document.activeElement?.dataset || {}; // a ルーティーン or ToDo row on a tile, pressed from the keyboard
     const undone = todos.items.filter((t) => !t.done && !tdLater(t) && !tdWaiting(t)); // (⑨ not those waiting for their 開始日, nor その2 ⑥ 返事待ち)
@@ -22772,7 +22775,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     ]);
     // ⑩ カウントダウン (the user's call): the plans marked for it, each by its next turn within a year, nearest first
     const cdTo = addDays(todayKey, 366), cds = events.items.filter((e) => e.count).map((e) => ({ e, d: turnStarts(e, todayKey, cdTo).find((d) => d >= todayKey) })).filter((x) => x.d).sort((a, b) => a.d.localeCompare(b.d) || num(a.e.createdAt) - num(b.e.createdAt));
-    const cdDays = (d) => daysBetween(todayKey, d), cd0 = cds[0];
+    const cdDays = (d) => daysBetween(todayKey, d), cd0 = cds[0], nx = cd0 ? null : homeNearestPlan(evNow);
     // (きょう その2 ③) the tiles whose day is done: 日記 written, ルーティーン all done, nothing left to do by today in ToDo
     // with some done today, きょうの運動's menu all done, ダイエット's three, the plans all over, and some 勉強
     const doneOf = { journal: !!j?.text, routine: rts.length > 0 && !rtLeft.length, todo: dueToday + overdue === 0 && todoDone > 0, move: mvRows.length > 0 && mvRows.every((r) => r.done),
@@ -22789,7 +22792,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         nextShift ? el("li", {}, `${nextShift.date === todayKey ? "きょう" : fmtShort(nextShift.date)} ${nextShift.start}〜${nextShift.end}`) : null,
         wallLeft !== null ? el("li", { class: wallLeft < 0 ? "warn" : null }, wallLeft >= 0 ? `1年の目安まで あと ${fmtYen(wallLeft)}` : `1年の目安を ${fmtYen(-wallLeft)} こえています`) : null) : null)
         : tile("job", "まだ", null, "バイト先を決めると、給料の見込みが出ます"),
-      !cd0 ? tile("countdown", null, null, "予定の「カウントダウン」をオンにすると、あと何日かがここに出ます")
+      !cd0 ? (nx ? tile("countdown", nx.d === todayKey ? "きょう" : String(cdDays(nx.d)), nx.d === todayKey ? null : "日",
+          nx.d === todayKey ? `次の予定「${oneLine(nx.t.e.title)}」${turnTime(nx.t) ? `（${turnTime(nx.t)}〜）` : ""}` : `次の予定「${oneLine(nx.t.e.title)}」まで`)
+        : tile("countdown", null, null, "これからの予定はありません"))
         : tile("countdown", cdDays(cd0.d) === 0 ? "きょう" : String(cdDays(cd0.d)), cdDays(cd0.d) === 0 ? null : "日", cdDays(cd0.d) === 0 ? `「${cd0.e.title}」です` : `「${cd0.e.title}」まで`,
           cds.length > 1 ? el("ul", {}, cds.slice(1, 3).map((x) => el("li", {}, `${x.e.title} ${cdDays(x.d) === 0 ? "きょう" : `あと${cdDays(x.d)}日`}`))) : null),
       // its big number what is to do by today, as ToDo's tab counts (the user's call: it counted next year's too), the rest
@@ -22857,7 +22862,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("homeTiles").replaceChildren(...(shown.length ? shown : [el("p", { class: "card tiles-none" }, "タイルをすべて隠しています。右上の歯車から、出すタイルを選べます。")]));
     if (focusRow.rt) $("homeTiles").querySelector(`[data-rt="${focusRow.rt}"]`)?.focus();
     if (focusRow.td) $("homeTiles").querySelector(`[data-td="${focusRow.td}"]`)?.focus();
-    if (homeFour) h4HeadSync(); // (きょう その4 ⑨, and a field typed in on a tile given its focus back)
+    if (homeFour) h4HeadSync(); // (きょう その4: the line under the date, and a field typed in on a tile given its focus back)
     if (homeFive) h5HeadSync(); // (きょう その5 ⑨③)
     if (homeSix) h6Sync(); // (きょう その6 ③④⑦, その他)
     if (homeTwo) { if (focusRow.pc) $("homeTiles").querySelector(`[data-pc="${focusRow.pc}"]`)?.focus(); h2Dock(hidden); } // (きょう その2 ⑤ a check pressed from the keyboard, ⑦)
@@ -25742,7 +25747,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月16日 21:45"; // 848c1b8e (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月16日 22:35"; // 725c83ab (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -61858,8 +61863,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ---------- きょう その4 ①〜⑩ (the user's calls, 2026-11-14): a line typed in すぐに記録 records what it says (①),
   // すぐに記録's buttons picked, with more to pick from (②), the day's mood (③), a note (④), a stopwatch for 勉強 and
-  // 運動 (⑥), a minute's breathing (⑦), the week ahead (⑧), the day read aloud (⑨), (⑤, the season under the date, was
-  // taken out: the user's call, 2026-11-16)
+  // 運動 (⑥), a minute's breathing (⑦), the week ahead (⑧). (⑤ the season under the date and ⑨ the day read aloud were
+  // taken out: the user's call, 2026-11-16.)
   // and おやすみ・おはよう into からだ's 睡眠 (⑩). The mood, the note and the breaths are kept in 設定 (synced), water and
   // sleep in からだ's own record, the stopwatch on this device. Function declarations and var, as the page may draw before
   // this part has run ----------
@@ -61983,7 +61988,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     };
     f.addEventListener("input", sync);
     sync();
-    return el("form", { class: "h4-line", autocomplete: "off", onsubmit: (ev) => { ev.preventDefault(); if (!go.disabled) act(() => h4Record(f.value)); } }, el("div", { class: "h4-line-row" }, f, homeSix ? h6Mic(f) : null, go), say, acts); // (きょう その6 ⑤ 声で)
+    return el("form", { class: "h4-line", autocomplete: "off", onsubmit: (ev) => { ev.preventDefault(); if (!go.disabled) act(() => h4Record(f.value)); } }, el("div", { class: "h4-line-row" }, f, go), say, acts);
   }
   // (a field typed in on a tile, kept through the tiles being drawn anew: focus and the caret put back)
   function h4Grab() {
@@ -62151,31 +62156,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return tile("h4week", null, null, null, [el("div", { class: "h4-week", "aria-hidden": "false" }, cols), el("p", { class: "h4-foot" }, "大きい数字は予定の件数です。")]);
   }
 
-  // ⑨ the day read aloud (the phone's own voice): the date, the weather, the plans still to come
-  const h4Hm = (hm) => { const [h, m] = hm.split(":").map(Number); return `${h}時${m ? m + "分" : ""}`; };
-  function h4SpeakText() {
-    const d = todayKey, out = [`${fmtMDW(d)}。`], w = wxPlace() ? wxDay(d) : null;
-    if (w) out.push(`天気は${w.word}、最高${w.hi}度、最低${w.lo}度、降水確率${w.rain}パーセントです。`);
-    const evs = planNow(turnsByDay(d, d).get(d) || []).filter((x) => !x.past);
-    if (evs.length) out.push("これからの予定は、" + evs.slice(0, 5).map((x) => (turnTime(x.t) ? h4Hm(turnTime(x.t)) + "から、" : "") + oneLine(x.t.e.title)).join("。") + "。");
-    return out.join(" ");
-  }
-  function h4Speak() {
-    const ss = window.speechSynthesis;
-    if (!ss) return;
-    if (ss.speaking) { ss.cancel(); return; }
-    const u = new SpeechSynthesisUtterance(h4SpeakText()), v = ss.getVoices().find((x) => /^ja/i.test(x.lang));
-    u.lang = "ja-JP";
-    if (v) u.voice = v;
-    ss.speak(u);
-  }
-  // ⑨ under the date; and the fields typed in on the tiles given their focus back
+  // the line under the date (その5's タイルへ移動 and その6's その他 go on it); and the fields typed in on the tiles given
+  // their focus back
   function h4HeadSync() {
     let box = $("h4Head");
     if (!box) { box = el("div", { class: "h4-head", id: "h4Head" }); $("homeHoliday").after(box); }
-    const sp = "speechSynthesis" in window && !homePrefs().noSpeak;
-    box.hidden = !sp;
-    setChildren(box, sp ? el("button", { type: "button", class: "link-btn h4-speak", id: "h4Speak", onclick: h4Speak }, icon("speak", 16), "きょうを読み上げる") : null);
+    box.hidden = false;
+    setChildren(box);
     const r = h4Refocus;
     h4Refocus = null;
     if (r && $(r.id)) { const f = $(r.id); f.focus({ preventScroll: true }); try { f.setSelectionRange(r.s, r.e); } catch {} }
@@ -62201,22 +62188,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return ts;
   }
 
-  // ②⑨ in the gear's sheet, under その3's: すぐに記録's buttons, and reading aloud on or off
+  // ② in the gear's sheet, under その3's: すぐに記録's buttons
   function h4SetBuild() {
     if ($("h4Set") || !$("h3Set")) return;
-    const sw = (id, key) => el("input", { type: "checkbox", id, class: "switch", role: "switch", onchange: (ev) => saveHomePrefs({ [key]: !ev.target.checked }) });
     $("h3Set").after(el("div", { id: "h4Set" },
       el("h3", { class: "group-head" }, "すぐに記録のボタン"),
       el("div", { class: "card pad h4-qk-pick", id: "h4QkPick", role: "group", "aria-label": "すぐに記録に出すボタン" }, H4_QK.map(([k, w]) => el("button", { type: "button", class: "chip-btn", "data-qk": k, "aria-pressed": "false",
         onclick: (ev) => { const on = new Set(h4QkOn()); if (on.has(k)) on.delete(k); else on.add(k); saveHomePrefs({ qk: H4_QK.map(([x]) => x).filter((x) => on.has(x)) }); ev.currentTarget.setAttribute("aria-pressed", String(on.has(k))); } }, w))),
-      el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "押すと、出す・出さないが切りかわります。"), el("span", { class: "phrase" }, "水分はコップ1杯（200 ml）をその場で足します。"), el("span", { class: "phrase" }, "シフトはバイト先があるときに出ます。")),
-      "speechSynthesis" in window ? el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, recRow("読み上げ", sw("h4SpeakOn", "noSpeak"))) : null));
+      el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "押すと、出す・出さないが切りかわります。"), el("span", { class: "phrase" }, "水分はコップ1杯（200 ml）をその場で足します。"), el("span", { class: "phrase" }, "シフトはバイト先があるときに出ます。"))));
   }
   function h4SetSync() {
     if (!$("h4Set")) return;
-    const on = new Set(h4QkOn()), p = homePrefs();
+    const on = new Set(h4QkOn());
     for (const b of $("h4QkPick").querySelectorAll("[data-qk]")) b.setAttribute("aria-pressed", String(on.has(b.dataset.qk)));
-    if ($("h4SpeakOn")) $("h4SpeakOn").checked = !p.noSpeak;
   }
   HOME_TILES.push(...H4_TILES);
   H2_FIXED.push(...H4_FIXED);
@@ -62447,7 +62431,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!box) { box = el("div", { class: "h5-head", id: "h5Head" }); ($("h4Head") || $("homeHoliday")).after(box); }
     const an = homePrefs().noAnniv ? [] : h5Annivs(), h4 = $("h4Head");
     const jump = el("button", { type: "button", class: "link-btn h5-jump-btn", id: "h5JumpBtn", onclick: h5Jump }, icon("list", 16), "タイルへ移動");
-    if (h4 && !h4.hidden) h4.append(jump); // (on the line of きょうを読み上げる)
+    if (h4 && !h4.hidden) h4.append(jump); // (on the line under the date)
     setChildren(box, an.map((x) => {
       const left = daysBetween(todayKey, x.s), cake = /誕生日|バースデー|生まれ/.test(x.e.title);
       return el("p", { class: "h5-anniv" + (left ? "" : " today") }, el("span", { "aria-hidden": "true" }, cake ? "🎂 " : "🎉 "),
@@ -62509,11 +62493,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   if (tab === "home") draw(() => renderHome());
 
   // ---------- きょう その6 ①〜⑩ (the user's calls, 2026-11-14): when a tile shows (①), the tiles put in the order they are
-  // used in (②), the tiles' look (③), the figures hidden (④), ひとことで記録 by voice (⑤), a clock to stand the phone up
-  // with (⑥), the next days off (⑦), what きょう can do (⑧), the place on the page kept (⑨), and the day as a picture
-  // (⑩). The choices are in きょう's settings (synced); the counts, the figures hidden and the place on this device alone.
+  // used in (②), the tiles' look (③), the figures hidden (④), a clock to stand the phone up with (⑥), what きょう can do
+  // (⑧), the place on the page kept (⑨), and the day as a picture (⑩). (⑤ ひとことで記録 by voice and ⑦ the next days
+  // off were taken out: the user's call, 2026-11-16.) The choices are in きょう's settings (synced); the counts, the figures hidden and the place on this device alone.
   // Function declarations and var, as the page may draw before this part has run ----------
-  var homeSix = false, h6Rec = null, h6Scroll = null, h6ClockTimer = 0, h6Wake = null;
+  var homeSix = false, h6Scroll = null, h6ClockTimer = 0, h6Wake = null;
 
   // ① when a tile shows: always, mornings, days, evenings, weekdays or days off (土日・祝日, and カレンダー's own days off)
   const H6_WHEN = [["", "いつも"], ["am", "朝だけ（4時〜11時）"], ["day", "昼だけ（11時〜18時）"], ["pm", "夜だけ（18時〜4時）"], ["wd", "平日だけ"], ["we", "休みの日だけ（土日・祝日）"]];
@@ -62569,31 +62553,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const h6Hidden = () => !!lsJson(H6_HIDE);
   function h6SetHidden(on) { lsJsonPut(H6_HIDE, on ? 1 : null); renderHome(); flash(on ? "お金や体重などの数字をかくしました" : "数字を出しました"); }
 
-  // ⑤ ひとことで記録 by voice, where the browser can hear (Safari and Chrome): what is heard put in the field
-  function h6Mic(f) {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return null;
-    const on = !!h6Rec;
-    return el("button", { type: "button", class: "chip-btn h6-mic" + (on ? " on" : ""), "aria-pressed": String(on), "aria-label": on ? "聞くのをやめる" : "声で入れる", onclick: () => {
-      if (h6Rec) { try { h6Rec.stop(); } catch {} return; }
-      let r;
-      try { r = new SR(); } catch { flash("声で入れられませんでした"); return; }
-      r.lang = "ja-JP"; r.interimResults = false; r.maxAlternatives = 1;
-      r.onresult = (ev) => {
-        const t = Array.from(ev.results || []).map((x) => (x && x[0] ? x[0].transcript : "")).join("").trim(), g = $("h4LineIn") || f;
-        if (!t) return;
-        g.value = (g.value.trim() ? g.value.trim() + " " : "") + t;
-        g.dispatchEvent(new Event("input", { bubbles: true }));
-      };
-      r.onerror = (ev) => flash(ev && (ev.error === "not-allowed" || ev.error === "service-not-allowed") ? "マイクの使用が許可されていません。端末の設定で許可すると使えます" : ev && ev.error === "no-speech" ? "声が聞き取れませんでした" : "声で入れられませんでした");
-      r.onend = () => { h6Rec = null; const b = document.querySelector(".h6-mic"); if (b) { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); b.setAttribute("aria-label", "声で入れる"); } };
-      h6Rec = r;
-      try { r.start(); } catch { h6Rec = null; flash("声で入れられませんでした"); return; }
-      const b = document.querySelector(".h6-mic");
-      if (b) { b.classList.add("on"); b.setAttribute("aria-pressed", "true"); b.setAttribute("aria-label", "聞くのをやめる"); }
-    } }, icon("mic", 18));
-  }
-
   // ⑥ a clock to stand the phone up with: the time large, the date, the weather and the next plan; the screen kept on
   // (where the browser can) while it shows
   function h6ClockOpen() {
@@ -62623,28 +62582,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("h6CNext").textContent = nx ? (nx.now ? `いま「${oneLine(nx.t.e.title)}」` : `次は ${turnTime(nx.t)}「${oneLine(nx.t.e.title)}」（${leftWords(nx.left)}）`) : "";
   }
 
-  // ⑦ the next days off (土日・祝日 and カレンダー's own days off): today's, or the next and how many in a row; and the next
-  // 3連休 or longer within two months when the next is a lone day or two
-  function h6Run(s) { let e = s; for (let i = 0; i < 30 && h6IsOff(addDays(e, 1)); i++) e = addDays(e, 1); return { from: s, to: e, n: daysBetween(s, e) + 1 }; }
-  function h6Rest() {
-    if (h6IsOff(todayKey)) { let a = todayKey; for (let i = 0; i < 30 && h6IsOff(addDays(a, -1)); i++) a = addDays(a, -1); const r = h6Run(a); return { now: true, ...r, i: daysBetween(a, todayKey) + 1, name: calHolName(todayKey) || "" }; }
-    let s = addDays(todayKey, 1);
-    for (let i = 0; i < 60 && !h6IsOff(s); i++) s = addDays(s, 1);
-    const r = h6Run(s);
-    let long = null;
-    if (r.n < 3) for (let d = addDays(r.to, 1), i = 0; i < 60; i++, d = addDays(d, 1)) { if (h6IsOff(d) && !h6IsOff(addDays(d, -1))) { const x = h6Run(d); if (x.n >= 3) { long = x; break; } d = x.to; } }
-    const names = [];
-    for (let d = r.from; d <= r.to; d = addDays(d, 1)) { const nm = calHolName(d); if (nm && !names.includes(nm)) names.push(nm); }
-    return { now: false, ...r, left: daysBetween(todayKey, r.from), names, long };
-  }
-  function h6RestWords() {
-    const r = h6Rest();
-    if (r.now) return r.n >= 2 ? `きょうはお休み（${r.n}連休の${r.i}日目${r.name ? "・" + r.name : ""}）` : `きょうはお休み${r.name ? `（${r.name}）` : ""}`;
-    let s = `次の休みは${r.left === 1 ? "あした" : `${fmtShort(r.from)}`}${r.n >= 2 ? `から${r.n}連休` : ""}${r.names.length ? `（${r.names.join("・")}）` : ""}${r.left > 1 ? `、あと${r.left}日` : ""}`;
-    if (r.long) s += `。次の${r.long.n}連休は${fmtMD(r.long.from)}〜${fmtMD(r.long.to)}（あと${daysBetween(todayKey, r.long.from)}日）`;
-    return s;
-  }
-
   // ⑧ what きょう can do: its ways, then each tile's own word; a tile's from its menu (このタイルについて) shown and lit up
   const H6_ABOUT = {
     review: "夜の時刻から。きょう積んだブロックと、記録したものの一覧。「文字で送る」でLINEなどに",
@@ -62652,11 +62589,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     prep: "朝と、移動時間のある予定の出発前に。出発の時刻、バイト、傘、服装、持ち物のチェック",
     missed: "いつも記録しているのに、きのうの分がないもの。押すと、きのうの日付で開く",
     h5yday: "朝だけ。きのうのToDo・勉強・運動・支出・体重・気分・テーマ",
-    quick: "体重・食事・運動などをすぐ記録。下の欄に「体重60.5 勉強30分 ランチ900円」と書いても（マイクでも）。数字のない文はToDo・日記・メモへ",
+    quick: "体重・食事・運動などをすぐ記録。下の欄に「体重60.5 勉強30分 ランチ900円」と書いても。数字のない文はToDo・日記・メモへ",
     weather: "いる場所の天気といまの気温。押すと、1時間ごとの予報や服装のめやすのページ",
     todo: "きょうまでのToDoの数と、上から3つ。その場で完了にできる",
     calendar: "きょうの予定と、次の予定まであと何分",
-    countdown: "予定で「カウントダウン」をオンにしたものまで、あと何日",
+    countdown: "予定で「カウントダウン」をオンにしたものまで、あと何日（ないときは、いちばん近い予定まで）",
     journal: "きょうの日記を書いたかどうか", study: "きょうの勉強の時間",
     diet: "からだ（体重）・食事・運動の、きょうの記録", move: "きょうの運動のメニュー。押して記録",
     routine: "きょうのルーティーン。その場でチェック", money: "今月の収支", job: "今月の給料の見込みと、次のシフト",
@@ -62676,7 +62613,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     ["タイルを長押し", "前へ・後ろへ・大きさ・たたむ・出すとき（朝だけ・平日だけ など）・隠す・このタイルについて（パソコンは右クリック）"],
     ["右上の歯車", "出すタイルと並び、タイルの見本、よく使う順に並べる、タイルの表示（コンパクト・大きい文字）、朝と夜の時刻 など"],
     ["上から引っぱる", "天気を取りなおして、同期をすぐに"],
-    ["日付の下", "誕生日・記念日、次の休み。「きょうを読み上げる」「タイルへ移動」「その他」"],
+    ["日付の下", "誕生日・記念日。「タイルへ移動」「その他」"],
     ["その他", "数字をかくす（お金・体重など）、置き時計、1日のまとめを画像で、この一覧"],
     ["済んだタイル", "きょうの分が済んだタイルは、アイコンが✓に"],
   ];
@@ -62764,13 +62701,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       item("h6-guide-btn", "このページでできること", () => h6Guide()));
     m.showModal();
   }
-  // under the date (after その5's): ⑦, and その他 on the line of きょうを読み上げる; ③ ④ on the tiles drawn
+  // under the date (after その5's): その他 on the line under the date; ③ ④ on the tiles drawn
   function h6Sync() {
     const box = $("h5Head"), h4 = $("h4Head");
     const more = el("button", { type: "button", class: "link-btn h6-more-btn", id: "h6MoreBtn", onclick: h6MenuOpen }, icon("more", 16), "その他");
     if (h4 && !h4.hidden) h4.append(more); else if (box) box.append(more);
     if (h6Hidden()) (h4 && !h4.hidden ? h4 : box)?.append(el("button", { type: "button", class: "link-btn h6-show-btn", id: "h6ShowBtn", onclick: () => h6SetHidden(false) }, "数字を出す"));
-    if (box && !homePrefs().noRest) box.append(el("p", { class: "h6-rest", id: "h6Rest" }, h6RestWords()));
     const tiles = $("homeTiles"), look = h6Look(), hide = h6Hidden();
     tiles.classList.toggle("h6-compact", look === "compact");
     tiles.classList.toggle("h6-large", look === "large");
@@ -62795,16 +62731,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("p", { class: "group-foot", id: "h6WhenFoot" }, "タイルを長押しして「出すとき」から、朝だけ・夜だけ・平日だけ などにできます。"),
       el("h3", { class: "group-head" }, "よく使う順"),
       el("ul", { class: "list card" }, el("li", { class: "btn-row" }, el("button", { type: "button", class: "row-btn", id: "h6SortUse", onclick: h6SortByUse }, "タイルを、よく使う順に並べる"))),
-      el("p", { class: "group-foot", id: "h6UseNote" }),
-      el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
-        recRow("次の休み", el("input", { type: "checkbox", id: "h6RestOn", class: "switch", role: "switch", onchange: (ev) => saveHomePrefs({ noRest: !ev.target.checked }) }))),
-      el("p", { class: "group-foot" }, "土日・祝日（カレンダーの自分の休みの日も）の次の休みと連休を、日付の下に出します。")));
+      el("p", { class: "group-foot", id: "h6UseNote" })));
   }
   function h6SetSync() {
     if (!$("h6Set")) return;
     const look = h6Look() || "normal";
     for (const b of $("h6Look").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.look === look));
-    $("h6RestOn").checked = !homePrefs().noRest;
     const w = homeTileOrder().filter((k) => h6WhenOf(k));
     $("h6WhenList").hidden = !w.length;
     setChildren($("h6WhenList"), w.map((k) => el("li", { class: "h6-when-row", "data-k": k }, el("span", { class: "h6-when-name" }, homeTile(k).label, el("small", {}, h6WhenWord(k) + (h6Off(k) ? "・いまは出ていません" : ""))),
@@ -74842,9 +74774,9 @@ ${parts.join("\n")}
   // ---------- ルーティーン その3 ①〜⑩ (the user's calls, 2026-11-15; still daily, no weekdays, no groups): an item パス for a
   // day (①), お休みの予定 over days to come (②), yesterday's checks forgotten (③), a check taken off with 元に戻す (④),
   // きっかけ, 〇〇のあとに, and the next said (⑤), ◯日チャレンジ (⑥), 自己ベスト (⑦), the year's calendar (⑧), the week's
-  // まとめ as a reminder (⑨) and items added from 候補 (⑩). Function declarations and var, as the page may draw before this
+  // まとめ as a reminder (⑨). (⑩, items added from 候補, was taken out: the user's call, 2026-11-16.) Function declarations and var, as the page may draw before this
   // runs ----------
-  var rt3Ready = false, rt3Sigs = null, rt3IdeasOpen = null;
+  var rt3Ready = false, rt3Sigs = null;
   var RT3_WEEK = "rtWeekSum", RT3_YDAY = "rt3YdayShut", RT3_CH = [7, 21, 30, 66, 100];
   function rt3Same(k, v) { if (!rt3Sigs) rt3Sigs = new Map(); const t = JSON.stringify(v); if (rt3Sigs.get(k) === t) return true; rt3Sigs.set(k, t); return false; }
   function rt3LsGet(k) { try { return localStorage.getItem(LS_PREFIX + k) || ""; } catch { return ""; } }
@@ -75112,40 +75044,13 @@ ${parts.join("\n")}
   }
   function saveRt3Week(patch) { act(() => settings.set(RT3_WEEK, { ...rt3Week(), ...patch, updatedAt: Date.now() })); renderRt3Settings(); }
 
-  // ⑩ 候補: everyday ones to add with a press, some checked by another page's record (⑦ of the first ten); none already
-  // there (by name, or by the record it is linked to). Folded under the form, open while there are no items
-  var RT3_IDEAS = [
-    ["水を飲む", { target: 8, unit: "杯" }, "8杯"], ["日記を書く", { link: "journal" }, "日記と連携"], ["勉強する", { link: "study", linkMin: 30 }, "勉強30分と連携"],
-    ["体重をはかる", { link: "weight" }, "体重と連携"], ["運動する", { link: "workout" }, "運動と連携"], ["食事を記録する", { link: "meal" }, "食事と連携"],
-    ["家計簿をつける", { link: "money" }, "家計簿と連携"], ["ToDoを片づける", { link: "todo" }, "ToDoと連携"], ["ストレッチ", { mins: 5 }, "約5分"], ["読書", { mins: 15 }, "約15分"], ["歯みがき", { mins: 3 }, "約3分"],
-    ["散歩", { mins: 20 }, "約20分"], ["部屋の片づけ", { mins: 10 }, "約10分"], ["早起き", { by: "07:00" }, "目安 7:00"], ["早く寝る", { by: "23:30" }, "目安 23:30"],
-    ["薬を飲む", {}, ""],
-  ];
-  function renderRt3Ideas() {
-    const box = $("rt3Ideas");
-    if (!box) return;
-    const names = new Set(routines.items.map((r) => oneLine(r.name))), links = new Set(routines.items.map((r) => r.link).filter(Boolean));
-    const xs = RT3_IDEAS.filter(([name, cfg]) => !names.has(name) && !(cfg.link && links.has(cfg.link))), open = rt3IdeasOpen ?? !sortedRoutines().length;
-    box.hidden = !xs.length;
-    if (rt3Same("ideas", [xs.map((x) => x[0]), open])) return;
-    setChildren(box, el("button", { type: "button", class: "link-btn rt3-ideas-btn", "aria-expanded": String(open), onclick: () => { rt3IdeasOpen = !open; renderRt3Ideas(); $("rt3Ideas").querySelector(".rt3-ideas-btn")?.focus(); } }, open ? "候補を閉じる" : "候補から選ぶ"),
-      open ? el("div", { class: "rt3-ideas-list" }, xs.map(([name, cfg, hint]) => el("button", { type: "button", class: "chip-btn rt3-idea", onclick: () => rt3AddIdea(name, cfg, hint) }, name, hint ? el("small", {}, hint) : null))) : null);
-  }
-  function rt3AddIdea(name, cfg, hint) {
-    const top = Math.max(-1, ...routines.items.filter(rtHasOrder).map((r) => r.order)); // (after the ones put in order, as the form adds)
-    act(async () => {
-      const id = await routines.add({ name, createdAt: Date.now(), ...(top >= 0 ? { order: top + 1 } : {}), ...cfg });
-      flash(`「${name}」を追加しました` + (hint ? `（${hint}）` : ""), () => act(() => routines.remove(id)));
-    });
-  }
-
-  // drawn with the page (renderRoutine): ③, ⑩, and ② in the gear while it is open
+  // drawn with the page (renderRoutine): ③, and ② in the gear while it is open
   function rt3Render() {
     if (!rt3Ready) return;
-    draw(renderRt3Yday); draw(renderRt3Ideas);
+    draw(renderRt3Yday);
     if (sheetEl.open && settingsScope === "routine") draw(renderRt3Rests);
   }
-  // made once: ③'s card over the day's list, ⑧'s after その2 ⑨'s, ⑩ under the form, ⑨ and ② in the gear
+  // made once: ③'s card over the day's list, ⑧'s after その2 ⑨'s, ⑨ and ② in the gear
   function rt3Build() {
     if ($("rt3YdayCard")) return;
     $("rtList").closest(".card").before(el("div", { class: "card rt3-yday", id: "rt3YdayCard", hidden: true }));
@@ -75153,7 +75058,6 @@ ${parts.join("\n")}
       el("div", { class: "card-head" }, "1年のカレンダー"),
       el("div", { class: "rt3-year-wrap", id: "rt3YearWrap" }),
       el("p", { class: "rt3-year-sum", id: "rt3YearSum" })));
-    $("rtForm").after(el("div", { class: "rt3-ideas", id: "rt3Ideas", hidden: true }));
     $("rtRemindFoot").after(
       el("form", { class: "add", id: "rt3WeekForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
         el("label", { class: "flabel", for: "rt3WeekOn" }, "週のまとめ"),
@@ -77957,7 +77861,7 @@ ${parts.join("\n")}
     $("rtList").closest(".card").after(el("div", { class: "card", id: "rt6QuitCard", hidden: true },
       el("div", { class: "card-head row-between" }, el("span", {}, "やめる習慣"), el("button", { type: "button", class: "link-btn rt6-quit-add", "aria-haspopup": "dialog", "aria-label": "やめる習慣を追加", onclick: () => openRt6Quit() }, "追加")),
       el("ul", { class: "list", id: "rt6QuitList" })));
-    $("rt3Ideas").after(el("div", { class: "rt6-add-tools" },
+    $("rtForm").after(el("div", { class: "rt6-add-tools" },
       el("button", { type: "button", class: "link-btn", "aria-haspopup": "dialog", onclick: () => openRt6Bulk() }, "まとめて追加"),
       el("button", { type: "button", class: "link-btn", "aria-haspopup": "dialog", onclick: () => openRt6Quit() }, "やめる習慣を追加")));
     $("sec-routine").querySelector("#rtForm ~ p.group-foot")?.append(el("span", { class: "phrase" }, "項目を長押しすると、パス・ひとこと・複製などをすぐ選べます。"));

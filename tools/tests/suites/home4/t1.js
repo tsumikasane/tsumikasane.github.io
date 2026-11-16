@@ -124,11 +124,8 @@ async function open(b, when) {
   ok(await p.$eval('.h4-day[data-day="2026-11-16"] .h4-job .icon', () => true).catch(() => false) && (await p.getAttribute('.h4-day[data-day="2026-11-16"]', "aria-label")).includes("バイト"), "⑧ バイト on Monday");
   ok((await p.getAttribute('.h4-day[data-day="2026-11-15"]', "aria-label")) === "あした、11月15日（日）、予定 1件、ToDo 1件", "⑧ read out", await p.getAttribute('.h4-day[data-day="2026-11-15"]', "aria-label"));
 
-  // ⑨ read aloud
-  await p.click("#h4Speak"); await p.waitForTimeout(200);
-  const said = await p.evaluate(() => window.__spoken || "");
-  // (the greeting and the season were taken out of it with them, 2026-11-16)
-  ok(flat(said).startsWith("11月14日（土）。") && !said.includes("おはようございます") && said.includes("これからの予定は、10時から、図書館。") && !said.includes("二十四節気"), "⑨ what it reads", said);
+  // ⑨ read aloud was taken out (the user's call, 2026-11-16): no button, nor its switch
+  ok(!(await p.$("#h4Speak")) && !(await p.evaluate(() => document.getElementById("sec-home").innerText.includes("読み上げる"))), "⑨ no きょうを読み上げる (taken out)");
 
   // ⑩ おはよう in the morning: from last night's 23:30
   ok((await tileTxt(p, "h4sleep")).startsWith("睡眠まだゆうべ23:30→−"), "⑩ before", await tileTxt(p, "h4sleep"));

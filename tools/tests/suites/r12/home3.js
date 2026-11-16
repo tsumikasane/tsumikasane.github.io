@@ -82,9 +82,21 @@ function forecast() {
   await seed(p, { events: [{ id: "c1", date: today, time: "18:00", title: "発表会", count: true, createdAt: T0 }] });
   ok(await tileText(p, "countdown") === "カウントダウン きょう 「発表会」です", "⑩ today: " + await tileText(p, "countdown"));
   await p.close();
+  // (since 2026-11-16, the user's call: with none marked for it, the nearest plan to come in place of the word on how to
+  // mark one; with no plan at all, said so)
+  p = await phone(b, at("10:00"));
+  await seed(p, { events: [{ id: "n1", date: "2026-11-12", time: "13:00", title: "面談", createdAt: T0 }, { id: "n2", date: "2026-11-20", title: "旅行", createdAt: T0 },
+    { id: "n0", date: today, time: "08:00", endTime: "09:00", title: "朝会", createdAt: T0 }] });
+  const nx = await tileText(p, "countdown");
+  ok(/^カウントダウン 3 ?日 次の予定「面談」まで$/.test(nx), "⑩ none marked: the nearest plan (today's is over)", nx);
+  await p.close();
+  p = await phone(b, at("10:00"));
+  await seed(p, { events: [{ id: "n3", date: today, time: "15:00", title: "歯医者", createdAt: T0 }] });
+  ok(/^カウントダウン きょう 次の予定「歯医者」（15:00〜）$/.test(await tileText(p, "countdown")), "⑩ none marked: today's still to come", await tileText(p, "countdown"));
+  await p.close();
   p = await phone(b, at("10:00"));
   await seed(p, {});
-  ok((await tileText(p, "countdown")).includes("予定の「カウントダウン」をオンにすると"), "⑩ none: " + await tileText(p, "countdown"));
+  ok((await tileText(p, "countdown")) === "カウントダウン これからの予定はありません", "⑩ no plan at all: " + await tileText(p, "countdown"));
   // the plan forms: カウントダウン on a new plan, then off in its edit form
   await p.goto(URL0 + "#calendar"); await p.reload(); await p.waitForTimeout(700);
   await p.locator("#calAdd").click(); await p.waitForTimeout(500);

@@ -118,16 +118,9 @@ async function open(b, hm = "07:30") {
   ok((await p.evaluate(() => document.querySelector(".datenav input[type=date]")?.value)) === "2026-11-10", "⑧ pressed: that day");
   await p.goto(p.url().split("#")[0] + "#routine"); await p.reload(); await p.waitForTimeout(800);
 
-  // ⑩ 候補
-  ok((await txt(p, "#rt3Ideas")) === "候補から選ぶ", "⑩ folded", await txt(p, "#rt3Ideas"));
-  await p.click("#rt3Ideas .rt3-ideas-btn"); await p.waitForTimeout(200);
-  const ideas = await p.evaluate(() => [...document.querySelectorAll("#rt3Ideas .rt3-idea")].map((x) => x.firstChild.textContent));
-  ok(ideas[0] === "勉強する" && !ideas.includes("水を飲む") && !ideas.includes("日記を書く") && !ideas.includes("読書"), "⑩ none already there", ideas);
-  await p.locator("#rt3Ideas .rt3-idea", { hasText: "勉強する" }).click(); await p.waitForTimeout(400);
-  const st = (await ls(p, "routines")).find((x) => x.name === "勉強する");
-  ok(st && st.link === "study" && st.linkMin === 30 && (await toast(p)).includes("「勉強する」を追加しました（勉強30分と連携）"), "⑩ added with its 連携", st);
-  await undo(p);
-  ok(!(await ls(p, "routines")).some((x) => x.name === "勉強する"), "⑩ 元に戻す");
+  // ⑩ 候補 was taken out (the user's call, 2026-11-16): none under the form; その6's まとめて追加 still right after it
+  ok(!(await p.$("#rt3Ideas")) && !(await p.evaluate(() => document.getElementById("sec-routine").innerText.includes("候補から選ぶ"))), "⑩ no 候補 (taken out)");
+  ok(await p.evaluate(() => document.getElementById("rtForm").nextElementSibling?.classList.contains("rt6-add-tools")), "⑩ まとめて追加 right after the form, as before");
 
   // ⑤ ⑥ in ⋯: 歯みがき can't come after ストレッチ (which comes after it); 読書 on a 30日チャレンジ
   await row(p, "r2").locator(".rt-opts").click(); await p.waitForTimeout(400);

@@ -31,8 +31,8 @@ async function open(b, when) {
   let p = await open(b, "2026-11-14T10:00:00+09:00");
   const all0 = await shown(p);
 
-  // ⑦ the next days off: today, a Saturday
-  ok(flat(await p.textContent("#h6Rest")) === "きょうはお休み（2連休の1日目）", "⑦ today off: which of how many", await p.textContent("#h6Rest"));
+  // ⑦ the next days off was taken out (the user's call, 2026-11-16): nothing of it under the date
+  ok(!(await p.$("#h6Rest")) && !(await p.evaluate(() => document.getElementById("sec-home").innerText.includes("次の休み"))), "⑦ no 次の休み (taken out)");
 
   // ① when a tile shows: 天気, evenings only (from its menu)
   await hold(p, "weather"); await p.waitForTimeout(300);
@@ -70,10 +70,8 @@ async function open(b, when) {
   await p.click("#h6ShowBtn"); await p.waitForTimeout(400);
   ok(!(await p.$eval("#homeTiles", (g) => g.classList.contains("h6-hide"))) && !(await p.$("#h6ShowBtn")), "④ 数字を出す");
 
-  // ⑤ by voice
-  await p.click(".h6-mic"); await p.waitForTimeout(400);
-  ok((await p.inputValue("#h4LineIn")) === "勉強30分" && flat(await p.textContent("#h4LineSay")).startsWith("記録するもの：勉強30分"), "⑤ what was heard, read", await p.inputValue("#h4LineIn"));
-  await p.fill("#h4LineIn", ""); await p.dispatchEvent("#h4LineIn", "input");
+  // ⑤ by voice was taken out (the user's call, 2026-11-16): no マイク by すぐに記録's field
+  ok(!(await p.$(".h6-mic")) && !!(await p.$("#h4LineIn")), "⑤ no voice button (taken out), the field as it was");
 
   // ⑥ the clock
   await more(p, "h6-clock-btn");
@@ -123,14 +121,14 @@ async function open(b, when) {
   ok(!p.errs.length, "no page errors", p.errs);
   await p.close();
 
-  // ⑦ on a Tuesday: the next, a 3連休 with 勤労感謝の日; a week on: the next, 2 days, and the next 3連休 (お正月)
+  // (⑦ taken out) a Tuesday and a week on: the page as it is, the line under the date with タイルへ移動 and その他
   p = await open(b, "2026-11-17T12:00:00+09:00");
-  ok(flat(await p.textContent("#h6Rest")) === "次の休みは11/21（土）から3連休（勤労感謝の日）、あと4日", "⑦ the next, 3連休", await p.textContent("#h6Rest"));
+  ok(!(await p.$("#h6Rest")) && !!(await p.$("#h4Head #h5JumpBtn")) && !!(await p.$("#h4Head #h6MoreBtn")), "⑦ none, and the line under the date as it was");
   await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(200);
   await p.screenshot({ path: out + "/h6-top.png" });
   await p.close();
   p = await open(b, "2026-11-24T12:00:00+09:00");
-  ok(flat(await p.textContent("#h6Rest")) === "次の休みは11/28（土）から2連休、あと4日。次の3連休は1/1〜1/3（あと38日）", "⑦ the next, and the next 3連休", await p.textContent("#h6Rest"));
+  ok(!(await p.$("#h6Rest")), "⑦ none (11/24)");
   await p.emulateMedia({ colorScheme: "dark" }); await p.waitForTimeout(200);
   await p.screenshot({ path: out + "/h6-dark.png" });
   ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "no sideways scroll");
