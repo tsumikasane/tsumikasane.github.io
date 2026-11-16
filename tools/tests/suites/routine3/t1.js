@@ -31,7 +31,7 @@ async function open(b, hm = "07:30") {
   // ③ yesterday's still to do: 水 and 日記 (読書 was パス then)
   const yd = await p.evaluate(() => [...document.querySelectorAll("#rt3YdayCard li .body")].map((x) => x.textContent));
   ok(await shown(p, "#rt3YdayCard") && yd.join(",") === "水を飲む,日記を書く", "③ yesterday's: 水 and 日記, not 読書 (パス)", yd);
-  await p.locator("#rt3YdayCard li", { hasText: "水を飲む" }).locator("button").click(); await p.waitForTimeout(300);
+  await p.locator("#rt3YdayCard li", { hasText: "水を飲む" }).locator("button", { hasText: "やった" }).click(); await p.waitForTimeout(300); // (その7 ①: できなかった beside it)
   let yy = await day(p, Y);
   ok(yy.done.includes("r5") && yy.counts.r5 === 8 && (await toast(p)).includes("きのうの「水を飲む」にチェックしました"), "③ やった: yesterday's 水 to 8", { yy, t: await toast(p) });
   await undo(p);

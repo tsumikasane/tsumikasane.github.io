@@ -1004,6 +1004,34 @@ span.rtc-d { background: transparent; color: var(--muted); cursor: default; }
 .rt6-took { margin: 0; padding: 4px var(--space-2) 0; font-size: var(--t-sub); color: var(--muted); }
 /* ⑧ under 並べ替え */
 .rt6-bytime .label-tools { padding-top: 6px; }
+/* ルーティーン その7: ① 理由 under a row, the one picked in its sheet */
+.rt7-why { color: var(--muted); }
+#rt7WhyAsk .rt7-cur { font-weight: 700; }
+.rt7-yday-why { flex: none; min-height: 36px; margin-inline-end: 4px; font-size: var(--t-sub); color: var(--muted); }
+/* ② 数を入れる: +1 … beside the field */
+.ask-field.rt7-count-quick { flex-wrap: wrap; justify-content: center; }
+.rt7-count-quick .chip-btn { min-width: 64px; min-height: 40px; }
+/* ⑥ この7日とその前の7日, ⑤ いっしょにできている項目: the change on the right */
+.rt7-two-row .body, .rt7-pair .body { display: grid; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.rt7-diff { flex: none; min-width: 3em; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.rt7-diff.up { color: var(--f-routine); }
+.rt7-diff.down { color: var(--warn); }
+.rt7-pair-up { flex: none; font-weight: 700; color: var(--f-routine); font-variant-numeric: tabular-nums; }
+/* ⑦ 先月のまとめ */
+.rt7-recap { display: grid; gap: 4px; margin: 0; padding: 0 var(--space-2) 8px 2.2em; line-height: 1.5; overflow-wrap: anywhere; }
+.rt7-recap li::marker { color: var(--f-routine); }
+.rt7-recap-row { padding-top: 0; }
+/* ⑧ 浮いたお金's button, beside やってしまった */
+.rt7-yen-btn { min-height: 36px; padding: 0 2px; font-size: var(--t-sub); }
+.rt7-yen-unit { flex: none; color: var(--muted); }
+/* ⑩ バッジ */
+.rt7-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; margin: 0; padding: 4px var(--space-2) 14px; list-style: none; }
+.rt7-badge { display: grid; justify-items: center; align-content: start; gap: 2px; padding: 10px 4px; border-radius: 14px; background: var(--fill); text-align: center; overflow-wrap: anywhere; }
+.rt7-badge .e { font-size: 28px; line-height: 1.2; }
+.rt7-badge .n { font-size: var(--t-sub); font-weight: 600; line-height: 1.3; }
+.rt7-badge .s { font-size: var(--t-foot); color: var(--muted); }
+.rt7-badge.off { opacity: .6; }
+.rt7-badge.off .e { filter: grayscale(1); opacity: .6; }
 /* ⑦ the month's チェック表 on paper alone, sideways where it can be */
 #rt4Print { display: none; }
 @page rt4land { size: A4 landscape; margin: 10mm; }
@@ -15881,9 +15909,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the days by date, and the days each page has records on (⑦), made once after each change (rtIdx)
   function rtIndex() {
     if (rtIdx) return rtIdx;
-    const days = new Map(), studyMin = new Map(), workout = new Set(), meal = new Set(), money = new Set(), jn = new Set(), weight = new Set();
+    const days = new Map(), studyMin = new Map(), studySub = new Map(), workout = new Set(), meal = new Set(), money = new Set(), jn = new Set(), weight = new Set();
     for (const x of routineDays.items) if (isDay(x.id)) days.set(x.id, x);
-    for (const x of study.items) if (isDay(x.date)) studyMin.set(x.date, (studyMin.get(x.date) || 0) + num(x.minutes));
+    for (const x of study.items) if (isDay(x.date)) { studyMin.set(x.date, (studyMin.get(x.date) || 0) + num(x.minutes)); if (x.subjectId) { const k = `${x.date}|${x.subjectId}`; studySub.set(k, (studySub.get(k) || 0) + num(x.minutes)); } } // (その7 ③ by subject too)
     for (const x of workouts.items) if (isDay(x.date)) workout.add(x.date);
     for (const x of meals.items) if (isDay(x.date)) meal.add(x.date);
     for (const x of expenses.items) if (isDay(x.date) && !x.fixed) money.add(x.date); // (固定費 put in by themselves don't count)
@@ -15891,22 +15919,23 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const x of weights.items) if (num(x.kg) > 0) weight.add(x.id);
     const todo = new Set(); // (その4 ⑩ a ToDo checked off that day, not one called off)
     for (const t of todos.items) if (t.done && !t.cancelled && doneDay(t)) todo.add(doneDay(t));
-    return (rtIdx = { days, studyMin, workout, meal, money, journal: jn, weight, todo });
+    return (rtIdx = { days, studyMin, studySub, workout, meal, money, journal: jn, weight, todo });
   }
   const rtDay = (d) => rtIndex().days.get(d);
   // ⑧ a day taken off: no run of days is broken by it
   const rtRest = (d) => !!rtDay(d)?.rest;
   // ⑤ an item counted up to a number (2 and more), in what it counts by (杯, 回), and the day's count
-  const rtTarget = (r) => (num(r.target) >= 2 ? Math.min(999, Math.round(num(r.target))) : 0);
+  const rtTarget = (r) => (num(r.target) >= 2 ? Math.min(99999, Math.round(num(r.target))) : 0); // (その7 ② up to 99,999: 8000 歩)
   const rtCount = (r, d) => num(rtDay(d)?.counts?.[r.id]);
   // ⑦ the other pages' records that check an item: in its settings' menu, and said of a day they checked it
   const RT_LINK_IF = { journal: "日記を書いたら", study: "勉強を記録したら", workout: "運動を記録したら", weight: "体重を記録したら", meal: "食事を記録したら", money: "家計簿をつけたら", todo: "ToDoを1つ終えたら" }; // (その4 ⑩ ToDo)
   const RT_LINK_DID = { journal: "日記を書いた", study: "勉強を記録した", workout: "運動を記録した", weight: "体重を記録した", meal: "食事を記録した", money: "家計簿をつけた", todo: "ToDoを1つ終えた" };
-  const rtLinkWords = (r, did) => (r.link === "study" && num(r.linkMin) > 0 ? `勉強を${num(r.linkMin)}分以上記録${did ? "した" : "したら"}` : (did ? RT_LINK_DID : RT_LINK_IF)[r.link] || "");
+  const rtLinkWords = (r, did) => (r.link === "study" && num(r.linkMin) > 0 ? `${rt7Subject(r) ? `「${rt7Subject(r).name}」を` : "勉強を"}${num(r.linkMin)}分以上記録${did ? "した" : "したら"}` : // (その7 ③ 科目)
+    (did ? RT_LINK_DID : RT_LINK_IF)[r.link] || "");
   function rtAuto(r, d) {
     if (!RT_LINK_IF[r.link]) return false;
     const x = rtIndex();
-    if (r.link === "study") { const m = x.studyMin.get(d) || 0; return m > 0 && m >= num(r.linkMin); }
+    if (r.link === "study") { const m = rt7Subject(r) ? x.studySub.get(`${d}|${r.linkSub}`) || 0 : x.studyMin.get(d) || 0; return m > 0 && m >= num(r.linkMin); } // (その7 ③ one subject's)
     return x[r.link].has(d);
   }
   // done on a day: checked there (one counted, ⑤: at its number, should the number have been made smaller since), or by
@@ -15985,7 +16014,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function bumpRoutine(id, by = 1, date = viewDate) {
     const r = routines.get(id), t = r ? rtTarget(r) : 0;
     if (!t) { toggleRoutine(id, date); return; }
-    const { day, done, at, counts } = rtDayEdit(date), was = rtDayState(date).all, n = Math.max(0, Math.min(9999, num(counts[id]) + by)), s0 = rt2Before(id, date), p3 = rt3Before(id, date);
+    const { day, done, at, counts } = rtDayEdit(date), was = rtDayState(date).all, n = Math.max(0, Math.min(99999, num(counts[id]) + by)), s0 = rt2Before(id, date), p3 = rt3Before(id, date);
     if (n) counts[id] = n; else delete counts[id];
     if (n >= t && !done.has(id)) { done.add(id); at[id] = Date.now(); }
     if (n < t && done.has(id)) { done.delete(id); delete at[id]; }
@@ -16052,7 +16081,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (on) s.append(svgEl("circle", { class: "rt-ring-full", cx: 12, cy: 12, r: 10 }), svgEl("path", { class: "rt-ring-tick", d: "m17.6 9.6-7 7-4.3-4.3L7.7 11l2.9 2.9 5.7-5.6 1.3 1.4Z" }));
     else {
       if (n > 0) s.append(svgEl("circle", { class: "rt-ring-fg", cx: 12, cy: 12, r: 10, transform: "rotate(-90 12 12)", "stroke-dasharray": `${(C * Math.min(1, n / t)).toFixed(2)} ${C.toFixed(2)}` }));
-      s.append(svgEl("text", { class: "rt-ring-n", x: 12, y: 16, "text-anchor": "middle" }, String(n)));
+      s.append(svgEl("text", { class: "rt-ring-n", x: 12, y: 16, "text-anchor": "middle" }, rt7Short(n))); // (その7 ② 8k)
     }
     return s;
   }
@@ -16102,6 +16131,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     rt4Render(); // (その4 ⑧ コンパクト表示, ① 文字で送る)
     rt5Render(list); // (その5 ③ おまもり, ① ごほうび, ② 見なおし, ④ これからの項目, ⑨ タイムライン, ⑥ 声でチェック)
     rt6Render(list); // (その6 ① やめる習慣, ⑨ 画像で送る; ⑤ 月ごとの達成率, ⑦ 時間帯)
+    rt7Render(list); // (その7 ⑦ 先月のまとめ, ④ 日記, ⑩ バッジ; ⑥ この7日, ⑤ いっしょに, ⑨ 表)
     if (sheetEl.open && settingsScope === "routine") draw(renderRtOrder);
     if (tab !== "routine") return; // (the week, the month and each item's record: drawn for the page alone)
     draw(() => renderRtWeek(list)); draw(() => renderRtCal(list)); draw(() => renderRt2Weeks(list)); draw(() => renderRt3Year(list)); draw(() => renderRtStats(list));
@@ -16110,7 +16140,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // it, the days in a row), its settings (⋯) and ×
   function rtRow(r) {
     const d = viewDate, on = rtDoneOn(r, d), auto = on && !rtChecked(r, d), t = rtTarget(r), n = t ? rtCount(r, d) : 0, streak = routineStreak(r.id, d);
-    const pass = rt3Skipped(r, d), sub = [pass ? el("span", { class: "rt3-pass" }, rt5Charmed(r, d) ? "おまもり" : "パス") : null, t ? `${n} / ${t}${r.unit || ""}` : null, ...rt2Sub(r, d, on), ...rt3Sub(r, d, on, pass), ...rt5Sub(r, d, on), r.link ? (auto ? `${rtLinkWords(r, true)}のでチェック` : `${rtLinkWords(r, false)}自動でチェック`) : null, streak >= 2 ? `${streak}日連続` : null].filter(Boolean); // (その5 ③ おまもり, ⑩ ミニ, ④ まで)
+    const pass = rt3Skipped(r, d), sub = [pass ? el("span", { class: "rt3-pass" }, rt5Charmed(r, d) ? "おまもり" : "パス") : null, t ? rt7CountBtn(r, d, n, t) : null, ...rt2Sub(r, d, on), ...rt3Sub(r, d, on, pass), ...rt5Sub(r, d, on), ...rt7RowSub(r, d, on, pass), r.link ? (auto ? `${rtLinkWords(r, true)}のでチェック` : `${rtLinkWords(r, false)}自動でチェック`) : null, streak >= 2 ? `${streak}日連続` : null].filter(Boolean); // (その5 ③ おまもり, ⑩ ミニ, ④ まで)
     return el("li", { class: (on ? "done" : "") + (auto ? " auto" : "") + (rt2Late(r, d) ? " rt2-late-row" : "") + (pass ? " rt3-skipped" : ""), "data-rt": r.id },
       el("button", { type: "button", class: "check" + (t ? " rt-count" : ""), disabled: auto, "aria-label": rtPressWords(r, d), onclick: () => (t ? bumpRoutine(r.id, 1) : toggleRoutine(r.id)) }, // (one counted: one more a tap, past its number too; − takes one off)
         t ? rtRing(n, t, on) : checkMark()),
@@ -16167,7 +16197,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           const on = rtDoneOn(r, d), auto = on && !rtChecked(r, d), t = rtTarget(r), n = t ? rtCount(r, d) : 0, pass = rt3Skipped(r, d); // (その3 ① パス)
           return el("td", {}, el("button", { type: "button", class: "rt-cell" + (on ? " on" : "") + (auto ? " auto" : "") + (pass ? " pass" : ""), disabled: auto,
             "aria-label": `${fmtMDW(d)}の「${r.name}」：` + (auto ? `${rtLinkWords(r, true)}のでチェック済み` : on ? "チェックを外す" : pass ? "パス、チェックする" : t && n ? `いま ${n} / ${t}、チェックする` : "チェックする"),
-            onclick: () => toggleRoutine(r.id, d) }, pass ? el("span", { class: "rt-cell-pass", "aria-hidden": "true" }, "パス") : !on && n ? el("span", { class: "rt-cell-n" }, String(n)) : checkMark()));
+            onclick: () => toggleRoutine(r.id, d) }, pass ? el("span", { class: "rt-cell-pass", "aria-hidden": "true" }, "パス") : !on && n ? el("span", { class: "rt-cell-n" }, rt7Short(n)) : checkMark()));
         })))));
   }
   // ② the month, each day by how much of it was done: four steps, all done the darkest with ぜんぶ in it; an お休みの日
@@ -21264,9 +21294,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const link = el("select", { id: "rtiLink" }, el("option", { value: "" }, "つながない"), Object.entries(RT_LINK_IF).map(([k, w]) => el("option", { value: k }, `${w}チェック`)));
         link.value = RT_LINK_IF[r.link] ? r.link : "";
         const countRows = el("div", { class: "form-rows", hidden: !!link.value },
-          recRow("回数", recNum("rtiTarget", rtTarget(r), { min: 2, max: 999, step: 1, inputmode: "numeric", placeholder: "なし" }), { opt: true }),
+          recRow("回数", recNum("rtiTarget", rtTarget(r), { min: 2, max: 99999, step: 1, inputmode: "numeric", placeholder: "なし" }), { opt: true }),
           recRow("単位", el("input", { type: "text", id: "rtiUnit", value: r.unit || "", maxlength: 6 }), { opt: true }));
-        const minRow = el("div", { class: "form-rows", hidden: link.value !== "study" }, recRow("勉強の時間", recNum("rtiMin", num(r.linkMin) || 30, { min: 1, max: 600, step: 1, inputmode: "numeric" }), { unit: "分以上" }));
+        const minRow = el("div", { class: "form-rows", hidden: link.value !== "study" }, recRow("勉強の時間", recNum("rtiMin", num(r.linkMin) || 30, { min: 1, max: 600, step: 1, inputmode: "numeric" }), { unit: "分以上" }), rt7SubjectField(r)); // (その7 ③ 科目)
         link.addEventListener("change", () => { countRows.hidden = !!link.value; minRow.hidden = link.value !== "study"; });
         // (ルーティーン その2 ② メモ, ③ 時刻の目安 and its お知らせ, ④ かかる時間)
         const by = el("input", { type: "time", id: "rtiBy", value: rt2By(r) }), byOnRows = el("div", { class: "form-rows", hidden: !rt2By(r) },
@@ -21300,7 +21330,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const name = $("rtiName").value.trim();
         if (!name) return recBad("rtiName");
         const link = RT_LINK_IF[$("rtiLink").value] ? $("rtiLink").value : "", rawT = $("rtiTarget").value, t = Math.round(Number(rawT));
-        if (!link && rawT !== "" && !(t >= 2 && t <= 999)) return recBad("rtiTarget");
+        if (!link && rawT !== "" && !(t >= 2 && t <= 99999)) return recBad("rtiTarget"); // (その7 ② up to 99,999)
         const min = Math.round(Number($("rtiMin").value));
         if (link === "study" && !(min >= 1 && min <= 600)) return recBad("rtiMin");
         const r5 = rt5Read(r); // (その5: a bad date or link stops the save, as other fields do)
@@ -21312,7 +21342,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const counted = !link && rawT !== "", pause = $("rtiPause").checked, was = rtPauses(r);
         const pauses = pause === rtPausedNow(r) ? was : pause ? [...was, { from: todayKey }] : was.map((p) => (isDay(p.to) ? p : { ...p, to: todayKey })).filter((p) => !(isDay(p.to) && p.to <= p.from));
         return { name, target: counted ? t : undefined, unit: counted ? $("rtiUnit").value.trim() || undefined : undefined, link: link || undefined,
-          linkMin: link === "study" ? min : undefined, pauses: pauses.length ? pauses : undefined,
+          linkMin: link === "study" ? min : undefined, linkSub: rt7ReadSubject(link), pauses: pauses.length ? pauses : undefined, // (その7 ③)
           memo: memo || undefined, mins: rawM !== "" ? mins : undefined, by: by || undefined, byOn: byOn || undefined, ...rt3Read(r), emoji: rt4Grapheme($("rtiEmoji").value) || undefined, ...r5, updatedAt: Date.now() };
       },
     },
@@ -25696,7 +25726,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月16日 15:44"; // b53677d6 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月16日 16:12"; // 26f3a305 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -73690,7 +73720,7 @@ ${parts.join("\n")}
         draw(() => renderRtStats(sortedRoutines()));
         [...$("rtStats").querySelectorAll(".rt2-grid-btn")].find((b) => b.dataset.id === r.id)?.focus();
       } }, open ? "12週の記録を閉じる" : "12週の記録を見る");
-    return [rt4StatLine(r), ...(rt5StatParts(r) || []), rt3StatCh(r), el("div", { class: "rt2-stat-foot" }, miles, btn), open ? rt2Grid(r) : null]; // (その4 ⑤ 定着度, ④ ふだんの時刻, ③ ひとこと; その5 ⑧ 回数のグラフ, ⑩ ミニ, ③ おまもり; その3 ⑥ its チャレンジ)
+    return [rt4StatLine(r), ...(rt5StatParts(r) || []), rt7StatWhy(r), rt3StatCh(r), el("div", { class: "rt2-stat-foot" }, miles, btn), open ? rt2Grid(r) : null]; // (その7 ① できなかった理由) // (その4 ⑤ 定着度, ④ ふだんの時刻, ③ ひとこと; その5 ⑧ 回数のグラフ, ⑩ ミニ, ③ おまもり; その3 ⑥ its チャレンジ)
   }
   // ⑩ an item's 12 weeks, a week a column (its first day by the setting) and a day a square: done, not done, お休み, not
   // there (before it was added, or paused), today still to do
@@ -74479,13 +74509,14 @@ ${parts.join("\n")}
   function renderRt3Yday() {
     const card = $("rt3YdayCard");
     if (!card) return;
-    const y = addDays(todayKey, -1), left = viewDate === todayKey && !rtRest(y) && rt3LsGet(RT3_YDAY) !== y ? rtDayState(y).items.filter((r) => !rtDoneOn(r, y)) : [];
+    const y = addDays(todayKey, -1), left = viewDate === todayKey && !rtRest(y) && rt3LsGet(RT3_YDAY) !== y ? rtDayState(y).items.filter((r) => !rtDoneOn(r, y) && !rt7Why(r, y)) : []; // (その7 ① one given its reason: put away)
     card.hidden = !left.length;
     if (!left.length || rt3Same("yday", [y, left.map((r) => [r.id, r.name])])) return;
     setChildren(card,
       el("div", { class: "card-head" }, "きのうのチェック忘れはありませんか？"),
       el("p", { class: "rt3-yday-sub" }, `${fmtMDW(y)}に、まだの項目です。やっていたら、チェックしてください。`),
       el("ul", { class: "list" }, left.map((r) => el("li", {}, el("span", { class: "body" }, rt4Name(r)),
+        el("button", { type: "button", class: "link-btn rt7-yday-why", "aria-haspopup": "dialog", "aria-label": `きのうの「${r.name}」ができなかった理由を残す`, onclick: () => openRt7Why(r, y) }, "できなかった"), // (その7 ①)
         el("button", { type: "button", class: "btn ghost sm", "aria-label": `きのうの「${r.name}」をやった`, onclick: () => rt3YdayDone(r, y) }, "やった")))),
       el("div", { class: "label-tools rt3-yday-tools" },
         left.length >= 2 ? el("button", { type: "button", class: "link-btn", onclick: () => rt2CheckRest(y) }, "ぜんぶやった") : null,
@@ -77016,7 +77047,7 @@ ${parts.join("\n")}
   function rt6QuitRow(q, d) {
     const slip = rt6Slipped(q, d), before = d < q.quit, n = rt6QuitRun(q, d), best = rt6QuitBest(q), next = RT6_MILES.find((m) => m > n), mile = !slip && RT6_MILES.includes(n);
     const slips30 = rt6Slips(q).filter((s) => s > addDays(d, -30) && s <= d && s >= q.quit).length;
-    const ws = [before ? `${fmtDayLong(q.quit)}から` : slip ? null : `最長 ${best}日`, !before && slips30 ? `30日で${slips30}回やってしまった` : null, !before && !slip && next ? `${next}日目まで あと ${next - n}日` : null].filter(Boolean);
+    const ws = [before ? `${fmtDayLong(q.quit)}から` : slip ? null : `最長 ${best}日`, !before && slips30 ? `30日で${slips30}回やってしまった` : null, !before && !slip && next ? `${next}日目まで あと ${next - n}日` : null, before ? null : rt7YenWords(q, d)].filter(Boolean); // (その7 ⑧ 浮いたお金)
     const days = Array.from({ length: 7 }, (_, i) => addDays(d, i - 6));
     return el("li", { class: "rt6-quit" + (slip ? " slip" : "") + (mile ? " mile" : ""), "data-q": q.id },
       el("span", { class: "rt6-q-n", "aria-hidden": "true" }, before ? "–" : String(n), before ? null : el("small", {}, "日")),
@@ -77029,7 +77060,7 @@ ${parts.join("\n")}
           el("span", { class: "rt6-q-week", role: "img", "aria-label": "この7日：" + days.map((x) => `${fmtMD(x)} ${x < q.quit ? "なし" : rt6Slipped(q, x) ? "やってしまった" : "続いた"}`).join("、") },
             days.map((x) => el("i", { class: "rt6-q-dot" + (x < q.quit ? " off" : rt6Slipped(q, x) ? " bad" : " ok") + (x === d ? " now" : "") }))),
           before ? null : el("button", { type: "button", class: "btn ghost sm rt6-q-btn" + (slip ? "" : " bad"), "aria-label": slip ? `「${q.name}」の${rtDayName(d)}のやってしまったを取り消す` : `「${q.name}」を${rtDayName(d)}やってしまった`,
-            onclick: () => rt6SlipSet(q.id, d, !slip) }, slip ? "取り消す" : "やってしまった"))),
+            onclick: () => rt6SlipSet(q.id, d, !slip) }, slip ? "取り消す" : "やってしまった"), rt7Ready ? rt7YenBtn(q) : null)), // (その7 ⑧)
       delButton(() => removeWithUndo(routines, q.id, `やめる習慣の「${oneLine(q.name)}」を削除しました`), "削除", q.name)); // (into 最近削除した項目)
   }
   function renderRt6Quit() {
@@ -77100,7 +77131,9 @@ ${parts.join("\n")}
       auto ? null : t && !on ? [item(`1つ増やす（${n} → ${n + 1}${r.unit || ""}）`, () => bumpRoutine(r.id, 1, d)), item(`できた（${t}${r.unit || ""}）`, () => toggleRoutine(r.id, d))]
         : item(on ? "チェックを外す" : "やった", () => toggleRoutine(r.id, d)),
       !on && !pass && mini ? item(`ミニでやった（${mini}）`, () => rt5CheckMini(r, d)) : null,
+      t && rt7Ready ? item("数を入れる", () => openRt7Count(r, d)) : null, // (その7 ②)
       on ? null : item(pass ? "パスをやめる" : `${d === todayKey ? "きょう" : "この日"}はパス`, () => rt3Pass(r, d, !pass)),
+      !on && !pass && rt7Ready ? item(rt7Why(r, d) ? "できなかった理由を変える" : "できなかった理由", () => openRt7Why(r, d)) : null, // (その7 ①)
       on ? item(rt4Note(r, d) ? "ひとことを書きなおす" : "ひとことを書く", () => openRt4Note(r, d)) : null,
       on && rt2At(r, d) ? item("やった時刻を直す", () => openRt2At(r, d)) : null,
       url ? item("参考リンクを開く", () => window.open(url, "_blank", "noopener")) : null,
@@ -77839,6 +77872,423 @@ ${parts.join("\n")}
     draw(renderBt17Split); draw(renderBt17Anniv); draw(renderBt17Raise); draw(renderBt17Caps); draw(renderBt17Roles);
     if ($("bt17Pass").open) draw(renderBt17Pass);
   }
+
+  // ---------- ルーティーン その7 ①〜⑩ (the user's calls, 2026-11-16; still daily, no weekdays, no groups): why one wasn't
+  // done (①), a count typed in (②), 勉強 linked by its subject (③), the day written into its 日記 (④), items done together
+  // (⑤), the last 7 days against the 7 before (⑥), last month in short (⑦), the money a やめる習慣 saves (⑧), a table to
+  // write out (CSV, ⑨) and バッジ (⑩). Function declarations and var, as the page may draw before this runs ----------
+  var rt7Ready = false, rt7CountFor = null, rt7YenFor = null, rt7BadgeMemo = null, rt7RecapOpen = false;
+  var RT7_RECAP = "rt7RecapShut", RT7_BADGES = "rtBadges";
+  var RT7_WHY = [["forgot", "忘れた"], ["busy", "忙しかった"], ["sick", "体調がわるかった"], ["mood", "気分がのらなかった"], ["away", "出かけていた"], ["other", "そのほか"]];
+  function rt7Short(n) { return n >= 1000 ? `${Math.floor(n / 1000)}k` : String(n); } // (a count in a small ring or square: 8k)
+
+  // ① できなかった理由 (kept on the item, by the day): one still to do on a day (not パス), from its 長押し menu, 理由 under a
+  // day gone by's row, and きのうのチェック忘れ; said under its row that day, and in 項目ごとの記録 the last 90 days' most
+  function rt7Whys(r) { return r?.why && typeof r.why === "object" ? r.why : {}; }
+  function rt7Why(r, d) { const k = rt7Whys(r)[d]; return RT7_WHY.some(([x]) => x === k) && !rtDoneOn(r, d) && !rt3Skipped(r, d) ? k : ""; }
+  function rt7WhyWord(k) { return (RT7_WHY.find(([x]) => x === k) || [])[1] || ""; }
+  function rt7SetWhy(id, d, k) {
+    const r = routines.get(id);
+    if (!r) return;
+    const was = { ...rt7Whys(r) }, next = { ...was };
+    if (k) next[d] = k; else delete next[d];
+    for (const day of Object.keys(next)) if (day < addDays(todayKey, -400)) delete next[day]; // (those over a year old let go)
+    act(() => routines.update(id, { why: Object.keys(next).length ? next : undefined, updatedAt: Date.now() }));
+    flash(k ? `「${oneLine(r.name)}」が${rtDayName(d)}できなかった理由を「${rt7WhyWord(k)}」にしました` : `「${oneLine(r.name)}」の${rtDayName(d)}の理由を消しました`,
+      () => act(() => routines.update(id, { why: Object.keys(was).length ? was : undefined, updatedAt: Date.now() })));
+  }
+  function openRt7Why(r, d) {
+    let dlg = $("rt7WhyAsk");
+    if (!dlg) {
+      dlg = el("dialog", { class: "ask", id: "rt7WhyAsk", "aria-labelledby": "rt7WhyTitle" }, el("div", { class: "ask-group", id: "rt7WhyGroup" }),
+        el("button", { type: "button", class: "ask-btn ask-keep", onclick: () => $("rt7WhyAsk").close() }, "やめる"));
+      dlg.addEventListener("click", (ev) => { if (ev.target === dlg) dlg.close(); });
+      document.body.append(dlg);
+    }
+    const cur = rt7Whys(r)[d] || "", pick = (k) => () => { dlg.close(); rt7SetWhy(r.id, d, k); };
+    setChildren($("rt7WhyGroup"), el("p", { class: "ask-msg", id: "rt7WhyTitle" }, `「${oneLine(r.name)}」が${rtDayName(d)}できなかった理由`),
+      RT7_WHY.map(([k, w]) => el("button", { type: "button", class: "ask-btn" + (k === cur ? " rt7-cur" : ""), "aria-pressed": String(k === cur), onclick: pick(k) }, w)),
+      cur ? el("button", { type: "button", class: "ask-btn danger", onclick: pick("") }, "理由を消す") : null);
+    dlg.showModal();
+    dlg.querySelector("#rt7WhyGroup .ask-btn")?.focus();
+  }
+  // a row's line: 理由：忙しかった, or 理由 to give one on a day gone by
+  function rt7RowSub(r, d, on, pass) {
+    if (!rt7Ready || on || pass || d > todayKey) return [];
+    const k = rt7Why(r, d);
+    if (k) return [el("button", { type: "button", class: "rt2-at rt7-why", "aria-label": `「${r.name}」ができなかった理由：${rt7WhyWord(k)}。押すと変えられます`, onclick: () => openRt7Why(r, d) }, `理由：${rt7WhyWord(k)}`)];
+    return d < todayKey && !rtRest(d) ? [el("button", { type: "button", class: "link-btn rt3-unpass rt7-why-add", "aria-label": `「${r.name}」ができなかった理由を残す`, onclick: () => openRt7Why(r, d) }, "理由")] : [];
+  }
+  function rt7StatWhy(r) {
+    if (!rt7Ready) return null;
+    const by = new Map();
+    for (const [d, k] of Object.entries(rt7Whys(r))) if (isDay(d) && d > addDays(todayKey, -90) && d <= todayKey && rt7Why(r, d)) by.set(k, (by.get(k) || 0) + 1);
+    if (!by.size) return null;
+    const ws = [...by].sort((a, b) => b[1] - a[1]).map(([k, n]) => `${rt7WhyWord(k)} ${n}回`);
+    return el("span", { class: "sub rt7-stat-why" }, el("span", { class: "phrase" }, "できなかった理由（90日）："), rt5Phrases(ws));
+  }
+
+  // ② 回数を数字で入れる: a counted item's count for the day typed in (8000 歩), or +1 / +5 / +10 on what is in the field,
+  // from its count under the name and its 長押し menu; checked as it reaches its number, as one more is. With 元に戻す
+  function rt7CountBtn(r, d, n, t) {
+    const w = `${fmtN(n)} / ${fmtN(t)}${r.unit || ""}`;
+    return rt7Ready ? el("button", { type: "button", class: "rt2-at rt7-count", "aria-label": `「${r.name}」の数を入れる（いま ${w}）`, onclick: () => openRt7Count(r, d) }, w) : w;
+  }
+  function openRt7Count(r, d) {
+    let dlg = $("rt7CountAsk");
+    if (!dlg) {
+      const add = (k) => el("button", { type: "button", class: "chip-btn", onclick: () => { const f = $("rt7CountIn"); f.value = String(Math.min(99999, Math.max(0, Math.round(Number(f.value) || 0) + k))); f.focus(); } }, `+${k}`);
+      dlg = el("dialog", { class: "ask", id: "rt7CountAsk", "aria-labelledby": "rt7CountTitle" },
+        el("div", { class: "ask-group" },
+          el("p", { class: "ask-msg", id: "rt7CountTitle" }),
+          el("div", { class: "ask-field" },
+            el("input", { type: "number", id: "rt7CountIn", min: 0, max: 99999, step: 1, inputmode: "numeric", enterkeyhint: "done", "aria-labelledby": "rt7CountTitle",
+              onkeydown: (ev) => { if (ev.key === "Enter" && !ev.isComposing) { ev.preventDefault(); rt7SaveCount(); } } }),
+            el("button", { type: "button", class: "ask-go", onclick: () => rt7SaveCount() }, "入れる")),
+          el("div", { class: "ask-field rt7-count-quick" }, add(1), add(5), add(10), add(100))),
+        el("button", { type: "button", class: "ask-btn ask-keep", onclick: () => $("rt7CountAsk").close() }, "やめる"));
+      dlg.addEventListener("click", (ev) => { if (ev.target === dlg) dlg.close(); });
+      dlg.addEventListener("close", () => { rt7CountFor = null; });
+      document.body.append(dlg);
+    }
+    const t = rtTarget(r);
+    if (!t) return;
+    rt7CountFor = { id: r.id, d };
+    $("rt7CountTitle").textContent = `「${oneLine(r.name)}」の${rtDayName(d)}の数（${fmtN(t)}${r.unit || ""}でチェック）`;
+    $("rt7CountIn").value = String(rtCount(r, d));
+    dlg.showModal();
+    $("rt7CountIn").focus(); $("rt7CountIn").select?.();
+  }
+  function rt7SaveCount() {
+    const f = rt7CountFor, r = f && routines.get(f.id), raw = $("rt7CountIn").value, n = Math.round(Number(raw));
+    if (!f || !r || !rtTarget(r)) { $("rt7CountAsk").close(); return; }
+    if (raw === "" || !(n >= 0 && n <= 99999)) { $("rt7CountIn").focus(); return; }
+    const d = f.d, was = rtCount(r, d), { day, done, at, counts } = rtDayEdit(d), back = { done: new Set(done), at: { ...at }, counts: { ...counts } }, f0 = flashed;
+    $("rt7CountAsk").close();
+    if (n === was) return;
+    bumpRoutine(r.id, n - was, d);
+    const more = flashed && flashed !== f0 ? String(flashed.msg) : ""; // (the day's all done, or a 節目)
+    flash([`「${oneLine(r.name)}」を ${fmtN(n)}${r.unit || ""} にしました`, more].filter(Boolean).join("。"), () => putRtDay(d, back.done, back.at, back.counts, !!day?.rest));
+  }
+
+  // ③ 勉強の科目で連携 (in ⋯, under 勉強の時間): checked by that subject's 勉強 alone (英語を30分以上)
+  function rt7Subject(r) { return (r?.link === "study" && r.linkSub && subjects.get(r.linkSub)) || null; }
+  function rt7SubjectField(r) {
+    const subs = sortedSubjects();
+    if (!subs.length) return null;
+    const f = el("select", { id: "rtiSub" }, el("option", { value: "" }, "すべての科目"), subs.map((s) => el("option", { value: s.id }, s.name)));
+    f.value = rt7Subject(r) ? r.linkSub : "";
+    return recRow("科目", f);
+  }
+  function rt7ReadSubject(link) { const v = $("rtiSub")?.value || ""; return link === "study" && subjects.get(v) ? v : undefined; }
+
+  // ④ 日記に書き足す: the day shown's ルーティーン (each ✓ or not, its time, count, パス and ひとこと, the やめる習慣) at the end
+  // of that day's 日記, or over the block put there before; with 元に戻す
+  var RT7_JN = /【ルーティーン】[^\n]*(\n(✓|・|－|◇) [^\n]*)*/;
+  function rt7JnText(d) {
+    const list = sortedRoutines(), rows = list.filter((r) => rtActive(r, d)), st = rtDayState(d, list), qs = rt6QuitList().filter((q) => q.quit <= d);
+    if (!rows.length && !qs.length) return null;
+    const lines = [`【ルーティーン】 ${st.done.length} / ${st.items.length}` + (rtRest(d) ? "（お休み）" : "") + (st.all ? "　ぜんぶできました" : "")];
+    for (const r of rows) {
+      const on = rtDoneOn(r, d), t = rt2At(r, d), n = rtTarget(r), pass = rt3Skipped(r, d), note = rt4Note(r, d), why = rt7Why(r, d);
+      lines.push(`${on ? "✓" : pass ? "－" : "・"} ${oneLine(rt4Name(r))}` + (n && !on ? `（${fmtN(rtCount(r, d))} / ${fmtN(n)}${r.unit || ""}）` : "") + (t ? `（${rt2Hm(t)}）` : "") + (pass ? "（パス）" : "") + (why ? `（${rt7WhyWord(why)}）` : "") + (note ? `：${oneLine(note)}` : ""));
+    }
+    for (const q of qs) lines.push(`◇ ${oneLine(q.name)}：` + (rt6Slipped(q, d) ? "やってしまった" : `やめて ${rt6QuitRun(q, d)}日目`));
+    return lines.join("\n");
+  }
+  async function rt7ToJournal(d = viewDate) {
+    await flushJournal();
+    const add = rt7JnText(d);
+    if (!add) { flash("日記に書き足すルーティーンがありません"); return; }
+    const was = journal.get(d), cur = (was?.text || "").trimEnd();
+    if (cur.includes(add)) { flash(`${rtDayName(d)}のルーティーンは、もう日記に入っています`); return; }
+    const text = RT7_JN.test(cur) ? cur.replace(RT7_JN, add) : (cur ? cur + "\n\n" : "") + add;
+    await act(() => journal.write(d, { ...was, date: d, text, createdAt: was?.createdAt || Date.now(), updatedAt: Date.now() }));
+    if (viewDate === d && !journalDirty) loadJournalForm();
+    flash(`${rtDayName(d)}のルーティーンを日記に書き足しました`, () => act(async () => { if (was) await journal.write(d, was); else takeBack(journal, [d]); if (viewDate === d && !journalDirty) loadJournalForm(); }));
+  }
+
+  // ⑤ いっしょにできている項目: the last 60 days (not today, nor an お休みの日 or a パス of either), the pairs where one done
+  // goes with the other done far more than when it isn't (25 points and more; 7 days done and 5 not at least), three
+  function rt7Pairs(list) {
+    const days = Array.from({ length: 60 }, (_, i) => addDays(todayKey, -1 - i));
+    const st = new Map(list.map((r) => [r.id, days.map((d) => (rtActive(r, d) && !rtRest(d) && !rt3Skipped(r, d) ? (rtDoneOn(r, d) ? 1 : 0) : null))]));
+    const out = [];
+    for (const a of list) for (const b of list) {
+      if (a === b) continue;
+      const A = st.get(a.id), B = st.get(b.id);
+      let n1 = 0, y1 = 0, n0 = 0, y0 = 0;
+      for (let i = 0; i < days.length; i++) {
+        if (A[i] === null || B[i] === null) continue;
+        if (A[i]) { n1++; if (B[i]) y1++; } else { n0++; if (B[i]) y0++; }
+      }
+      if (n1 < 7 || n0 < 5) continue;
+      const p1 = y1 / n1, p0 = y0 / n0;
+      if (p1 - p0 >= 0.25) out.push({ a, b, p1: Math.round(p1 * 100), p0: Math.round(p0 * 100), gap: p1 - p0 });
+    }
+    out.sort((x, y) => y.gap - x.gap || y.p1 - x.p1);
+    const seen = new Set(), keep = [];
+    for (const x of out) { const k = [x.a.id, x.b.id].sort().join("|"); if (seen.has(k)) continue; seen.add(k); keep.push(x); if (keep.length >= 3) break; } // (a pair once, the stronger way round)
+    return keep;
+  }
+  function renderRt7Pairs(list) {
+    const card = $("rt7PairsCard");
+    if (!card) return;
+    const xs = list.length >= 2 ? rt7Pairs(list) : [];
+    card.hidden = !xs.length;
+    if (!xs.length) return;
+    setChildren($("rt7Pairs"), xs.map(({ a, b, p1, p0 }) => el("li", { class: "rt7-pair" },
+      el("span", { class: "body" }, el("span", {}, el("span", { class: "phrase" }, `「${oneLine(rt4Name(a))}」をした日は、`), el("span", { class: "phrase" }, `「${oneLine(rt4Name(b))}」も ${p1}%`)),
+        el("span", { class: "sub" }, `しなかった日は ${p0}%`)),
+      el("span", { class: "rt7-pair-up", "aria-hidden": "true" }, `+${p1 - p0}`))));
+  }
+
+  // ⑥ この7日とその前の7日: each item's days done (counted as 項目ごとの記録 counts: お休み, パス and today still to do not),
+  // and all of them, with the change
+  function rt7Win(r, from, to) {
+    let got = 0, of = 0;
+    for (let d = from; d <= to; d = addDays(d, 1)) {
+      if (!rtActive(r, d) || rt3Skipped(r, d)) continue;
+      if (rtDoneOn(r, d)) { got++; of++; } else if (!rtRest(d) && d !== todayKey) of++;
+    }
+    return { got, of };
+  }
+  function rt7Pct(w) { return w.of ? Math.round((w.got / w.of) * 100) : null; }
+  function rt7Diff(a, b) { if (a === null || b === null) return null; const x = a - b; return el("span", { class: "rt7-diff" + (x > 0 ? " up" : x < 0 ? " down" : "") }, x > 0 ? `+${x}` : x < 0 ? `−${-x}` : "±0"); }
+  function renderRt7Two(list) {
+    const card = $("rt7TwoCard");
+    if (!card) return;
+    const a0 = addDays(todayKey, -6), b1 = addDays(todayKey, -7), b0 = addDays(todayKey, -13);
+    const rows = list.map((r) => ({ r, now: rt7Win(r, a0, todayKey), then: rt7Win(r, b0, b1) })).filter((x) => x.now.of || x.then.of);
+    card.hidden = !rows.some((x) => x.then.of);
+    if (card.hidden) return;
+    const sumOf = (k) => ({ got: sum(rows, (x) => x[k].got), of: sum(rows, (x) => x[k].of) }), pn = rt7Pct(sumOf("now")), pt = rt7Pct(sumOf("then"));
+    setChildren($("rt7TwoSum"), pn === null ? "" : [`この7日 ${pn}%`, pt === null ? "" : `（その前 ${pt}%）`]);
+    setChildren($("rt7Two"), rows.map(({ r, now, then }) => el("li", { class: "rt7-two-row" },
+      el("span", { class: "body" }, el("span", {}, rt4Name(r)), el("span", { class: "sub" }, keepUnits(`その前 ${then.of ? `${then.got}/${then.of}日` : "なし"} → この7日 ${now.of ? `${now.got}/${now.of}日` : "なし"}`))),
+      rt7Diff(rt7Pct(now), rt7Pct(then)))));
+  }
+
+  // ⑦ 先月のまとめ: in the month's first 7 days, on today's page till とじる (and from 月ごとの達成率 any time), last month in
+  // short: its rate against the month before, the days all done, the best item, the one grown most, お休み, the やめる習慣
+  function rt7MonthOf(r, ym, first) {
+    let got = 0, of = 0;
+    for (let i = 1, n = daysInMonth(ym); i <= n; i++) {
+      const d = `${ym}-${pad(i)}`;
+      if (d > todayKey) break;
+      if (d < first || !rtActive(r, d) || rt3Skipped(r, d)) continue;
+      if (rtDoneOn(r, d)) { got++; of++; } else if (!rtRest(d) && d !== todayKey) of++;
+    }
+    return { got, of };
+  }
+  function rt7Recap(ym = addMonths(monthOf(todayKey), -1)) {
+    const list = sortedRoutines(), first = rtFirstDay();
+    if (!list.length || ym < monthOf(first)) return null;
+    const m = rt6MonthRate(list, ym, first);
+    if (!m.of) return null;
+    const py = addMonths(ym, -1), p = py >= monthOf(first) ? rt6MonthRate(list, py, first) : null, last = `${ym}-${pad(daysInMonth(ym))}`;
+    const per = list.map((r) => ({ r, m: rt7MonthOf(r, ym, first), p: p ? rt7MonthOf(r, py, first) : { got: 0, of: 0 } })).filter((x) => x.m.of);
+    const best = [...per].sort((a, b) => b.m.got / b.m.of - a.m.got / a.m.of || b.m.got - a.m.got)[0];
+    const grown = per.filter((x) => x.p.of >= 7).map((x) => ({ ...x, up: Math.round((x.m.got / x.m.of - x.p.got / x.p.of) * 100) })).filter((x) => x.up >= 10).sort((a, b) => b.up - a.up)[0];
+    let rests = 0;
+    for (let i = 1; i <= daysInMonth(ym); i++) if (rtRest(`${ym}-${pad(i)}`)) rests++;
+    const quits = rt6QuitList().filter((q) => q.quit <= last).map((q) => { let kept = 0; for (let d = q.quit > `${ym}-01` ? q.quit : `${ym}-01`; d <= last; d = addDays(d, 1)) if (!rt6Slipped(q, d)) kept++; return { q, kept }; });
+    return { ym, rate: Math.round((m.got / m.of) * 100), prev: p && p.of ? Math.round((p.got / p.of) * 100) : null, py, alls: m.alls, best, grown, rests, quits };
+  }
+  function rt7RecapLines(x) {
+    return [`達成率 ${x.rate}%` + (x.prev === null ? "" : `（${Number(x.py.slice(5))}月から ${x.rate >= x.prev ? "+" : "−"}${Math.abs(x.rate - x.prev)}）`), `ぜんぶできた日 ${x.alls}日`,
+      x.best ? `よくできた項目：${oneLine(x.best.r.name)} ${x.best.m.got}/${x.best.m.of}日` : null, x.grown ? `伸びた項目：${oneLine(x.grown.r.name)} +${x.grown.up}%` : null,
+      x.rests ? `お休み ${x.rests}日` : null, ...x.quits.map(({ q, kept }) => `やめる習慣：${oneLine(q.name)} ${kept}日`)].filter(Boolean);
+  }
+  function renderRt7Recap() {
+    const card = $("rt7RecapCard");
+    if (!card) return;
+    const x = rt7Recap(), shut = rt3LsGet(RT7_RECAP) === (x && x.ym);
+    card.hidden = !x || viewDate !== todayKey || !(rt7RecapOpen || (Number(todayKey.slice(8)) <= 7 && !shut));
+    const row = $("rt7RecapRow");
+    if (row) row.hidden = !x || !card.hidden || viewDate !== todayKey;
+    if (card.hidden) return;
+    const lines = rt7RecapLines(x);
+    setChildren(card, el("div", { class: "card-head" }, `${fmtMonth(x.ym)}のまとめ`),
+      el("ul", { class: "rt7-recap" }, lines.map((w) => el("li", {}, keepUnits(w)))),
+      el("div", { class: "label-tools" },
+        el("button", { type: "button", class: "link-btn", onclick: () => rt4Send([`${fmtMonth(x.ym)}のルーティーンのまとめ`, ...lines].join("\n"), "先月のまとめ") }, "文字で送る"),
+        el("button", { type: "button", class: "link-btn", onclick: () => { rt3LsSet(RT7_RECAP, x.ym); rt7RecapOpen = false; renderRt7Recap(); } }, "とじる")));
+  }
+
+  // ⑧ 浮いたお金: a やめる習慣's money a day (タバコ 600円), set on its row; the days kept up to the day shown times it
+  function rt7Yen(q) { const n = Math.round(num(q?.yen)); return n >= 1 && n <= 100000 ? n : 0; }
+  function rt7Kept(q, d) {
+    if (d < q.quit) return 0;
+    const slips = new Set(rt6Slips(q).filter((s) => s >= q.quit && s <= d));
+    return daysBetween(q.quit, d) + 1 - slips.size;
+  }
+  function rt7YenWords(q, d) { const y = rt7Yen(q); return y && d >= q.quit ? `浮いたお金 ${fmtYen(y * rt7Kept(q, d))}` : null; }
+  function rt7YenBtn(q) {
+    const y = rt7Yen(q);
+    return el("button", { type: "button", class: "link-btn rt7-yen-btn", "aria-haspopup": "dialog", "aria-label": y ? `「${q.name}」の1日の金額（${fmtYen(y)}）を変える` : `「${q.name}」の1日の金額を決める`, onclick: () => openRt7Yen(q) }, y ? `1日 ${fmtYen(y)}` : "1日の金額");
+  }
+  function openRt7Yen(q) {
+    let dlg = $("rt7YenAsk");
+    if (!dlg) {
+      dlg = el("dialog", { class: "ask", id: "rt7YenAsk", "aria-labelledby": "rt7YenTitle" },
+        el("div", { class: "ask-group" },
+          el("p", { class: "ask-msg", id: "rt7YenTitle" }),
+          el("div", { class: "ask-field" },
+            el("input", { type: "number", id: "rt7YenIn", min: 1, max: 100000, step: 1, inputmode: "numeric", enterkeyhint: "done", placeholder: "例：600", "aria-labelledby": "rt7YenTitle",
+              onkeydown: (ev) => { if (ev.key === "Enter" && !ev.isComposing) { ev.preventDefault(); rt7SaveYen(false); } } }),
+            el("span", { class: "rt7-yen-unit", "aria-hidden": "true" }, "円"),
+            el("button", { type: "button", class: "ask-go", onclick: () => rt7SaveYen(false) }, "決める")),
+          el("button", { type: "button", class: "ask-btn danger", id: "rt7YenClear", onclick: () => rt7SaveYen(true) }, "金額を消す")),
+        el("button", { type: "button", class: "ask-btn ask-keep", onclick: () => $("rt7YenAsk").close() }, "やめる"));
+      dlg.addEventListener("click", (ev) => { if (ev.target === dlg) dlg.close(); });
+      dlg.addEventListener("close", () => { rt7YenFor = null; });
+      document.body.append(dlg);
+    }
+    rt7YenFor = q.id;
+    $("rt7YenTitle").textContent = `「${oneLine(q.name)}」を1日やめると浮くお金`;
+    $("rt7YenIn").value = rt7Yen(q) ? String(rt7Yen(q)) : "";
+    $("rt7YenClear").hidden = !rt7Yen(q);
+    dlg.showModal();
+    $("rt7YenIn").focus();
+  }
+  function rt7SaveYen(clear) {
+    const q = rt7YenFor && routines.get(rt7YenFor), raw = $("rt7YenIn").value, n = Math.round(Number(raw));
+    if (!q) { $("rt7YenAsk").close(); return; }
+    if (!clear && !(raw !== "" && n >= 1 && n <= 100000)) { $("rt7YenIn").focus(); return; }
+    const was = rt7Yen(q) || undefined;
+    $("rt7YenAsk").close();
+    if ((was || 0) === (clear ? 0 : n)) return;
+    rt6QuitSet(q.id, { yen: clear ? undefined : n });
+    flash(clear ? `「${oneLine(q.name)}」の金額を消しました` : `「${oneLine(q.name)}」は1日 ${fmtYen(n)}で数えます`, () => rt6QuitSet(q.id, { yen: was }));
+  }
+
+  // ⑨ 表で書き出す (by the month's チェック表): the month 達成カレンダー shows, or all of it, a day a row and an item a column
+  // (✓ done, the count of one counted, パス, － not there), お休み and ぜんぶ; a file for Excel or Numbers (記録's has a day a line)
+  function rt7CsvRows(from, to) {
+    const list = sortedRoutines().filter((r) => { for (let d = from; d <= to; d = addDays(d, 1)) if (rtActive(r, d)) return true; return false; });
+    if (!list.length) return [];
+    const rows = [["日付", "曜日", "お休み", ...list.map((r) => oneLine(r.name)), "ぜんぶ"]];
+    for (let d = from; d <= to; d = addDays(d, 1)) {
+      const st = rtDayState(d), cell = (r) => {
+        if (!rtActive(r, d)) return "－";
+        const t = rtTarget(r), n = t ? rtCount(r, d) : 0;
+        if (rtDoneOn(r, d)) return t && n ? n : "✓";
+        return rt3Skipped(r, d) ? "パス" : n || "";
+      };
+      rows.push([d, WD[parseYmd(d).getDay()], rtRest(d) ? "休" : "", ...list.map(cell), st.all ? "✓" : ""]);
+    }
+    return rows;
+  }
+  async function rt7Csv(all) {
+    const first = rtFirstDay(), ym = rtCalFor === monthOf(viewDate) && rtCalMonth ? rtCalMonth : monthOf(viewDate);
+    const from = all || `${ym}-01` < first ? first : `${ym}-01`, end = all ? todayKey : `${ym}-${pad(daysInMonth(ym))}`, to = end > todayKey ? todayKey : end;
+    const rows = from <= to ? rt7CsvRows(from, to) : [];
+    if (rows.length < 2) { flash("書き出す記録がありません"); return; }
+    const name = `tsumikasane-routine-${all ? `${from}_${to}` : ym}.csv`, how = await handOut(new Blob([csvOf(rows)], { type: "text/csv" }), name);
+    if (how) flash(how === "shared" ? `ルーティーンの表（${rows.length - 1}日分）を書き出しました` : `「${name}」を書き出しました`);
+  }
+  function rt7CsvBtns() {
+    if ($("rt7CsvBtn") || !$("rt4PrintBtn")) return;
+    $("rt4PrintBtn").after(el("button", { type: "button", class: "link-btn", id: "rt7CsvBtn", onclick: () => rt7Csv(false) }, "この月を表（CSV）で書き出す"),
+      el("button", { type: "button", class: "link-btn", id: "rt7CsvAll", onclick: () => rt7Csv(true) }, "すべての期間を書き出す"));
+  }
+
+  // ⑩ バッジ: from what is there (the longest run of an item, the days all done, the checks, a やめる習慣's longest, a whole
+  // month all done), those got kept with the account so a new one is cheered once, on any device; got before this came,
+  // kept without a word. In a card: those got, and the next of each kind
+  var RT7_BADGE = [ // (| where a name may break)
+    ["s3", "🔥", "3日連続", "best", 3], ["s7", "🔥", "7日連続", "best", 7], ["s14", "🔥", "14日連続", "best", 14], ["s30", "🔥", "30日連続", "best", 30],
+    ["s66", "🔥", "66日連続", "best", 66], ["s100", "🔥", "100日連続", "best", 100], ["s365", "🔥", "365日連続", "best", 365],
+    ["a1", "⭐", "はじめての|ぜんぶ", "alls", 1], ["a10", "⭐", "ぜんぶ|10日", "alls", 10], ["a30", "⭐", "ぜんぶ|30日", "alls", 30], ["a100", "⭐", "ぜんぶ|100日", "alls", 100],
+    ["c10", "✅", "チェック|10回", "total", 10], ["c100", "✅", "チェック|100回", "total", 100], ["c500", "✅", "チェック|500回", "total", 500], ["c1000", "✅", "チェック|1000回", "total", 1000],
+    ["q7", "🛡️", "やめて|7日", "quit", 7], ["q30", "🛡️", "やめて|30日", "quit", 30], ["q100", "🛡️", "やめて|100日", "quit", 100],
+    ["m1", "🏆", "パーフェクトな|月", "months", 1],
+  ];
+  function rt7BadgeName(b) { return b[2].replace(/\|/g, ""); }
+  function rt7Facts() {
+    const idx = rtIndex();
+    if (rt7BadgeMemo && rt7BadgeMemo.idx === idx && rt7BadgeMemo.day === todayKey && rt7BadgeMemo.n === routines.items.length) return rt7BadgeMemo.v;
+    const list = sortedRoutines(), first = rtFirstDay();
+    let best = 0, total = 0, alls = 0, months = 0;
+    for (const r of list) { const s = rtStatsOf(r); best = Math.max(best, s.best); total += s.total; }
+    const all = new Set();
+    for (let d = first, i = 0; d <= todayKey && i < 5000; d = addDays(d, 1), i++) if (rtDayState(d, list).all) { alls++; all.add(d); }
+    for (let ym = monthOf(first); ym < monthOf(todayKey); ym = addMonths(ym, 1)) {
+      if (`${ym}-01` < first) continue; // (a whole month, from its first day)
+      let ok = true, n = 0;
+      for (let i = 1; i <= daysInMonth(ym) && ok; i++) { const d = `${ym}-${pad(i)}`; if (all.has(d)) n++; else if (!rtRest(d) && rtDayState(d, list).items.length) ok = false; }
+      if (ok && n >= 20) months++;
+    }
+    const v = { best, total, alls, months, quit: Math.max(0, ...rt6QuitList().map((q) => rt6QuitBest(q))) };
+    rt7BadgeMemo = { idx, day: todayKey, n: routines.items.length, v };
+    return v;
+  }
+  function rt7Got() { const v = settings.get(RT7_BADGES); return v && v.got && typeof v.got === "object" ? v.got : null; }
+  function rt7Earned(f) { return RT7_BADGE.filter(([, , , k, n]) => f[k] >= n).map(([id]) => id); }
+  function rt7CheckBadges() {
+    if (!rt7Ready || !routines.items.length) return;
+    const got = rt7Got(), now = rt7Earned(rt7Facts());
+    if (!got) { act(() => settings.set(RT7_BADGES, { got: Object.fromEntries(now.map((id) => [id, "before"])), updatedAt: Date.now() })); return; } // (got before this came: no day)
+    const fresh = now.filter((id) => !got[id]);
+    if (!fresh.length) return;
+    act(() => settings.set(RT7_BADGES, { got: { ...got, ...Object.fromEntries(fresh.map((id) => [id, todayKey])) }, updatedAt: Date.now() }));
+    const names = fresh.map((id) => `「${rt7BadgeName(RT7_BADGE.find((b) => b[0] === id))}」`).join(""), f = flashed && Date.now() < flashed.until ? flashed : null;
+    setTimeout(celebrate, 150);
+    flash((f ? `${f.msg}。` : "") + `バッジ${names}をもらいました`, f?.undo, 6000, f?.label);
+  }
+  function renderRt7Badges() {
+    const card = $("rt7BadgesCard");
+    if (!card) return;
+    const f = rt7Facts(), got = rt7Got() || {}, has = (id) => !!got[id] || rt7Earned(f).includes(id), kinds = ["best", "alls", "total", "quit", "months"].filter((k) => k !== "quit" || rt6QuitList().length);
+    card.hidden = !sortedRoutines().length;
+    if (card.hidden) return;
+    const shown = [];
+    for (const k of kinds) {
+      const of = RT7_BADGE.filter((b) => b[3] === k);
+      shown.push(...of.filter((b) => has(b[0])));
+      const next = of.find((b) => !has(b[0]));
+      if (next) shown.push(next);
+    }
+    const left = (b) => { const n = b[4] - f[b[3]]; return b[3] === "months" ? "ひと月ぜんぶ" : b[3] === "total" ? `あと ${fmtN(n)}回` : `あと ${fmtN(n)}日`; };
+    $("rt7BadgesSum").textContent = `${RT7_BADGE.filter((b) => has(b[0])).length} / ${RT7_BADGE.length}`;
+    setChildren($("rt7Badges"), shown.map((b) => { const on = has(b[0]), day = isDay(got[b[0]] || "") ? got[b[0]] : ""; return el("li", { class: "rt7-badge" + (on ? "" : " off"), "aria-label": `${rt7BadgeName(b)}：` + (on ? (day ? `${fmtMD(day)}にもらった` : "もらった") : `まだ（${left(b)}）`) },
+      el("span", { class: "e", "aria-hidden": "true" }, b[1]), el("span", { class: "n", "aria-hidden": "true" }, b[2].split("|").map((w) => el("span", { class: "phrase" }, w))),
+      el("span", { class: "s", "aria-hidden": "true" }, on ? (day ? fmtMD(day) : "もらった") : keepUnits(left(b)))); }));
+  }
+
+  // drawn with the page (renderRoutine): ⑦ and ④'s words; ⑩'s new ones looked for once the press that made them is done;
+  // ⑥ ⑤ ⑩ ⑨ for the page alone
+  function rt7Render(list) {
+    if (!rt7Ready) return;
+    draw(renderRt7Recap);
+    $("rt7JnBtn").textContent = viewDate === todayKey ? "きょうを日記に書き足す" : "この日を日記に書き足す";
+    setTimeout(() => draw(rt7CheckBadges), 0);
+    if (tab !== "routine") return;
+    draw(() => renderRt7Two(list)); draw(() => renderRt7Pairs(list)); draw(renderRt7Badges); draw(rt7CsvBtns);
+  }
+  // made once: ⑦ under the やめる習慣, ⑥ after この1週間, ⑤ after チェックした時間帯, ⑩ after 項目ごとの記録, ④ beside 文字で送る,
+  // ⑦'s way back under 月ごとの達成率
+  function rt7Build() {
+    if ($("rt7RecapCard")) return;
+    $("rt6QuitCard").after(el("div", { class: "card rt7-recap-card", id: "rt7RecapCard", hidden: true }));
+    $("rtWeekCard").after(el("div", { class: "card", id: "rt7TwoCard", hidden: true },
+      el("div", { class: "card-head row-between" }, el("span", {}, "この7日とその前の7日"), el("span", { class: "muted small", id: "rt7TwoSum" })),
+      el("ul", { class: "list", id: "rt7Two" })));
+    $("rt6HoursCard").after(el("div", { class: "card", id: "rt7PairsCard", hidden: true },
+      el("div", { class: "card-head row-between" }, el("span", {}, "いっしょにできている項目"), el("span", { class: "muted small" }, "最近60日")),
+      el("ul", { class: "list", id: "rt7Pairs" }),
+      el("p", { class: "rt6-foot" }, "いっしょにやると、続きやすい組み合わせかもしれません。")));
+    $("rtStatsCard").after(el("div", { class: "card", id: "rt7BadgesCard", hidden: true },
+      el("div", { class: "card-head row-between" }, el("span", {}, "バッジ"), el("span", { class: "muted small", id: "rt7BadgesSum" })),
+      el("ul", { class: "rt7-badges", id: "rt7Badges" })));
+    $("rt4Share").append(el("button", { type: "button", class: "chip-btn", id: "rt7JnBtn", onclick: () => rt7ToJournal() }, "きょうを日記に書き足す"));
+    $("rt6MonthsFoot").after(el("div", { class: "label-tools rt7-recap-row", id: "rt7RecapRow", hidden: true },
+      el("button", { type: "button", class: "link-btn", onclick: () => { rt7RecapOpen = true; renderRt7Recap(); $("rt7RecapCard").scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "center" }); } }, "先月のまとめを見る")));
+  }
+  rt7Build();
+  rt7Ready = true;
+
   // ---------- boot ----------
   function renderAll() {
     tsumiTallied = null; tsumiStale = true; tsumiGen++; rtIdx = null; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)

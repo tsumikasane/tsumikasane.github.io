@@ -143,7 +143,7 @@ const png = (file) => { const b = fs.readFileSync(file); return b.slice(0, 8).eq
   // ② 長押し: 日記を書く held down
   await p.evaluate(() => { window.__buzz = []; });
   await hold(p, "r1");
-  ok(await isOpen(p, "rt6Menu") && (await txt(p, "#rt6MenuMsg")) === "日記を書く" && (await menu(p)) === "やった,きょうはパス,期間でまとめてチェック,複製,休止する,設定,削除", "② held: its menu", await menu(p));
+  ok(await isOpen(p, "rt6Menu") && (await txt(p, "#rt6MenuMsg")) === "日記を書く" && (await menu(p)) === "やった,きょうはパス,できなかった理由,期間でまとめてチェック,複製,休止する,設定,削除", "② held: its menu (その7 ① できなかった理由 in it)", await menu(p));
   ok(await p.evaluate(() => document.querySelector('#rtList li[data-rt="r1"]').classList.contains("rt6-held")) && (await p.evaluate(() => window.__buzz.join())) === "15", "② the row marked, a buzz");
   await p.evaluate(() => document.querySelector('#rtList li[data-rt="r1"] .check').click()); await p.waitForTimeout(200);
   ok(!(await day(p)).done.includes("r1"), "② the finger let go checks nothing");
