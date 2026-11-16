@@ -3382,11 +3382,26 @@ ul.list li.rec8-cmp::before { display: none; }
 .rec9-voices li { display: flex; align-items: center; gap: 10px; }
 .rec9-voices audio { flex: 1; min-width: 0; height: 40px; }
 .rec4-plans .row-btn .sub.rec9-note { display: block; white-space: normal; }
-.rec9-usual { font-weight: 400; color: var(--muted); }
+.rec9-usual { font-weight: 400; color: var(--muted); white-space: nowrap; }
 .rec9-usual::before { content: "・"; }
 .rec9-run { display: inline-block; margin-inline: 6px auto; padding: 0 5px; border-radius: 6px; font-size: var(--t-foot); font-weight: 600; line-height: 1.6; background: var(--fill); color: var(--muted); white-space: nowrap; }
 .rec9-ph .chip-btn { display: inline-flex; align-items: center; gap: 4px; }
 .rec9-ph .chip-btn[aria-pressed="true"] { background: var(--accent-fill); color: var(--accent-ink); }
+/* 記録 その10 (2026-11-16). ① by name; ② the times of day; ③ the day's place; ④ copies kept; ⑦ those ahead; ⑧ whole */
+.rec10-names .row-btn .row-count { margin-inline-start: auto; font-variant-numeric: tabular-nums; }
+.rec10-hours { flex-wrap: wrap; }
+.rec10-hours .chip-btn[aria-pressed="true"], #rec10JnFull[aria-pressed="true"] { background: var(--accent-fill); color: var(--accent-ink); }
+.rec10-hours .chip-btn:disabled { opacity: .45; }
+.rec10-rank { font-weight: 600; color: var(--accent); white-space: nowrap; }
+.rec-day-head .rec-day-kind { flex: none; }  /* (its name kept whole beside a long total, ふだん and its place) */
+.rec-day-head .rec-total { min-width: 0; text-align: end; }
+.rec10-rank::before { content: "・"; font-weight: 400; color: var(--muted); }
+.rec10-ahead { display: grid; gap: 6px; margin-bottom: var(--space-2); }
+.rec10-ahead[hidden] { display: none; }
+.rec10-ahead .sum-since { margin: 0; color: var(--warn); }
+.rec10-ahead .link-btn { display: inline; min-height: 0; padding: 0 0 0 6px; font-size: inherit; font-weight: 600; }
+.rec10-keep-tools { justify-content: flex-start; margin: 0 0 4px; }
+#rec10KeptList > li > .link-btn { flex: none; white-space: nowrap; padding-inline: 12px 16px; }
 /* ⑨ 記録's cards in its 設定, as きょう's tiles there */
 #recCardList > li { padding-block: 0; padding-inline-end: 0; transition: transform .2s ease; }
 #recCardList > li:has(.tile-pick:active) { background: var(--fill-press); }
@@ -8265,6 +8280,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <!-- 記録 その8 ⑩ any of the words, ⑨ each day's total so far (the user's calls, 2026-11-16) -->
           <button type="button" class="link-btn rec8-toggle" id="rec8AnyList" aria-pressed="false" hidden>どれかをふくむ</button>
           <button type="button" class="link-btn rec8-toggle" id="rec8CumBtn" aria-pressed="false" hidden>ここまでの合計</button>
+          <!-- 記録 その10 ① by name, ② by the time of day (the user's calls, 2026-11-16) -->
+          <button type="button" class="link-btn rec8-toggle" id="rec10NamesBtn" aria-pressed="false" hidden>名前ごとに見る</button>
+          <button type="button" class="link-btn" id="rec10HourBtn" aria-controls="rec10HourBox" aria-expanded="false" hidden>時間帯でしぼる</button>
         </div>
         <div class="rec3-num" id="rec3NumBox" hidden>
           <input type="number" id="rec3Lo" inputmode="decimal" step="any" aria-label="この数から"><span id="rec3UnitLo"></span><span>〜</span><input type="number" id="rec3Hi" inputmode="decimal" step="any" aria-label="この数まで"><span id="rec3UnitHi"></span>
@@ -8273,9 +8291,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <input type="date" id="rec4From" aria-label="この日から"><span>〜</span><input type="date" id="rec4To" aria-label="この日まで">
         </div>
         <div class="rec5-dow" id="rec5DowBox" role="group" aria-label="曜日でしぼる" hidden></div>
+        <!-- 記録 その10 ② the times of day, ⑦ those dated after today (the user's calls, 2026-11-16) -->
+        <div class="rec3-sug rec10-hours" id="rec10HourBox" role="group" aria-label="時間帯でしぼる" hidden></div>
+        <div class="rec10-ahead" id="rec10Ahead" hidden></div>
         <div class="rec-groups" id="recList"></div>
         <div class="rec3-bar" id="rec3Bar" role="group" aria-label="選んだ記録" hidden>
           <span id="rec3BarSay" aria-live="polite"></span>
+          <!-- 記録 その10 ⑥ (the user's call, 2026-11-16) -->
+          <button type="button" class="link-btn" id="rec10PickSend" hidden>文字で送る</button>
           <button type="button" class="link-btn" id="rec3Cancel">やめる</button>
           <button type="button" class="btn sm rec3-del" id="rec3Del" disabled>削除</button>
         </div>
@@ -8397,6 +8420,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <button type="button" class="link-btn" id="copyCancel">やめる</button>
             <!-- 記録 その7 ⑩ (the user's call, 2026-11-15) -->
             <button type="button" class="link-btn" id="rec7CopyOut">ファイルに書き出す</button>
+            <!-- 記録 その10 ④ (the user's call, 2026-11-16) -->
+            <button type="button" class="link-btn" id="rec10KeepThis">このコピーを残す</button>
           </div>
         </div>
         <!-- 記録 その6 ⑩ the copy's records one by one, looked for and brought back alone (the user's call, 2026-11-15) -->
@@ -8409,6 +8434,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <ul class="list card" id="rec6CopyList"></ul>
           <p class="group-foot" id="rec6CopyFoot"></p>
         </div>
+        <!-- 記録 その10 ④ copies kept for good, five at most (the user's call, 2026-11-16) -->
+        <div class="rec2-tools rec10-keep-tools"><button type="button" class="link-btn" id="rec10KeepNow">いまの記録をコピーして残す</button></div>
+        <h3 class="group-head" id="rec10KeptHead" hidden>残したコピー</h3>
+        <ul class="list card" id="rec10KeptList" hidden></ul>
         <ul class="list card" id="copiesList"></ul>
         <p class="group-foot">アプリを開いたときに毎日作られ、この 1 週間の分と、その前は週に 1 つ・月に 1 つが残ります。戻しても、いまある記録は変わりません。ホーム画面のアプリといっしょに消えることがあるので、ファイルへの書き出しもしておいてください。</p>
       </section>
@@ -9442,6 +9471,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <button type="button" class="link-btn" id="rec7SpanBtn" aria-controls="rec7SpanBox" aria-expanded="false">期間でしぼる</button>
           <!-- 記録 その8 ⑩ any of the words (the user's call, 2026-11-16) -->
           <button type="button" class="link-btn" id="rec8Any" aria-pressed="false" hidden>どれかをふくむ</button>
+          <!-- 記録 その10 ⑧ 日記 found whole (the user's call, 2026-11-16) -->
+          <button type="button" class="link-btn" id="rec10JnFull" aria-pressed="false" hidden>日記を全文で</button>
         </div>
         <div class="rec3-num rec4-span" id="rec7SpanBox" hidden>
           <input type="date" id="rec7From" aria-label="探すのはこの日から"><span>〜</span><input type="date" id="rec7To" aria-label="この日まで">
@@ -24525,7 +24556,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         rtDays.length ? `${rtDays.length} 日チェック` : "まだチェックしていません", "list", topList(byRoutine, () => "var(--c-routine)", (n) => `${n} 回`), "routine"), "routine"),
       money: () => withStreak(sumCard("var(--c-money)", "money", "家計簿", fmtN(Math.round(out)), "円 支出", `収入 ${fmtYen(inn)}・収支 ${net > 0 ? "+" : ""}${fmtYen(net)}`, "list",
         topList(byCat, () => "var(--c-money)", fmtYen), "money"), "money"),
-      memory: recMemoryCard, missed: recMissedCard, milestone: recMilestoneCard, best: recBestCard, first: rec2FirstCard, often: rec3OftenCard, recent: rec3RecentCard, pick: rec5PickCard, marks: rec7MarksCard, tags: rec8TagsCard, news: rec9NewCard, // (その5 ⑨, その7 ⑦, その8 ⑦, その9 ⑧)
+      memory: recMemoryCard, missed: recMissedCard, milestone: recMilestoneCard, best: recBestCard, first: rec2FirstCard, often: rec3OftenCard, recent: rec3RecentCard, pick: rec5PickCard, marks: rec7MarksCard, tags: rec8TagsCard, news: rec9NewCard, seen: rec10SeenCard, // (その5 ⑨, その7 ⑦, その8 ⑦, その9 ⑧, その10 ⑩)
     };
     const hidden = recCardHidden();
     setChildren($("sumCards"), recCardOrder().filter((k) => !hidden.has(k) && cards[k]).map((k) => cards[k]()).filter(Boolean));
@@ -24600,8 +24631,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!spec) return;
     const words = spec.text ? rec8Words(foldText(recQuery).split(/\s+/).filter(Boolean)) : []; // (その8 ⑩ any of them)
     const all = spec.items().filter((x) => x.date && x.date <= todayKey);
-    const found = (words.length ? all.filter((x) => rec5Match(words, foldText(spec.text(x)))) : all).filter((x) => rec3NumOk(x) && rec4SpanOk(x) && rec5DowOk(x) && rec7WxOk(x) && rec9PhOk(x)); // (その3 ② a number, その4 ① a span, その5 ① words left out and ④ the days of the week, その7 ⑤ the weather, その9 ⑨ photos)
-    const narrowed = words.length > 0 || rec3NumOn() || rec4SpanOn() || rec5DowOn() || rec7WxOn() || rec9PhOn(); // (その3 ②, その4 ①, その5 ④, その7 ⑤, その9 ⑨)
+    const found = (words.length ? all.filter((x) => rec5Match(words, foldText(spec.text(x)))) : all).filter((x) => rec3NumOk(x) && rec4SpanOk(x) && rec5DowOk(x) && rec7WxOk(x) && rec9PhOk(x) && rec10HourOk(x)); // (その10 ② a time of day; その3 ② a number, その4 ① a span, その5 ① words left out and ④ the days of the week, その7 ⑤ the weather, その9 ⑨ photos)
+    const narrowed = words.length > 0 || rec3NumOn() || rec4SpanOn() || rec5DowOn() || rec7WxOn() || rec9PhOn() || rec10HourOn(); // (その3 ②, その4 ①, その5 ④, その7 ⑤, その9 ⑨, その10 ②)
     const byDay = groupBy(found, (x) => x.date), days = rec6RankDays(rec3Gaps(rec2Old() ? [...byDay.keys()].sort() : [...byDay.keys()].sort().reverse(), narrowed), byDay), q = recQuery.trim(); // (その3 ④ the days with none, その6 ① by totals)
     setChildren($("recListTitle"), el("span", { class: "page-mark", role: "img", "aria-label": spec.label, style: `--mark-c: var(--c-${recListKind})` }, icon(recListKind, 40)));
     $("recListPage").textContent = isDietPart(recListKind) ? `ダイエットの${spec.label}を開く` : `${spec.label}のページを開く`;
@@ -24634,6 +24665,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     rec7AfterList(); // (その7 ④ ⑤)
     rec8AfterList(found); // (その8 ⑧ ⑨ ⑩)
     rec9AfterList(found); // (その9 ⑦ ⑨)
+    rec10AfterList(found); // (その10 ① ② ⑤ ⑥ ⑦)
   }
   $("recListPage").addEventListener("click", () => openFromHome(pageOf(recListKind), isDietPart(recListKind) ? recListKind : null));
   $("recSearch").addEventListener("input", (ev) => { recQuery = ev.target.value; renderRecList(); });
@@ -25144,15 +25176,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const ago = daysBetween(d, todayKey), rel = ago <= 0 ? "きょう" : ago === 1 ? "きのう" : `${ago} 日前`;
       return [row(d, d, rel + (d === days[0] ? "・最新" : firsts.has(d) ? "・その日の最後" : "")), firsts.has(d) ? row(FIRST + d, d, `${rel}・その日のはじめ`) : null];
     }) : el("li", { class: "empty" }, "まだコピーはありません。アプリを開くと、毎日作られます。"));
+    rec10KeptDraw(); // (記録 その10 ④ the copies kept)
   }
-  async function openCopy(key) {
+  async function openCopy(key, given = null) {
     const day = String(key).replace(FIRST, "");
-    let c = null;
-    try { c = await readCopy(key); } catch {}
+    let c = given; // (記録 その10 ④ a copy kept, handed over)
+    if (!c) try { c = await readCopy(key); } catch {}
     if (!c) { flash("このコピーは読めませんでした。"); return; }
     const plan = mergePlan(c.data), at = new Date(c.savedAt), when = `${fmtMDW(day)} ${at.getHours()}:${pad(at.getMinutes())}`;
     if (!plan.add && !plan.gone && !plan.differ) { flash("このコピーの記録は、すべてこの端末にあります。"); return; }
     copyPending = c;
+    $("rec10KeepThis").hidden = !!given; // (記録 その10 ④ kept already)
     $("copyAskText").textContent = `${when} 時点のコピー（${fmtN(c.count)} 件）から、`
       + (plan.add ? `この端末にない記録を ${fmtN(plan.add)} 件（${plan.adds.map(([st, n]) => `${STORE_NAMES[st.name]} ${fmtN(n)}`).join("・")}）戻します。` : "この端末にない記録はありません。")
       + (plan.differ ? "下で選ばないかぎり、いまある記録は変わりません。" : "いまある記録は変わりません。");
@@ -25191,7 +25225,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月16日 13:10"; // b1afa3ff (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月16日 13:20"; // 657237e3 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -25423,22 +25457,25 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const gone = new Set(keys), same = new Map();
     for (const [k, json] of exact) { if (!same.has(k)) same.set(k, new Set()); same.get(k).add(json); }
     const isSame = (k, x) => !!same.get(k)?.has(JSON.stringify(x));
+    // one copy, what it holds of them taken out (said whether it changed)
+    const scrubOne = (c) => {
+      if (!c?.data) return false;
+      let changed = false;
+      for (const [name, arr] of Object.entries(c.data)) {
+        if (!Array.isArray(arr)) continue;
+        if (name === "deleted") { for (const t of arr) if (t?.data && (gone.has(t.id) || isSame(`${t.store}/${t.rid}`, t.data))) { delete t.data; changed = true; } continue; }
+        if (name === "settings") { if (tsumiForget(arr.find((x) => x?.id === "tsumi"), forget)) changed = true; continue; }
+        const kept = arr.filter((x) => !gone.has(`${name}/${x?.id}`) && !isSame(`${name}/${x?.id}`, x));
+        if (kept.length !== arr.length) { c.data[name] = kept; changed = true; }
+      }
+      if (changed) c.count = recordCount(c.data);
+      return changed;
+    };
     return inQueue(async () => {
       if (!canStoreLocal || !window.indexedDB) return;
       try {
-        for (const day of await copyKeys()) {
-          const c = await readCopy(day);
-          if (!c?.data) continue;
-          let changed = false;
-          for (const [name, arr] of Object.entries(c.data)) {
-            if (!Array.isArray(arr)) continue;
-            if (name === "deleted") { for (const t of arr) if (t?.data && (gone.has(t.id) || isSame(`${t.store}/${t.rid}`, t.data))) { delete t.data; changed = true; } continue; }
-            if (name === "settings") { if (tsumiForget(arr.find((x) => x?.id === "tsumi"), forget)) changed = true; continue; }
-            const kept = arr.filter((x) => !gone.has(`${name}/${x?.id}`) && !isSame(`${name}/${x?.id}`, x));
-            if (kept.length !== arr.length) { c.data[name] = kept; changed = true; }
-          }
-          if (changed) { c.count = recordCount(c.data); await putCopy(c); }
-        }
+        for (const day of await copyKeys()) { const c = await readCopy(day); if (scrubOne(c)) await putCopy(c); }
+        await rec10ScrubKept(scrubOne); // (記録 その10 ④ the copies kept too)
       } catch {}
     });
   }
@@ -26750,6 +26787,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     rec7DayExtras(d); // (その7 ① ⑥ ⑦)
     rec8DayExtras(d); // (その8 ④ ⑤ ⑧)
     rec9DayExtras(d); // (その9 ② ③ ④ ⑤ ⑥)
+    rec10DayExtras(d); // (その10 ③ ⑤ ⑩)
   }
   $("recDayPrev").addEventListener("click", () => { recDayAt = addDays(recDayAt, -1); renderRecDay(); });
   $("recDayNext").addEventListener("click", () => { if (recDayAt < todayKey) { recDayAt = addDays(recDayAt, 1); renderRecDay(); } });
@@ -26778,7 +26816,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const byDay = groupBy(found, (x) => x.date), days = [...byDay.keys()].sort().reverse(), shown = days.slice(0, rec2Kind ? 30 : 5);
       const more = found.length - sum(shown, (d) => byDay.get(d).length);
       parts.push(el("h3", { class: "group-head rec-found-head" }, spec.label, el("span", { class: "n" }, `${found.length} 件`)),
-        el("ul", { class: "list card rec-list" }, shown.flatMap((d) => [recDayHead(d, null, "records"), ...(kind === "journal" && rec5Ready ? rec5JnRows(byDay.get(d), words) : spec.rows(byDay.get(d), dayLabel(d)))])), // (その5 ② 日記, round where the words are)
+        el("ul", { class: "list card rec-list" }, shown.flatMap((d) => [recDayHead(d, null, "records"), ...(kind === "journal" && rec5Ready && !rec10JnFullOn() ? rec5JnRows(byDay.get(d), words) : spec.rows(byDay.get(d), dayLabel(d)))])), // (その5 ② 日記, round where the words are; その10 ⑧ whole)
         more > 0 ? el("button", { type: "button", class: "link-btn rec-found-more", onclick: () => { openRecList(kind); recQuery = q; draw(renderRecList); } }, `ほか ${more} 件を${spec.label}の一覧で見る`) : null);
     }
     const tds = todos.items.filter((t) => rec7TodoInSpan(t) && has([t.text, t.memo || "", ...(Array.isArray(t.steps) ? t.steps.map((s) => s?.text || "") : [])].join(" ")))
@@ -26796,6 +26834,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren(box, rec2DateRow(q), el("p", { class: "sub rec-found-say", role: "status" }, total ? `${rec7Say(q)}の記録 ${total} 件` : `${rec7Say(q)}に合う記録はありません。`), rec2KindChips(counts), parts); // (rec7Say: その7 ③ the span)
     rec4Mark(box, q); // (その4 ④ the words, marked)
     rec8FoundAfter(byKind, q); // (その8 ⑥ the first and latest days, ⑩ any of the words)
+    rec10FoundAfter(byKind); // (その10 ⑧)
   }
   $("recAll").addEventListener("input", (ev) => { recAllQuery = ev.target.value; renderRecFound(); });
   $("recAll").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing) ev.target.blur(); });
@@ -26962,6 +27001,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     { key: "marks", label: "しおりの日", icon: "pin" }, // (その7 ⑦)
     { key: "tags", label: "タグ", icon: "search" }, // (その8 ⑦)
     { key: "news", label: "最近のはじめて", icon: "flag" }, // (その9 ⑧)
+    { key: "seen", label: "最近見た日", icon: "calendar" }, // (その10 ⑩)
   ];
   const recCard = (k) => REC_CARDS.find((c) => c.key === k);
   const recCardPrefs = () => settings.get("recordCards") || {};
@@ -27278,6 +27318,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("rec3BarSay").textContent = n ? `${fmtN(n)} 件を選んでいます` : "削除する記録を押して選びます";
     $("rec3Del").disabled = !n;
     $("rec3Del").textContent = rec3Armed > Date.now() ? `もう一度押すと、${fmtN(n)} 件を削除します` : "削除";
+    rec10PickSay(); // (その10 ⑥ their total, 文字で送る)
   }
   $("recList").addEventListener("click", (ev) => {
     if (!rec3Sel) return;
@@ -27321,8 +27362,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (span) parts.push(span);
     if (dow) parts.push(dow);
     if (wx) parts.push(wx);
-    const ph = rec9PhWhat(); // (その9 ⑨)
+    const ph = rec9PhWhat(), hr = rec10HourWhat(); // (その9 ⑨, その10 ②)
     if (ph) parts.push(ph);
+    if (hr) parts.push(hr);
     return parts.join("・");
   }
   const rec3NumInput = () => { rec3Num = { kind: recListKind, lo: $("rec3Lo").value.trim(), hi: $("rec3Hi").value.trim() }; renderRecList(); };
@@ -27527,7 +27569,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   });
   // a list opened from its card starts whole: its words (openRecList), its number (その3 ②) and its span
   function rec4Whole() {
-    rec3Num = { kind: null, lo: "", hi: "" }; rec3NumOpen = false; rec4Span = { kind: null, from: "", to: "" }; rec4SpanOpen = null; rec5Dow = { kind: null, days: [] }; rec6Rank = null; rec7Wx = null; rec9PhOnly = null; // (その5 ④, その6 ①, その7 ⑤, その9 ⑨)
+    rec3Num = { kind: null, lo: "", hi: "" }; rec3NumOpen = false; rec4Span = { kind: null, from: "", to: "" }; rec4SpanOpen = null; rec5Dow = { kind: null, days: [] }; rec6Rank = null; rec7Wx = null; rec9PhOnly = null; rec10Hour = null; rec10HourOpen = false; rec10Names = false; // (その5 ④, その6 ①, その7 ⑤, その9 ⑨, その10 ① ②)
     for (const id of ["rec3Lo", "rec3Hi", "rec4From", "rec4To"]) $(id).value = "";
   }
 
@@ -28272,7 +28314,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return [el("ul", { class: "list card rec-list rec7-days" }, shown.flatMap((d) => [recDayHead(d, null, "records"), ...[...REC_FIND, "todo", "plan"].filter((k) => days.get(d).has(k)).flatMap((k) => {
       const xs = days.get(d).get(k), label = k === "todo" ? "完了したToDo" : k === "plan" ? "予定" : RECORD_LISTS[k].label;
       return [el("li", { class: "rec7-kind-li", style: `--kc: var(--c-${k === "plan" ? "cal" : k})` }, label),
-        ...(k === "todo" ? xs.map((t) => el("li", {}, recOpen("todo", t.id, `「${t.text}」を編集`, t.text, "rec-what"))) : k === "plan" ? xs.map((x) => rec4PlanRow(x.turn, d)) : k === "journal" ? rec5JnRows(xs, words) : RECORD_LISTS[k].rows(xs, dayLabel(d)))];
+        ...(k === "todo" ? xs.map((t) => el("li", {}, recOpen("todo", t.id, `「${t.text}」を編集`, t.text, "rec-what"))) : k === "plan" ? xs.map((x) => rec4PlanRow(x.turn, d)) : k === "journal" && !rec10JnFullOn() ? rec5JnRows(xs, words) : RECORD_LISTS[k].rows(xs, dayLabel(d)))]; // (その10 ⑧ whole)
     })])),
     order.length > shown.length ? el("button", { type: "button", class: "link-btn rec-found-more", onclick: () => { rec7DayN += 20; renderRecFound(); } }, `ほか ${fmtN(order.length - shown.length)} 日を見る`) : null];
   }
@@ -29175,6 +29217,234 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   rec9Ready = true;
+
+  // ---------- 記録 その10 ①〜⑩ (the user's calls, 2026-11-16): in a kind's list each name with how many and how much
+  // (①), those recorded at a time of day (②), 日記's letters counted and narrowed to (⑤), the entries picked added up and
+  // sent as words (⑥), and those dated after today (⑦); on a day's page each kind's total among all the days' (③); a copy
+  // kept for good (④); 日記 found, read whole (⑧); a key to the search on a computer (⑨); and the days looked at lately,
+  // as a card (⑩). Still no weeks, months or years in the cards, no charts, nothing typed in but words, numbers and days
+  // to look for (the user's calls before). (var and function declarations: the pages above may draw before this;
+  // rec10Ready, set at its end) ----------
+  var rec10Ready = false;
+
+  // ① 名前ごと: a kind's entries by their name (運動's 種目 or 種類, 勉強's 科目, 家計簿's 費目, 食事's food, ルーティーン's
+  // 項目), each with how many times, the total and the last day, the most often first (thirty, all at a press), of what
+  // the list shows (narrowed, those found); pressed, the list looked through for that name
+  var rec10Names = false, rec10NamesAll = false;
+  var REC10_NAME = {
+    workout: [(w) => [[w.exercise || w.type || "運動", w.exercise || w.type || "運動"]], (xs) => { const m = sum(xs, (w) => w.minutes); return m > 0 ? durText(m) : ""; }],
+    study: [(x) => [[subjectOf(x)?.name || "科目なし", subjectOf(x)?.name || "科目なし"]], (xs) => durText(sum(xs, (x) => x.minutes))],
+    money: [(e) => { const c = expenseCat(e) || (e.kind === "in" ? "収入" : "支出"); return [[e.kind === "in" ? `${c}（収入）` : c, c]]; }, (xs) => fmtYen(sum(xs, (e) => e.amount))],
+    meal: [(m) => { const t = String(m.text || "").trim(); return [[t || m.slot || "食事", t || m.slot || "食事"]]; }, (xs) => { const ks = xs.filter((m) => typeof m.kcal === "number"); return ks.length ? `${fmtN(Math.round(sum(ks, (m) => m.kcal)))} kcal` : ""; }],
+    routine: [(x) => (x.done || []).map((id) => routines.get(id)?.name).filter(Boolean).map((n) => [n, n]), () => ""],
+  };
+  function rec10NamesView(found) {
+    const [names, total] = REC10_NAME[recListKind], groups = new Map();
+    for (const x of found) for (const [label, word] of names(x)) {
+      const k = foldText(label), g = groups.get(k) || groups.set(k, { label, word, xs: [], last: "" }).get(k);
+      g.xs.push(x); if (x.date > g.last) g.last = x.date;
+    }
+    const list = [...groups.values()].sort((a, b) => b.xs.length - a.xs.length || b.last.localeCompare(a.last) || a.label.localeCompare(b.label, "ja"));
+    setChildren($("recList"), list.length ? [el("h3", { class: "group-head" }, `名前ごと（${fmtN(list.length)}）`),
+      el("ul", { class: "list card rec10-names" }, (rec10NamesAll ? list : list.slice(0, 30)).map((g) => {
+        const t = total(g.xs);
+        return el("li", { class: "btn-row" }, el("button", { type: "button", class: "row-btn", "aria-label": `${g.label}、${g.xs.length} 回${t ? "、" + t : ""}、最後は${fmtDayLong(g.last)}。この名前の記録を見る`,
+          onclick: () => { rec10Names = false; recQuery = g.word; renderRecList(); window.scrollTo(0, 0); } },
+          el("span", { class: "body" }, el("span", { class: "text" }, g.label), el("span", { class: "sub" }, keepUnits(`${fmtN(g.xs.length)} 回・最後 ${shortDay(g.last)}`))), t ? el("span", { class: "row-count" }, keepUnits(t)) : null));
+      })),
+      list.length > 30 ? el("button", { type: "button", class: "link-btn rec-found-more", onclick: () => { rec10NamesAll = !rec10NamesAll; renderRecList(); } }, rec10NamesAll ? "少なくする" : `ほか ${fmtN(list.length - 30)} こを見る`) : null]
+      : el("div", { class: "card empty" }, "名前のある記録はありません。"));
+  }
+  $("rec10NamesBtn").addEventListener("click", () => { rec10Names = !rec10Names; rec10NamesAll = false; renderRecList(); });
+
+  // ② 時間帯: those recorded in the morning, the day, the evening, at night or in the night's small hours (by when each was
+  // written; one from before such times were kept has none), each with how many; pressed again, all
+  var REC10_HOURS = [["朝", 5, 10], ["昼", 10, 15], ["夕方", 15, 19], ["夜", 19, 24], ["夜中", 0, 5]];
+  var rec10Hour = null, rec10HourOpen = false; // ({ kind, i }: the kind's list narrowed to a time of day)
+  function rec10HourOn() { return !!rec10Ready && !!rec10Hour && rec10Hour.kind === recListKind; }
+  function rec10HourOf(x) { const t = num(x.createdAt); if (!(t > TSUMI_T0)) return -1; const h = new Date(t).getHours(); return REC10_HOURS.findIndex(([, a, b]) => h >= a && h < b); }
+  function rec10HourOk(x) { return !rec10HourOn() || rec10HourOf(x) === rec10Hour.i; }
+  function rec10HourWhat() { if (!rec10HourOn()) return ""; const [w, a, b] = REC10_HOURS[rec10Hour.i]; return `${w}（${a}〜${b}時）`; }
+  function rec10HourTools() {
+    const kind = recListKind, box = $("rec10HourBox"), btn = $("rec10HourBtn"), all = RECORD_LISTS[kind].items().filter((x) => x.date && x.date <= todayKey);
+    const counts = REC10_HOURS.map((_, i) => all.filter((x) => rec10HourOf(x) === i).length);
+    btn.hidden = !counts.some(Boolean);
+    btn.setAttribute("aria-expanded", String(rec10HourOpen || rec10HourOn()));
+    box.hidden = btn.hidden || !(rec10HourOpen || rec10HourOn());
+    if (box.hidden) return;
+    setChildren(box, REC10_HOURS.map(([w, a, b], i) => el("button", { type: "button", class: "chip-btn", "aria-pressed": String(rec10HourOn() && rec10Hour.i === i), disabled: !counts[i] && !(rec10HourOn() && rec10Hour.i === i),
+      "aria-label": `${w}（${a}時から${b}時）に記録したもの、${counts[i]} 件`, onclick: () => { rec10Hour = rec10HourOn() && rec10Hour.i === i ? null : { kind, i }; renderRecList(); } }, `${w} ${fmtN(counts[i])}`)));
+  }
+  $("rec10HourBtn").addEventListener("click", () => { rec10HourOpen = !(rec10HourOpen || rec10HourOn()); if (!rec10HourOpen) rec10Hour = null; renderRecList(); });
+
+  // ③ その日の順位: beside the day's total (食事's kcal, 運動's and 勉強's time, 家計簿's money out), its place among all the
+  // days' when it is among the three most (of five days or more)
+  function rec10Rank(d) {
+    for (const [kind, [of]] of Object.entries(REC9_USUAL)) {
+      const tot = $("recDayBody").querySelector(`ul[data-kind="${kind}"]`)?.previousElementSibling?.querySelector(".rec-total");
+      if (!tot) continue;
+      const vals = [...groupBy(RECORD_LISTS[kind].items().filter((x) => isDay(x.date || "") && x.date <= todayKey), (x) => x.date)].map(([day, xs]) => [day, of(xs)]).filter(([, v]) => v > 0);
+      const mine = vals.find(([day]) => day === d)?.[1];
+      if (vals.length < 5 || !(mine > 0)) continue;
+      const rank = 1 + vals.filter(([, v]) => v > mine).length;
+      if (rank <= 3) tot.append(el("span", { class: "rec10-rank" }, rank === 1 ? "これまででいちばん" : `これまでで ${rank} 番目`));
+    }
+  }
+
+  // ④ 残したコピー: a copy kept for good (five at most) beside the ones made each day, which go by turns: the one opened,
+  // or the records as they are now; opened as those are, and let go of at a press (元に戻す). Kept on this device, as
+  // they are; 完全に削除 takes what it deletes out of them too
+  var REC10_KEPT = "tsumikasane-kept", REC10_KEPT_MAX = 5;
+  async function rec10Kept() { try { return (await rec8PhRead(REC10_KEPT, "copies")).filter((c) => c && c.data && typeof c.id === "string").sort((a, b) => num(b.savedAt) - num(a.savedAt)); } catch { return []; } }
+  async function rec10KeptDo(fn) {
+    const db = await rec8PhOpen(REC10_KEPT, "copies");
+    try { await new Promise((resolve, reject) => { const tx = db.transaction("copies", "readwrite"); fn(tx.objectStore("copies")); tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error); }); }
+    finally { db.close(); }
+  }
+  async function rec10Keep(data, day, savedAt) {
+    if (!window.indexedDB) return;
+    const all = await rec10Kept();
+    if (all.length >= REC10_KEPT_MAX) { flash(`残せるコピーは ${REC10_KEPT_MAX} つまでです。いらないものを「外す」で外してから、もう一度お試しください。`, null, 8000); return; }
+    const c = { id: `kept:${Date.now()}`, day, savedAt, keptAt: Date.now(), count: recordCount(data), data: JSON.parse(JSON.stringify(data)) };
+    try { await rec10KeptDo((os) => os.put(c)); } catch { flash("残せませんでした。端末の空き容量が足りているか確かめてください。"); return; }
+    flash(`${fmtMDW(day)} ${new Date(savedAt).getHours()}:${pad(new Date(savedAt).getMinutes())} のコピーを残しました（${fmtN(c.count)} 件）。毎日のコピーが入れかわっても消えません`);
+    rec10KeptDraw();
+  }
+  async function rec10KeptDraw() {
+    if (!rec10Ready || !window.indexedDB) return;
+    const all = await rec10Kept(), when = (c) => `${fmtMDW(c.day)} ${new Date(c.savedAt).getHours()}:${pad(new Date(c.savedAt).getMinutes())}`;
+    $("rec10KeptHead").hidden = $("rec10KeptList").hidden = !all.length;
+    $("rec10KeepNow").hidden = all.length >= REC10_KEPT_MAX;
+    setChildren($("rec10KeptList"), all.map((c) => el("li", { class: "btn-row" },
+      el("button", { type: "button", class: "row-btn nav", "aria-label": `${when(c)}のコピー（残したもの）を見る`, onclick: () => openCopy(c.day, c) },
+        el("span", { class: "body" }, el("span", { class: "text" }, when(c)), el("span", { class: "sub" }, keepUnits(`${fmtN(c.count)} 件・${fmtShort(ymd(new Date(c.keptAt)))}に残した`))),
+        el("span", { class: "chev" }, icon("next", 16))),
+      el("button", { type: "button", class: "link-btn", "aria-label": `${when(c)}のコピーを外す`, onclick: async () => {
+        try { await rec10KeptDo((os) => os.delete(c.id)); } catch { return; }
+        rec10KeptDraw();
+        flash(`${when(c)}のコピーを外しました`, async () => { try { await rec10KeptDo((os) => os.put(c)); } catch {} rec10KeptDraw(); }, 8000);
+      } }, "外す"))));
+  }
+  // (完全に削除: out of the copies kept too, as out of the days' copies)
+  async function rec10ScrubKept(scrubOne) {
+    if (!rec10Ready || !window.indexedDB) return;
+    for (const c of await rec10Kept()) if (scrubOne(c)) await rec10KeptDo((os) => os.put(c)).catch(() => {});
+  }
+  $("rec10KeepNow").addEventListener("click", () => rec10Keep(allData(), todayKey, Date.now()));
+  $("rec10KeepThis").addEventListener("click", () => {
+    if (!copyPending) return;
+    const day = String(copyPending.day || "").replace(FIRST, "");
+    rec10Keep(copyPending.data, isDay(day) ? day : ymd(new Date(copyPending.savedAt)), copyPending.savedAt);
+  });
+
+  // ⑤ 日記の字数: each 日記 in its list with how many letters, 数でしぼる by them too, and the day's on its page
+  const rec10Len = (t) => [...String(t || "").trim()].length;
+  REC3_NUM.journal = ["字", (x) => rec10Len(x.text)];
+
+  // ⑥ 選んだ記録: while picking, how many and their total (as the kind's day adds them up), and 文字で送る for them, by day
+  function rec10PickSay() {
+    if (!rec10Ready) return;
+    const n = rec3Sel ? rec3Sel.size : 0, spec = RECORD_LISTS[recListKind];
+    $("rec10PickSend").hidden = !n;
+    if (!n || !spec) return;
+    const tot = spec.total?.(spec.items().filter((x) => rec3Sel.has(x.id)));
+    if (tot) $("rec3BarSay").textContent = keepUnits(`${fmtN(n)} 件を選んでいます・${tot}`);
+  }
+  $("rec10PickSend").addEventListener("click", async () => {
+    const spec = RECORD_LISTS[recListKind], kind = recListKind;
+    if (!rec3Sel?.size || !spec) return;
+    const xs = spec.items().filter((x) => rec3Sel.has(x.id)), tot = spec.total?.(xs), byDay = groupBy(xs, (x) => x.date);
+    const text = [`${spec.label}の記録 ${xs.length} 件${tot ? "・" + tot : ""}`, ...[...byDay.keys()].sort().flatMap((d) => ["", `【${fmtDayLong(d)}】`, ...byDay.get(d).map((x) => (kind === "journal" ? oneLine(x.text) : rec2Line(kind, x)))])].join("\n");
+    if (navigator.share) { try { await navigator.share({ title: `${spec.label}の記録`, text }); return; } catch (e) { if (e?.name === "AbortError") return; } }
+    flash((await td6Copy(text)) ? "選んだ記録を文字でコピーしました。LINEなどに貼り付けられます" : "コピーできませんでした");
+  });
+
+  // ⑦ 先の日付: a kind's entries dated after today (shown nowhere else here, as the lists go up to today), told of under
+  // the list's words and listed at a press, each opening to put right
+  var rec10AheadOpen = false;
+  function rec10Ahead() {
+    const box = $("rec10Ahead"), spec = RECORD_LISTS[recListKind], xs = spec.items().filter((x) => isDay(x.date || "") && x.date > todayKey).sort((a, b) => a.date.localeCompare(b.date));
+    box.hidden = !xs.length;
+    if (!xs.length) { box.replaceChildren(); return; }
+    const byDay = groupBy(xs, (x) => x.date);
+    setChildren(box, el("p", { class: "sum-since" }, `きょうより先の日付の記録が ${fmtN(xs.length)} 件あります。`,
+      el("button", { type: "button", class: "link-btn", "aria-expanded": String(rec10AheadOpen), onclick: () => { rec10AheadOpen = !rec10AheadOpen; rec10Ahead(); } }, rec10AheadOpen ? "しまう" : "見る")),
+      rec10AheadOpen ? el("ul", { class: "list card rec-list" }, [...byDay].flatMap(([d, ys]) => [...(spec.oneLine ? [] : [el("li", { class: "dayhead" }, el("span", {}, fmtDayLong(d)))]), ...spec.rows(ys, fmtMDW(d))])) : null);
+  }
+
+  // ⑧ 日記を全文で: in 記録's search, each 日記 found whole in place of round where the words are (this device's choice)
+  var REC10_FULL = LS_PREFIX + "recJnWhole";
+  function rec10JnFullOn() { if (!rec10Ready) return false; try { return localStorage.getItem(REC10_FULL) === "1"; } catch { return false; } }
+  $("rec10JnFull").addEventListener("click", () => { try { if (rec10JnFullOn()) localStorage.removeItem(REC10_FULL); else localStorage.setItem(REC10_FULL, "1"); } catch {} renderRecFound(); });
+  function rec10FoundAfter(byKind) {
+    if (!rec10Ready) return;
+    $("rec10JnFull").hidden = !byKind.journal?.length;
+    $("rec10JnFull").setAttribute("aria-pressed", String(rec10JnFullOn()));
+  }
+
+  // ⑨ a computer's keys: / to the search of the page shown (記録's, a kind's list's, 最近削除した項目's), and Esc in one
+  // emptying it (then letting it go); not while typing elsewhere nor with a sheet or a dialog open
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "/" || ev.defaultPrevented || ev.altKey || ev.ctrlKey || ev.metaKey || ev.isComposing) return;
+    if (sheetEl.open || document.querySelector("dialog[open]") || ev.target.closest?.("input, textarea, select, [contenteditable]")) return;
+    const f = tab === "tsumi" ? $("recAll") : tab === "reclist" && !$("recSearchBox").hidden ? $("recSearch") : tab === "trash" && !$("rec2TrashBox").hidden ? $("rec2TrashFind") : null;
+    if (!f || f.offsetParent === null) return;
+    ev.preventDefault();
+    f.focus(); f.select();
+  });
+  for (const id of ["recAll", "recSearch", "rec2TrashFind"]) $(id).addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape" || ev.isComposing) return;
+    ev.preventDefault(); ev.stopPropagation();
+    if (ev.target.value) { ev.target.value = ""; ev.target.dispatchEvent(new Event("input", { bubbles: true })); } else ev.target.blur();
+  });
+
+  // ⑩ 最近見た日: the days whose page was opened lately (this device's), the latest first (five, all ten at a press), each
+  // with its 日記's first words or how much there was; pressed, that day whole
+  var REC10_SEEN = LS_PREFIX + "recSeen", rec10SeenAll = false;
+  function rec10Seen() { try { const v = JSON.parse(localStorage.getItem(REC10_SEEN) || "[]"); return Array.isArray(v) ? v.filter((d) => isDay(d || "") && d <= todayKey) : []; } catch { return []; } }
+  function rec10See(d) { try { localStorage.setItem(REC10_SEEN, JSON.stringify([d, ...rec10Seen().filter((x) => x !== d)].slice(0, 10))); } catch {} }
+  function rec10SeenCard() {
+    if (!rec10Ready) return null;
+    const days = rec10Seen();
+    if (!days.length) return null;
+    return el("div", { class: "card sum-card wide rec-extra", "data-card": "seen", style: "--sum-c: var(--accent)" },
+      el("h3", { class: "sum-head" }, icon("calendar", 18), el("span", {}, "最近見た日")),
+      el("ul", { class: "rec-rows" }, (rec10SeenAll ? days : days.slice(0, 5)).map((d) => {
+        const s = recDaySummary(d);
+        return el("li", {}, el("button", { type: "button", class: "rec-row-btn", "aria-label": `${fmtDayLong(d)}の記録を見る`, onclick: () => openRecDay(d, "records") },
+          el("span", { class: "rec-row-main" }, el("small", {}, dayLabel(d)), el("span", {}, s ? s.text : "この日の記録はありません")), icon("next", 16)));
+      })),
+      days.length > 5 ? el("button", { type: "button", class: "link-btn more", "aria-expanded": String(rec10SeenAll), onclick: () => { rec10SeenAll = !rec10SeenAll; renderSummary(); } }, rec10SeenAll ? "しまう" : `すべて（${days.length}）`) : null);
+  }
+
+  // a kind's list, drawn: ② the times of day, ⑤ 日記's letters, ⑦ those dated after today, ① by name (in place of the
+  // days; not while picking)
+  function rec10AfterList(found) {
+    if (!rec10Ready) return;
+    const kind = recListKind;
+    rec10HourTools();
+    rec10Ahead();
+    if (kind === "journal") for (const b of $("recList").querySelectorAll("[data-edit]")) {
+      const li = b.closest("li"), j = journal.get(b.dataset.edit);
+      if (li && j && !li.querySelector(".rec10-len")) li.append(el("span", { class: "rec-num rec10-len" }, `${fmtN(rec10Len(j.text))} 字`));
+    }
+    if (rec3Sel) rec10Names = false;
+    $("rec10NamesBtn").hidden = !REC10_NAME[kind] || !!rec3Sel;
+    $("rec10NamesBtn").setAttribute("aria-pressed", String(rec10Names));
+    $("rec10NamesBtn").textContent = rec10Names ? "日ごとに見る" : "名前ごとに見る";
+    if (rec10Names && REC10_NAME[kind]) rec10NamesView(found || []);
+    rec10PickSay();
+  }
+  // a day's page, drawn: ③ its totals' places, ⑤ its 日記's letters, ⑩ seen
+  function rec10DayExtras(d) {
+    if (!rec10Ready) return;
+    rec10Rank(d);
+    const jh = $("recDayBody").querySelector('ul[data-kind="journal"]')?.previousElementSibling, j = journal.get(d);
+    if (jh && j?.text && !jh.querySelector(".rec-total")) jh.append(el("span", { class: "rec-total" }, `${fmtN(rec10Len(j.text))} 字`));
+    rec10See(d);
+  }
+
+  rec10Ready = true;
 
   // ---------- 目標 ①〜⑩ (the user's calls, 2026-11-10): joined to the records (①), the pace against its 期限 (②), the
   // steps taken (③), ふりかえり (④), 見直しのお知らせ (⑤), a copy (⑥), a cell's memo (⑦), a photo (⑧), goals and cells

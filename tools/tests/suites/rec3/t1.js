@@ -75,7 +75,7 @@ const DATA = {
   await p.click("#rec3PickBtn"); await wait(p);
   ok(await p.isVisible("#rec3Bar") && (await txt(p, "#rec3BarSay")) === "削除する記録を押して選びます" && await p.isDisabled("#rec3Del"), "① picking: the bar");
   await p.click('#recList [data-edit="m4"]'); await p.click('#recList [data-edit="m5"]'); await wait(p);
-  ok((await txt(p, "#rec3BarSay")) === "2 件を選んでいます" && (await p.locator("#recList li.rec3-on").count()) === 2 && !(await p.evaluate(() => document.getElementById("daySheet").open)), "① two picked (not opened)");
+  ok((await txt(p, "#rec3BarSay")).startsWith("2 件を選んでいます") && (await p.locator("#recList li.rec3-on").count()) === 2 && !(await p.evaluate(() => document.getElementById("daySheet").open)), "① two picked (not opened)");
   await p.click("#rec3Del"); await wait(p, 200);
   ok((await txt(p, "#rec3Del")) === "もう一度押すと、2 件を削除します" && (await ls(p, "meals")).length === 8, "① one press: asks again, nothing deleted");
   await p.click("#rec3Del"); await wait(p, 600);
