@@ -32,7 +32,7 @@ const pick = async (p, n) => { await p.click(`.wx-days li:nth-child(${n}) button
   ok(p.calls.some((u) => u.includes("hourly=") && u.includes("cape,visibility,wind_gusts_10m")), "④⑤⑥ the forecast asks for CAPE, visibility and gusts", p.calls[0]);
 
   // ① the week as words, ⑦ the month's coldest and warmest coming
-  ok((await txt(p, "#wx6Story")) === flat("きょうとあしたは晴れ、11/18（水）はくもり、11/19（木）と11/20（金）は雨、11/21（土）と11/22（日）は晴れの予報です。11/19（木）は気温がぐっと下がり、最高 9°（前の日より −5°）。11/21（土）は気温がぐっと上がり、最高 18°（前の日より +8°）。11/19（木）の朝は、この1か月でいちばんの冷えこみになりそう（最低 -1°）。11/21（土）は、この1か月でいちばんあたたかくなりそう（最高 18°）。"),
+  ok((await txt(p, "#wx6Story")).startsWith(flat("きょうとあしたは晴れ、11/18（水）はくもり、11/19（木）と11/20（金）は雨、11/21（土）と11/22（日）は晴れの予報です。11/19（木）は気温がぐっと下がり、最高 9°（前の日より −5°）。11/21（土）は気温がぐっと上がり、最高 18°（前の日より +8°）。11/19（木）の朝は、この1か月でいちばんの冷えこみになりそう（最低 -1°）。11/21（土）は、この1か月でいちばんあたたかくなりそう（最高 18°）。")), // (その10 ⑨ and later add their own after)
     "①⑦ the week's story", await txt(p, "#wx6Story"));
   // ② what to wear by the time of day (today: 昼 and 夜, the morning gone by)
   ok((await txt(p, "#wx6Times li")) === "昼12〜15時体感17°薄手の上着｜夜18〜21時体感9°コート", "② 昼 and 夜", await txt(p, "#wx6Times li"));

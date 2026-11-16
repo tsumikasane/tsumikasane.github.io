@@ -37,7 +37,7 @@ async function open(b, when, more = {}, o = {}) {
   await W(p, "redraw"); await p.waitForTimeout(300);
   ok(!!(await p.$("#wx7Diff")), "⑦ kept as the page is drawn again");
   // ① the chips
-  const chips = await p.$$eval("#wx7Jump button", (l) => l.map((x) => x.textContent));
+  const chips = await p.$$eval('#wx7Jump button:not([data-key="simple"])', (l) => l.map((x) => x.textContent)); // (その10 ① puts かんたん表示 first)
   ok(chips[0] === "1時間ごと" && chips.includes("1週間") && chips.includes("雨の日の予定") && chips.includes("この場所の1年") && chips.at(-1) === "お知らせ・場所", "① the sections' chips", chips);
   await p.click('#wx7Jump [data-key="week"]'); await p.waitForTimeout(900);
   const y = await p.evaluate(() => { const h = document.getElementById("wx7-week").getBoundingClientRect().top, s = document.getElementById("daySheet").getBoundingClientRect().top; return h - s; });
