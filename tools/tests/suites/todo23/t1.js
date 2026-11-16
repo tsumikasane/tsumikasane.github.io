@@ -45,7 +45,7 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   ok((await moreItems(p)).includes("行に出すものを選ぶ"), "① in その他");
   ok(await p.locator('#todoList [data-check="c"]').locator("xpath=ancestor::li[1]").locator(".td-mins").isVisible(), "① かかる時間 on a row at first");
   await menu(p, "行に出すものを選ぶ");
-  ok((await sheetTitle(p)) === "行に出すもの" && (await p.locator(".td23-rows input").count()) === 17, "① a switch each", await p.locator(".td23-rows input").count());
+  ok((await sheetTitle(p)) === "行に出すもの" && (await p.locator(".td23-rows input").count()) >= 17, "① a switch each (later parts add theirs)", await p.locator(".td23-rows input").count());
   await p.locator("#td23Row-mins").uncheck(); await p.waitForTimeout(200);
   await closeSheet(p);
   ok(await p.locator('#todoList [data-check="c"]').locator("xpath=ancestor::li[1]").locator(".td-mins").isHidden(), "① off: not on the rows");
