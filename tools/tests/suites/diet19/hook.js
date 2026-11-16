@@ -1,0 +1,2 @@
+// insert before:   // ---------- boot ----------
+  window.__dt19 = { backs: () => dt19Backs(), back: () => dt19Back(), nights: () => dt19Nights(), walks: () => { const r = dt19Walks(); return r && { n: r.n, now: r.now, was: r.was, z: r.z, fast: r.fast, last: r.last.date, lastKmh: r.lastKmh }; }, night: () => dt19Night(), story: () => dt19Story(), setup: () => dt19Setup().map(([w, ok]) => [w, ok]), find: (q) => dt19Find(q), pinned: () => dt19Pinned() };
