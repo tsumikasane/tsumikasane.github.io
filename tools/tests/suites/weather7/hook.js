@@ -6,3 +6,4 @@
   window.__wx11 = { alarms: (n) => wxAlarms(n) };
   window.__wx12 = { alarms: (n) => wxAlarms(n) };
   window.__wx13 = { alarms: (n) => wxAlarms(n) };
+  window.__wx14 = { alarms: (n) => wxAlarms(n) };
