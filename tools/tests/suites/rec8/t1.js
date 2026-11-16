@@ -112,7 +112,7 @@ const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwA
 
   // ⑧ ⑤ ④ today's page
   await p.locator("#recList .rec-day-open").first().click(); await wait(p, 900);
-  ok((await txt(p, "#recDayBody .rec8-firsts")) === "この日はじめて 筋トレ（運動）・ベンチプレス（運動）・食費（家計簿）" && await p.evaluate(() => { const f = document.querySelector("#recDayBody .rec8-firsts"); return f === f.parentElement.firstElementChild || !!f.previousElementSibling?.classList.contains("rec4-photos"); }), "⑧ この日はじめて, at the top (under the day's photos)", await txt(p, "#recDayBody .rec8-firsts"));
+  ok((await txt(p, "#recDayBody .rec8-firsts")) === "この日はじめて 筋トレ（運動）・ベンチプレス（運動）・食費（家計簿）" && await p.evaluate(() => { const f = document.querySelector("#recDayBody .rec8-firsts"); let x = f.previousElementSibling; while (x && (x.classList.contains("rec4-photos") || x.classList.contains("rec9-media"))) x = x.previousElementSibling; return !x; }), "⑧ この日はじめて, at the top (under the day's photos)", await txt(p, "#recDayBody .rec8-firsts"));
   ok(JSON.stringify(await rows(p, "#recDayBody .rec8-day-trash li")) === JSON.stringify(["夕食 消したごはん 食事・きのう削除・あと 29 日 戻す"]) && await p.evaluate(() => document.querySelector("#recDayBody .rec8-day-trash").nextElementSibling?.textContent === "この日に書く"), "⑤ the day's records deleted, before この日に書く", await rows(p, "#recDayBody .rec8-day-trash li"));
   await p.locator("#recDayBody .rec8-day-trash li button", { hasText: "戻す" }).click(); await wait(p, 600);
   ok((await rows(p, '#recDayBody ul[data-kind="meal"] li')).some((r) => r.includes("消したごはん")) && (await p.locator("#recDayBody .rec8-day-trash").count()) === 0 && (await toast(p)).includes("食事を戻しました"), "⑤ 戻す: back on its day", await toast(p));
