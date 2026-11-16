@@ -139,15 +139,15 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
 
   // ---- ⑨ 週のふりかえり
   await menu(p, "週のふりかえり");
-  ok((await sheetTitle(p)) === "週のふりかえり" && (await p.evaluate(() => document.querySelectorAll(".td14-rev > li").length)) === 6, "⑨ its six steps");
+  ok((await sheetTitle(p)) === "週のふりかえり" && (await p.evaluate(() => document.querySelectorAll(".td14-rev > li").length)) === 7, "⑨ its six steps (and その25 ⑧ 来週やるを選ぶ)");
   ok((await txt(p, "#tdPanelBody")).includes("11/8（日）〜11/14（土）の1週間"), "⑨ this week", await txt(p, "#tdPanelBody"));
   await p.locator(".td14-rev > li", { hasText: "手つかず" }).locator(".td14-rev-go").click(); await p.waitForTimeout(800);
   ok((await sheetTitle(p)) !== "週のふりかえり" && (await p.evaluate(() => document.getElementById("sheet")?.open ?? document.querySelector("dialog[open]") !== null)), "⑨ 開く: that one", await sheetTitle(p));
   await closeSheet(p);
   await menu(p, "週のふりかえり");
-  ok((await p.locator(".td14-rev > li", { hasText: "手つかず" }).getAttribute("class")) === "did" && (await txt(p, "#tdPanelBody")).includes("（1/6）"), "⑨ ticked");
+  ok((await p.locator(".td14-rev > li", { hasText: "手つかず" }).getAttribute("class")) === "did" && (await txt(p, "#tdPanelBody")).includes("（1/7）"), "⑨ ticked");
   await p.locator(".td14-rev > li", { hasText: "今週終えた" }).locator(".td14-rev-check").click(); await p.waitForTimeout(300);
-  ok((await txt(p, "#tdPanelBody")).includes("（2/6）"), "⑨ ticked by hand");
+  ok((await txt(p, "#tdPanelBody")).includes("（2/7）"), "⑨ ticked by hand");
   await closeSheet(p);
   // its お知らせ, from 編集
   await p.click("#todoSettings"); await p.waitForTimeout(800);

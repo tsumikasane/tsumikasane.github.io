@@ -4144,6 +4144,40 @@ ul.td10-reps > li .body, ul.td10-bells > li { min-width: 0; }
 .td11-switches input.switch::before { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #ffffff; box-shadow: 0 3px 8px rgba(0, 0, 0, .15), 0 1px 1px rgba(0, 0, 0, .16); transition: transform .2s; }
 .td11-switches input.switch:checked { background: var(--accent-fill); }
 .td11-switches input.switch:checked::before { transform: translateX(20px); }
+/* ToDo その25 ①〜⑩ (2026-11-16): ② the times asked; ③ そのつど on a row, the day picked; ④ a voice memo played, 声で残す;
+   ⑤ 休憩のあいだに; ⑥ ＋5分; ⑦ the steps' time; ⑧ 来週 on a row; ⑨ 終わりの目安 */
+.td25-times { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 6px; }
+.chip-btn.td25-est { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.td-x.td25-next { color: var(--c-todo); font-weight: 700; }
+.td-x.td25-again .icon { width: 13px; height: 13px; vertical-align: -1px; }
+.td25-again-day { margin: 0 0 4px; }
+.td25-again-day input { flex: 1 1 0; min-width: 0; }
+.td25-again-day .btn { flex: none; white-space: nowrap; }
+.td7-file-list li.td25-voice-li { align-items: center; }
+.td25-voice { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 4px 10px; border-radius: 10px; background: var(--fill); }
+.td25-voice audio { flex: 1 1 180px; min-width: 0; height: 36px; }
+.td25-voice-at { font-size: var(--t-sub); color: var(--muted); font-variant-numeric: tabular-nums; }
+.td25-voices { display: grid; gap: 6px; }
+.td25-voices .td25-voice { background: none; padding: 0; }
+.link-btn.td25-rec { justify-self: start; min-height: 44px; }
+.link-btn.td25-rec.on { color: var(--warn); font-weight: 600; font-variant-numeric: tabular-nums; }
+.card.td25-rest { display: grid; gap: 6px; }
+.td25-rest-head { margin: 0; font-size: var(--t-foot); font-weight: 600; color: var(--muted); }
+.td25-rest-tip { margin: 0; font-size: var(--t-title3); font-weight: 700; }
+.td25-rest-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.td25-rest-focus { margin-top: 12px; text-align: center; justify-items: center; }
+.td25-rest-focus .td25-rest-acts { justify-content: center; }
+.rest-btn.td25-more { padding: 0 10px; }
+.rest-btn.td25-more[hidden] { display: none; }
+.td25-steps-note { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; margin: 4px 0 0; }
+.td25-steps-note[hidden] { display: none; }
+.td25-steps-use { min-height: 32px; }
+.group-foot.td25-steps-left-line { margin: -4px 0 6px; }
+.td25-fin { display: flex; gap: 8px; align-items: baseline; justify-content: center; margin: 4px 0 8px; font-size: var(--t-sub); color: var(--fg); overflow-wrap: anywhere; }
+.td25-fin-k { flex: none; color: var(--muted); font-size: var(--t-foot); }
+/* (その14 ⑦ サブタスクに期限を割り振る: a row of its own. Put in the form's first column, it made the names' column as wide
+   as itself and the fields beside them a few letters wide, in a ToDo's sheet with a 期限 and two steps to do) */
+.td14-spread { grid-column: 1 / -1; }
 /* ToDo その24 ①〜⑩ (2026-11-16): ① the note; ② a step's ▶ and いま; ④ ★; ⑤ the emoji and its picker; ⑥ the chains; ⑦
    the idle ones; ⑧⑨ the cards; ⑩ the times */
 .td-note.td24-mins-note { color: var(--accent); }
@@ -13431,6 +13465,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       item("できることの一覧", () => openTdPanel("guide9", false)), // (その9 ③)
       td10MoreItems(item), // (その10 ④ 繰り返しのToDo, ⑤ これから届くお知らせ)
       todoEleven ? td11MoreItems(item) : null, // (その11 ⑨ さっきの操作)
+      todoTwentyFive ? td25MoreItems(item) : null, // (その25 ⑧ 来週やる)
       todoTwentyFour ? td24MoreItems(item) : null, // (その24 ⑥ つながりで見る, ⑦ 使っていないリスト・ラベル)
       todoTwentyThree ? td23MoreItems(item) : null, // (その23 ① 行に出すもの, ⑤ 期間で見る, ⑦ 画像で送る, ③ 見出しの順番)
       todoTwentyTwo ? td22MoreItems(item) : null, // (その22 ④ くらべて並べる, ⑦ 寄るところを地図で)
@@ -13822,6 +13857,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       todoTwentyTwo ? td22HoldItems(t, item) : null, // (その22 ⑤ 買い物リストに入れる)
       todoTwentyThree ? td23HoldItems(t, item) : null, // (その23 ③ 見出し)
       todoTwentyFour ? td24HoldItems(t, item) : null, // (その24 ② サブタスクで集中, ④ やりたい度, ⑤ 絵文字)
+      todoTwentyFive ? td25HoldItems(t, item) : null, // (その25 ③ 終えたら次を決める)
       t.done ? null : item("このあとにやるToDoを追加", (byKey) => tdAddAfter(t, byKey)), // (その3 ⑦)
       t.done ? null : item("やめる（削除しないで残す）", () => tdCancel(t)), // (その3 ⑤)
       item("複製", (byKey) => { recReturnId = t.id; fillTodoCopy(t); openNewTodo(byKey, "rec"); }),
@@ -25726,7 +25762,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月16日 16:12"; // 26f3a305 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月16日 16:16"; // c3a7ab7c (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -27085,13 +27121,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         try { localStorage.setItem(FOCUS_KEY, JSON.stringify(nv)); } catch {}
         if (nv.end > Date.now()) { // (その22 ② 経過メモを書く with it, ③ the day's goal met said in it)
           if (!away) { beep(); navigator.vibrate?.([200, 100, 200]); }
-          flash((r22?.long ? `${r22.n}回目の集中、おつかれさまでした。${rest}分、長めに休憩しましょう` : `${v.len}分の集中、おつかれさまでした。${rest}分休憩しましょう`) + (todoTwentyFour ? td24StepSay(v) : "") + (todoTwentyThree ? td23AwaySay(v) : "") + (todoTwentyTwo ? td22GoalSay() : ""), ...((todoTwentyFour && td24StepAct(id, v.step)) || (todoTwentyTwo ? td22LogAct(id) : []))); // (その23 ⑩ 離れた回数, その24 ② サブタスクを完了)
+          flash((r22?.long ? `${r22.n}回目の集中、おつかれさまでした。${rest}分、長めに休憩しましょう` : `${v.len}分の集中、おつかれさまでした。${rest}分休憩しましょう`) + (todoTwentyFour ? td24StepSay(v) : "") + (todoTwentyThree ? td23AwaySay(v) : "") + (todoTwentyTwo ? td22GoalSay() : ""), ...((todoTwentyFour && td24StepAct(id, v.step)) || (todoTwentyFive && !id && !cell && td25PickAct(v)) || (todoTwentyTwo ? td22LogAct(id) : []))); // (その23 ⑩ 離れた回数, その24 ② サブタスクを完了, その25 ⑩ ToDoにつける)
         }
         else flash(`集中タイマーが終わっていました（${v.len}分を記録）`, () => focusStart(id, cell), 10000, "もう1回");
         v = nv;
       } else {
         try { localStorage.removeItem(FOCUS_KEY); } catch {}
-        if (!away) { beep(); navigator.vibrate?.([200, 100, 200]); flash("休憩おわり。次の集中をはじめましょう", () => focusStart(id, cell), 10000, "もう1回"); }
+        if (!away && todoTwentyFive && td25AutoGo(v, id, cell)) { beep(); navigator.vibrate?.([200, 100, 200]); } // (その25 ① 自動で続ける)
+        else if (!away) { beep(); navigator.vibrate?.([200, 100, 200]); flash("休憩おわり。次の集中をはじめましょう", () => focusStart(id, cell), 10000, "もう1回"); }
         v = null;
       }
       pushSoon();
@@ -57281,6 +57318,530 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   td24InitForms();
   td24InitSettings();
   todoTwentyFour = true;
+
+  // ---------- ToDo その25 ①〜⑩ (the user's calls, 2026-11-16): the next 集中 begun by itself after 休憩 (①), how long one
+  // took asked as it is done (②), the next one's day asked as one is done (③), a voice memo (④), what to do in 休憩 (⑤), 5 minutes more
+  // of 集中 (⑥), how long the steps take (⑦), 来週やる (⑧), what done looks like (⑨), and a set with no ToDo put on one
+  // afterwards (⑩). Function declarations and var, as the page may draw before this runs ----------
+  var todoTwentyFive = false;
+  // kept with the account (td25): ① 自動で続ける, ② かかった時間を聞く
+  function td25Set() { const v = settings.get("td25") || {}; return { auto: !!v.auto, ask: !!v.ask }; }
+  function td25Put(patch) { act(() => settings.set("td25", { ...td25Set(), ...patch, updatedAt: Date.now() })); }
+
+  // ① 自動で続ける (編集's 集中タイマー; off at first): 休憩 over while the app is in sight, the next 集中 begins by itself
+  // on the same ToDo (止める at once in its message); not after a long 休憩 (その22 ①), nor once that ToDo is done
+  function td25AutoGo(v, id, cell) {
+    if (!td25Set().auto || v.long || document.visibilityState !== "visible") return false;
+    const t = id && todos.get(id);
+    if (id && (!t || t.done)) return false;
+    setTimeout(() => { // (after focusTick's own loop is through)
+      if (focusNow()) return;
+      focusStart(id, cell);
+      const w = focusNow();
+      flash(`休憩おわり。次の集中を自動で始めました（${w ? w.len : focusSet().work}分）`, () => { if (focusNow()?.kind === "work") { focusPut(null); flash("集中タイマーを止めました"); } }, 10000, "止める");
+    }, 0);
+    return true;
+  }
+
+  // ② かかった時間を聞く (編集's 終えたとき; off at first): a ToDo done with no minutes focused on it, a card over the list
+  // asks how long it took (見積もりどおり when it has かかる時間); picked, those minutes go on it as その14's やった時間を足す
+  // does (見積もりのくせ, 時間の使いかた)
+  const TD25_TIMES = [10, 15, 30, 45, 60, 90, 120, 180];
+  var td25TimeFor = null;
+  const td25AskBase = td9AskAfter;
+  td9AskAfter = function (id) {
+    td25AskBase(id);
+    if (todoTwentyFive && td25Set().ask) { td25TimeFor = id; draw(td25TimeCard); }
+    if (todoTwentyFive && td25Again(todos.get(id))) { td25AgainFor = id; draw(td25AgainCard); } // (③)
+  };
+  function td25TimeCard() {
+    const box = $("td25TimeCard"), t = td25TimeFor && todos.get(td25TimeFor);
+    if (!box) return;
+    if (!todoTwentyFive || !t || !t.done || t.cancelled || num(t.focus) >= 1) { td25TimeFor = null; box.hidden = true; box.replaceChildren(); delete box.dataset.for; return; }
+    if (box.dataset.for === t.id && !box.hidden) return;
+    const est = num(t.mins) > 0 ? Math.round(num(t.mins)) : 0;
+    setChildren(box, el("p", { class: "td9-ask-q" }, `「${clip(td14Name(t), 24)}」は、どれくらいかかりましたか？`),
+      el("div", { class: "td25-times", role: "group", "aria-label": "かかった時間" },
+        est ? el("button", { type: "button", class: "chip-btn td25-est", onclick: () => td25TimeGo(t.id, est) }, keepUnits(`見積もりどおり（${durText(est)}）`)) : null,
+        TD25_TIMES.map((m) => el("button", { type: "button", class: "chip-btn", onclick: () => td25TimeGo(t.id, m) }, keepUnits(durText(m))))),
+      el("button", { type: "button", class: "link-btn", onclick: () => { td25TimeFor = null; td25TimeCard(); } }, "残さない"));
+    box.dataset.for = t.id;
+    box.hidden = false;
+  }
+  function td25TimeGo(id, m) { const x = todos.get(id); td25TimeFor = null; td25TimeCard(); if (x) td14AddTime(x, m); }
+
+  // ③ 終えたら次を決める (a row's menu; not a repeat's): done, a card over the list asks when the next one is (1週間後〜3か月後,
+  // a day picked, or 次はなし), and that one is added as もう一度やる (その14 ⑩) does, asked again in its turn: a repeat of
+  // its own pace. そのつど on its row
+  const TD25_AGAIN = [["1週間後", (d) => addDays(d, 7)], ["2週間後", (d) => addDays(d, 14)], ["1か月後", (d) => addMonthsDay(d, 1)], ["2か月後", (d) => addMonthsDay(d, 2)], ["3か月後", (d) => addMonthsDay(d, 3)]];
+  var td25AgainFor = null;
+  const td25Again = (t) => !!t && t.askNext === true && !t.repeat;
+  function td25SetAgain(t, on) {
+    const x = todos.get(t.id);
+    if (!x || x.done) return;
+    act(() => todos.update(x.id, { askNext: on || undefined }));
+    flash(on ? `「${clip(oneLine(x.text), 24)}」を終えたら、次の期限を聞きます` : `「${clip(oneLine(x.text), 24)}」の次を聞くのをやめました`, () => act(() => todos.update(x.id, { askNext: on ? undefined : true })));
+  }
+  function td25AgainCard() {
+    const box = $("td25AgainCard"), t = td25AgainFor && todos.get(td25AgainFor);
+    if (!box) return;
+    if (!todoTwentyFive || !t || !t.done || t.cancelled || !td25Again(t)) { td25AgainFor = null; box.hidden = true; box.replaceChildren(); delete box.dataset.for; return; }
+    if (box.dataset.for === t.id && !box.hidden) return;
+    const base = doneDay(t) || todayKey, day = el("input", { type: "date", id: "td25AgainDay", min: addDays(todayKey, 1), "aria-label": "次の期限の日" });
+    setChildren(box, el("p", { class: "td9-ask-q" }, `「${clip(td14Name(t), 24)}」の次は、いつにしますか？`),
+      el("div", { class: "td25-times", role: "group", "aria-label": "次の期限" }, TD25_AGAIN.map(([w, f]) => el("button", { type: "button", class: "chip-btn", onclick: () => td25AgainGo(t.id, f(base)) }, w))),
+      el("div", { class: "td9-ask-row td25-again-day" }, day, el("button", { type: "button", class: "btn sm", onclick: () => { if (isDay(day.value)) td25AgainGo(t.id, day.value); else day.focus(); } }, "この日にする")),
+      el("button", { type: "button", class: "link-btn", onclick: () => { td25AgainFor = null; td25AgainCard(); } }, "次はなし"));
+    box.dataset.for = t.id;
+    box.hidden = false;
+  }
+  function td25AgainGo(id, due) {
+    const x = todos.get(id);
+    td25AgainFor = null; td25AgainCard();
+    if (!x || !isDay(due || "")) return;
+    const l = todoListOf(x);
+    let nid = null;
+    act(async () => {
+      nid = await todos.add({ ...td14Copy(x), ...tdCarry(x), due, ...(l && !l.archived ? { listId: l.id } : {}), askNext: true, createdAt: Date.now() });
+      if (tab === "todo") setTimeout(() => spotTodos([nid]), 60);
+    });
+    flash(`「${clip(td14Name(x), 24)}」の次を ${relLabel(due) || fmtDay(due)}に入れました`, () => { if (nid) act(() => takeBack(todos, [nid])); });
+  }
+
+  // ④ 声のメモ (a ToDo's sheet, by its files): up to 3 minutes each, kept as one of its files (その7 ⑩: on this device only,
+  // going on with a repeat's next turn), played there and in 1件に集中する画面; 🎙 on its row
+  const TD25_VSEC = 180, td25VUrls = new Map();
+  var td25Rec = null;
+  const td25CanRec = () => !!(window.MediaRecorder && navigator.mediaDevices?.getUserMedia && window.indexedDB);
+  const td25Voices = (id) => (todoSeven ? td7FilesOf(id).filter((f) => f && f.voice) : []);
+  const td25Sec = (s) => `${Math.floor(s / 60)}:${pad(s % 60)}`;
+  const td25Hm = (at) => { const d = new Date(num(at)); return `${fmtMD(ymd(d))} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  function td25VUrl(f) { if (!td25VUrls.has(f.id)) td25VUrls.set(f.id, URL.createObjectURL(f.blob)); return td25VUrls.get(f.id); }
+  function td25Player(f) { return el("div", { class: "td25-voice" }, el("span", { class: "td25-voice-at" }, `🎙 ${td25Hm(f.createdAt)}・${td25Sec(Math.round(num(f.dur)))}`), el("audio", { controls: true, preload: "none", src: td25VUrl(f), "aria-label": `${td25Hm(f.createdAt)}の声のメモ` })); }
+  function td25RecSync() {
+    const r = td25Rec;
+    for (const b of document.querySelectorAll(".td25-rec")) {
+      const on = !!r && r.todoId === b.dataset.for;
+      b.setAttribute("aria-pressed", String(on)); b.classList.toggle("on", on);
+      b.textContent = on ? `■ 止める（${td25Sec(Math.min(TD25_VSEC, Math.floor((performance.now() - r.t0) / 1000)))}）` : "🎙 声で残す";
+    }
+  }
+  function td25RecStop() { const r = td25Rec; if (r && r.mr.state !== "inactive") r.mr.stop(); }
+  async function td25RecStart(todoId) {
+    if (td25Rec) { td25RecStop(); return; }
+    await td7LoadFiles();
+    if (td7FilesOf(todoId).length >= TD7_FILE_N) { flash(`1件のToDoに付けられるのは ${TD7_FILE_N} 個までです`); return; }
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch { flash("マイクを使えませんでした。端末の設定で、マイクを許可してください"); return; }
+    let mr;
+    try { mr = new MediaRecorder(stream); } catch { stream.getTracks().forEach((x) => x.stop()); flash("この端末では録音できません"); return; }
+    const chunks = [], t0 = performance.now();
+    td25Rec = { mr, todoId, t0, tick: setInterval(td25RecSync, 500), cap: setTimeout(td25RecStop, TD25_VSEC * 1000) };
+    mr.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
+    mr.onstop = async () => {
+      const r = td25Rec;
+      stream.getTracks().forEach((x) => x.stop());
+      if (r) { clearInterval(r.tick); clearTimeout(r.cap); }
+      td25Rec = null; td25RecSync();
+      const type = mr.mimeType || chunks[0]?.type || "audio/webm", blob = new Blob(chunks, { type });
+      if (!blob.size) { flash("録音できませんでした"); return; }
+      const now = Date.now(), d = new Date(now), ext = /mp4|aac|m4a/.test(type) ? "m4a" : /ogg/.test(type) ? "ogg" : "webm";
+      const f = { id: uid(), todoId, name: `声のメモ ${ymd(d)} ${pad(d.getHours())}${pad(d.getMinutes())}.${ext}`, type, size: blob.size, blob, createdAt: now, voice: true,
+        dur: Math.max(1, Math.min(TD25_VSEC, Math.round((performance.now() - t0) / 1000))) };
+      try {
+        await td7PutFiles([f]);
+        td25FilesRedraw(); renderTodos();
+        flash("声のメモを残しました", () => td7DropFile(f).then(() => { td25FilesRedraw(); renderTodos(); flash("元に戻しました"); }, () => {}));
+      } catch { flash("声のメモを保存できませんでした"); }
+    };
+    mr.start(1000);
+    td25RecSync();
+  }
+  function td25FilesRedraw() { $("reFiles")?.redraw?.(); if (sheetEl.open && tdPanel === "focus7") renderTd7Focus(); }
+  // the files of its sheet as they are drawn: a voice memo played there, and 声で残す by ファイルを付ける
+  function td25PaintFiles(box, todoId) {
+    if (!todoTwentyFive) return;
+    const fs = td7FilesOf(todoId);
+    box.querySelectorAll(".td7-file-list > li").forEach((li, i) => {
+      const f = fs[i];
+      if (!f?.voice || li.dataset.td25) return;
+      li.dataset.td25 = "1"; li.classList.add("td25-voice-li");
+      li.querySelector(".td7-file-open")?.replaceWith(td25Player(f));
+    });
+    if (td25CanRec() && !box.querySelector(".td25-rec")) box.querySelector(".td7-file-add")?.after(el("button", { type: "button", class: "link-btn td25-rec", "data-for": todoId, "aria-pressed": "false", onclick: () => td25RecStart(todoId) }, "🎙 声で残す"));
+    td25RecSync();
+  }
+  const td25FilesBase = td7FilesEditor;
+  td7FilesEditor = function (todoId) {
+    const box = td25FilesBase(todoId);
+    new MutationObserver(() => td25PaintFiles(box, todoId)).observe(box, { childList: true });
+    td25PaintFiles(box, todoId);
+    if (!box.redraw) box.redraw = () => {}; // (その7's own redraw, when it has one, is kept)
+    return box;
+  };
+  const td25FileRowBase = td7RowParts;
+  td7RowParts = function (t, x) {
+    const out = td25FileRowBase(t, x), v = todoTwentyFive && !t.done ? td25Voices(t.id).length : 0;
+    if (!v) return out;
+    const n = td7FilesOf(t.id).length - v;
+    return [...out.filter((e) => !e?.classList?.contains("td7-files")), n ? x("td7-files", icon("clip", 13), el("span", { class: "sr-only" }, "ファイル "), `${n}`) : null,
+      x("td25-voice-mark", el("span", { "aria-hidden": "true" }, "🎙"), el("span", { class: "sr-only" }, "声のメモ "), v > 1 ? `${v}` : "")];
+  };
+
+  // ⑤ 休憩のすごし方: in 休憩, a card over the list and in 1件に集中する画面 with something to do away from the screen (a
+  // different one each 休憩, ほかのを見る for the next), and きょう's 1分 深呼吸 (counted there)
+  const TD25_REST = ["水を1杯飲みましょう", "遠くを見て、目を休めましょう", "立ち上がって、伸びをしましょう", "肩をゆっくり回しましょう", "窓を開けて、空気を入れかえましょう", "目を閉じて、30秒じっとしてみましょう"];
+  var td25RestI = Math.floor(Math.random() * TD25_REST.length), td25RestAt = 0;
+  function td25RestTip(v) { if (v && num(v.at) !== td25RestAt) { if (td25RestAt) td25RestI = (td25RestI + 1) % TD25_REST.length; td25RestAt = num(v.at); } return TD25_REST[td25RestI]; }
+  function td25RestParts(v, again) {
+    return [el("p", { class: "td25-rest-head" }, "休憩のあいだに"), el("p", { class: "td25-rest-tip" }, td25RestTip(v)),
+      el("div", { class: "td25-rest-acts" }, typeof h4BreathOpen === "function" ? el("button", { type: "button", class: "chip-btn td25-breathe", onclick: () => h4BreathOpen() }, "1分 深呼吸") : null,
+        el("button", { type: "button", class: "link-btn", onclick: () => { td25RestI = (td25RestI + 1) % TD25_REST.length; again(); } }, "ほかのを見る"))];
+  }
+  function td25RestSync() {
+    const box = $("td25RestCard");
+    if (!box) return;
+    const v = focusNow(), on = todoTwentyFive && v?.kind === "rest" && !!v.end && !td4Looking() && !tdSel && !tdSort;
+    const k = on ? `${num(v.at)}|${td25RestAt === num(v.at) ? td25RestI : "-"}` : "";
+    if (box.dataset.k === k) return;
+    if (!on) { box.dataset.k = ""; box.hidden = true; box.replaceChildren(); return; }
+    setChildren(box, td25RestParts(v, () => td25RestSync()));
+    box.dataset.k = `${num(v.at)}|${td25RestI}`;
+    box.hidden = false;
+  }
+
+  // ⑥ 集中をあと5分: ＋5分 on the bar in a set's last 5 minutes (and in 1件に集中する画面 all through it), the set 5
+  // minutes longer; in the 休憩 after it, back to 集中 for 5 minutes (as the same set, for その22's long 休憩)
+  function td25MoreOk(v, all = false) { return !!v && !(todoEight && v.five) && (v.kind === "work" ? all || (!!v.end && focusLeftMs(v) <= 5 * 60e3) : !!v.worked && !!v.end); }
+  function td25More() {
+    const v = focusNow();
+    if (!td25MoreOk(v, true)) return;
+    if (v.kind === "work") {
+      focusPut(v.end ? { ...v, len: v.len + 5, end: v.end + 5 * 60e3 } : { ...v, len: v.len + 5, left: num(v.left) + 5 * 60e3 });
+      flash(`集中を5分のばしました（${v.len + 5}分）`);
+      return;
+    }
+    if (todoTwentyTwo) { const r = td22Run(); if (r) lsJsonPut(TD22_RUN_KEY, r.n > 1 ? { at: r.at, n: r.n - 1 } : null); } // (its number again as it ends)
+    const now = Date.now();
+    focusPut({ kind: "work", todoId: v.todoId || null, ...(v.cell ? { cell: v.cell } : {}), len: 5, end: now + 5 * 60e3, left: null, at: now, more: true });
+    flash("あと5分、集中します");
+  }
+  function td25BarSync() {
+    const b = $("td25More");
+    if (!b) return;
+    const on = todoTwentyFive && td25MoreOk(focusNow());
+    if (b.hidden === on) b.hidden = !on;
+  }
+
+  // ⑦ サブタスクのかかる時間: a step's name ending in 30分, 1時間半 or (20分): how long it takes. What is left of them on
+  // the row, in its sheet (with かかる時間 made their total) and in 1件に集中する画面; サブタスクで集中 for that long
+  const TD25_STEP_DUR = new RegExp(`(?:^|[^\\d時])[（(]?\\s*(?:${TD24_DUR})\\s*[)）]?\\s*$`);
+  function td25StepMins(text) {
+    const m = TD25_STEP_DUR.exec(String(text || "").normalize("NFKC"));
+    if (!m) return 0;
+    const mins = m[1] ? Number(m[1]) * 60 + (m[2] ? 30 : m[3] ? Number(m[3]) : 0) : Number(m[4]);
+    return mins >= 1 && mins <= 1440 ? mins : 0;
+  }
+  function td25StepTime(steps) {
+    let all = 0, left = 0, n = 0;
+    for (const s of Array.isArray(steps) ? steps : []) { const m = s && s.text ? td25StepMins(s.text) : 0; if (!m) continue; n++; all += m; if (!s.done) left += m; }
+    return { all, left, n };
+  }
+  const td25StepWords = (x) => keepUnits(`のこり ${x.left ? durText(x.left) : "0分"}（ぜんぶで ${durText(x.all)}）`);
+  function td25StepsNote() {
+    const box = $("reSteps"), note = $("td25StepsNote");
+    if (!box || !note) return;
+    const x = td25StepTime(box.read()), mins = $("reMins"), cur = mins ? tdMinsOf(mins) : undefined, sig = JSON.stringify([x, cur]);
+    if (note.dataset.sig === sig) return; // (drawn again only as it changes)
+    note.dataset.sig = sig;
+    note.hidden = !x.n;
+    if (!x.n) { note.replaceChildren(); return; }
+    setChildren(note, el("span", { class: "phrase" }, `サブタスクの時間：${td25StepWords(x)}`),
+      mins && cur !== x.all && x.all <= 1440 ? el("button", { type: "button", class: "link-btn td25-steps-use", onclick: () => { setChildren(mins, tdMinsOptions(x.all)); mins.value = String(x.all); mins.dispatchEvent(new Event("change", { bubbles: true })); td25StepsNote(); } }, keepUnits(`かかる時間を ${durText(x.all)}にする`)) : null);
+  }
+  const td25StepFocusBase = td24StepFocus;
+  td24StepFocus = function (id, sid) {
+    td25StepFocusBase(id, sid);
+    const t = todos.get(id), s = t && Array.isArray(t.steps) ? t.steps.find((x) => x && x.id === sid) : null, m = todoTwentyFive && s ? td25StepMins(s.text) : 0, v = focusNow();
+    if (m < 5 || m > 180 || v?.kind !== "work" || v.todoId !== id || v.step !== sid || !v.end) return;
+    focusPut({ ...v, len: m, end: num(v.at) + m * 60e3 });
+    flash(`「${clip(oneLine(s.text), 20)}」に集中します（${m}分）`);
+  };
+
+  // ⑧ 来週やる (a row's menu, その他, 週のふりかえり): ToDos picked for next week (week: its first day, as 今週やる's), with
+  // their time against next week's free time; once that week comes they are 今週やる. 来週 on their rows
+  const td25NextKey = () => td6WeekKey(addDays(todayKey, 7));
+  const td25InNext = (t) => !!t && !t.done && t.week === td25NextKey();
+  function td25SetNext(t, on) {
+    const x = todos.get(t.id);
+    if (!x || x.done) return;
+    const was = x.week;
+    act(() => todos.update(x.id, { week: on ? td25NextKey() : undefined }));
+    flash(on ? `「${clip(oneLine(x.text), 30)}」を来週やるに入れました` : `「${clip(oneLine(x.text), 30)}」を来週やるから外しました`, () => act(() => todos.update(x.id, { week: was })));
+  }
+  function td25NextMany(list) {
+    const xs = list.map((t) => todos.get(t.id)).filter((t) => t && !t.done && !td25InNext(t));
+    if (!xs.length) return;
+    const was = xs.map((t) => [t.id, { week: t.week }]), wk = td25NextKey();
+    act(() => todos.updateMany(xs.map((t) => [t.id, { week: wk }])));
+    flash(`${xs.length} 件を来週やるに入れました`, () => act(() => todos.updateMany(was)));
+  }
+  function td25NextFree() {
+    const wk = td25NextKey(), end = addDays(wk, 6);
+    let free = 0;
+    try {
+      const tb = turnsByDay(wk, end), sb = shiftsByDay(wk, end);
+      for (let d = wk; d <= end; d = addDays(d, 1)) free += sum(freeSlots(d, tb.get(d) || [], sb.get(d) || [], true), ([a, b]) => b - a);
+    } catch {}
+    return free;
+  }
+  const TD25_NEXT_SECS = ["来週が期限", "期限なし", "それより先", "今週まで"];
+  function renderTd25Next() {
+    const body = $("tdPanelBody"), was = document.activeElement?.closest?.("#tdPanelBody [data-nx]")?.dataset.nx, wk = td25NextKey(), end = addDays(wk, 6);
+    const sec = (t) => (!isDay(t.due || "") ? "期限なし" : t.due < wk ? "今週まで" : t.due <= end ? "来週が期限" : "それより先");
+    const list = todos.items.filter((t) => !t.done && typeof t.text === "string" && (td6Open(t) || td25InNext(t))).sort((a, b) => todoOrder({ ...a, today: undefined }, { ...b, today: undefined }));
+    const picked = list.filter(td25InNext), left = list.filter((t) => td6InWeek(t)), mins = sum(picked, td6Left), free = td25NextFree();
+    const row = (t) => {
+      const on = td25InNext(t), lst = todoListOf(t);
+      const sub = [t.due ? `期限 ${fmtDay(t.due)}${isHm(t.time) ? " " + t.time : ""}` : "", num(t.mins) > 0 ? keepUnits(durText(td6Left(t))) : "", lst ? lst.name : "", td6InWeek(t) ? "今週やる" : ""].filter(Boolean).join("・");
+      return el("li", { class: "td-pick-row" + (on ? " on" : "") }, el("button", { type: "button", class: "td-pick-btn", role: "checkbox", "aria-checked": String(on), "data-nx": t.id, onclick: () => td25NextToggle(t.id) },
+        el("span", { class: "check", "aria-hidden": "true" }, checkMark()),
+        el("span", { class: "body" }, el("span", { class: "text" }, td14Name(t), t.flag ? el("span", { class: "todo-flag", "aria-hidden": "true" }, icon("flag", 14)) : null), sub ? el("span", { class: "sub" }, sub) : null)));
+    };
+    setChildren(body,
+      el("p", { class: "group-foot td-panel-lead" }, el("span", { class: "phrase" }, `来週（${fmtDay(wk)}〜${fmtDay(end)}）に`), el("span", { class: "phrase" }, "やるToDoを選んでください。"),
+        el("span", { class: "phrase" }, "来週になると、"), el("span", { class: "phrase" }, "「今週やる」になります。")),
+      left.some((t) => !td25InNext(t)) ? el("div", { class: "td-pick-quick" }, el("button", { type: "button", class: "chip-btn", onclick: () => td25NextMany(left) }, `今週やるの残り ${left.filter((t) => !td25InNext(t)).length} 件を来週に`)) : null,
+      el("p", { class: "td-pick-count", role: "status" }, picked.length ? `${picked.length} 件を選んでいます` : "まだ選んでいません"),
+      el("p", { class: "group-foot td6-week-free" + (mins > free ? " warn" : "") }, mins ? el("span", { class: "phrase" }, keepUnits(`かかる時間は ${durText(mins)}、`)) : null,
+        el("span", { class: "phrase" }, keepUnits(`来週の空き時間は ${free ? durText(free) : "0分"}です`)), el("span", { class: "phrase" }, "（予定・バイトを除く）。"), mins > free ? el("span", { class: "phrase" }, "入りきらないかもしれません。") : null),
+      TD25_NEXT_SECS.flatMap((s) => {
+        const rs = list.filter((t) => sec(t) === s);
+        return rs.length ? [el("h3", { class: "group-head" }, `${s}（${rs.length}）`), el("ul", { class: "list card td-pick" }, rs.map(row))] : [];
+      }),
+      !list.length ? el("div", { class: "card empty" }, "選べるToDoがありません。") : null);
+    if (was) body.querySelector(`[data-nx="${was}"]`)?.focus({ preventScroll: true });
+  }
+  function td25NextToggle(id) {
+    const t = todos.get(id);
+    if (!t || t.done) return;
+    act(() => todos.update(id, { week: td25InNext(t) ? undefined : td25NextKey() }));
+  }
+  const td25HoldWeekBase = td6HoldWeek;
+  td6HoldWeek = function (t, item) {
+    const out = td25HoldWeekBase(t, item);
+    if (!todoTwentyFive || t.done || !td6Plain(t)) return out;
+    return [...out, item(td25InNext(t) ? "来週やるから外す" : td6InWeek(t) ? "来週にまわす（来週やる）" : "来週やるに入れる", () => td25SetNext(t, !td25InNext(t)))];
+  };
+  const td25RevBase = td14RevSteps;
+  td14RevSteps = function () {
+    const out = td25RevBase();
+    if (!todoTwentyFive) return out;
+    const n = todos.items.filter(td25InNext).length;
+    return [...out, ["next25", "来週やるを選ぶ", n ? `${n} 件を選んでいます` : "来週のうちにやるToDo", () => openTdPanel("next25", false)]];
+  };
+
+  // ⑨ 終わりの目安 (a ToDo's sheet, under なぜやる): what done looks like for it, in 1件に集中する画面 under its name;
+  // handed on to a repeat's next turns
+  const td25Fin = (t) => (typeof t?.finish === "string" ? t.finish.trim() : "");
+
+  // ⑩ ToDoなしの集中をToDoに: a set over (or ended) with no ToDo, ToDoにつける in its message puts its minutes on one
+  // (as if begun from it: its time, 集中した時間帯, the 休憩 going on with it), with 元に戻す
+  function td25PickList() {
+    return todos.items.filter((t) => !t.done && typeof t.text === "string" && !tdLater(t) && !(todoThirteen && td13Secret(t)))
+      .sort((a, b) => Number(tdToday(b)) - Number(tdToday(a)) || todoOrder(a, b)).slice(0, 8);
+  }
+  function td25PickAct(v) {
+    if (v.cell || sheetEl.open || !td25PickList().length) return null;
+    const mins = Math.round(num(v.len)), end = num(v.end);
+    return [() => td25PickAsk(mins, end), 10000, "ToDoにつける"];
+  }
+  function td25PickAsk(mins, end) {
+    const xs = td25PickList();
+    if (!xs.length) { flash("つけられるToDoがありません"); return; }
+    tdAsk(keepUnits(`集中した ${durText(mins)}を、どのToDoにつけますか`), xs.map((t) => [clip(td14Name(t), 30), () => td25Attach(t.id, mins, end)]));
+  }
+  function td25Attach(id, mins, end) {
+    const t = todos.get(id);
+    if (!t || !(mins >= 1)) return;
+    const was = { focus: t.focus, studied: t.studied }, list = todoTwentyThree ? td23Sessions() : [];
+    const i = list.findIndex((x) => !x[3] && Math.abs(num(x[1]) - num(end)) < 5000 && Math.round(num(x[2])) === mins);
+    const sub = t.subject && subjects.get(t.subject);
+    let sid = null;
+    act(async () => {
+      if (sub) sid = await study.add({ date: todayKey, minutes: mins, subjectId: sub.id, note: clip(oneLine(t.text), 60), createdAt: Date.now() }); // (その2 ④ in 勉強 too)
+      await todos.update(id, { focus: Math.round(num(t.focus)) + mins, ...(sub ? { studied: num(t.studied) + mins } : {}) });
+      if (i >= 0) await settings.set(TD23_SESS_ID, { list: list.map((x, j) => (j === i ? [x[0], x[1], x[2], id, x[4]] : x)), updatedAt: Date.now() });
+    });
+    const v = focusNow();
+    if (v?.kind === "rest" && !v.todoId && !v.cell) { try { localStorage.setItem(FOCUS_KEY, JSON.stringify({ ...v, todoId: id })); } catch {} focusTick(); }
+    flash(keepUnits(`集中した ${durText(mins)}を「${clip(td14Name(t), 24)}」につけました`), () => act(async () => {
+      await todos.update(id, was);
+      if (sid) takeBack(study, [sid]);
+      if (i >= 0) { const now = td23Sessions(); await settings.set(TD23_SESS_ID, { list: now.map((x) => (x[3] === id && Math.abs(num(x[1]) - num(end)) < 5000 ? [x[0], x[1], x[2], null, x[4]] : x)), updatedAt: Date.now() }); }
+      flash("元に戻しました");
+    }));
+  }
+  // (ended early with 終わる: its own message, with ToDoにつける)
+  document.addEventListener("click", (ev) => {
+    if (!todoTwentyFive || !ev.target?.closest?.("#focusStop")) return;
+    const v = focusNow();
+    if (!v || v.kind !== "work" || v.todoId || v.cell || (todoEight && v.five)) return;
+    const mins = focusDone(v), end = Date.now();
+    if (mins >= 1 && !sheetEl.open && td25PickList().length) setTimeout(() => flash(`集中した ${mins} 分を記録しました`, () => td25PickAsk(mins, end), 10000, "ToDoにつける"), 0);
+  }, true);
+
+  // its sheet: ⑦⑨; read as it is saved
+  function td25InitForms() {
+    new MutationObserver(() => {
+      const text = $("reText");
+      if (!todoTwentyFive || recEdit?.kind !== "todo" || recEdit.fresh || !text || text.dataset.td25) return;
+      text.dataset.td25 = "1";
+      const t = todos.get(recEdit.id);
+      if (!t) return;
+      if (!t.cancelled) {
+        const fin = el("input", { type: "text", id: "reFin25", maxlength: 120, value: td25Fin(t), placeholder: "例：3ページ書けたら終わり" });
+        const row = el("div", { class: "form-rows td25-fin-row" }, recRow("終わりの目安", fin, { opt: true }));
+        const why = $("reWhy17")?.closest(".td17-why-row");
+        if (why) why.after(row); else (text.closest(".ffield") || text).after(row);
+      }
+      const steps = $("reSteps");
+      if (steps && !$("td25StepsNote")) {
+        steps.after(el("p", { class: "full td-note td25-steps-note", id: "td25StepsNote", role: "status", hidden: true })); // (by the steps, not among them: its own drawing isn't theirs)
+        for (const type of ["input", "change", "click"]) steps.addEventListener(type, () => requestAnimationFrame(td25StepsNote));
+        new MutationObserver(() => requestAnimationFrame(td25StepsNote)).observe(steps, { childList: true, subtree: true });
+        $("reMins")?.addEventListener("change", () => requestAnimationFrame(td25StepsNote));
+        td25StepsNote();
+      }
+      if (recShown !== null && sheetMode() === "rec") recShown = formState($("recForm"));
+    }).observe($("recForm"), { childList: true });
+    const read = REC_EDIT.todo.read;
+    REC_EDIT.todo.read = (t) => {
+      const p = read(t);
+      if (!todoTwentyFive || !p || typeof p !== "object") return p;
+      const out = { ...p };
+      if ($("reFin25")) out.finish = $("reFin25").value.trim().slice(0, 120) || undefined;
+      return out;
+    };
+    sheetEl.addEventListener("close", () => { if (td25Rec) td25RecStop(); }); // (a voice memo being made, kept as the sheet goes)
+  }
+  const td25CarryBase = tdCarry;
+  tdCarry = function (t, all = false) {
+    const out = td25CarryBase(t, all);
+    if (!todoTwentyFive) return out;
+    return all ? { ...out, finish: t.finish, askNext: t.askNext } : { ...out, ...(td25Fin(t) ? { finish: t.finish } : {}) };
+  };
+
+  // ToDo's 編集: ① in 集中タイマー, ② by 終えたときのひとこと
+  function td25InitSettings() {
+    const form = $("focusForm");
+    if (form) {
+      form.append(el("label", { class: "flabel", for: "td25AutoOn" }, "自動で続ける"), el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "td25AutoOn", class: "switch", role: "switch", onchange: (ev) => td25Put({ auto: ev.target.checked }) })));
+      form.nextElementSibling?.append(el("span", { class: "phrase" }, "「自動で続ける」をオンにすると、休憩が終わったとき次の集中が自動で始まります（長い休憩のあとは止まります）。"));
+    }
+    const foot = $("td9AskForm")?.nextElementSibling;
+    if (foot) foot.after(el("h3", { class: "group-head" }, "終えたときのかかった時間"),
+      el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, el("label", { class: "flabel", for: "td25AskOn" }, "かかった時間を聞く"),
+        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "td25AskOn", class: "switch", role: "switch", onchange: (ev) => td25Put({ ask: ev.target.checked }) }))),
+      el("p", { class: "group-foot", id: "td25AskFoot" }, el("span", { class: "phrase" }, "集中タイマーを使わずに終えたToDoに、一覧の上で「どれくらいかかった？」と聞きます。"), el("span", { class: "phrase" }, "選んだ時間は、見積もりのくせや時間の使いかたに入ります。")));
+    renderTd25Settings();
+  }
+  function renderTd25Settings() {
+    const s = td25Set();
+    if ($("td25AutoOn")) $("td25AutoOn").checked = s.auto;
+    if ($("td25AskOn")) $("td25AskOn").checked = s.ask;
+  }
+  const td25SettingsBase = renderTd11Settings;
+  renderTd11Settings = function () { td25SettingsBase(); if (todoTwentyFive) renderTd25Settings(); };
+
+  // the panel (⑧), その他, the guide, ④⑤⑥⑦⑨ in 1件に集中する画面, ③⑦⑧ on a row, ②③⑤ as the list is drawn, ⑤⑥ as
+  // the timer goes, and the rows' picker of その23
+  const TD25_PANELS = { next25: "来週やる" };
+  const td25PanelBase = renderTdPanel;
+  renderTdPanel = function () {
+    if (todoTwentyFive && sheetEl.open && TD25_PANELS[tdPanel]) { td10JotSync(); renderTd25Next(); return; }
+    td25PanelBase();
+  };
+  const td25HeadBase = syncSheetHead;
+  syncSheetHead = function () { td25HeadBase(); if (todoTwentyFive && sheetMode() === "tdpanel" && TD25_PANELS[tdPanel]) $("sheetTitle").textContent = TD25_PANELS[tdPanel]; };
+  function td25HoldItems(t, item) {
+    if (t.done || t.repeat || !td6Plain(t)) return null;
+    return [item(td25Again(t) ? "次の期限を聞くのをやめる" : "終えたら次の期限を聞く（そのつど）", () => td25SetAgain(t, !td25Again(t)))];
+  }
+  function td25MoreItems(item) { return [todoSix ? item((() => { const n = todos.items.filter(td25InNext).length; return n ? `来週やるを選ぶ（${n} 件）` : "来週やるを選ぶ"; })(), () => openTdPanel("next25", false)) : null]; }
+  const td25GuideBase = td9Guide;
+  td9Guide = function () {
+    const g = td25GuideBase();
+    if (!todoTwentyFive) return g;
+    const add = (head, rows) => { const x = g.find(([h]) => h === head); if (x) x[1].push(...rows); else g.push([head, rows]); };
+    add("きょうの計画", [["来週やる", "長押し、または「その他」。来週になると今週やるに"]]);
+    add("期限とお知らせ", [["終えたら次を決める", "長押し。終えたときに次の期限を聞きます（そのつどの繰り返し）"]]);
+    add("集中する", [["自動で続ける", "「編集」の集中タイマー。休憩のあと次の集中が自動で"], ["集中をあと5分", "残り5分になると、バーの「＋5分」。休憩に入ったあとでも"], ["休憩のすごし方", "休憩中、一覧の上と1件に集中する画面に。1分 深呼吸も"],
+      ["ToDoなしの集中をToDoに", "ToDoを選ばずに集中したあと、「ToDoにつける」"]]);
+    add("整理する", [["声のメモ", "ToDoの画面のファイルの「声で残す」"], ["サブタスクのかかる時間", "サブタスクの名前の最後に「30分」。のこりの時間が出ます"], ["終わりの目安", "ToDoの画面の「なぜやる」の下。1件に集中する画面に出ます"]]);
+    add("ふりかえる", [["かかった時間を聞く", "「編集」の終えたときのかかった時間"]]);
+    return g;
+  };
+  const td25FocusBase = renderTd7Focus;
+  renderTd7Focus = function () {
+    const r = td25FocusBase();
+    if (!todoTwentyFive) return r;
+    const t = todos.get(td7FocusId), body = $("tdPanelBody"), v = focusNow();
+    if (!t || !body) return r;
+    const mine = !!v && v.todoId === t.id;
+    // ⑨ under its name (and なぜやる)
+    const fin = td25Fin(t);
+    if (fin && !body.querySelector(".td25-fin")) (body.querySelector(".td17-why") || body.querySelector(".td7-focus-name"))?.after(el("p", { class: "td25-fin" }, el("span", { class: "td25-fin-k" }, "終わりの目安"), el("span", {}, fin)));
+    // ⑥ ＋5分 by its buttons; ⑤ in 休憩, under the timer
+    const acts = body.querySelector(".td7-focus-acts");
+    if (mine && acts && !acts.querySelector(".td25-more") && td25MoreOk(v, true)) acts.firstElementChild?.after(el("button", { type: "button", class: "chip-btn td25-more", onclick: () => { td25More(); renderTd7Focus(); } }, "＋5分"));
+    if (mine && v.kind === "rest" && v.end && !body.querySelector(".td25-rest")) {
+      const box = el("div", { class: "card pad td25-rest td25-rest-focus" });
+      const fill = () => setChildren(box, td25RestParts(v, fill));
+      fill();
+      body.querySelector(".td7-focus-timer")?.after(box);
+    }
+    // ⑦ the steps' time left, by their head
+    const x = td25StepTime(t.steps), head = [...body.querySelectorAll("h3.group-head")].find((h) => h.textContent === "サブタスク");
+    if (x.n && head && !body.querySelector(".td25-steps-left-line")) head.after(el("p", { class: "group-foot td25-steps-left-line" }, td25StepWords(x)));
+    // ④ its voice memos, after its memo
+    const vs = td25Voices(t.id);
+    if (vs.length && !body.querySelector(".td25-voices")) {
+      const els = [el("h3", { class: "group-head" }, "声のメモ"), el("div", { class: "card pad td25-voices" }, vs.map(td25Player))];
+      const memo = body.querySelector(".td7-focus-memo"), go = body.querySelector(".td-pick-go");
+      if (memo) memo.after(...els); else if (go) go.before(...els); else body.append(...els);
+    }
+    return r;
+  };
+  const td25PartsBase = td12Parts;
+  td12Parts = function (t) {
+    const out = td25PartsBase(t);
+    if (!todoTwentyFive || t.done) return out;
+    const x = td25StepTime(t.steps);
+    return [...out, td25Again(t) ? el("span", { class: "phrase td-x td25-again" }, icon("repeat", 13), " そのつど") : null, td25InNext(t) ? el("span", { class: "phrase td-x td25-next" }, "来週") : null,
+      x.n && x.left ? el("span", { class: "phrase td-x td25-steps-left" }, num(t.mins) > 0 ? null : [icon("timer", 13), " "], keepUnits(`のこり ${durText(x.left)}`)) : null].filter(Boolean);
+  };
+  const td25RenderBase = renderTodos;
+  renderTodos = function () {
+    td25RenderBase();
+    if (!todoTwentyFive) return;
+    td25AgainCard(); td25TimeCard(); td25RestSync();
+  };
+  const td25TickBase = focusTick;
+  focusTick = function () { const r = td25TickBase(); if (todoTwentyFive) { td25BarSync(); td25RestSync(); } return r; };
+  // (その23 ① 行に出すもの: ③⑦⑧ and ④'s mark with the rest)
+  if (typeof TD23_ROW !== "undefined") TD23_ROW.push(["again", "そのつどの繰り返し", ".td25-again"], ["next", "来週やる", ".td25-next"], ["stepsLeft", "サブタスクののこり時間", ".td25-steps-left"], ["voice", "声のメモ", ".td25-voice-mark"]);
+  function td25InitCards() {
+    $("td9AskCard")?.after(el("div", { class: "card td4-card td25-time-card", id: "td25TimeCard", hidden: true }), el("div", { class: "card td4-card", id: "td25AgainCard", hidden: true }));
+    ($("td24ContCard") || $("td4ShopCard") || $("td8GoalCard"))?.before(el("div", { class: "card td4-card td25-rest", id: "td25RestCard", hidden: true }));
+    $("focusPause")?.before(el("button", { type: "button", class: "rest-btn td25-more", id: "td25More", hidden: true, onclick: td25More }, "＋5分"));
+  }
+
+  td25InitCards();
+  td25InitForms();
+  td25InitSettings();
+  todoTwentyFive = true;
 
   // ---------- 天気 その1 ①〜⑩ (the user's calls, 2026-11-13): the tile opens 天気's own page (①) with the hours (②), the
   // day in detail (③), what to wear (④), when rain comes and the rain clouds (⑤), sunrise and sunset (⑥), UV (⑦), a word
