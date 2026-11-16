@@ -960,6 +960,50 @@ span.rtc-d { background: transparent; color: var(--muted); cursor: default; }
 /* ⑦ 読み上げ beside ひとつ戻す; ⑤ 参考 in 1つずつ進める */
 .rt5-step-tools { display: inline-flex; flex: none; align-items: center; gap: 12px; }
 .rt5-step-link { margin-top: 8px !important; }
+/* ルーティーン その6: ① やめる習慣, its days a number beside it and the last 7 as dots */
+.rt6-quit { gap: 10px; }
+.rt6-quit .body { display: grid; flex: 1; min-width: 0; }
+.rt6-q-n { flex: none; min-width: 2.4em; font-size: 26px; font-weight: 700; line-height: 1; text-align: center; color: var(--f-routine); font-variant-numeric: tabular-nums; }
+.rt6-q-n small { margin-inline-start: 1px; font-size: 12px; font-weight: 600; }
+.rt6-quit.slip .rt6-q-n { color: var(--muted); }
+.rt6-quit.mile .rt6-q-head { color: var(--accent); font-weight: 600; }
+.rt6-quit.slip .rt6-q-head { color: var(--warn); font-weight: 600; }
+.rt6-q-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin-top: 4px; }
+.rt6-q-week { display: flex; gap: 5px; }
+.rt6-q-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--f-routine); }
+.rt6-q-dot.bad { background: var(--warn); }
+.rt6-q-dot.off { background: var(--fill); }
+.rt6-q-dot.now { outline: 1.5px solid var(--fg); outline-offset: 1.5px; }
+.rt6-q-btn { flex: none; }
+.rt6-q-btn.bad { color: var(--warn); }
+.rt6-quit-from label { flex: none; font-size: var(--t-sub); color: var(--muted); }
+.rt6-quit-from input { flex: 1; min-width: 0; min-height: 44px; }
+.rt6-add-tools { display: flex; flex-wrap: wrap; column-gap: var(--space-3); margin-top: -8px; }
+/* ② 長押し: the row held down, nothing in it but its name picked up as text */
+#rtList > li { -webkit-touch-callout: none; }
+#rtList > li .sub, #rtList > li .rt2-memo, #rtList > li .rt4-emoji, #rtList > li > .check { -webkit-user-select: none; user-select: none; }
+#rtList > li.rt6-held { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+#rt6Menu { max-height: 100dvh; overflow-y: auto; }
+/* ③ まとめて追加 */
+.ask-field.rt6-bulk-field { display: grid; gap: 8px; }
+.rt6-bulk-in { box-sizing: border-box; width: 100%; min-height: 140px; padding: 10px 12px; border: 1px solid var(--separator); border-radius: 10px; background-color: var(--surface); color: var(--fg); font: inherit; resize: vertical; }
+.rt6-bulk-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rt6-bulk-say { font-size: var(--t-foot); color: var(--muted); }
+.rt6-bulk-foot .ask-go { margin-inline-start: auto; }
+.rt6-bulk-foot .ask-go:disabled { opacity: .45; cursor: default; }
+/* ④ 複製 in ⋯ */
+.rt6-copy-row { padding-top: 4px; }
+/* ⑤ and ⑦: their cards' feet; ⑦'s rows as 勉強's 時間帯 */
+.rt6-foot { margin: 0; padding: 4px var(--space-2) 14px; font-size: var(--t-foot); line-height: 1.5; color: var(--muted); }
+.rt6-foot:empty { display: none; }
+#rt6HourList > li { flex-direction: column; align-items: stretch; gap: 6px; padding: 12px var(--space-2); }
+.rt6-hour .bar-track i { background: var(--c-routine); }
+.rt6-hour.top .st-row-v { color: var(--fg); font-weight: 700; }
+.rt6-hour small { color: var(--muted); }
+/* ⑥ かかった時間, under ぜんぶ */
+.rt6-took { margin: 0; padding: 4px var(--space-2) 0; font-size: var(--t-sub); color: var(--muted); }
+/* ⑧ under 並べ替え */
+.rt6-bytime .label-tools { padding-top: 6px; }
 /* ⑦ the month's チェック表 on paper alone, sideways where it can be */
 #rt4Print { display: none; }
 @page rt4land { size: A4 landscape; margin: 10mm; }
@@ -15621,7 +15665,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ④ the order the user put them in (the settings, ≡ dragged): those moved have one, any added since come after them as
   // they were added
   const rtHasOrder = (r) => typeof r.order === "number" && isFinite(r.order);
-  const sortedRoutines = () => [...routines.items].sort((a, b) => (rtHasOrder(a) ? 0 : 1) - (rtHasOrder(b) ? 0 : 1)
+  const sortedRoutines = () => routines.items.filter((r) => !r.quit).sort( // (その6 ① やめる習慣 apart: not the day's items)
+    (a, b) => (rtHasOrder(a) ? 0 : 1) - (rtHasOrder(b) ? 0 : 1)
     || (rtHasOrder(a) && rtHasOrder(b) ? a.order - b.order : 0) || num(a.createdAt) - num(b.createdAt));
   function moveRoutine(id, to) {
     const r = routines.get(id), list = sortedRoutines().filter((x) => x.id !== id);
@@ -15681,7 +15726,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the first day of any of it: the first item's, or the first day checked
   function rtFirstDay() {
     let f = todayKey;
-    for (const r of routines.items) { const b = rtBorn(r); if (b && b < f) f = b; }
+    for (const r of routines.items) { const b = rtBorn(r); if (b && b < f && !r.quit) f = b; } // (その6 ① not a やめる習慣's)
     for (const d of rtIndex().days.keys()) if (d < f) f = d;
     return f;
   }
@@ -15737,6 +15782,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     rt2Mile(id, date, s0); // (その2 ⑥ 連続の節目)
     rt3After(id, date, p3); // (その3 ⑤ 次の項目, ⑥ チャレンジ, ⑦ 自己ベスト)
     rt5After(date, was); // (その5 ① ごほうび)
+    rt6Feel(date, was); // (その6 ⑩ 音・ふるえ)
   }
   // ⑤ one more (or one less) on an item counted up to a number: checked as it gets there, unchecked as it goes under
   function bumpRoutine(id, by = 1, date = viewDate) {
@@ -15751,6 +15797,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     rt2Mile(id, date, s0); // (その2 ⑥)
     rt3After(id, date, p3); // (その3 ⑤⑥⑦)
     rt5After(date, was); // (その5 ①)
+    rt6Feel(date, was, n >= t ? "check" : by > 0 ? "tick" : ""); // (その6 ⑩)
   }
   const rtDayName = (d) => (d === todayKey ? "きょう" : d === addDays(todayKey, -1) ? "きのう" : fmtMDW(d));
   // ⑧ the day taken off, or back on, with 元に戻す
@@ -15848,7 +15895,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("rtRestNote").hidden = !rest;
     const ul = $("rtList");
     ul.replaceChildren();
-    if (!rows.length) ul.append(el("li", { class: "empty" }, !routines.items.length ? "まだ項目がありません。下の欄から、毎日やることを追加してください。"
+    if (!rows.length) ul.append(el("li", { class: "empty" }, !list.length ? "まだ項目がありません。下の欄から、毎日やることを追加してください。"
       : list.some(rtPausedNow) ? "この日の項目はありません。休止中の項目は、下の「休止中の項目」から再開できます。" : "この日は、まだ項目がありませんでした。"));
     for (const r of rt2Order(rows, viewDate)) ul.append(rtRow(r)); // (その2 ⑧ できた項目を下へ, when it is on)
     renderRtFoot(st, rest);
@@ -15857,6 +15904,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     rt3Render(); // (その3 ③ きのうのチェック忘れ, ⑩ 候補, ② お休みの予定 in the gear)
     rt4Render(); // (その4 ⑧ コンパクト表示, ① 文字で送る)
     rt5Render(list); // (その5 ③ おまもり, ① ごほうび, ② 見なおし, ④ これからの項目, ⑨ タイムライン, ⑥ 声でチェック)
+    rt6Render(list); // (その6 ① やめる習慣, ⑨ 画像で送る; ⑤ 月ごとの達成率, ⑦ 時間帯)
     if (sheetEl.open && settingsScope === "routine") draw(renderRtOrder);
     if (tab !== "routine") return; // (the week, the month and each item's record: drawn for the page alone)
     draw(() => renderRtWeek(list)); draw(() => renderRtCal(list)); draw(() => renderRt2Weeks(list)); draw(() => renderRt3Year(list)); draw(() => renderRtStats(list));
@@ -15893,6 +15941,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren($("rtFoot"), words ? el("p", { class: "rt-all" + (st.all ? " on" : "") }, words) : null,
       st.items.length || rest ? el("div", { class: "label-tools" }, rt2FootButtons(st, today), // (その2 ⑤ 1つずつ進める, ⑦ のこりをぜんぶチェック)
         el("button", { type: "button", class: "link-btn", onclick: () => toggleRtRest() }, rest ? "お休みをやめる" : `${today ? "きょう" : "この日"}をお休みにする`)) : null);
+    rt6FootMore(st); // (その6 ⑥ かかった時間)
   }
   // ⑩ the items paused, each with 再開
   function renderRtPaused(list) {
@@ -18327,7 +18376,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // ⑥ ルーティーンのお知らせ (the user's call): each day at the time set, but today's not once its items are all done or it
     // is お休み (sent again then, pushSig); today's says what is left. Pressed, ルーティーン
     const rr = rtRemind();
-    if (rr.on && routines.items.some((r) => rtActive(r, todayKey))) { // (those パス today among them: the days after still get theirs, その3 ①)
+    if (rr.on && routines.items.some((r) => !r.quit && rtActive(r, todayKey))) { // (その6 ① not for a やめる習慣) // (those パス today among them: the days after still get theirs, その3 ①)
       const [h, mi] = rr.at.split(":").map(Number), left = rtDayState(todayKey).items.filter((r) => !rtDoneOn(r, todayKey));
       for (let i = 0; i <= PUSH_AHEAD; i++) {
         const d = addDays(todayKey, i), p = parseYmd(d), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
@@ -19469,7 +19518,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (scope === "tsumi") { $("tsumiFind").value = ""; renderTsumiFind(); if (tsumiPaletteFor) { tsumiPaletteFor = null; renderTsumiKinds(tsumiShown); } renderTsumiGear(true); } // ことばで探す empty, the colours shut, each time
     if (scope === "woMenu") { woDraft = null; renderWoEdit(); }
     if (scope === "money") { renderCatBudgets(); renderCatEditor(); renderFixedForms(); renderSaveForms(); renderMo2Settings(); } // 家計簿's 費目ごとの予算, 費目, 固定費 and 貯金の目標 (その2 ③ 支払い方法, ⑥ お知らせ)
-    if (scope === "routine") { renderRtOrder(); renderRtRemind(); renderRt2Settings(); renderRt3Settings(); renderRt4Settings(); renderRt5Settings(); } // ルーティーン's order (④), its お知らせ (⑥), (その2 ⑧) できた項目を下へ and (その3) ⑨ 週のまとめ, ② お休みの予定
+    if (scope === "routine") { renderRtOrder(); renderRtRemind(); renderRt2Settings(); renderRt3Settings(); renderRt4Settings(); renderRt5Settings(); renderRt6Settings(); } // ルーティーン's order (④), its お知らせ (⑥), (その2 ⑧) できた項目を下へ and (その3) ⑨ 週のまとめ, ② お休みの予定
     if (scope === "workout") renderWoSettings(); // 運動's month's goal (⑧) and rest (⑨)
     if (scope === "meal") renderMealSettings(); // 食事's 目安, protein goal (⑤) and お知らせ (⑩)
     if (scope === "goal") renderGoalSettings(); // 目標's ⑤ 見直しのお知らせ
@@ -21040,6 +21089,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             el("span", { class: "phrase" }, "はじめの日・おわりの日を決めると、そのあいだだけ一覧に出ます。"),
             el("span", { class: "phrase" }, "連携すると、その日にほかのページで記録したとき、自動でチェックが付きます。"),
             el("span", { class: "phrase" }, "一時停止すると、毎日の一覧ときょうのタイルから外れます。記録と連続は残ります。")),
+          rt6Fields(r), // (その6 ④ 複製)
         ];
       },
       read: (r) => {
@@ -25430,7 +25480,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月16日 14:20"; // df0a56c9 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月16日 14:35"; // e00a1403 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -72411,6 +72461,7 @@ ${parts.join("\n")}
     flash(`のこりの${left.length}項目をチェックしました` + (all ? `。${rtDayName(date)}のルーティーンをぜんぶできました` + (run >= 2 ? `（${run}日連続）` : "") : ""),
       () => putRtDay(date, back.done, back.at, back.counts, rest));
     rt5After(date, false); // (その5 ① ごほうび)
+    rt6Feel(date, false); // (その6 ⑩)
   }
 
   // ⑧ できた項目を下へ (in the gear, kept with the account): the day's list with those done after those still to do, each
@@ -73296,7 +73347,7 @@ ${parts.join("\n")}
   }
   function rt3Alarms(now) {
     const w = rt3Week();
-    if (!w.on || !routines.items.length) return [];
+    if (!w.on || !sortedRoutines().length) return []; // (その6 ① やめる習慣 alone: none)
     const out = [], h = Number(w.at.slice(0, 2)), mi = Number(w.at.slice(3)), w0 = rt3WeekStart(todayKey);
     for (let i = 0; i <= PUSH_AHEAD; i++) {
       const d = addDays(todayKey, i), s = rt3WeekStart(d);
@@ -73334,7 +73385,7 @@ ${parts.join("\n")}
     const box = $("rt3Ideas");
     if (!box) return;
     const names = new Set(routines.items.map((r) => oneLine(r.name))), links = new Set(routines.items.map((r) => r.link).filter(Boolean));
-    const xs = RT3_IDEAS.filter(([name, cfg]) => !names.has(name) && !(cfg.link && links.has(cfg.link))), open = rt3IdeasOpen ?? !routines.items.length;
+    const xs = RT3_IDEAS.filter(([name, cfg]) => !names.has(name) && !(cfg.link && links.has(cfg.link))), open = rt3IdeasOpen ?? !sortedRoutines().length;
     box.hidden = !xs.length;
     if (rt3Same("ideas", [xs.map((x) => x[0]), open])) return;
     setChildren(box, el("button", { type: "button", class: "link-btn rt3-ideas-btn", "aria-expanded": String(open), onclick: () => { rt3IdeasOpen = !open; renderRt3Ideas(); $("rt3Ideas").querySelector(".rt3-ideas-btn")?.focus(); } }, open ? "候補を閉じる" : "候補から選ぶ"),
@@ -74255,7 +74306,7 @@ ${parts.join("\n")}
     done.add(r.id); at[r.id] = Date.now();
     if (t) counts[r.id] = Math.max(num(counts[r.id]), t);
     putRtDay(d, done, at, counts, !!day?.rest, rt3SkipList(d), rt4NotesOf(d), [...rt5MiniList(d), r.id]);
-    cheerRt(d, was); rt2Mile(r.id, d, s0); rt3After(r.id, d, p3); rt5After(d, was);
+    cheerRt(d, was); rt2Mile(r.id, d, s0); rt3After(r.id, d, p3); rt5After(d, was); rt6Feel(d, was); // (その6 ⑩)
     if (flashed === f0 && !inStep) flash(`「${oneLine(r.name)}」をミニでやりました（${rt5Mini(r)}）。連続は続きます`, () => toggleRoutine(r.id, d));
   }
   // a row's line: ミニでやった (⑩), ◯◯まで (④, the last two weeks of it); and its buttons, ミニでやった and 参考 (⑤)
@@ -74399,6 +74450,7 @@ ${parts.join("\n")}
     flash(`${hit.map((r) => `「${oneLine(r.name)}」`).join("")}にチェックしました` + (all ? `。${rtDayName(d)}のルーティーンをぜんぶできました` + (run >= 2 ? `（${run}日連続）` : "") : ""),
       () => putRtDay(d, back.done, back.at, back.counts, !!day?.rest));
     rt5After(d, was);
+    rt6Feel(d, was); // (その6 ⑩)
   }
   function rt5MicSync() {
     const b = $("rt5Mic");
@@ -75646,6 +75698,555 @@ ${parts.join("\n")}
     draw(renderBt16Tent); draw(renderBt16Pass); draw(renderBt16Asked); draw(renderBt16Min); draw(renderBt16Spend);
     if ($("bt16Rates").open) draw(renderBt16Rates);
   }
+
+  // ---------- ルーティーン その6 ①〜⑩ (the user's calls, 2026-11-16; still daily, no weekdays, no groups): やめる習慣, kept
+  // without a check (①), a row held down for its menu (②), items added from lines of words (③), an item copied (④), the
+  // 12 months' rates (⑤), how long the day's took (⑥), the parts of the day they are checked in (⑦), the order by the
+  // usual times (⑧), the day or the month as a picture to send (⑨) and a sound and a buzz as one is checked (⑩). Function
+  // declarations and var, as the page may draw before this runs ----------
+  var rt6Ready = false, rt6Hold = null, rt6MenuDown = false;
+  var RT6_SOUND = "rt6Sound", RT6_BUZZ = "rt6Buzz", RT6_INK = "#4f7a00";
+  var RT6_MILES = [3, 7, 14, 30, 60, 100, 200, 365, 500, 1000], RT6_PARTS = [["朝", 5, 11], ["昼", 11, 15], ["夕方", 15, 19], ["夜", 19, 24], ["深夜", 0, 5]];
+  function rt6Min(t) { const x = new Date(t); return x.getHours() * 60 + x.getMinutes(); }
+  function rt6Hm(m) { return `${Math.floor(m / 60)}:${pad(m % 60)}`; }
+  function rt6Median(xs) { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : null; }
+
+  // ① やめる習慣: each an item of ルーティーン's own (synced, written out, and deleted into 最近削除した項目 as the others),
+  // what to stop (夜ふかし, 間食): from the day it began (quit) counted as kept on every day but those やってしまった was
+  // pressed for (slips). No check: out of the day's list and its ぜんぶ (sortedRoutines leaves it out), in a card of its own
+  // under the list, for the day shown: the days so far, the longest, the last 7 days, the next 節目
+  function rt6QuitList() { return routines.items.filter((r) => isDay(r.quit || "") && typeof r.name === "string" && r.name.trim()).sort((a, b) => num(a.createdAt) - num(b.createdAt)); }
+  function rt6QuitSet(id, patch) { act(() => routines.update(id, { ...patch, updatedAt: Date.now() })); }
+  function rt6Slips(q) { return Array.isArray(q?.slips) ? q.slips.filter((s) => isDay(s)) : []; }
+  function rt6Slipped(q, d) { return rt6Slips(q).includes(d); }
+  // the days kept in a row up to d (d itself counted, kept so far); 0 on a day it was done, or before it began
+  function rt6QuitRun(q, d) {
+    if (d < q.quit || rt6Slipped(q, d)) return 0;
+    const last = rt6Slips(q).filter((s) => s < d && s >= q.quit).sort().pop();
+    return daysBetween(last ? addDays(last, 1) : q.quit, d) + 1;
+  }
+  function rt6QuitBest(q) {
+    let best = 0, from = q.quit;
+    for (const s of [...new Set(rt6Slips(q).filter((x) => x >= q.quit && x <= todayKey))].sort()) { best = Math.max(best, daysBetween(from, s)); from = addDays(s, 1); }
+    return from <= todayKey ? Math.max(best, daysBetween(from, todayKey) + 1) : best;
+  }
+  function rt6SlipSet(id, d, on) {
+    const q = routines.get(id);
+    if (!q || !isDay(q.quit || "") || d < q.quit || d > todayKey) return;
+    const was = rt6Slips(q), slips = on ? [...new Set([...was, d])].sort() : was.filter((s) => s !== d);
+    rt6QuitSet(q.id, { slips: slips.length ? slips : undefined });
+    flash(on ? `「${oneLine(q.name)}」は${rtDayName(d)}やってしまった日にしました。また次の日から数えます` : `「${oneLine(q.name)}」の${rtDayName(d)}のやってしまったを取り消しました`,
+      () => rt6QuitSet(q.id, { slips: was.length ? was : undefined }));
+  }
+  function rt6QuitRow(q, d) {
+    const slip = rt6Slipped(q, d), before = d < q.quit, n = rt6QuitRun(q, d), best = rt6QuitBest(q), next = RT6_MILES.find((m) => m > n), mile = !slip && RT6_MILES.includes(n);
+    const slips30 = rt6Slips(q).filter((s) => s > addDays(d, -30) && s <= d && s >= q.quit).length;
+    const ws = [before ? `${fmtDayLong(q.quit)}から` : slip ? null : `最長 ${best}日`, !before && slips30 ? `30日で${slips30}回やってしまった` : null, !before && !slip && next ? `${next}日目まで あと ${next - n}日` : null].filter(Boolean);
+    const days = Array.from({ length: 7 }, (_, i) => addDays(d, i - 6));
+    return el("li", { class: "rt6-quit" + (slip ? " slip" : "") + (mile ? " mile" : ""), "data-q": q.id },
+      el("span", { class: "rt6-q-n", "aria-hidden": "true" }, before ? "–" : String(n), before ? null : el("small", {}, "日")),
+      el("span", { class: "body" },
+        el("input", { type: "text", class: "rt-name", value: q.name, maxlength: 40, "aria-label": "やめたいことの名前",
+          onchange: (ev) => { const name = ev.target.value.trim(); if (!name) { ev.target.value = q.name; return; } if (name !== q.name) rt6QuitSet(q.id, { name }); },
+          onkeydown: (ev) => { if (ev.key === "Enter" && !ev.isComposing) ev.target.blur(); } }),
+        el("span", { class: "sub rt-sub" }, el("span", {}, el("span", { class: "phrase rt6-q-head" }, (before ? "まだ始めていません" : slip ? "やってしまった日" : mile ? `やめて ${n}日目の節目です` : `やめて ${n}日目`) + (ws.length ? "・" : "")), rt5Phrases(ws))),
+        el("span", { class: "rt6-q-foot" },
+          el("span", { class: "rt6-q-week", role: "img", "aria-label": "この7日：" + days.map((x) => `${fmtMD(x)} ${x < q.quit ? "なし" : rt6Slipped(q, x) ? "やってしまった" : "続いた"}`).join("、") },
+            days.map((x) => el("i", { class: "rt6-q-dot" + (x < q.quit ? " off" : rt6Slipped(q, x) ? " bad" : " ok") + (x === d ? " now" : "") }))),
+          before ? null : el("button", { type: "button", class: "btn ghost sm rt6-q-btn" + (slip ? "" : " bad"), "aria-label": slip ? `「${q.name}」の${rtDayName(d)}のやってしまったを取り消す` : `「${q.name}」を${rtDayName(d)}やってしまった`,
+            onclick: () => rt6SlipSet(q.id, d, !slip) }, slip ? "取り消す" : "やってしまった"))),
+      delButton(() => removeWithUndo(routines, q.id, `やめる習慣の「${oneLine(q.name)}」を削除しました`), "削除", q.name)); // (into 最近削除した項目)
+  }
+  function renderRt6Quit() {
+    const card = $("rt6QuitCard");
+    if (!card) return;
+    const list = rt6QuitList();
+    card.hidden = !list.length;
+    if (!list.length) return;
+    const a = document.activeElement, keep = a && card.contains(a) && a.matches("input.rt-name") ? a.closest("li")?.dataset.q : null;
+    if (keep) return; // (a name being written stays as it is)
+    setChildren($("rt6QuitList"), list.map((q) => rt6QuitRow(q, viewDate)));
+  }
+  function rt6QuitAsk() {
+    let dlg = $("rt6QuitAsk");
+    if (dlg) return dlg;
+    const go = () => {
+      const name = [...$("rt6QuitName").value.trim()].slice(0, 40).join(""), from = $("rt6QuitFrom").value;
+      if (!name) { $("rt6QuitName").focus(); return; }
+      if (!isDay(from) || from > todayKey) { $("rt6QuitFrom").focus(); return; }
+      dlg.close();
+      act(async () => {
+        const id = await routines.add({ name, quit: from, createdAt: Date.now() });
+        flash(`やめる習慣に「${oneLine(name)}」を追加しました`, () => act(() => routines.remove(id)));
+      });
+    };
+    dlg = el("dialog", { class: "ask", id: "rt6QuitAsk", "aria-labelledby": "rt6QuitTitle" },
+      el("div", { class: "ask-group" },
+        el("p", { class: "ask-msg", id: "rt6QuitTitle" }, el("strong", {}, "やめる習慣を追加"), el("br"), "チェックはいりません。やってしまった日だけ「やってしまった」を押すと、ほかの日は続いた日として数えます。"),
+        el("div", { class: "ask-field" }, el("input", { type: "text", id: "rt6QuitName", maxlength: 40, enterkeyhint: "done", placeholder: "例：夜ふかし", "aria-label": "やめたいこと",
+          onkeydown: (ev) => { if (ev.key === "Enter" && !ev.isComposing) { ev.preventDefault(); go(); } } })),
+        el("div", { class: "ask-field rt6-quit-from" }, el("label", { for: "rt6QuitFrom" }, "はじめた日"), el("input", { type: "date", id: "rt6QuitFrom" }),
+          el("button", { type: "button", class: "ask-go", onclick: go }, "追加"))),
+      el("button", { type: "button", class: "ask-btn ask-keep", onclick: () => dlg.close() }, "やめる"));
+    dlg.addEventListener("click", (ev) => { if (ev.target === dlg) dlg.close(); });
+    document.body.append(dlg);
+    return dlg;
+  }
+  function openRt6Quit() {
+    const dlg = rt6QuitAsk();
+    $("rt6QuitName").value = ""; $("rt6QuitFrom").value = todayKey; $("rt6QuitFrom").max = todayKey;
+    dlg.showModal();
+    $("rt6QuitName").focus();
+  }
+
+  // ② 長押し: a row of the day's list held down (or right-clicked, or its menu key) opens what can be done to it at once,
+  // in an action sheet under its name; the finger let go over it presses nothing there, nor on the row (as ToDo's)
+  function rt6MenuDlg() {
+    let dlg = $("rt6Menu");
+    if (dlg) return dlg;
+    dlg = el("dialog", { class: "ask", id: "rt6Menu", "aria-labelledby": "rt6MenuMsg" },
+      el("div", { class: "ask-group", id: "rt6MenuGroup" }),
+      el("button", { type: "button", class: "ask-btn ask-keep", id: "rt6MenuNo", onclick: (ev) => { if (rt6MenuDown || ev.detail === 0) dlg.close(); } }, "やめる"));
+    dlg.addEventListener("pointerdown", () => { rt6MenuDown = true; });
+    dlg.addEventListener("click", (ev) => { if (ev.target === dlg && rt6MenuDown) dlg.close(); });
+    dlg.addEventListener("close", () => { for (const x of document.querySelectorAll("#rtList > li.rt6-held")) x.classList.remove("rt6-held"); });
+    document.body.append(dlg);
+    return dlg;
+  }
+  function openRt6Menu(li) {
+    const r = li && routines.get(li.dataset.rt || ""), dlg = rt6MenuDlg();
+    if (!r || dlg.open || sheetEl.open) return;
+    const d = viewDate, on = rtDoneOn(r, d), auto = on && !rtChecked(r, d), t = rtTarget(r), n = t ? rtCount(r, d) : 0, pass = rt3Skipped(r, d), mini = rt5Mini(r), url = rt5Url(r);
+    const item = (text, go, danger = false) => el("button", { type: "button", class: "ask-btn" + (danger ? " danger" : ""), onclick: (ev) => {
+      if (!rt6MenuDown && ev.detail !== 0) return;
+      dlg.close(); go(ev.detail === 0);
+    } }, text);
+    setChildren($("rt6MenuGroup"), el("p", { class: "ask-msg", id: "rt6MenuMsg" }, rt4Name(r) + (d === todayKey ? "" : `（${fmtMDW(d)}）`)),
+      auto ? null : t && !on ? [item(`1つ増やす（${n} → ${n + 1}${r.unit || ""}）`, () => bumpRoutine(r.id, 1, d)), item(`できた（${t}${r.unit || ""}）`, () => toggleRoutine(r.id, d))]
+        : item(on ? "チェックを外す" : "やった", () => toggleRoutine(r.id, d)),
+      !on && !pass && mini ? item(`ミニでやった（${mini}）`, () => rt5CheckMini(r, d)) : null,
+      on ? null : item(pass ? "パスをやめる" : `${d === todayKey ? "きょう" : "この日"}はパス`, () => rt3Pass(r, d, !pass)),
+      on ? item(rt4Note(r, d) ? "ひとことを書きなおす" : "ひとことを書く", () => openRt4Note(r, d)) : null,
+      on && rt2At(r, d) ? item("やった時刻を直す", () => openRt2At(r, d)) : null,
+      url ? item("参考リンクを開く", () => window.open(url, "_blank", "noopener")) : null,
+      item("期間でまとめてチェック", () => openRt4Range(r)),
+      item("複製", () => rt6Copy(r.id)),
+      item("休止する", () => pauseRoutine(r.id, true)),
+      item("設定", (byKey) => openRecEdit("rtItem", r.id, byKey)),
+      item("削除", () => removeWithUndo(routines, r.id), true));
+    li.classList.add("rt6-held");
+    rt6MenuDown = false;
+    dlg.showModal();
+    $("rt6MenuNo").focus();
+    navigator.vibrate?.(15);
+  }
+  function rt6HeldRow(ev) { const li = ev.target.closest?.("#rtList > li[data-rt]"); return li && !ev.target.closest("input, textarea, a[href]") ? li : null; }
+  function rt6HoldStop() { clearTimeout(rt6Hold?.timer); rt6Hold = null; }
+  function rt6HoldWire() {
+    const ul = $("rtList");
+    ul.addEventListener("pointerdown", (ev) => {
+      rt6HoldStop();
+      const li = rt6HeldRow(ev);
+      if (!li || ev.pointerType === "mouse" || !ev.isPrimary) return;
+      rt6Hold = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, timer: setTimeout(() => { rt6Hold = null; openRt6Menu(li); }, 500) };
+    });
+    ul.addEventListener("pointermove", (ev) => { if (rt6Hold && ev.pointerId === rt6Hold.id && Math.hypot(ev.clientX - rt6Hold.x, ev.clientY - rt6Hold.y) > 10) rt6HoldStop(); });
+    for (const type of ["pointerup", "pointercancel"]) ul.addEventListener(type, rt6HoldStop);
+    ul.addEventListener("contextmenu", (ev) => { const li = rt6HeldRow(ev); if (!li) return; ev.preventDefault(); rt6HoldStop(); openRt6Menu(li); });
+    ul.addEventListener("click", (ev) => { if ($("rt6Menu")?.open) { ev.preventDefault(); ev.stopPropagation(); } }, true); // (the press that opened it, let go)
+  }
+
+  // ③ まとめて追加: items from lines of words (a list pasted from a note), one a line, the marks they begin with dropped
+  // (・, -, 1.), an 絵文字 at the start kept as its own; none already there by name. With 元に戻す
+  function rt6Lines(text) {
+    const names = new Set(routines.items.map((r) => oneLine(r.name))), out = [], seen = new Set();
+    let same = 0;
+    for (const raw of String(text || "").split(/\r?\n/)) {
+      let s = raw.trim().replace(LIST_MARK, "").trim(), emoji = "";
+      const g = rt4Grapheme(s);
+      if (g && /\p{Extended_Pictographic}/u.test(g)) { emoji = g; s = s.slice(g.length).trim(); }
+      const name = [...oneLine(s)].slice(0, 40).join("");
+      if (!name) continue;
+      if (names.has(name) || seen.has(name)) { same++; continue; }
+      seen.add(name);
+      out.push({ name, emoji });
+      if (out.length >= 50) break;
+    }
+    return { out, same };
+  }
+  function rt6BulkAsk() {
+    let dlg = $("rt6BulkAsk");
+    if (dlg) return dlg;
+    dlg = el("dialog", { class: "ask", id: "rt6BulkAsk", "aria-labelledby": "rt6BulkTitle" },
+      el("div", { class: "ask-group" },
+        el("p", { class: "ask-msg", id: "rt6BulkTitle" }, el("strong", {}, "まとめて追加"), el("br"), "1行に1項目ずつ書きます。行のはじめに絵文字を入れると、絵文字も付きます。"),
+        el("div", { class: "ask-field rt6-bulk-field" },
+          el("textarea", { id: "rt6BulkText", class: "rt6-bulk-in", rows: 6, maxlength: 2000, placeholder: "ストレッチ\n💧 水を飲む\n歯みがき", "aria-labelledby": "rt6BulkTitle", "aria-describedby": "rt6BulkSay", oninput: () => rt6BulkSync() }),
+          el("div", { class: "rt6-bulk-foot" }, el("span", { class: "rt6-bulk-say", id: "rt6BulkSay", "aria-live": "polite" }),
+            el("button", { type: "button", class: "ask-go", id: "rt6BulkGo", disabled: true, onclick: () => { if (rt6BulkAdd($("rt6BulkText").value)) dlg.close(); } }, "追加")))),
+      el("button", { type: "button", class: "ask-btn ask-keep", onclick: () => dlg.close() }, "やめる"));
+    dlg.addEventListener("click", (ev) => { if (ev.target === dlg) dlg.close(); });
+    document.body.append(dlg);
+    return dlg;
+  }
+  function rt6BulkSync() {
+    const { out, same } = rt6Lines($("rt6BulkText").value);
+    $("rt6BulkGo").textContent = out.length ? `${out.length}項目を追加` : "追加";
+    $("rt6BulkGo").disabled = !out.length;
+    $("rt6BulkSay").textContent = same ? `同じ名前の ${same} 項目は追加しません` : "";
+  }
+  function openRt6Bulk() {
+    const dlg = rt6BulkAsk();
+    $("rt6BulkText").value = "";
+    rt6BulkSync();
+    dlg.showModal();
+    $("rt6BulkText").focus();
+  }
+  function rt6BulkAdd(text) {
+    const { out, same } = rt6Lines(text);
+    if (!out.length) return false;
+    const top = Math.max(-1, ...routines.items.filter(rtHasOrder).map((r) => r.order)), now = Date.now(); // (after the ones put in order, as the form adds)
+    act(async () => {
+      const ids = await routines.addMany(out.map((x, i) => ({ name: x.name, ...(x.emoji ? { emoji: x.emoji } : {}), createdAt: now + i, ...(top >= 0 ? { order: top + 1 + i } : {}) })));
+      flash(`${ids.length}項目を追加しました` + (same ? `（同じ名前の ${same} 項目は飛ばしました）` : ""), () => act(() => routines.removeMany(ids)));
+    });
+    return true;
+  }
+
+  // ④ 複製: an item made again with all its settings (its name with （コピー）), right under it; its days, its pauses and
+  // its チャレンジ's start are its own, from today. From ⋯ and the row's 長押し, with 元に戻す
+  function rt6Copy(id) {
+    const r = routines.get(id);
+    if (!r) return;
+    const list = sortedRoutines(), at = list.findIndex((x) => x.id === r.id), before = list.map((x) => [x.id, rtHasOrder(x) ? x.order : undefined]);
+    const { id: _id, order: _o, createdAt: _c, updatedAt: _u, pauses: _p, ...rest } = JSON.parse(JSON.stringify(r));
+    const name = [...r.name].slice(0, 35).join("") + "（コピー）";
+    if (rest.ch && typeof rest.ch === "object") rest.ch = { ...rest.ch, from: todayKey };
+    act(async () => {
+      const nid = await routines.add({ ...rest, name, createdAt: Date.now() });
+      const ids = list.map((x) => x.id);
+      ids.splice(at + 1, 0, nid);
+      await routines.updateMany(ids.map((x, i) => [x, { order: i }]));
+      flash(`「${oneLine(r.name)}」を複製しました`, () => act(async () => { await routines.remove(nid); await routines.updateMany(before.map(([x, o]) => [x, { order: o }])); }));
+    });
+  }
+  function rt6Fields(r) {
+    return el("div", { class: "full rt6-copy-row" }, el("button", { type: "button", class: "link-btn", onclick: () => leaveRec(() => { closeSheet(); rt6Copy(r.id); }) }, "この項目を複製"));
+  }
+
+  // ⑤ 月ごとの達成率: the 12 months to this one, each the share of its items' days done (counted as その2 ⑨ counts a week),
+  // a bar each; pressed, 達成カレンダー goes to that month. Once there is a month before this one
+  function rt6MonthRate(list, ym, first) {
+    let got = 0, of = 0, alls = 0;
+    for (let i = 1, n = daysInMonth(ym); i <= n; i++) {
+      const d = `${ym}-${pad(i)}`;
+      if (d > todayKey) break;
+      if (d < first) continue;
+      const rest = rtRest(d), st = rtDayState(d, list);
+      for (const r of st.items) { if (rtDoneOn(r, d)) { got++; of++; } else if (!rest && d !== todayKey) of++; }
+      if (st.all) alls++;
+    }
+    return { got, of, alls };
+  }
+  function renderRt6Months(list) {
+    const card = $("rt6MonthsCard");
+    if (!card) return;
+    const first = rtFirstDay(), cur = monthOf(todayKey);
+    card.hidden = !list.length || monthOf(first) >= cur;
+    if (card.hidden) return;
+    const each = Array.from({ length: 12 }, (_, i) => { const ym = addMonths(cur, i - 11); return { ym, ...(ym < monthOf(first) ? { got: 0, of: 0, alls: 0 } : rt6MonthRate(list, ym, first)) }; });
+    const got = sum(each, (e) => e.got), of = sum(each, (e) => e.of), had = each.filter((e) => e.of), best = [...had].sort((a, b) => b.got / b.of - a.got / a.of)[0];
+    const shown = rtCalFor === monthOf(viewDate) && rtCalMonth ? rtCalMonth : monthOf(viewDate);
+    $("rt6MonthsSum").textContent = of ? `12か月で ${Math.round((got / of) * 100)}%` : "";
+    setChildren($("rt6Months"), each.map((e, i) => {
+      const pct = e.of ? Math.round((e.got / e.of) * 100) : null, h = pct ? Math.max(4, Math.round((pct / 100) * ST_BAR_H)) : 0;
+      return el("button", { type: "button", class: "st-day" + (shown === e.ym ? " on" : ""), disabled: pct === null, "data-ym": e.ym,
+        "aria-label": `${fmtMonth(e.ym)} ` + (pct === null ? "記録なし" : `${pct}%（${e.of} 回のうち ${e.got} 回）`) + (e.alls ? `、ぜんぶできた日 ${e.alls} 日` : ""), onclick: () => rt6ToMonth(e.ym) },
+        el("span", { class: "st-day-v", "aria-hidden": "true" }, pct === null ? "" : `${pct}%`),
+        el("span", { class: "st-day-area", "aria-hidden": "true" }, h ? el("span", { class: "st-bar", style: `height:${h}px` }, el("i", { style: "flex:1 1 0" })) : null),
+        el("span", { class: "st-day-dn" + (i === 11 ? " today" : ""), "aria-hidden": "true" }, i === 11 ? "今月" : i % 2 ? `${Number(e.ym.slice(5))}月` : ""));
+    }));
+    $("rt6MonthsFoot").textContent = had.length >= 2 ? `いちばんよかったのは${fmtMonth(best.ym)}（${Math.round((best.got / best.of) * 100)}%）です。棒を押すと、その月の達成カレンダーを見られます。` : "";
+  }
+  function rt6ToMonth(ym) {
+    if (rtCalFor !== monthOf(viewDate)) { rtCalFor = monthOf(viewDate); }
+    rtCalMonth = ym;
+    draw(() => renderRtCal(sortedRoutines()));
+    draw(() => renderRt6Months(sortedRoutines()));
+    $("rtCalCard").scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" });
+  }
+
+  // ⑥ かかった時間: a day all done with each checked by hand that day (two or more), from its first check to its last, and
+  // against the middle of the last 30 days' such; today still to do, the time they are usually all done by. Under ぜんぶ
+  function rt6Span(d, list = sortedRoutines()) {
+    const st = rtDayState(d, list), last = rt2AllAt(st, d);
+    if (!last || st.done.length < 2) return null;
+    const first = Math.min(...st.done.map((r) => rt2At(r, d))), m = Math.round((last - first) / 60000);
+    return m >= 1 && m <= 18 * 60 ? { first, last, m } : null;
+  }
+  function rt6Usual(d, list = sortedRoutines()) {
+    const ms = [], ends = [];
+    for (let i = 1; i <= 30; i++) { const x = rt6Span(addDays(d, -i), list); if (x) { ms.push(x.m); ends.push(rt6Min(x.last)); } }
+    return ms.length >= 3 ? { m: rt6Median(ms), end: rt6Median(ends) } : null;
+  }
+  function rt6FootMore(st) {
+    const foot = $("rtFoot");
+    if (!rt6Ready || !foot) return;
+    foot.querySelector(".rt6-took")?.remove();
+    const d = viewDate, list = sortedRoutines(), x = st.all ? rt6Span(d, list) : null, today = d === todayKey;
+    const u = x || (today && !st.all && st.items.length >= 2 && !rtRest(d)) ? rt6Usual(d, list) : null;
+    let w = "";
+    if (x) {
+      const diff = u ? x.m - u.m : 0;
+      w = `${rt2Hm(x.first)}〜${rt2Hm(x.last)}・${rt2Dur(x.m)}` + (!u ? "" : Math.abs(diff) <= 1 ? "（ふだんと同じくらい）" : `（ふだんより${rt2Dur(Math.abs(diff))}${diff < 0 ? "短い" : "長い"}）`);
+    } else if (u) w = `ふだんは ${rt6Hm(u.end)}ごろに、ぜんぶ終わっています`;
+    if (!w) return;
+    const p = el("p", { class: "rt6-took" }, x ? el("span", { class: "sr-only" }, "かかった時間 ") : null, keepUnits(w)), all = foot.querySelector(".rt-all");
+    if (all) all.after(p); else foot.prepend(p);
+  }
+
+  // ⑦ チェックした時間帯: the last 30 days' checks by hand on their own day (その2 ①), by the part of the day, and under each
+  // the items checked there most; five checks and more
+  function renderRt6Hours(list) {
+    const card = $("rt6HoursCard");
+    if (!card) return;
+    const by = new Map(RT6_PARTS.map(([k]) => [k, 0])), per = new Map();
+    let n = 0;
+    for (let i = 0; i < 30; i++) {
+      const d = addDays(todayKey, -i);
+      for (const r of list) {
+        const t = rt2At(r, d);
+        if (!t) continue;
+        const h = new Date(t).getHours(), k = (RT6_PARTS.find(([, a, b]) => h >= a && h < b) || RT6_PARTS[4])[0];
+        by.set(k, by.get(k) + 1); n++;
+        const m = per.get(r.id) || new Map();
+        m.set(k, (m.get(k) || 0) + 1); per.set(r.id, m);
+      }
+    }
+    card.hidden = n < 5;
+    if (card.hidden) return;
+    const top = [...by].sort((a, b) => b[1] - a[1])[0][0], names = new Map(RT6_PARTS.map(([k]) => [k, []]));
+    for (const r of list) { const m = per.get(r.id); if (m) names.get([...m].sort((a, b) => b[1] - a[1])[0][0]).push(rt4Name(r)); }
+    setChildren($("rt6HourList"), RT6_PARTS.filter(([k]) => by.get(k) > 0).map(([k, a, b]) => {
+      const v = by.get(k), pct = Math.round((v / n) * 100), ns = names.get(k);
+      return el("li", { class: "rt6-hour" + (k === top ? " top" : "") },
+        el("div", { class: "st-row-top" }, el("span", {}, k, el("small", {}, ` ${a}〜${b}時`)), el("span", { class: "st-row-v" }, `${pct}%`)),
+        el("div", { class: "bar-track", role: "img", "aria-label": `${k} ${pct}%（${v} 回）` }, el("i", { style: `width:${pct}%` })),
+        ns.length ? el("span", { class: "sub" }, ns.slice(0, 4).join("・") + (ns.length > 4 ? ` ほか ${ns.length - 4} 項目` : "")) : null);
+    }));
+    $("rt6HourFoot").textContent = `いちばん多いのは${top}です（チェックした ${n} 回から）。`;
+  }
+
+  // ⑧ ふだんやる時刻の順に (in the gear, under 並べ替え): those with a usual time (the middle of the last 30 days' checks by
+  // hand, three or more, as その4 ④'s) put in its order, the others after them as they were; with 元に戻す
+  function rt6UsualMin(r) {
+    const ms = [];
+    for (let i = 0; i < 30; i++) { const t = rt2At(r, addDays(todayKey, -i)); if (t) ms.push(rt6Min(t)); }
+    return ms.length >= 3 ? rt6Median(ms) : null;
+  }
+  function rt6ByTime() {
+    const list = sortedRoutines(), timed = list.map((r) => [r, rt6UsualMin(r)]).filter(([, m]) => m !== null).sort((a, b) => a[1] - b[1]);
+    if (timed.length < 2) return null;
+    const next = [...timed.map(([r]) => r), ...list.filter((r) => !timed.some(([x]) => x === r))];
+    return { next, timed, same: next.every((r, i) => r === list[i]) };
+  }
+  function rt6SortByTime() {
+    const p = rt6ByTime();
+    if (!p || p.same) return;
+    const before = routines.items.map((r) => [r.id, rtHasOrder(r) ? r.order : undefined]);
+    act(() => routines.updateMany(p.next.map((r, i) => [r.id, { order: i }])));
+    flash("ふだんやる時刻の順に並べました", () => act(() => routines.updateMany(before.map(([id, order]) => [id, { order }]))));
+  }
+  function renderRt6Order() {
+    const box = $("rt6ByTime");
+    if (!box) return;
+    const p = rt6ByTime();
+    box.hidden = !p;
+    if (!p) return;
+    $("rt6ByTimeBtn").disabled = p.same;
+    const xs = p.timed.slice(0, 6);
+    setChildren($("rt6ByTimeFoot"), p.same ? "いまの並びは、ふだんやる時刻の順になっています。"
+      : [el("span", { class: "phrase" }, "ふだんの時刻："), ...xs.flatMap(([r, m], i) => [i ? " " : "", el("span", { class: "phrase" }, (i ? "→ " : "") + `${rt6Hm(m)} ${oneLine(r.name)}` + (i === xs.length - 1 && p.timed.length > xs.length ? " …" : ""))]),
+        el("span", { class: "phrase" }, "（時刻のない項目は、そのあとに）")]);
+  }
+
+  // ⑨ 画像で送る: the day shown (each item ✓, パス or still to do, with its time or count, and the やめる習慣 under them),
+  // or the month the calendar shows (each day by how much was done), drawn as a picture to share (LINE etc.) or save
+  function rt6Font(px, wt = 400) { return `${wt} ${px}px -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif`; }
+  function rt6Fit(g, s, w) {
+    if (g.measureText(s).width <= w) return s;
+    const a = [...s];
+    while (a.length > 1 && g.measureText(a.join("") + "…").width > w) a.pop();
+    return a.join("") + "…";
+  }
+  function rt6Round(g, x, y, w, h, r) {
+    g.beginPath();
+    if (g.roundRect) { g.roundRect(x, y, w, h, r); return; }
+    g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  }
+  function rt6Canvas(W, H) {
+    const c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    const g = c.getContext("2d");
+    g.fillStyle = "#eef3e2"; g.fillRect(0, 0, W, H);
+    rt6Round(g, 40, 40, W - 80, H - 80, 44); g.fillStyle = "#ffffff"; g.fill();
+    g.textBaseline = "alphabetic";
+    return { c, g };
+  }
+  function rt6DayPicture(d = viewDate) {
+    const list = sortedRoutines(), rows = list.filter((r) => rtActive(r, d)), st = rtDayState(d, list), quits = rt6QuitList().filter((q) => q.quit <= d);
+    if (!rows.length && !quits.length) { flash("この日の項目がありません"); return; }
+    const W = 1080, X = 96, RH = 92, shown = rows.slice(0, 24), qs = quits.slice(0, 6), more = rows.length - shown.length;
+    const H = 330 + shown.length * RH + (more ? 64 : 0) + (qs.length ? 110 + qs.length * 76 : 0) + 130;
+    const { c, g } = rt6Canvas(W, H), run = st.all ? rtAllRun(d) : 0;
+    g.fillStyle = "#1c1c1e"; g.font = rt6Font(48, 700); g.fillText(rt6Fit(g, `${fmtMDW(d)}のルーティーン`, W - X * 2), X, 150);
+    g.font = rt6Font(34, st.all ? 700 : 400); g.fillStyle = st.all ? RT6_INK : "#6b6b70";
+    g.fillText(st.all ? "ぜんぶできました" + (run >= 2 ? `（${run}日連続）` : "") : `${st.done.length} / ${st.items.length} 項目` + (rtRest(d) ? "（お休み）" : ""), X, 212);
+    const bw = W - X * 2, pct = st.items.length ? st.done.length / st.items.length : 0;
+    rt6Round(g, X, 238, bw, 16, 8); g.fillStyle = "#e6ebdc"; g.fill();
+    if (pct > 0) { rt6Round(g, X, 238, Math.max(16, bw * pct), 16, 8); g.fillStyle = RT6_INK; g.fill(); }
+    let y = 290;
+    for (const [i, r] of shown.entries()) {
+      const on = rtDoneOn(r, d), pass = rt3Skipped(r, d), cy = y + RH / 2, t = rtTarget(r), at = on ? rt2At(r, d) : 0, streak = routineStreak(r.id, d);
+      g.beginPath(); g.arc(X + 26, cy, 26, 0, Math.PI * 2);
+      if (on) { g.fillStyle = RT6_INK; g.fill(); g.strokeStyle = "#ffffff"; g.lineWidth = 6; g.lineCap = "round"; g.lineJoin = "round"; g.beginPath(); g.moveTo(X + 14, cy + 1); g.lineTo(X + 23, cy + 10); g.lineTo(X + 39, cy - 8); g.stroke(); }
+      else { g.strokeStyle = pass ? "#a8a8ad" : "#c7c7cc"; g.lineWidth = 4; g.setLineDash(pass ? [8, 7] : []); g.stroke(); g.setLineDash([]); }
+      const right = [pass ? "パス" : null, t && !on ? `${rtCount(r, d)} / ${t}${r.unit || ""}` : null, at ? rt2Hm(at) : null, streak >= 2 ? `${streak}日連続` : null].filter(Boolean).join("・");
+      g.font = rt6Font(30); g.fillStyle = "#8e8e93"; g.textAlign = "right";
+      const rw = right ? Math.min(380, g.measureText(right).width) : 0;
+      if (right) g.fillText(rt6Fit(g, right, 380), W - X, cy + 11);
+      g.textAlign = "left"; g.font = rt6Font(38, on ? 600 : 400); g.fillStyle = pass ? "#8e8e93" : "#1c1c1e";
+      g.fillText(rt6Fit(g, rt4Name(r), W - X * 2 - 76 - (rw ? rw + 24 : 0)), X + 76, cy + 13);
+      if (i < shown.length - 1 || more || qs.length) { g.fillStyle = "#ececf0"; g.fillRect(X + 76, y + RH - 1, W - X * 2 - 76, 2); }
+      y += RH;
+    }
+    if (more) { g.font = rt6Font(30); g.fillStyle = "#8e8e93"; g.fillText(`ほか ${more} 項目`, X + 76, y + 44); y += 64; }
+    if (qs.length) {
+      y += 40;
+      g.font = rt6Font(32, 700); g.fillStyle = RT6_INK; g.fillText("やめる習慣", X, y + 34); y += 70;
+      for (const q of qs) {
+        const slip = rt6Slipped(q, d), n = rt6QuitRun(q, d), right = slip ? "やってしまった" : `やめて ${n}日目`;
+        g.font = rt6Font(32, 600); g.textAlign = "right"; g.fillStyle = slip ? "#c4314b" : RT6_INK; g.fillText(right, W - X, y + 40);
+        const rw = g.measureText(right).width;
+        g.textAlign = "left"; g.font = rt6Font(36); g.fillStyle = "#1c1c1e"; g.fillText(rt6Fit(g, oneLine(q.name), W - X * 2 - rw - 32), X, y + 40);
+        y += 76;
+      }
+    }
+    g.font = rt6Font(28); g.fillStyle = "#8e8e93"; g.textAlign = "center"; g.fillText("つみかさね", W / 2, H - 82);
+    return savePicture(c, `tsumikasane-routine-${d}.png`, `${fmtMDW(d)}のルーティーン`); // (a phone: the share sheet, as 目標's pictures)
+  }
+  function rt6MonthPicture(ym = rtCalFor === monthOf(viewDate) && rtCalMonth ? rtCalMonth : monthOf(viewDate)) {
+    const list = sortedRoutines(), first = rtFirstDay(), n = daysInMonth(ym), ws = weekStart(), lead = (parseYmd(ym + "-01").getDay() - ws + 7) % 7;
+    if (!list.some((r) => Array.from({ length: n }, (_, i) => `${ym}-${pad(i + 1)}`).some((d) => rtActive(r, d)))) { flash("この月の項目がありません"); return; }
+    const weeks = Math.ceil((lead + n) / 7), W = 1080, X = 96, cw = (W - X * 2) / 7, chh = 118, top = 330, H = top + 60 + weeks * chh + 220;
+    const { c, g } = rt6Canvas(W, H), rate = rt6MonthRate(list, ym, first);
+    let rests = 0;
+    for (let i = 1; i <= n; i++) { const d = `${ym}-${pad(i)}`; if (d <= todayKey && rtRest(d)) rests++; }
+    g.fillStyle = "#1c1c1e"; g.font = rt6Font(48, 700); g.fillText(`${fmtMonth(ym)}のルーティーン`, X, 150);
+    g.font = rt6Font(34); g.fillStyle = "#6b6b70";
+    g.fillText([`ぜんぶできた日 ${rate.alls}日`, rate.of ? `達成率 ${Math.round((rate.got / rate.of) * 100)}%` : null, rests ? `お休み ${rests}日` : null].filter(Boolean).join("・"), X, 214);
+    g.textAlign = "center"; g.font = rt6Font(28, 600);
+    for (let i = 0; i < 7; i++) { const w = (ws + i) % 7; g.fillStyle = w === 0 ? "#c4314b" : w === 6 ? "#2f6fd1" : "#8e8e93"; g.fillText(WD[w], X + cw * i + cw / 2, top); }
+    const fills = ["#f2f2f5", "#dfe8c9", "#c2d69a", "#9dbb5e", RT6_INK];
+    for (let i = 1; i <= n; i++) {
+      const d = `${ym}-${pad(i)}`, k = lead + i - 1, cx = X + cw * (k % 7), cy = top + 30 + chh * Math.floor(k / 7), bare = d > todayKey || d < first;
+      const st = bare ? null : rtDayState(d, list), rest = !bare && rtRest(d), m = st ? st.done.length : 0, all = st ? st.items.length : 0;
+      const lv = !st || !all || !m ? 0 : st.all ? 4 : m / all > 2 / 3 ? 3 : m / all > 1 / 3 ? 2 : 1;
+      rt6Round(g, cx + 6, cy, cw - 12, chh - 12, 18); g.fillStyle = bare ? "#fafafa" : fills[lv]; g.fill();
+      g.textAlign = "left"; g.font = rt6Font(26, 600); g.fillStyle = lv === 4 ? "#ffffff" : bare ? "#c7c7cc" : "#3a3a3c"; g.fillText(String(i), cx + 18, cy + 36);
+      const w = bare ? "" : rest && !m ? "休" : all && m ? (st.all ? "ぜんぶ" : `${m}/${all}`) : "";
+      if (w) { g.textAlign = "center"; g.font = rt6Font(st && st.all ? 24 : 26, 700); g.fillStyle = lv >= 3 ? "#ffffff" : "#4a5a2a"; g.fillText(w, cx + cw / 2, cy + 86); }
+    }
+    let ky = top + 30 + weeks * chh + 50, kx = X;
+    g.textAlign = "left"; g.font = rt6Font(26);
+    for (const [w, lv] of [["〜33%", 1], ["〜66%", 2], ["67%〜", 3], ["ぜんぶ", 4]]) {
+      rt6Round(g, kx, ky - 24, 30, 30, 8); g.fillStyle = fills[lv]; g.fill();
+      g.fillStyle = "#6b6b70"; g.fillText(w, kx + 40, ky); kx += 40 + g.measureText(w).width + 40;
+    }
+    g.font = rt6Font(28); g.fillStyle = "#8e8e93"; g.textAlign = "center"; g.fillText("つみかさね", W / 2, H - 82);
+    return savePicture(c, `tsumikasane-routine-${ym}.png`, `${fmtMonth(ym)}のルーティーン`);
+  }
+
+  // ⑩ チェックの音・ふるえ (this device): a short sound as one is checked (another once the day's are all done), a softer
+  // one as one counted goes up; a buzz with it where the device has one. None as a check is taken off
+  function rt6LsOn(k) { try { return localStorage.getItem(LS_PREFIX + k) === "1"; } catch { return false; } }
+  function rt6LsPut(k, on) { try { localStorage.setItem(LS_PREFIX + k, on ? "1" : "0"); } catch {} }
+  function rt6Tone(notes) {
+    try {
+      unlockBeep();
+      const c = restCtx;
+      if (!c) return;
+      for (const [f, t, len, vol] of notes) {
+        const o = c.createOscillator(), g = c.createGain(), at = c.currentTime + t;
+        o.type = "sine"; o.frequency.setValueAtTime(f, at); o.connect(g); g.connect(c.destination);
+        g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(vol, at + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+        o.start(at); o.stop(at + len + 0.03);
+      }
+    } catch {}
+  }
+  var RT6_TONES = { check: [[880, 0, 0.12, 0.2], [1320, 0.06, 0.16, 0.18]], tick: [[660, 0, 0.08, 0.12]], all: [[784, 0, 0.18, 0.2], [988, 0.09, 0.18, 0.2], [1175, 0.18, 0.2, 0.2], [1568, 0.27, 0.4, 0.22]] };
+  function rt6Feel(date, was, kind = "check") {
+    if (!rt6Ready || !kind) return;
+    const k = !was && rtDayState(date).all ? "all" : kind;
+    if (rt6LsOn(RT6_SOUND)) rt6Tone(RT6_TONES[k] || RT6_TONES.check);
+    if (rt6LsOn(RT6_BUZZ)) { try { navigator.vibrate?.(k === "all" ? [20, 50, 20, 50, 40] : k === "tick" ? 8 : 14); } catch {} }
+  }
+
+  // the gear: ⑧ and ⑩
+  function renderRt6Settings() {
+    renderRt6Order();
+    const s = $("rt6SoundOn"), b = $("rt6BuzzOn");
+    if (s) s.checked = rt6LsOn(RT6_SOUND);
+    if (b) b.checked = rt6LsOn(RT6_BUZZ);
+  }
+  // drawn with the page (renderRoutine): ① for the day shown, ⑨'s words; ⑤ and ⑦ for the page alone
+  function rt6Render(list) {
+    if (!rt6Ready) return;
+    draw(renderRt6Quit);
+    $("rt6PicDay").textContent = viewDate === todayKey ? "きょうを画像で送る" : "この日を画像で送る";
+    if (sheetEl.open && settingsScope === "routine") draw(renderRt6Settings);
+    if (tab !== "routine") return;
+    draw(() => renderRt6Months(list)); draw(() => renderRt6Hours(list));
+  }
+  // made once: ① under the day's list, ③ and ① under the form (the 長押し said in its words), ⑤ after 週ごとの達成率, ⑦
+  // after 1年のカレンダー, ⑨ beside 文字で送る, ⑧ under 並べ替え and ⑩ at the gear's end; ② on the list
+  function rt6Build() {
+    if ($("rt6QuitCard")) return;
+    $("rtList").closest(".card").after(el("div", { class: "card", id: "rt6QuitCard", hidden: true },
+      el("div", { class: "card-head row-between" }, el("span", {}, "やめる習慣"), el("button", { type: "button", class: "link-btn rt6-quit-add", "aria-haspopup": "dialog", "aria-label": "やめる習慣を追加", onclick: () => openRt6Quit() }, "追加")),
+      el("ul", { class: "list", id: "rt6QuitList" })));
+    $("rt3Ideas").after(el("div", { class: "rt6-add-tools" },
+      el("button", { type: "button", class: "link-btn", "aria-haspopup": "dialog", onclick: () => openRt6Bulk() }, "まとめて追加"),
+      el("button", { type: "button", class: "link-btn", "aria-haspopup": "dialog", onclick: () => openRt6Quit() }, "やめる習慣を追加")));
+    $("sec-routine").querySelector("#rtForm ~ p.group-foot")?.append(el("span", { class: "phrase" }, "項目を長押しすると、パス・ひとこと・複製などをすぐ選べます。"));
+    $("rt2WeeksCard").after(el("div", { class: "card", id: "rt6MonthsCard", hidden: true },
+      el("div", { class: "card-head row-between" }, el("span", {}, "月ごとの達成率"), el("span", { class: "muted small", id: "rt6MonthsSum" })),
+      el("div", { class: "st-week st2-weeks rt2-weeks rt6-months", id: "rt6Months", role: "group", "aria-label": "月ごとの達成率" }),
+      el("p", { class: "rt6-foot", id: "rt6MonthsFoot" })));
+    $("rt3YearCard").after(el("div", { class: "card", id: "rt6HoursCard", hidden: true },
+      el("div", { class: "card-head row-between" }, el("span", {}, "チェックした時間帯"), el("span", { class: "muted small" }, "この30日")),
+      el("ul", { class: "list", id: "rt6HourList" }),
+      el("p", { class: "rt6-foot", id: "rt6HourFoot" })));
+    $("rt4Share").append(
+      el("button", { type: "button", class: "chip-btn", id: "rt6PicDay", onclick: () => rt6DayPicture() }, "きょうを画像で送る"),
+      el("button", { type: "button", class: "chip-btn", id: "rt6PicMonth", onclick: () => rt6MonthPicture() }, "この月を画像で送る"));
+    $("rtOrderList").nextElementSibling.after(el("div", { class: "rt6-bytime", id: "rt6ByTime", hidden: true },
+      el("div", { class: "label-tools" }, el("button", { type: "button", class: "btn ghost sm", id: "rt6ByTimeBtn", onclick: () => rt6SortByTime() }, "ふだんやる時刻の順に並べる")),
+      el("p", { class: "group-foot", id: "rt6ByTimeFoot" })));
+    $("rtGroup").append(
+      el("h3", { class: "group-head" }, "チェックの音"),
+      el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
+        el("label", { class: "flabel", for: "rt6SoundOn" }, "音"),
+        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "rt6SoundOn", class: "switch", role: "switch", onchange: (ev) => { rt6LsPut(RT6_SOUND, ev.target.checked); if (ev.target.checked) rt6Tone(RT6_TONES.check); } })),
+        typeof navigator.vibrate === "function" ? [el("label", { class: "flabel", for: "rt6BuzzOn" }, "ふるえ"),
+          el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "rt6BuzzOn", class: "switch", role: "switch", onchange: (ev) => { rt6LsPut(RT6_BUZZ, ev.target.checked); if (ev.target.checked) { try { navigator.vibrate(14); } catch {} } } }))] : null),
+      el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "チェックしたときに短い音を鳴らします。ぜんぶできたときは、ちがう音です。"),
+        el("span", { class: "phrase" }, "この端末だけの設定です。"), el("span", { class: "phrase" }, "iPhoneは、マナーモードのときは鳴りません。")));
+    rt6HoldWire();
+  }
+  rt6Build();
+  rt6Ready = true;
+
   // ---------- boot ----------
   function renderAll() {
     tsumiTallied = null; tsumiStale = true; tsumiGen++; rtIdx = null; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)
