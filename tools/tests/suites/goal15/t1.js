@@ -18,21 +18,14 @@ const shown = (p, id) => p.evaluate((id) => { const x = document.getElementById(
 const sheetOpen = (p) => p.evaluate(() => document.getElementById("daySheet").open);
 const undo = async (p) => { await p.locator((await sheetOpen(p)) ? "#sheetStatus button" : "#status button").first().click(); await p.waitForTimeout(600); };
 const menuOf = (p, k) => p.evaluate((k) => document.querySelector(`.m-cell[data-k="${k}"]`).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true })), k);
-const SAYINGS = ["継続は力なり", "千里の道も一歩から", "塵も積もれば山となる", "石の上にも三年", "急がば回れ", "七転び八起き", "雨垂れ石を穿つ", "初心忘るべからず", "好きこそ物の上手なれ", "習うより慣れろ",
-  "案ずるより産むが易し", "失敗は成功のもと", "思い立ったが吉日", "為せば成る", "早起きは三文の徳", "今日できることを明日に延ばすな", "一念岩をも通す", "日進月歩", "有言実行", "一歩一歩、前へ"];
 (async () => {
   const b = await chromium.launch();
   const p = await phone(b, new Date("2026-11-15T20:30:00+09:00"), { deviceScaleFactor: 1 });
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
   await seed(p, { goals: all(), settings, todos, events, journal }, "goal"); await p.waitForTimeout(1000);
 
-  // ⑩ きょうのことば: an old saying, another at つぎ
-  const word = async () => (await txt(p, "#goalWord .g15-word")) || "";
-  const w1 = await word();
-  ok((await txt(p, "#goalWord .g15-word-head")) === "きょうのことば" && SAYINGS.includes(w1), "⑩ a word for the day", w1);
-  await p.click("#goalWordNext"); await p.waitForTimeout(200);
-  const w2 = await word();
-  ok(SAYINGS.includes(w2) && w2 !== w1, "⑩ つぎ: another", w2);
+  // ⑩ きょうのことば was taken out (the user's call, 2026-11-16): no word over the page
+  ok(!(await p.$("#goalWord")) && !(await p.evaluate(() => document.getElementById("sec-goal").innerText.includes("きょうのことば"))), "⑩ no word for the day (taken out)");
   // ⑧ 習慣になるまで: 単語帳2周 (counted, 月水金), four days so far
   ok((await txt(p, "#goalHabit")).startsWith("習慣になるまで（66日） 1 マス 単語帳2周 TOEIC 800点 4 / 66日") && (await p.$$eval("#goalHabit .g15-dots i.on", (x) => x.length)) === 3, "⑧ the counted cell on its way to a habit", await txt(p, "#goalHabit"));
   // ③ この1年の進めた日
@@ -89,10 +82,8 @@ const SAYINGS = ["継続は力なり", "千里の道も一歩から", "塵も積
   const up = await p.$$eval("#goalUpcoming li", (xs) => xs.map((x) => x.innerText.replace(/\s+/g, " ").trim()));
   const ups = (await W(p, "alarms", await p.evaluate(() => Date.now()))).filter((a) => /^goal[:-]/.test(a.tag)).slice(0, 8);
   ok(up.length === ups.length && up.length >= 2 && up.every((x, i) => x.includes(ups[i].title)) && up.some((x) => /20:00 目標の見直し/.test(x)), "④ the goals' notifications to come, in order", up.slice(0, 6));
-  await p.fill("#goalWordsText", "毎日すこしずつ\nやればできる"); await p.dispatchEvent("#goalWordsText", "change"); await p.waitForTimeout(400);
-  ok(JSON.stringify((await setting(p, "goalWords"))?.list) === '["毎日すこしずつ","やればできる"]', "⑩ words of the user's own, kept");
+  ok(!(await p.$("#goalWordsText")), "⑩ no words to write in 設定 (taken out)");
   await done(p);
-  ok(["毎日すこしずつ", "やればできる"].includes(await word()), "⑩ shown from them", await word());
 
   ok(!p.errs.length, "no errors", p.errs);
   console.log(fails ? `FAIL ${fails}` : "ALL OK");
