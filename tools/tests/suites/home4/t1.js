@@ -63,10 +63,8 @@ async function open(b, when) {
   await p.click('#h4QkPick [data-qk="journal"]'); await p.waitForTimeout(200);
   await p.click('#h4QkPick [data-qk="water"]'); await p.waitForTimeout(200);
   ok((await p.getAttribute('#h4QkPick [data-qk="meal"]', "aria-pressed")) === "false" && (await p.getAttribute('#h4QkPick [data-qk="water"]', "aria-pressed")) === "true", "② picked in the sheet");
-  // ⑤ the season off and on again
-  await p.click("#h4KoyomiOn"); await p.waitForTimeout(200);
-  ok((await setOf(p, "home")).noKoyomi === true, "⑤ 暦 off kept");
-  await p.click("#h4KoyomiOn"); await p.waitForTimeout(200);
+  // ⑤ the season was taken out (the user's call, 2026-11-16): no switch for it
+  ok(!(await p.$("#h4KoyomiOn")) && !(await p.textContent("#h4Set")).includes("暦"), "⑤ no 暦 switch (taken out)");
   await p.screenshot({ path: out + "/h4-settings.png" });
   await p.click("#sheetCancel").catch(() => {}); await p.keyboard.press("Escape"); await p.waitForTimeout(600);
   ok((await kinds(p)) === "weight,workout,study,money,todo,journal,water", "② as picked, in their order", await kinds(p));
@@ -90,14 +88,8 @@ async function open(b, when) {
   await undo(p);
   ok((await setOf(p, "h4memo"))?.text === "牛乳\nたまご", "④ 元に戻す");
 
-  // ⑤ the season: 二十四節気 on days known
-  const sk = await H(p, "sekki", D.DAY);
-  ok(sk.name === "立冬" && sk.from === "2026-11-07" && sk.next === "小雪" && sk.nextOn === "2026-11-22", "⑤ 立冬 from 11/7, 小雪 on 11/22", sk);
-  const known = { "2026-02-04": "立春", "2026-06-21": "夏至", "2026-09-23": "秋分", "2026-11-22": "小雪", "2026-12-22": "冬至" }, got = {};
-  for (const [d, n] of Object.entries(known)) { const x = await H(p, "sekki", d); got[d] = x.from === d && x.name === n; }
-  ok(Object.values(got).every(Boolean), "⑤ the days they begin: 立春 2/4, 夏至 6/21, 秋分 9/23, 小雪 11/22, 冬至 12/22", got);
-  ok(flat(await p.textContent("#h4Koyomi")) === "二十四節気の「立冬」（11/7から）。冬のはじまりです。次の「小雪」は11/22。", "⑤ under the date", await p.textContent("#h4Koyomi"));
-  ok(flat(await H(p, "koyomi", "2026-11-22")) === "きょうは二十四節気の「小雪」。わずかに雪が降りはじめるころです。", "⑤ on its day");
+  // ⑤ the season was taken out (the user's call, 2026-11-16): nothing of it under the date
+  ok(!(await p.$("#h4Koyomi")) && !(await p.evaluate(() => document.getElementById("sec-home").innerText.includes("二十四節気"))), "⑤ no 暦 under the date (taken out)");
 
   // ⑥ stopwatch: はかる, 25 minutes on, 止める, to 勉強's form
   await p.click(".h4-start"); await p.waitForTimeout(300);
@@ -135,7 +127,8 @@ async function open(b, when) {
   // ⑨ read aloud
   await p.click("#h4Speak"); await p.waitForTimeout(200);
   const said = await p.evaluate(() => window.__spoken || "");
-  ok(flat(said).startsWith("11月14日（土）。おはようございます。") && said.includes("これからの予定は、10時から、図書館。") && said.includes("立冬"), "⑨ what it reads", said);
+  // (the greeting and the season were taken out of it with them, 2026-11-16)
+  ok(flat(said).startsWith("11月14日（土）。") && !said.includes("おはようございます") && said.includes("これからの予定は、10時から、図書館。") && !said.includes("二十四節気"), "⑨ what it reads", said);
 
   // ⑩ おはよう in the morning: from last night's 23:30
   ok((await tileTxt(p, "h4sleep")).startsWith("睡眠まだゆうべ23:30→−"), "⑩ before", await tileTxt(p, "h4sleep"));

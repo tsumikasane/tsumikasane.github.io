@@ -60,17 +60,15 @@ const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(
   await p.click('.h3-rec[data-k="workout"]'); await p.waitForTimeout(700);
   ok((await p.textContent("#sheetTitle")) === "運動を記録", "⑩ a kind not done opens its form", await p.textContent("#sheetTitle"));
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
-  // ⑨ greeting
-  ok(flat(await p.textContent("#h3Greet")) === "こんにちは。予定はあと1件、きょうまでのToDoが2件です。", "⑨ the greeting", await p.textContent("#h3Greet"));
+  // ⑨ the greeting was taken out (the user's call, 2026-11-16): none under the date, nor its switch
+  ok(!(await p.$("#h3Greet")), "⑨ no greeting (taken out)");
   await p.screenshot({ path: out + "/h3-home.png", fullPage: true });
-  // the settings: the greeting off
+  // the settings: no switch for it
   await p.click("#homeSettings"); await p.waitForTimeout(600);
   ok(!(await p.$("#h3WaterGoal")), "② no aim of its own in the gear's sheet (からだ's)");
-  await p.click("#h3GreetOn"); await p.waitForTimeout(200);
-  ok(((await lsSet(p)).find((x) => x.id === "home") || {}).noGreet === true, "⑨ set in the gear's sheet");
+  ok(!(await p.$("#h3GreetOn")) && !(await p.textContent("#h3Set")).includes("あいさつ"), "⑨ no switch for it (taken out)");
   await p.click("#sheetCancel").catch(() => {}); await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   await p.evaluate(() => window.scrollTo(0, 0));
-  ok(await p.$eval("#h3Greet", (x) => x.hidden), "⑨ as set");
   // hidden tiles: not in ほかのページ
   ok(!(await p.$('.h2-dock-btn[data-dock^="h3"]')), "not in ほかのページ");
   ok(!p.errs.length, "no page errors", p.errs);
@@ -79,7 +77,6 @@ const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(
   p = await phone(b, new Date("2026-11-14T07:00:00+09:00"), { deviceScaleFactor: 1 });
   await seed(p, { journal: D.all().journal, bodyDays: [{ id: D.DAY, date: D.DAY, water: 600, createdAt: D.T(D.DAY, 7) }], settings: [{ id: "bd2Water", goal: 1500 }] }, "home"); await p.waitForTimeout(800);
   ok((await tileTxt(p, "h3water")).startsWith("水分600/1,500mlあと900ml（コップ5杯）"), "② からだ's water and its aim", await tileTxt(p, "h3water"));
-  ok(flat(await p.textContent("#h3Greet")) === "おはようございます。きょうは、予定もきょうまでのToDoもありません。", "⑨ morning", await p.textContent("#h3Greet"));
   ok((await tileTxt(p, "h3now")).startsWith("次にすることひと休み"), "⑧ nothing to do", await tileTxt(p, "h3now"));
   ok((await tileTxt(p, "h3line")).includes("なし") && (await tileTxt(p, "h3spend")).includes("まだ"), "⑥⑦ none");
   await p.emulateMedia({ colorScheme: "dark" }); await p.waitForTimeout(200);
