@@ -5122,6 +5122,39 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
 .cal17-memo { display: block; width: 100%; margin: 0; padding: 2px var(--space-2) 8px; overflow: hidden; background: none; border: 0; color: var(--muted); font-size: var(--t-sub); text-align: start; text-overflow: ellipsis; white-space: nowrap; }
 .cal17-note-field { align-items: flex-end; }
 .cal17-note-field textarea { flex: 1; min-width: 0; min-height: 76px; padding: 8px 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); font: inherit; resize: vertical; }
+/* カレンダー その18: ① 締め切り, ②③ ラベルごとの既定, ⑥ できること, ⑤ 時間割を印刷 */
+.cal18-due { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cal18-due-w { flex: none; color: var(--muted); font-size: var(--t-sub); }
+.cal18-due select, .cal18-due input { flex: 1 1 8em; min-width: 0; }
+.card.pad.cal18-due-card { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 12px; }
+.cal18-due-card .sub { color: var(--muted); font-size: var(--t-sub); }
+.cal18-due-left { margin-inline-start: auto; color: var(--accent); font-size: var(--t-sub); font-weight: 600; }
+.cal18-due-card.near .cal18-due-left { color: var(--warn); }
+.cal18-due-card.past { opacity: .6; }
+.cal18-due-day { gap: 4px; margin: 0 var(--space-2) 8px; }
+.cal18-due-day .cal12-head { margin: 0; }
+.cal18-due-go { min-height: 40px; padding-inline: 0; text-align: start; overflow-wrap: anywhere; }
+.cal18-defs { display: grid; gap: 8px; }
+.cal18-def { gap: 8px; }
+.cal18-def-name { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 600; }
+.cal18-def-name i { width: 10px; height: 10px; border-radius: 50%; background: var(--lc); }
+.cal18-def-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.cal18-def-row select, .cal18-def-row input { flex: 1 1 7em; min-width: 0; min-height: 40px; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); }
+.cal18-help { gap: 10px; }
+.cal18-help-head { display: flex; align-items: center; gap: 10px; }
+.cal18-help-head .link-btn { flex: none; white-space: nowrap; }
+.cal-decide + .group-foot { margin-top: 8px; } /* (under the list, not into it) */
+.cal18-cand-share { margin-top: 12px; }
+.cal18-help-head input { flex: 1 1 auto; min-width: 0; min-height: 40px; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); }
+.cal18-help .help-group dd { margin: 0; color: var(--muted); font-size: var(--t-sub); line-height: 1.45; }
+.cal18-help .sub { margin: 0; color: var(--muted); font-size: var(--t-sub); }
+@media print {
+  #cal8Print.cal18-tt th { padding: 4pt; font-size: 10pt; }
+  #cal8Print.cal18-tt td { height: 62pt; padding: 4pt; text-align: center; vertical-align: middle; }
+  #cal8Print.cal18-tt .cal18-tt-t { font-size: 8pt; font-weight: 400; }
+  #cal8Print.cal18-tt .cal18-tt-n { font-size: 10pt; font-weight: 700; }
+  #cal8Print.cal18-tt .cal18-tt-r { color: #444444; font-size: 8pt; }
+}
 @media print {
   #cal8Print.cal17-wk th { width: 18%; padding: 4pt; text-align: left; vertical-align: top; font-size: 10pt; }
   #cal8Print.cal17-wk td { height: 70pt; padding: 4pt; overflow: visible; font-size: 9.5pt; }
@@ -18278,7 +18311,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderPlanLabels() {
     if (planLabelChoice && !labels.get(planLabelChoice)) planLabelChoice = "";
     if ($("planLabels").contains(document.activeElement)) return;
-    setChildren($("planLabels"), labelPicker("planLabel", planLabelChoice, (v) => { planLabelChoice = v; }, "planLabelLabel"));
+    setChildren($("planLabels"), labelPicker("planLabel", planLabelChoice, (v) => { planLabelChoice = v; cal18Picked(v, true); }, "planLabelLabel")); // (カレンダー その18 ② ラベルごとの既定)
   }
   function renderLabelEditor() { renderTagEditor(labels, $("labelList"), "ラベル"); }
   function renderTodoLabelEditor() { renderTagEditor(todoLabels, $("todoLabelList"), "ラベル"); }
@@ -18607,6 +18640,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...cal14Alarms(now)); // (カレンダー その14 ② まもなく出発, ⑦ 1日のふりかえり)
     out.push(...cal15Alarms(now)); // (カレンダー その15 ① 時刻で決めた通知)
     out.push(...cal17GapAlarms(now)); // (カレンダー その17 ⑥ すきま時間)
+    out.push(...cal18Alarms(now)); // (カレンダー その18 ① 締め切り, ⑨ 最後の回)
     out.push(...tdAlarms(now)); // ① ToDo's お知らせ (the user's call, 2026-11-10)
     out.push(...tdMorningAlarms(now), ...tdWaitAlarms(now)); // (ToDo その2 ① 朝のまとめ, ⑥ 返事待ち)
     out.push(...tdPreAlarms(now), ...tdEveningAlarms(now)); // (ToDo その3 ② 前もって, ③ 夜のお知らせ)
@@ -18658,6 +18692,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...rt4Alarms(now)); // (ルーティーン その4 ⑨ 連続を守るお知らせ)
     if (calNine) cal9Hold(out); // (カレンダー その9 ⑤ 予定のお知らせを休む)
     cal12Hold(out); // (カレンダー その12 ⑥ この回はお知らせしない)
+    cal18Hide(out); // (カレンダー その18 ⑩ ひみつの予定)
     if (todoEight) td8Hold(out); // (ToDo その8 ②⑧ none for いつかやる nor a list put away)
     if (goalThirteen) goalQuietDrop(out); // (目標 その13 ⑤ 目標のお知らせを休む)
     bt13Hold(out); // (バイト その13 ④ バイトのお知らせを休む)
@@ -18698,6 +18733,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...cal15Push()); // (カレンダー その15 ① 時刻で決めた通知)
     parts.push(...cal16Push()); // (カレンダー その16 ⑩ 通知に持ち物)
     parts.push(...cal17Push()); // (カレンダー その17 ⑥ すきま時間)
+    parts.push(...cal18Push()); // (カレンダー その18 ①⑨⑩)
     parts.push(...tdPushParts()); // (① ToDo's お知らせ, and the focus timer's end)
     parts.push(...tdMorningParts(), ...tdWaitParts()); // (ToDo その2 ①⑥)
     parts.push(...tdTenPush()); // (ToDo その3 ②③④)
@@ -21642,7 +21678,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   function renderCalendar() {
     syncCalView();
-    draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); draw(renderCalSix); draw(renderCalSeven); draw(renderCalEight); draw(renderCalNine); draw(renderCalTen); draw(renderCalTwelve); draw(renderCalThirteen); draw(renderCalFourteen); draw(renderCalSixteen); draw(renderCalSeventeen); // (その17 ②③⑩ and the gear; その16 ④ 地図でつなぐ; その14 ⑨⑩ and the gear; その13 ①②⑤ the day's sheet, ①②⑨ the gear; その12 ②⑨ the gear; その10 ③⑤⑦; その9 ②⑤⑥⑦⑧⑩; その8 ①④⑤⑩; その7 ①③④⑥ the gear and the forms; その6 ①⑤⑧; その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
+    draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); draw(renderCalSix); draw(renderCalSeven); draw(renderCalEight); draw(renderCalNine); draw(renderCalTen); draw(renderCalTwelve); draw(renderCalThirteen); draw(renderCalFourteen); draw(renderCalSixteen); draw(renderCalSeventeen); draw(renderCalEighteen); // (その18 ①②⑥ and the gear; その17 ②③⑩ and the gear; その16 ④ 地図でつなぐ; その14 ⑨⑩ and the gear; その13 ①②⑤ the day's sheet, ①②⑨ the gear; その12 ②⑨ the gear; その10 ③⑤⑦; その9 ②⑤⑥⑦⑧⑩; その8 ①④⑤⑩; その7 ①③④⑥ the gear and the forms; その6 ①⑤⑧; その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
     const title = calTitle();
     if ($("calMonthName").textContent !== title) $("calMonthName").textContent = title; // a live region: only a change is read out
     const todoBy = groupBy(todos.items, (t) => t.due);
@@ -21799,8 +21835,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("span", { class: "chip when", style: "--chip-c: var(--lc)" }, when),
         el("span", { class: "body" }, el("span", { class: "text" }, cal4Name(t)), sub ? el("span", { class: "sub" + (l ? " ev-label" : "") }, sub) : null,
           // its place on a line of its own with a pin (the user's call: a plan's 場所 as the iPhone's カレンダー has it)
-          e.place ? el("span", { class: "sub ev-place" }, icon("place", 14), el("span", {}, e.place)) : null,
-          e.memo ? el("span", { class: "sub ev-memo clamp" }, e.memo) : null, calRowMore(t), calThree ? cal3RowMore(t) : null, cal4RowMore(t), cal5RowMore(t), cal6RowMore(t), cal8RowMore(t), cal10RowMore(t), cal11RowMore(t), cal12RowMore(t), cal13RowMore(t), cal14RowMore(t)), // (その14 ③④, その13 ④⑧, その12 ③⑥⑦, その11 ⑦⑩, その10 ②⑩, カレンダー その3 ⑧, その4 ②⑥, その5 ②, その6 ⑨⑩, その8 ③)
+          e.place && !cal18Hid(e) ? el("span", { class: "sub ev-place" }, icon("place", 14), el("span", {}, e.place)) : null,
+          e.memo && !cal18Hid(e) ? el("span", { class: "sub ev-memo clamp" }, e.memo) : null, calRowMore(t), calThree ? cal3RowMore(t) : null, cal4RowMore(t), cal5RowMore(t), cal6RowMore(t), cal8RowMore(t), cal10RowMore(t), cal11RowMore(t), cal12RowMore(t), cal13RowMore(t), cal14RowMore(t)), // (その14 ③④, その13 ④⑧, その12 ③⑥⑦, その11 ⑦⑩, その10 ②⑩, カレンダー その3 ⑧, その4 ②⑥, その5 ②, その6 ⑨⑩, その8 ③)
         el("span", { class: "chev" }, icon("next", 16))));
   }
 
@@ -22005,7 +22041,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const hi = minOf(fh.to);
     if ((!fh.on && !any) || d < todayKey || hi <= at) return []; // (any: ToDo's ④, while they aren't shown on the calendar)
     if (d === todayKey) at = Math.max(at, Math.ceil(nowMinutes() / 15) * 15);
-    const busy = [...turns.map(calBusySpan).filter(Boolean), ...parts.map((p) => [p.s, p.end])].sort((a, b) => a[0] - b[0]), out = [];
+    const busy = [...turns.map(cal18Busy).filter(Boolean), ...parts.map((p) => cal18PadSpan([p.s, p.end]))].sort((a, b) => a[0] - b[0]), out = [];
     for (const [s, e] of busy) {
       if (e <= at) continue;
       if (s >= hi) break;
@@ -22074,7 +22110,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // a day's plans and shifts in order: 終日 ones first, then by time — 10:00 授業, 17:00 バイト
   function dayAgenda(turns, parts) {
-    return [...turns.filter((t) => !cal4Cx(t.e, t.start)).map((t) => ({ k: turnTime(t), text: (turnTime(t) ? turnTime(t) + " " : "") + t.e.title + (t.e.ten ? "（仮）" : "") })),
+    return [...turns.filter((t) => !cal4Cx(t.e, t.start)).map((t) => ({ k: turnTime(t), text: (turnTime(t) ? turnTime(t) + " " : "") + cal18Name(t.e) + (t.e.ten ? "（仮）" : "") })),
       ...parts.filter((p) => p.first).map((p) => ({ k: p.x.start, text: `${p.x.start} ${shiftName(p.x)}` }))].sort((a, b) => a.k.localeCompare(b.k)).map((x) => x.text);
   }
   function renderCalMorning() {
@@ -25660,7 +25696,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月16日 15:32"; // fec883d0 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月16日 15:44"; // b53677d6 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -34295,7 +34331,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function calEveBody(d1, turns, parts) {
     const list = dayAgenda(turns, parts), first = turns.filter((t) => t.day === 0 && isHm(t.e.time) && num(t.e.travel) > 0 && !t.e.ten).sort((a, b) => a.e.time.localeCompare(b.e.time))[0];
     const left = calChecksLeft(turns, d1), w = wxPlace() ? wxDay(d1) : null;
-    return { n: list.length, body: [list.join("、"), first ? `${calLeaveAt(first.e, d1)} に出発（${oneLine(first.e.title)}）` : "", left.length ? `持ち物・準備：${left.join("、")}` : "",
+    return { n: list.length, body: [list.join("、"), first ? `${calLeaveAt(first.e, d1)} に出発（${oneLine(cal18Name(first.e))}）` : "", left.length ? `持ち物・準備：${left.join("、")}` : "",
       w && num(w.rain) >= 50 ? `雨の予報（降水確率 ${w.rain}%）。傘を忘れずに` : ""].filter(Boolean).join("\n") };
   }
   function calEveAlarms(now) {
@@ -34393,7 +34429,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("button", { type: "button", class: "row-btn nav", "data-k": "decide-" + c.k, "aria-label": `${fmtMDW(c.date)}${c.time ? " " + c.time : ""}に決める`, onclick: () => calDecide(e.id, c) },
         el("span", { class: "body" }, el("span", { class: "text" }, fmtMDW(c.date) + (c.time ? ` ${c.time}${c.endTime ? "〜" + c.endTime : ""}` : " 終日")), c.date === here ? el("span", { class: "sub" }, "開いている日") : null, cal15CandNote(e, c)),
         el("span", { class: "num cal-decide-go" }, "この日に決める"))))),
-      el("p", { class: "group-foot" }, "決めると、ほかの候補の日は消えます。")];
+      el("p", { class: "group-foot" }, "決めると、ほかの候補の日は消えます。"), cal18CandShare(e)];
   }
 
   // ⑤ as words to send (LINE and the like): a plan, a day's or a week's plans, the free hours of the 7 days from a day;
@@ -34627,6 +34663,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     cal12TT(); // (カレンダー その12 ④ いまの授業・次の授業)
     cal15TT(); // (カレンダー その15 ⑩ 時間割を画像で)
     cal16TT(); // (カレンダー その16 ⑧ 単位の合計)
+    cal18TT(); // (カレンダー その18 ⑤ 時間割を印刷)
     if (keep && $(keep)) $(keep).focus();
   }
   let ttTimesOpen = false;
@@ -34802,6 +34839,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     Object.assign(x, cal13FormExtras(f)); // (カレンダー その13 ④ 土日・祝日のとき)
     Object.assign(x, cal14FormExtras(f)); // (カレンダー その14 ① だいたいの時間)
     Object.assign(x, cal15FormExtras(f)); // (カレンダー その15 ① 時刻で決める通知, ⑦ 予約番号)
+    Object.assign(x, cal18FormExtras(f)); // (カレンダー その18 ① 締め切り, ⑩ ひみつ)
     return x;
   }
   function calFormSig(f) { return calTwo ? JSON.stringify(calFormExtras(f, $(f + "Date").value, $(f + "Time").value)) : ""; }
@@ -34827,7 +34865,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!e) { box.replaceChildren(); return; }
     const d = e.repeat ? editingStart || e.date : e.date, act0 = document.activeElement, k = box.contains(act0) ? act0.dataset.k || act0.id : null;
     const typed = act0?.id === "edNoteText" ? act0.value : null;
-    setChildren(box, cal11QuickCard(e), cal12MeetCard(e, d), cal13LinkCard(e), cal14TopCards(e, d), cal15ResvCard(e), calThree ? cal3EditCards(e, d) : null, cal4EditCards(e, d), cal5EditCards(e, d), cal6EditCards(e, d), cal7EditCards(e, d), cal10EditCards(e, d), cal11StudyCard(e, d), cal12EditCards(e, d), cal13EditCards(e), cal14EditCards(e), cal16EditCards(e, d), cal17EditCards(e, d), calDecideCard(e, editingStart), calChecksCard(e, d), calNoteCard(e, d)); // (カレンダー その3 ②⑧ first; その11 ⑦⑧ 参加する・電話 over all)
+    setChildren(box, cal11QuickCard(e), cal12MeetCard(e, d), cal13LinkCard(e), cal14TopCards(e, d), cal15ResvCard(e), cal18DueCard(e), calThree ? cal3EditCards(e, d) : null, cal4EditCards(e, d), cal5EditCards(e, d), cal6EditCards(e, d), cal7EditCards(e, d), cal10EditCards(e, d), cal11StudyCard(e, d), cal12EditCards(e, d), cal13EditCards(e), cal14EditCards(e), cal16EditCards(e, d), cal17EditCards(e, d), calDecideCard(e, editingStart), calChecksCard(e, d), calNoteCard(e, d)); // (カレンダー その3 ②⑧ first; その11 ⑦⑧ 参加する・電話 over all)
     cal15RenderNav(e, d); // (カレンダー その15 ⑥ 前の予定・次の予定, under the form)
     if (k) { const n = box.querySelector(`[data-k="${k}"]`) || $(k); if (n) { if (typed !== null && n.id === "edNoteText") n.value = typed; n.focus(); } }
   }
@@ -35435,7 +35473,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function cal4Name(t) {
     if (!calFour || !t?.e) return t?.e?.title || "";
     const y = cal4Years(t.e, t.start);
-    return (t.e.star ? "★" : "") + cal7MarkOf(t.e) + t.e.title + (y ? `（${y}）` : ""); // (その7 ⑩ its mark)
+    return (t.e.star ? "★" : "") + cal7MarkOf(t.e) + cal18Name(t.e) + (y ? `（${y}）` : ""); // (その7 ⑩ its mark)
   }
 
   // ② a turn called off (中止): kept in the calendar struck through, but no 通知アラーム, 出発 or 終わりのお知らせ, not in the
@@ -35571,6 +35609,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     cal13FillForm(f, e); // (その13 ④)
     cal14FillForm(f, e); // (その14 ①)
     cal15FillForm(f, e); // (その15 ①⑦)
+    cal18FillForm(f, e); // (その18 ①⑩③)
   }
 
   // a plan's row (a day's list, 予定を探す): 中止 (②) and who it is with (⑥)
@@ -35803,7 +35842,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const day = addDays(d, i), ts = (tb.get(day) || []).filter((t) => !cal4Cx(t.e, t.start) && (t.day === 0 || i === 1));
       if (!ts.length) continue;
       n += ts.length;
-      const names = [...ts].sort((a, b) => Number(!!b.e.star) - Number(!!a.e.star) || turnTime(a).localeCompare(turnTime(b))).map((t) => (t.e.star ? "★" : "") + oneLine(t.e.title));
+      const names = [...ts].sort((a, b) => Number(!!b.e.star) - Number(!!a.e.star) || turnTime(a).localeCompare(turnTime(b))).map((t) => (t.e.star ? "★" : "") + oneLine(cal18Name(t.e)));
       lines.push(`${fmtShort(day)} ${names.join("・")}`);
     }
     return { n, body: lines.join("\n") };
@@ -38557,7 +38596,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const d = addDays(todayKey, i), ts = cal14DayPlans(d), at = dayAt(d, r.at);
       if (!ts.length || at <= now + 5000 || at > now + PUSH_AHEAD * 864e5) continue;
       if (i === 0 && ts.every((t) => calNoteOf(t.e, d))) continue;
-      out.push({ at, title: `${i === 0 ? "きょう" : fmtMDW(d)}の予定のふりかえり`, body: `${ts.length}件：${ts.slice(0, 4).map((t) => oneLine(t.e.title)).join("・")}${ts.length > 4 ? " ほか" : ""}。開いて、どうだったかを書けます`, tag: `cal-review:${d}`, url: `./#calendar:${d}` });
+      out.push({ at, title: `${i === 0 ? "きょう" : fmtMDW(d)}の予定のふりかえり`, body: `${ts.length}件：${ts.slice(0, 4).map((t) => oneLine(cal18Name(t.e))).join("・")}${ts.length > 4 ? " ほか" : ""}。開いて、どうだったかを書けます`, tag: `cal-review:${d}`, url: `./#calendar:${d}` });
     }
     return out;
   }
@@ -39075,6 +39114,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       item(cx ? "中止をやめる" : "この回を中止にする", "cx", () => cal4SetCancel(now(), start, !cx)),
       movable && cal4CanHour(e) ? item("1時間後にずらす", "hour", () => cal4Move(now(), "hour")) : null,
       movable ? item("次の日にずらす", "day", () => cal4Move(now(), "day")) : null,
+      cal18MenuItem(e, start, item),
       item("複製", "copy", () => { if (!events.get(e.id)) return; editingId = e.id; editingStart = start; copyPlan(); }),
       item("文字で送る", "share", () => calShare(e.title, calPlanText(now(), start))),
       item(e.repeat ? "この回を削除" : "削除", "del", () => cal16Delete(e.id, start), true));
@@ -39206,8 +39246,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("button", { type: "button", class: "btn sm ghost", "data-k": "day-later", onclick: () => cal16ShiftDay(d, Number(sel.value)) }, "後ろへ"),
       el("button", { type: "button", class: "btn sm ghost", "data-k": "day-earlier", onclick: () => cal16ShiftDay(d, -Number(sel.value)) }, "前へ"));
   }
-  function cal16ShiftDay(d, m) {
-    const turns = cal6DayTurns(d).filter(cal16Can);
+  function cal16ShiftDay(d, m, from = -1) {
+    const turns = cal6DayTurns(d).filter((t) => cal16Can(t) && minOf(t.e.time) >= from); // (その18 ④ from a plan on)
     const endOf = (e) => (isHm(e.endTime) && e.endTime > e.time ? minOf(e.endTime) : minOf(e.time));
     const go = turns.filter((t) => minOf(t.e.time) + m >= 0 && endOf(t.e) + m <= 1439), stay = turns.length - go.length;
     if (!go.length) { flash("日をまたいでしまうので、ずらせません"); return; }
@@ -39500,7 +39540,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function cal17Spans(d, tb, sb, hidden) {
     return [...(tb.get(d) || []).filter((t) => !t.e.cand && !t.e.ten && !cal4Cx(t.e, t.start) && onCalendar(t.e, hidden) && typeof t.e.title === "string").map((t) => {
       const sp = turnSpan(t);
-      return sp && { s: sp[0], end: sp[1], name: oneLine(t.e.title), tv: t.day === 0 && !t.e.online ? num(t.e.travel) : 0 };
+      return sp && { s: sp[0], end: sp[1], name: oneLine(cal18Name(t.e)), tv: t.day === 0 && !t.e.online ? num(t.e.travel) : 0 };
     }).filter(Boolean), ...(sb.get(d) || []).map((p) => ({ s: p.s, end: p.end, name: shiftName(p.x), tv: 0 }))].sort((a, b) => a.s - b.s);
   }
   function cal17GapAlarms(now) {
@@ -39680,6 +39720,343 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("cal17GapFoot").textContent = `予定（バイトも）が終わって、次の予定まで${durText(g.min)}以上あくときに、その時間を通知で届けます。` + (g.on && pushState() !== "on" ? "通知を受け取る設定が必要です。" : "");
   }
   calSeventeen = true;
+
+  // ---------- カレンダー その18 ①〜⑩ (the user's calls, 2026-11-16): a day something is due before a plan (①), a label's
+  // length and place for a new plan (②), a label picked from words in the name (③), the plans after one moved at once
+  // (④), the timetable printed (⑤), what the calendar can do (⑥), room around the plans in the free times (⑦), a 仮
+  // plan's days sent as words (⑧), a repeat's last turn said the evening before (⑨) and plans kept secret (⑩) ----------
+  // (what was there calls in here; before this part has run, as the page opens, these do nothing: those it calls are
+  // function declarations, there from the start)
+  var calEighteen = false;
+
+  // ① 締め切り (the forms, under 予約番号): 申込・支払い・キャンセル・提出 or another by a day (the day before the plan at
+  // first); at the top of the plan opened with how long is left, over that day's list, and a notification the evening
+  // before (20:00) and that morning (9:00), while the plan is still to come
+  const CAL18_DUES = [["", "なし"], ["apply", "申込"], ["pay", "支払い"], ["cancel", "キャンセル"], ["submit", "提出"], ["other", "締め切り"]];
+  function cal18DueWord(k) { return k ? (CAL18_DUES.find(([x]) => x === k) || [null, ""])[1] : ""; }
+  function cal18Due(e) { const v = calEighteen ? e?.due18 : null; return v && typeof v === "object" && cal18DueWord(v.k) && isDay(v.d || "") ? v : null; }
+  const cal18DueName = (v) => (v.k === "other" ? "締め切り" : `${cal18DueWord(v.k)}の締め切り`);
+  for (const f of ["plan", "ed"]) {
+    const kind = el("select", { id: f + "DueKind", "aria-label": "締め切りの種類" }, CAL18_DUES.map(([k, w]) => el("option", { value: k }, w)));
+    const day = el("input", { type: "date", id: f + "DueDay", "aria-label": "締め切りの日" });
+    kind.addEventListener("change", () => {
+      day.disabled = !kind.value;
+      if (kind.value && !isDay(day.value)) { const d = $(f + "Date").value; day.value = isDay(d) ? (addDays(d, -1) < todayKey ? todayKey : addDays(d, -1)) : todayKey; }
+    });
+    $(f + "Resv").closest(".ffield").after(el("div", { class: "full ffield cal18-due" }, el("span", { class: "cal18-due-w" }, "締め切り"), kind, day));
+  }
+  function cal18DueLeft(d) { const n = daysBetween(todayKey, d); return n === 0 ? "きょう" : n === 1 ? "あした" : n > 0 ? `あと${n}日` : "過ぎました"; }
+  function cal18DueCard(e) {
+    const v = cal18Due(e);
+    if (!v) return null;
+    return el("div", { class: "card pad cal18-due-card" + (v.d < todayKey ? " past" : daysBetween(todayKey, v.d) <= 1 ? " near" : "") },
+      el("span", { class: "sub" }, cal18DueName(v)), el("strong", {}, fmtMDW(v.d)), el("span", { class: "cal18-due-left" }, cal18DueLeft(v.d)));
+  }
+  // over a day's list: the plans due that day
+  const cal18DueBox = el("div", { class: "card pad cal18-due-day", id: "cal18DueDay", hidden: true });
+  $("calDayList").before(cal18DueBox);
+  function renderCal18DueDay() {
+    const d = calDay, xs = isDay(d || "") ? events.items.filter((e) => cal18Due(e)?.d === d && typeof e.title === "string") : [];
+    cal18DueBox.hidden = !xs.length;
+    setChildren(cal18DueBox, ...(xs.length ? [el("p", { class: "cal12-head" }, "この日が締め切り"), ...xs.map((e) => el("button", { type: "button", class: "link-btn cal18-due-go", "data-due": e.id, onclick: () => cal18OpenPlan(e.id, e.date) },
+      `${cal18DueWord(e.due18.k)}：${cal18Name(e)}（${fmtShort(e.date)}）`))] : []));
+  }
+  function cal18OpenPlan(id, d) {
+    leaveRec(() => {
+      if (!events.get(id)) return;
+      if (calDay !== d) { calDay = d; renderCalendar(); }
+      editEvent(id, d);
+    });
+  }
+  function cal18DueAlarms(now) {
+    if (!calEighteen) return [];
+    const out = [], last = now + PUSH_AHEAD * 864e5;
+    for (const e of events.items) {
+      const v = cal18Due(e);
+      if (!v || e.ten || typeof e.title !== "string" || (isDay(e.date || "") && addDays(e.date, extraDays(e)) < todayKey && !e.repeat)) continue;
+      for (const [n, at] of [[1, dayAt(addDays(v.d, -1), "20:00")], [0, dayAt(v.d, "09:00")]]) {
+        if (at <= now + 5000 || at > last) continue;
+        out.push({ at, title: `${n ? "あした" : "きょう"}は${cal18DueName(v)}`, body: `「${clip(oneLine(e.title), 60)}」（${fmtMDW(e.date)}）`, tag: `cal-due:${e.id}:${v.d}:${n}`, url: `./#calendar:${v.d}` });
+      }
+    }
+    return out;
+  }
+
+  // ② ラベルごとの既定 and ③ 名前で自動ラベル (under ラベルをまとめる): for each label a length and a place a new plan
+  // takes as the label is picked (the length while it is the one it came with, the place while there is none), and words
+  // that pick the label as the name is typed (while no label was picked by hand)
+  const CAL18_LENS = [[0, "決めない"], [30, "30分"], [45, "45分"], [60, "1時間"], [90, "1時間30分"], [120, "2時間"], [180, "3時間"]];
+  function cal18Def(id) { const v = calEighteen && id ? calSet().labelDefs18?.[id] : null; return v && typeof v === "object" ? v : {}; }
+  function cal18Words(id) { return String(cal18Def(id).words || "").split(/[、,，\s]+/).map((w) => w.trim()).filter(Boolean); }
+  function cal18SaveDef(id, patch) {
+    const all = { ...(calSet().labelDefs18 || {}) }, v = { ...cal18Def(id), ...patch };
+    for (const k of Object.keys(v)) if (v[k] === undefined || v[k] === "" || v[k] === 0) delete v[k];
+    if (Object.keys(v).length) all[id] = v; else delete all[id];
+    saveCalSet({ labelDefs18: Object.keys(all).length ? all : undefined });
+  }
+  const cal18DefsHead = el("h3", { class: "group-head" }, "ラベルごとの既定"), cal18Defs = el("div", { class: "cal18-defs", id: "cal18Defs" });
+  const cal18DefsFoot = el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "新しい予定でラベルを選ぶと、長さと場所が入ります。"), el("span", { class: "phrase" }, "予定の名前に「言葉」が入っていると、そのラベルを自動で選びます（言葉は「、」で区切ります）。"));
+  $("cal17Merge").after(cal18DefsHead, cal18Defs, cal18DefsFoot);
+  function renderCal18Defs() {
+    const ls = sortedLabels();
+    cal18DefsHead.hidden = cal18Defs.hidden = cal18DefsFoot.hidden = !ls.length;
+    if (cal18Defs.contains(document.activeElement)) return;
+    setChildren(cal18Defs, ls.map((l) => {
+      const d = cal18Def(l.id);
+      const len = el("select", { id: "cal18Len-" + l.id, "aria-label": `「${l.name}」の長さ` }, CAL18_LENS.map(([m, w]) => el("option", { value: String(m) }, w)));
+      len.value = String(CAL18_LENS.some(([m]) => m === num(d.len)) ? num(d.len) : 0);
+      const place = el("input", { type: "text", id: "cal18Place-" + l.id, value: typeof d.place === "string" ? d.place : "", maxlength: 200, placeholder: "場所", "aria-label": `「${l.name}」の場所`, autocomplete: "off" });
+      const words = el("input", { type: "text", id: "cal18Words-" + l.id, value: typeof d.words === "string" ? d.words : "", maxlength: 100, placeholder: "言葉", "aria-label": `「${l.name}」を選ぶ言葉`, autocomplete: "off" });
+      len.addEventListener("change", () => cal18SaveDef(l.id, { len: Number(len.value) || undefined }));
+      place.addEventListener("change", () => cal18SaveDef(l.id, { place: oneLine(place.value).slice(0, 200) || undefined }));
+      words.addEventListener("change", () => cal18SaveDef(l.id, { words: oneLine(words.value).slice(0, 100) || undefined }));
+      return el("div", { class: "card pad cal18-def", style: labelStyle(l) }, el("p", { class: "cal18-def-name" }, el("i", { "aria-hidden": "true" }), oneLine(l.name)), el("div", { class: "cal18-def-row" }, len, place, words));
+    }));
+  }
+  let cal18Manual = false, cal18Auto = "";
+  function cal18Picked(v, byHand) {
+    if (!calEighteen) return;
+    if (byHand) { cal18Manual = true; cal18Auto = ""; }
+    if (!planNew || !v) return;
+    const def = cal18Def(v), len = num(def.len), t = $("planTime").value;
+    if (len > 0 && isHm(t) && !$("planEndDate").value && cal5Len("plan") === cal17Len()) putWhen("plan", "EndTime", atMin(Math.min(minOf(t) + len, 23 * 60 + 59)));
+    if (typeof def.place === "string" && def.place.trim() && !$("planPlace").value.trim()) putWhen("plan", "Place", def.place.trim());
+  }
+  function cal18AutoLabel() {
+    if (!calEighteen || !planNew || cal18Manual) return;
+    const t = foldText($("planTitle").value);
+    let hit = "";
+    if (t) for (const l of sortedLabels()) if (cal18Words(l.id).some((w) => t.includes(foldText(w)))) { hit = l.id; break; }
+    if (hit === cal18Auto || (planLabelChoice && planLabelChoice !== cal18Auto)) return; // (one there not put by this: left)
+    planLabelChoice = hit; cal18Auto = hit;
+    renderPlanLabels();
+    if (hit) cal18Picked(hit, false);
+  }
+  $("planTitle").addEventListener("input", cal18AutoLabel);
+
+  // ④ この予定から後ろをずらす (a plan held down in a day's list): it and the day's plans after it, by the time picked in
+  // 時間をずらす (30分 at first) — その16 ⑤'s, from this plan on
+  function cal18MenuItem(e, start, item) {
+    if (!calEighteen || !isHm(e.time) || extraDays(e) || e.ten) return null;
+    const m = cal16By > 0 ? cal16By : 30, w = (CAL16_BY.find(([x]) => x === m) || [m, durText(m)])[1];
+    return item(`この予定から後ろを${w}ずらす`, "after", () => cal16ShiftDay(start, m, minOf(e.time)));
+  }
+
+  // ⑤ 時間割を印刷 (under 文字で送る・画像で送る): the timetable as a table on paper, each class its name, room and teacher
+  function cal18TTBox(tt) {
+    const wds = tt.sat ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5], byCell = new Map(tt.items.map((x) => [x.wd + "-" + x.p, x]));
+    return el("div", { id: "cal8Print", class: "cal18-tt" }, el("h1", {}, `時間割（${fmtDay(tt.from)}〜${fmtDay(tt.to)}）`),
+      el("table", {}, el("thead", {}, el("tr", {}, el("th", {}), wds.map((wd) => el("th", { class: wd === 6 ? "sat" : "" }, WD[wd])))),
+        el("tbody", {}, tt.periods.map((p, i) => el("tr", {}, el("th", {}, el("div", {}, `${i + 1}限`), el("div", { class: "cal18-tt-t" }, `${p.from}〜${p.to}`)),
+          wds.map((wd) => {
+            const x = byCell.get(wd + "-" + (i + 1));
+            return el("td", {}, x ? [el("div", { class: "cal18-tt-n" }, x.name), x.room ? el("div", { class: "cal18-tt-r" }, x.room) : null, x.teacher ? el("div", { class: "cal18-tt-r" }, x.teacher) : null] : null);
+          }))))));
+  }
+  function cal18Print(box) {
+    $("cal8Print")?.remove();
+    document.body.append(box);
+    const gone = () => { box.remove(); window.removeEventListener("afterprint", gone); };
+    window.addEventListener("afterprint", gone);
+    setTimeout(() => { try { window.print(); } catch { gone(); flash("この端末では印刷できません"); } }, 60);
+  }
+  function cal18TT() {
+    if (!calEighteen) return;
+    const b = $("cal15TTImg") || $("cal8TTShare");
+    if (!b || $("cal18TTPrint")) return;
+    b.after(el("button", { type: "button", class: "link-btn sheet-row", id: "cal18TTPrint", onclick: () => cal18Print(cal18TTBox(ttGet())) }, "時間割を印刷"));
+  }
+
+  // ⑦ 前後のゆとり (表示, under 探す時間帯): minutes kept free before and after each plan and shift when the free times are
+  // found (空き時間, 次の空き, ずらす…)
+  const CAL18_PADS = [[0, "なし"], [5, "5分"], [10, "10分"], [15, "15分"], [30, "30分"]];
+  function cal18Pad() { const v = calEighteen ? num(calSet().pad18) : 0; return CAL18_PADS.some(([m]) => m === v) ? v : 0; }
+  function cal18Busy(t) { const sp = calBusySpan(t), p = cal18Pad(); return sp && p ? [Math.max(0, sp[0] - p), Math.min(1440, sp[1] + p)] : sp; }
+  function cal18PadSpan(sp) { const p = cal18Pad(); return p ? [Math.max(0, sp[0] - p), Math.min(1440, sp[1] + p)] : sp; }
+  {
+    const sel = el("select", { id: "cal18Pad" }, CAL18_PADS.map(([m, w]) => el("option", { value: String(m) }, w)));
+    $("calFreeFrom").closest(".ffield").after(el("label", { class: "flabel", for: "cal18Pad" }, "前後のゆとり"), el("div", { class: "ffield" }, sel));
+    sel.addEventListener("change", () => saveCalSet({ pad18: Number(sel.value) || undefined }));
+  }
+
+  // ⑧ 候補日を文字で送る (仮の予定's 候補から決める): its days in a line each, to ask which suits
+  function cal18CandText(e) {
+    const opts = [{ date: e.date, time: e.time, endTime: e.endTime }, ...(Array.isArray(e.cands) ? e.cands : [])].filter((c) => isDay(c?.date || ""))
+      .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")));
+    return [`「${oneLine(e.title)}」の候補日です。`, ...opts.map((c) => `・${fmtMDW(c.date)} ${isHm(c.time) ? `${c.time}${isHm(c.endTime) ? "〜" + c.endTime : ""}` : "終日"}`), "ご都合のよい日を教えてください。"].join("\n");
+  }
+  function cal18CandShare(e) {
+    if (!calEighteen || !e?.ten) return null;
+    return el("div", { class: "card cal18-cand-share" }, el("button", { type: "button", class: "link-btn sheet-row", "data-k": "cand-share", onclick: () => calShare(e.title, cal18CandText(e)) }, "候補日を文字で送る"));
+  }
+
+  // ⑨ 最後の回のお知らせ (the gear; off at first): the evening before a repeat's last turn (one with an end), at 20:00
+  function cal18LastAlarms(now) {
+    if (!calEighteen || !calSet().last18) return [];
+    const out = [], to = addDays(todayKey, PUSH_AHEAD + 1);
+    for (const e of events.items) {
+      if (!e.repeat || e.ten || typeof e.title !== "string" || !isDay(e.repeatUntil || "") || e.repeatUntil > to) continue;
+      const ts = turnStarts(e, todayKey, to).filter((s) => !cal4Cx(e, s));
+      const last = ts[ts.length - 1];
+      if (!last || turnStarts(e, addDays(last, 1), addDays(last, 800)).length) continue;
+      const at = dayAt(addDays(last, -1), "20:00");
+      if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5) continue;
+      out.push({ at, title: `あしたは「${clip(oneLine(e.title), 40)}」の最後の回です`, body: `${fmtMDW(last)}${isHm(e.time) ? " " + e.time : ""}${e.place ? "・" + oneLine(e.place) : ""}`, tag: `cal-last:${e.id}:${last}`, url: `./#calendar:${last}` });
+    }
+    return out;
+  }
+
+  // ⑩ ひみつの予定 (the forms, under 大事な予定): its name is not shown in the calendar (月・週・日・年, a day's list, 予定)
+  // and its notifications (as ひみつの予定 / 予定のお知らせ, its place and memo left out); opened, it is there. (The other
+  // pages, きょう among them, are not changed: they show it as before)
+  function cal18Hid(e) { return !!calEighteen && !!e?.secret; }
+  function cal18Name(e) { return cal18Hid(e) ? "ひみつの予定" : e?.title || ""; }
+  for (const f of ["plan", "ed"]) {
+    const sw = el("input", { type: "checkbox", id: f + "Secret", class: "switch", role: "switch" });
+    $(f + "Star").parentElement.after(el("label", { class: "flabel", for: f + "Secret" }, "ひみつ"), el("div", { class: "ffield" }, sw));
+  }
+  function cal18Hide(out) {
+    if (!calEighteen) return;
+    for (const a of out) {
+      const m = /^(?:cal-[a-z0-9]+:)?([^:]+):(\d{4}-\d{2}-\d{2})/.exec(String(a.tag || ""));
+      if (!m || !cal18Hid(events.get(m[1]))) continue;
+      a.title = "予定のお知らせ";
+      a.body = String(a.body || "").split("\n")[0].split("・")[0].replace(/「[^」]*」/g, "「ひみつの予定」").slice(0, 120); // (its time alone: no place)
+    }
+  }
+
+  // the forms: ① ⑩, and ③'s state as one is filled or cleared (an empty one taken off)
+  function cal18FormExtras(f) {
+    if (!calEighteen) return {};
+    const k = $(f + "DueKind").value, d = $(f + "DueDay").value;
+    return { due18: cal18DueWord(k) && isDay(d) ? { k, d } : undefined, secret: $(f + "Secret").checked || undefined };
+  }
+  function cal18FillForm(f, e) {
+    if (!calEighteen) return;
+    const v = e && e.due18 && cal18DueWord(e.due18.k) && isDay(e.due18.d || "") ? e.due18 : null;
+    $(f + "DueKind").value = v ? v.k : ""; $(f + "DueDay").value = v ? v.d : ""; $(f + "DueDay").disabled = !v;
+    $(f + "Secret").checked = !!e?.secret;
+    if (f === "plan") { cal18Manual = !!e; cal18Auto = ""; }
+  }
+
+  // ⑥ カレンダーでできること (the gear, at its end): the calendar's features by where they are, looked for by words
+  const CAL18_HELP = [
+    ["月・週・日・年", [
+      ["月の表示", "日を押すと、その日の予定・空き時間・記録が開きます。左右にスワイプで前後の月。"],
+      ["週・日の表示", "時間の流れで見ます。予定を長押しで動かす、下の端で長さを変える、空いているところを押して予定を入れる。"],
+      ["7日・5日・3日・平日", "週の表示の日数。平日はその週の月〜金です。"],
+      ["年の表示", "12か月の予定の多さ、その年のまとめ、大事な予定（★）、祝日と連休、誕生日・記念日。"],
+      ["月のメモ", "日のリストの「〇月のメモ」から。月の表示の上に出ます。"],
+      ["日のメモ・スタンプ", "その日のひとことや、日のスタンプを月の表示に出せます。"],
+      ["時限の帯・月のマスの時刻", "設定で、週・日に時間割の時限を、月のマスに開始時刻を出せます。"],
+    ]],
+    ["予定を入れる", [
+      ["文字で入れる", "「あした10時 歯医者」のように書くと、日付と時刻を読み取ります。声でも入れられます。"],
+      ["開始・長さをボタンで", "いまから・30分後・次の空き など。長さは30分〜3時間のボタンで。"],
+      ["繰り返し", "毎日・平日・毎週（曜日を選んで）・隔週・毎月（第2・第4、月末）・毎年・〇日ごと。はじめの回の日付も出ます。"],
+      ["通知アラーム", "〇分前・〇日前、時刻で決める（前の日の21:00 など）、ラベルごとの通知。"],
+      ["移動時間・出発", "移動時間と帰りの移動時間、支度の時間、集合の時刻と場所。出発のお知らせが届きます。"],
+      ["仮の予定", "候補の日をいくつか入れて、あとで決めます。候補日を文字で送れます。"],
+      ["持ち物・準備", "予定ごとのチェックリスト。持ち物のセットも使えます。"],
+      ["大事な予定・ひみつ・アイコン", "★、名前を出さない予定、予定のアイコン。"],
+      ["場所・URL・電話・予約番号・締め切り", "地図や経路を開く、オンラインの予定、電話をかける、予約番号をコピー、申込や支払いの締め切り。"],
+      ["ラベルの既定", "ラベルを選ぶと長さと場所が入ります。名前の言葉でラベルを自動で選べます。"],
+    ]],
+    ["日のリスト", [
+      ["長押しでメニュー", "予定を長押しで、中止・ずらす・複製・文字で送る・削除。"],
+      ["まとめて動かす", "この日の予定をまとめて、ほかの日に移す・コピー・中止・時間をずらす。"],
+      ["空き時間", "その日の空き時間。押すとそこに予定を入れます。"],
+      ["地図でつなぐ", "その日の予定の場所を、時刻の順に地図で。"],
+      ["文字で送る・画像・印刷", "この日・この週・この月の予定、空き時間、この週を画像で、この週を印刷。"],
+      ["ひな形・まとめて入れる", "1日・1週間のひな形、文字でまとめて入れる。"],
+      ["読み上げ", "その日の予定を読み上げます。"],
+    ]],
+    ["開いた予定", [
+      ["ずらす・次回・前の予定へ", "1時間後・次の日・1週間後・次の空き時間。次回を入れる、前の予定・次の予定へ。"],
+      ["中止・この回だけ", "繰り返しのこの回だけ中止・変更・削除。中止・削除した回は戻せます。"],
+      ["ふりかえり・この回のメモ", "予定のあとのひとことと気分。ほかの回のメモの一覧も。"],
+      ["補講・振替", "授業の予定から、日付と時限で入れます。"],
+      ["写真・リンク", "予定の写真（この端末だけ）、メモのリンク。"],
+      ["費用", "予定の費用を家計簿に入れます。"],
+    ]],
+    ["予定（虫めがね）", [
+      ["探す", "名前・メモ・場所・人・ラベルで探す。日付や日数でも。見つかった予定をまとめて変えられます。"],
+      ["予定の時間", "今週・今月のラベルごとの時間と目安、移動の時間、予定の多い曜日と時間帯。"],
+      ["一覧", "カウントダウン、空き時間、日にち未定の予定、最近追加した予定、写真のある予定、人と場所。"],
+    ]],
+    ["時間割", [
+      ["時間割", "授業を入れると、学期のあいだ毎週の予定になります。先生・メモ・単位・休める回数も。"],
+      ["送る・印刷", "時間割を文字・画像で送る、印刷する。"],
+      ["いまの授業", "いまの授業と次の授業。授業の出欠と、勉強の記録へ。"],
+    ]],
+    ["お知らせ（設定）", [
+      ["朝・前の晩・来週", "朝の予定、前の晩の予定、来週の予定のお知らせ。"],
+      ["予定のまわり", "出発、まもなく出発、支度、帰る時刻、終わったら、すきま時間、締め切り、最後の回、大事な予定の前の日。"],
+      ["1日のふりかえり・ゴミの日・カウントダウン", "夜のふりかえり、ゴミの日、カウントダウンのお知らせ。"],
+      ["お知らせを休む", "期間を決めて休む、この回だけお知らせしない。"],
+    ]],
+    ["設定・ほか", [
+      ["表示", "記録のしるし、空き時間の時間帯と前後のゆとり、週のはじまり、過ぎた日をうすく、新しい予定の長さ。"],
+      ["ラベル", "色、表示・非表示、ラベルをまとめる、ラベルごとの既定。"],
+      ["ほかのカレンダー", ".ics と表（CSV）の書き出し・読み込み、古い予定の整理。"],
+      ["キーボード", "パソコンでは N（新しい予定）、/（探す）、T（きょう）など。? で一覧。"],
+    ]],
+  ];
+  let cal18HelpOpen = false, cal18HelpQ = "";
+  const cal18HelpHead = el("h3", { class: "group-head" }, "カレンダーでできること"), cal18Help = el("div", { class: "card pad cal18-help", id: "cal18Help" });
+  $("labelsGroup").append(cal18HelpHead, cal18Help);
+  const cal18HelpN = () => CAL18_HELP.reduce((s, [, xs]) => s + xs.length, 0);
+  function renderCal18Help() {
+    if (!cal18HelpOpen) {
+      setChildren(cal18Help, el("button", { type: "button", class: "link-btn", id: "cal18HelpOpen", "aria-expanded": "false", onclick: () => { cal18HelpOpen = true; renderCal18Help(); $("cal18HelpFind")?.focus(); } }, `一覧を開く（${cal18HelpN()}）`));
+      return;
+    }
+    if (document.activeElement?.id === "cal18HelpFind") return;
+    const find = el("input", { type: "search", id: "cal18HelpFind", placeholder: "できることを探す", "aria-label": "カレンダーでできることを探す", enterkeyhint: "search" });
+    find.value = cal18HelpQ;
+    find.addEventListener("input", () => { cal18HelpQ = find.value; renderCal18HelpList(); });
+    setChildren(cal18Help, el("div", { class: "cal18-help-head" }, find,
+      el("button", { type: "button", class: "link-btn", id: "cal18HelpClose", "aria-expanded": "true", onclick: () => { cal18HelpOpen = false; cal18HelpQ = ""; renderCal18Help(); $("cal18HelpOpen")?.focus(); } }, "閉じる")),
+      el("div", { class: "help-list cal18-help-list", id: "cal18HelpList", role: "status" }));
+    renderCal18HelpList();
+  }
+  function renderCal18HelpList() {
+    const words = foldText(cal18HelpQ.trim()).split(/\s+/).filter(Boolean), has = (s) => { const t = foldText(s); return words.every((w) => t.includes(w)); };
+    const groups = CAL18_HELP.map(([place, xs]) => [place, xs.filter(([name, how]) => !words.length || has(`${place} ${name} ${how}`))]).filter(([, xs]) => xs.length);
+    setChildren($("cal18HelpList"), groups.length ? groups.map(([place, xs]) => el("section", { class: "help-group cal18-help-group" }, el("h4", {}, place),
+      el("dl", {}, xs.flatMap(([name, how]) => [el("dt", {}, name), el("dd", {}, how)]))))
+      : el("p", { class: "sub" }, `「${cal18HelpQ.trim()}」に合うものはありません。`));
+  }
+
+  // the gear: ⑨, with ① and ⑥ drawn with the calendar
+  {
+    const last = el("input", { type: "checkbox", id: "cal18Last", class: "switch", role: "switch" });
+    $("cal17GapFoot").after(el("h3", { class: "group-head" }, "最後の回のお知らせ"),
+      el("form", { class: "add", id: "cal18LastForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
+        el("label", { class: "flabel", for: "cal18Last" }, "お知らせ"), el("div", { class: "ffield" }, last)),
+      el("p", { class: "group-foot", id: "cal18LastFoot" }, "終わりのある繰り返しの予定（授業など）の、最後の回の前の日の20:00に届けます。"));
+    last.addEventListener("change", () => { saveCalSet({ last18: last.checked || undefined }); if (last.checked && pushState() === "off") pushEnable(); });
+  }
+  function cal18Push() {
+    if (!calEighteen) return [];
+    const parts = [];
+    const dues = events.items.filter((e) => cal18Due(e)).map((e) => [e.id, e.title, e.date, e.due18, !!e.ten, !!e.secret]);
+    if (dues.length) parts.push(["cal18Due", dues]);
+    if (calSet().last18) parts.push(["cal18Last", events.items.filter((e) => e.repeat && isDay(e.repeatUntil || "")).map((e) => [e.id, e.title, e.date, e.repeatUntil, e.skip, e.cancel, e.time, e.place])]);
+    const secret = events.items.filter((e) => e.secret).map((e) => e.id);
+    if (secret.length) parts.push(["cal18Secret", secret]);
+    return parts;
+  }
+  function cal18Alarms(now) { return calEighteen ? [...cal18DueAlarms(now), ...cal18LastAlarms(now)] : []; }
+  function renderCalEighteen() {
+    if (!calEighteen) return;
+    renderCal18DueDay();
+    renderCal18Defs();
+    if (!cal18Help.contains(document.activeElement)) renderCal18Help();
+    if (document.activeElement !== $("cal18Pad")) $("cal18Pad").value = String(cal18Pad());
+    $("cal18Last").checked = !!calSet().last18;
+  }
+  calEighteen = true;
 
   // ---------- 目標: 使わないマスを×で埋める (the user's call, 2026-11-11: a chart can't always be filled in whole; its empty
   // squares crossed out so it reads as finished). An empty cell crossed is { t: "", x: true }: still empty to all that

@@ -42,7 +42,7 @@ let b;
   const box = await p.locator("#calDayList .row-btn", { hasText: "歯医者" }).first().boundingBox();
   await p.mouse.move(box.x + 40, box.y + box.height / 2); await p.mouse.down(); await p.waitForTimeout(650); await p.mouse.up(); await p.waitForTimeout(400);
   ok(await menuOpen(p) && nos(await txt(p, "#cal16MenuMsg")) === "11月17日（火）歯医者", "① held half a second: its menu", await txt(p, "#cal16MenuMsg"));
-  ok(JSON.stringify(await txts(p, "#cal16MenuGroup .ask-btn")) === '["この回を中止にする","1時間後にずらす","次の日にずらす","複製","文字で送る","削除"]', "① its items", await txts(p, "#cal16MenuGroup .ask-btn"));
+  ok(JSON.stringify(await txts(p, "#cal16MenuGroup .ask-btn")) === '["この回を中止にする","1時間後にずらす","次の日にずらす","この予定から後ろを30分ずらす","複製","文字で送る","削除"]', "① its items (その18 ④ この予定から後ろを, too)", await txts(p, "#cal16MenuGroup .ask-btn"));
   ok(await p.evaluate(() => !document.getElementById("editView").hidden) === false, "① the press opened nothing else");
   await press(p, "cx");
   ok(JSON.stringify((await ev(p, "e6")).cancel) === '["2026-11-17"]', "① 中止");
@@ -74,7 +74,7 @@ let b;
   // a repeat: no ずらす, this turn deleted
   await p.evaluate(() => document.getElementById("dayNext").click()); await p.waitForTimeout(500);
   await rightClick(p, "会議");
-  ok(JSON.stringify(await txts(p, "#cal16MenuGroup .ask-btn")) === '["この回を中止にする","複製","文字で送る","この回を削除"]', "① a repeat's items", await txts(p, "#cal16MenuGroup .ask-btn"));
+  ok(JSON.stringify(await txts(p, "#cal16MenuGroup .ask-btn")) === '["この回を中止にする","この予定から後ろを30分ずらす","複製","文字で送る","この回を削除"]', "① a repeat's items (その18 ④ too)", await txts(p, "#cal16MenuGroup .ask-btn"));
   await press(p, "del");
   ok(JSON.stringify((await ev(p, "e5")).skip) === '["2026-11-18"]', "① a repeat: this turn deleted");
   await undo(p);
