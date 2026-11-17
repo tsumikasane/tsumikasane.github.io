@@ -86,9 +86,14 @@
 
 ## アプリのつくり
 
-- アプリは `index.html` 1つ（3万行あまり）です。HTML・CSS・JavaScript がすべて入っています。ほかに `sw.js`（オフライン用）、`manifest.webmanifest`、`icons/` があります。
+- アプリは `index.html` 1つ（8万行ほど）です。HTML・CSS・JavaScript がすべて入っています。ほかに `sw.js`（オフライン用）、`manifest.webmanifest`、`icons/` があります。
 - JavaScript は、`// ---------- 名前 ----------` の見出しでセクションに分かれています。一覧は `grep -n "^  // ---------- " index.html` で、ページごとには `… | grep ToDo` のように探せます。足した回は「ToDo その11 ①〜⑩」「天気 その1 ①〜⑩」のような見出しです。機能を足すときは、新しいセクションを、同じページのセクションのあとか、`// ---------- boot ----------` の前に足し、前のセクションの関数に手を入れるところは最小限にします。
 - ページ：上のタブ（`TABS`）が きょう（home）・カレンダー（calendar）・ToDo（todo）・目標（goal）・つみかさね（tsumi）、記録のページ（`RECORDS`）が 日記（journal）・ダイエット（diet：食事・運動・からだ）・勉強（study）・ルーティーン（routine）・家計簿（money）です。
 - 記録はこの端末の localStorage（大きいものは IndexedDB）に保存し、ログインしていると Firebase（Firestore）で端末どうしを同期します（「storage」「同期」のセクション）。新しい種類の記録や設定を足すときは、今あるものと同じしくみ（`Store`・`settings` など）を使い、同期・書き出し・最近削除した項目にも乗るようにします。
+- どのページでも使う処理は、共通の部品になっています（`setChildren` のすぐあと）。同じことをするときは、ページの中で書き直さずに、これを使います。
+  - 文字で送る：`sendText(text, title, what)`（共有シート。使えなければコピーして、そう伝えます）。文字でコピー：`copySay(text, what)`（伝えるまで）・`copyText(text)`（コピーだけ）
+  - 印刷：`printBox(box)`（印刷用の箱を置いて印刷し、終わったら片づけます）
+  - 設定のスイッチ：`switchEl({ id, checked, onchange, … })`
+  - 画像・ファイル：`savePicture(canvas, name, title)`（描いた画像を保存）、`handOut(blob, name)`（ファイルを渡す。スマホは共有シート、ほかはダウンロード）、`downloadBlob(blob, name)`（ダウンロードだけ）、`picShow(p, blob, name, title, label, alt)`（画像を大きく見せて 共有・保存・閉じる）
 - 予定などのお知らせ（通知アラーム）は、アプリが時刻を通知サーバー（`push/`、Cloudflare Workers）に送り、サーバーが Web Push で届けます（「通知アラーム」「通知を受け取る」のセクションの `alarmTimes`）。
 - 画面は、スマホ（iPhone のホーム画面のアプリ）がいちばん大事です。PC の広い画面でも崩れないようにします。ダークモードもあります。

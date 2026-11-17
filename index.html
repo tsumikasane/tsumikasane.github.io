@@ -12262,6 +12262,44 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // replaceChildren() would print "null" for a skipped child, so drop those first
   function setChildren(parent, ...kids) { parent.replaceChildren(...kids.flat().filter((k) => k != null && k !== false)); }
+  // ---------- 印刷・スイッチ (shared, 2026-11-17) ----------
+  // 印刷: a box made for the printer (its CSS shows it alone) put on the page, then taken away once printed or on failing
+  function printBox(box, giveUpMs) {
+    document.body.append(box);
+    const gone = () => { box.remove(); window.removeEventListener("afterprint", gone); };
+    window.addEventListener("afterprint", gone);
+    if (giveUpMs) setTimeout(gone, giveUpMs); // (a browser that never says the print is over: gone all the same, before another page prints)
+    setTimeout(() => { try { window.print(); } catch { gone(); flash("この端末では印刷できません"); } }, 60);
+  }
+  // an on/off of the settings and forms: a checkbox drawn as a switch and read out as one
+  function switchEl(attrs = {}) { return el("input", { type: "checkbox", class: "switch", role: "switch", ...attrs }); }
+  // ---------- 画像・ファイルを渡す (shared, 2026-11-17) ----------
+  // a file downloaded by its name (the page stays where it is)
+  function downloadBlob(blob, name) {
+    const u = URL.createObjectURL(blob), a = el("a", { href: u, download: name });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 60000);
+  }
+  // a picture made to keep or send (体重のグラフ, その日の食事), looked at first: 共有 (where the device can share a file),
+  // 保存 (downloaded by its name) or 閉じる. p names its parts (`${p}ImgView`, `${p}ImgPic`, `${p}ImgSave`…)
+  function picShow(p, blob, name, title, label, alt) {
+    let d = $(`${p}ImgView`);
+    if (!d) {
+      const share = el("button", { type: "button", class: "link-btn", id: `${p}ImgShare` }, "共有"), save = el("button", { type: "button", class: "link-btn", id: `${p}ImgSave` }, "保存"), shut = el("button", { type: "button", class: "link-btn", id: `${p}ImgClose` }, "閉じる");
+      d = el("dialog", { class: "td-photo-view dt8-img-view", id: `${p}ImgView`, "aria-label": label }, el("img", { id: `${p}ImgPic`, alt }), el("div", { class: "td-photo-bar" }, share, save, shut));
+      share.addEventListener("click", async () => { const x = d.pic; try { await navigator.share({ files: [new File([x.blob], x.name, { type: "image/png" })], title: x.title }); } catch (e) { if (!e || e.name !== "AbortError") flash("共有できませんでした"); } });
+      save.addEventListener("click", () => { downloadBlob(d.pic.blob, d.pic.name); flash("画像を保存しました"); });
+      shut.addEventListener("click", () => d.close());
+      d.addEventListener("click", (ev) => { if (ev.target === d) d.close(); });
+      d.addEventListener("close", () => { const i = $(`${p}ImgPic`); if (i.src.startsWith("blob:")) URL.revokeObjectURL(i.src); i.removeAttribute("src"); });
+      document.body.append(d);
+    }
+    d.pic = { blob, name, title };
+    $(`${p}ImgPic`).src = URL.createObjectURL(blob);
+    $(`${p}ImgShare`).hidden = !(navigator.canShare && navigator.canShare({ files: [new File([blob], "a.png", { type: "image/png" })] }));
+    d.showModal();
+    $(`${p}ImgClose`).focus();
+  }
   // ---------- 文字で送る・コピー (shared, 2026-11-17: what each page did on its own, in one place) ----------
   // words to the clipboard; where that is refused (an older iPhone, no permission), by a hidden field. Says if it worked
   async function copyText(text) {
@@ -17294,7 +17332,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("span", { class: "wo-move-btns" },
         el("button", { type: "button", class: "icon-btn up", "aria-label": `${c}を上へ`, disabled: i === 0, onclick: () => moveExCat(c, -1) }, icon("prev", 18)),
         el("button", { type: "button", class: "icon-btn down", "aria-label": `${c}を下へ`, disabled: i === list.length - 1, onclick: () => moveExCat(c, 1) }, icon("next", 18))),
-      el("input", { type: "checkbox", class: "switch", role: "switch", checked: !off.has(c), "aria-label": `${c}を入力のメニューに出す`, onchange: (ev) => showExCat(c, ev.currentTarget) }))));
+      switchEl({ checked: !off.has(c), "aria-label": `${c}を入力のメニューに出す`, onchange: (ev) => showExCat(c, ev.currentTarget) }))));
   }
   function moveExCat(c, by) {
     const kind = catEditKind, list = exCats(kind, true), i = list.indexOf(c), to = i + by;
@@ -19100,7 +19138,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       whenOpen[f] = whenOpen[f] === key ? null : key; whenMonth[f] = null; syncWhen(f);
       $(f + "When").querySelector(".when-pick:not([hidden])")?.scrollIntoView({ block: "nearest", behavior: reduceMotion.matches ? "auto" : "smooth" });
     } });
-    const allDay = el("input", { type: "checkbox", id: f + "AllDay", class: "switch", role: "switch", "aria-labelledby": f + "AllDayLabel" });
+    const allDay = switchEl({ id: f + "AllDay", "aria-labelledby": f + "AllDayLabel" });
     allDay.addEventListener("change", () => setAllDay(f, allDay.checked));
     $(f + "When").replaceChildren(
       el("div", { class: "when-row" }, el("span", { id: f + "AllDayLabel" }, "終日予定"), allDay),
@@ -20238,9 +20276,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       catch (e) { if (e.name !== "AbortError") flash("保存できませんでした。もう一度お試しください。"); }
       return;
     }
-    const a = el("a", { href: URL.createObjectURL(blob), download: name });
-    document.body.append(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    downloadBlob(blob, name);
     flash(`「${name}」を保存しました。`);
   }
   // 8マス or 全体, from the switch over the chart
@@ -21007,7 +21043,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const memo = el("textarea", { id: "reMemo", class: "full grow memo", rows: 1, placeholder: "メモ", "aria-label": "メモ", maxlength: 1000 }, t.memo || "");
         memo.addEventListener("input", () => growField(memo)); // keeping its line breaks
         requestAnimationFrame(() => { growField(text); growField(memo); });
-        const flag = el("input", { type: "checkbox", id: "reFlag", class: "switch", role: "switch", checked: !!t.flag });
+        const flag = switchEl({ id: "reFlag", checked: !!t.flag });
         // its list and its label, as the ＋ sheet has them
         const labelRow = [el("span", { class: "flabel", id: "reListLabel" }, "リスト"), el("div", { class: "ffield", id: "reLists" }, todoListPicker("reList", todoListOf(t) ? t.listId : "", () => {}, "reListLabel")),
           el("span", { class: "flabel", id: "reLabelLabel" }, "ラベル"), el("div", { class: "ffield", id: "reLabels" }, todoLabelPicker("reLabel", todoLabelOf(t) ? t.labelId : "", () => {}, "reLabelLabel"))];
@@ -21335,7 +21371,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         link.addEventListener("change", () => { countRows.hidden = !!link.value; minRow.hidden = link.value !== "study"; });
         // (ルーティーン その2 ② メモ, ③ 時刻の目安 and its お知らせ, ④ かかる時間)
         const by = el("input", { type: "time", id: "rtiBy", value: rt2By(r) }), byOnRows = el("div", { class: "form-rows", hidden: !rt2By(r) },
-          recRow("その時刻にお知らせ", el("input", { type: "checkbox", id: "rtiByOn", class: "switch", role: "switch", checked: !!r.byOn && !!rt2By(r) })));
+          recRow("その時刻にお知らせ", switchEl({ id: "rtiByOn", checked: !!r.byOn && !!rt2By(r) })));
         by.addEventListener("input", () => { byOnRows.hidden = !/^\d\d:\d\d$/.test(by.value); });
         return [
           recRow("名前", el("input", { type: "text", id: "rtiName", value: r.name, maxlength: 40, required: true })),
@@ -21347,7 +21383,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           rt3Fields(r), // (その3 ⑤ きっかけ, ⑥ チャレンジ)
           rt5Fields(r), // (その5 ⑩ ミニマム, ⑤ 参考リンク, ④ はじめの日・おわりの日)
           recRow("連携", link), minRow,
-          recRow("一時停止", el("input", { type: "checkbox", id: "rtiPause", class: "switch", role: "switch", checked: rtPausedNow(r) })),
+          recRow("一時停止", switchEl({ id: "rtiPause", checked: rtPausedNow(r) })),
           el("p", { class: "full field-note muted small rt-item-note" },
             el("span", { class: "phrase" }, "回数を決めると、押すたびに1つずつ増え、その数でチェックが付きます。"),
             el("span", { class: "phrase" }, "かかる時間を決めると、のこりの項目にかかる時間の目安が出ます。"),
@@ -25244,9 +25280,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       try { await navigator.share({ files: [file], title: name }); return "shared"; }
       catch (e) { if (e.name !== "AbortError") flash("書き出せませんでした。もう一度お試しください。"); return null; }
     }
-    const a = el("a", { href: URL.createObjectURL(blob), download: name });
-    document.body.append(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    downloadBlob(blob, name);
     return "saved";
   }
   // (no 予定を書き出す: the iPhone calendar's file went with its row in the calendar's 設定, the user's call)
@@ -25773,7 +25807,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月16日 22:35"; // 725c83ab (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月17日 12:30"; // 0f2b915c (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -27241,7 +27275,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function tdEditRows(t, due) {
     const time = el("input", { type: "time", id: "reTime", value: isHm(t.time) ? t.time : "" });
     const timeClear = el("button", { type: "button", class: "link-btn", hidden: true }, "時刻なしにする");
-    const remind = el("input", { type: "checkbox", id: "reRemind", class: "switch", role: "switch", checked: !!t.remind && !!t.due });
+    const remind = switchEl({ id: "reRemind", checked: !!t.remind && !!t.due });
     const note = el("p", { class: "full td-note", id: "reRemindNote", hidden: true });
     const start = el("input", { type: "date", id: "reStart", value: isDay(t.start || "") ? t.start : "" });
     const startClear = el("button", { type: "button", class: "link-btn", hidden: true }, "開始日なしにする");
@@ -31157,7 +31191,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         onclick: () => { if (ok && cur !== key) saveNeko({ head: key }, `つみねこの着せかえを「${label}」にしました`); } },
         nekoSvg("awake", 0.6, look), el("span", { class: "name" }, label), ok ? null : el("span", { class: "when" }, when.replace(/に積むと$/, "")));
     })),
-      own.has("scarf") ? el("label", { class: "neko-scarf" }, el("span", {}, "マフラーをつける"), el("input", { type: "checkbox", class: "switch", role: "switch", checked: scarf, onchange: (ev) => saveNeko({ scarf: ev.target.checked }, ev.target.checked ? "マフラーをつけました" : "マフラーをはずしました") })) : null);
+      own.has("scarf") ? el("label", { class: "neko-scarf" }, el("span", {}, "マフラーをつける"), switchEl({ checked: scarf, onchange: (ev) => saveNeko({ scarf: ev.target.checked }, ev.target.checked ? "マフラーをつけました" : "マフラーをはずしました") })) : null);
     if (focused) box.querySelector(`[data-item="${focused}"]`)?.focus();
     $("nekoClosetFoot").textContent = `おまかせでは、季節の衣装（${NEKO_ITEMS.slice(4).map(([, l]) => l).join("・")}）をその季節に、ほかの時期はニット帽（500 こ）や王冠（1,000 こ）をかぶります。季節の衣装は、その時期にブロックを積むと手に入ります。`
       + (own.has("scarf") ? "" : "マフラーは 100 こで手に入ります。");
@@ -33826,7 +33860,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     amount.addEventListener("input", () => { catRow.hidden = !(Number(amount.value) > 0); });
     out.push(recRow("金額", amount, { unit: "円", opt: true }), catRow);
     if (!t.done) {
-      const w = t.wait || {}, on = el("input", { type: "checkbox", id: "reWait", class: "switch", role: "switch", checked: tdWaiting(t) });
+      const w = t.wait || {}, on = switchEl({ id: "reWait", checked: tdWaiting(t) });
       const who = el("input", { type: "text", id: "reWaitWho", value: w.who || "", maxlength: 40 });
       const days = el("select", { id: "reWaitDays" }, TD_WAIT_DAYS.map(([v, s]) => el("option", { value: v }, s)));
       days.value = String(Number.isInteger(w.days) ? w.days : 3);
@@ -34246,7 +34280,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const n = Math.round(num(t.streak)), best = Math.max(n, Math.round(num(t.best)));
     return {
       pre: preRow,
-      today: recRow("きょうやる", el("input", { type: "checkbox", id: "reToday", class: "switch", role: "switch", checked: tdToday(t) })),
+      today: recRow("きょうやる", switchEl({ id: "reToday", checked: tdToday(t) })),
       reward: recRow("ごほうび", el("input", { type: "text", id: "reReward", value: t.reward || "", maxlength: TD_REWARD }), { opt: true }),
       after: tdAfterRows(t),
       run: t.repeat && best >= 2 ? recRow("連続", el("output", { id: "reRun" }, `いま ${n} 回・いちばん長い ${best} 回`)) : null,
@@ -34685,7 +34719,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const from = el("input", { type: "date", id: "ttFrom", value: tt.from, max: tt.to }), to = el("input", { type: "date", id: "ttTo", value: tt.to, min: tt.from });
     from.addEventListener("change", () => { if (isDay(from.value) && from.value <= ttGet().to) ttApply({ ...ttGet(), from: from.value }, `学期のはじまりを${fmtMDW(from.value)}にしました`); else renderTT(); });
     to.addEventListener("change", () => { if (isDay(to.value) && to.value >= ttGet().from) ttApply({ ...ttGet(), to: to.value }, `学期のおわりを${fmtMDW(to.value)}にしました`); else renderTT(); });
-    const sat = el("input", { type: "checkbox", id: "ttSat", class: "switch", role: "switch", checked: tt.sat });
+    const sat = switchEl({ id: "ttSat", checked: tt.sat });
     sat.addEventListener("change", () => ttApply({ ...ttGet(), sat: sat.checked }, sat.checked ? "土曜日も時間割に入れます" : "土曜日を時間割から外しました"));
     const cell = (wd, p) => {
       const x = byCell.get(wd + "-" + p), on = ttSel && ttSel[0] === wd && ttSel[1] === p;
@@ -35037,7 +35071,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const days = dayPicker(f + "Days3");
     $(f + "Repeat").parentElement.after(days, el("p", { class: "full cal-travel-foot cal3-days-note", id: f + "DaysNote", hidden: true }));
     const times = el("input", { type: "number", id: f + "Times3", min: 1, max: 999, step: 1, inputmode: "numeric", disabled: true });
-    const noHol = el("input", { type: "checkbox", id: f + "NoHol", class: "switch", role: "switch", disabled: true });
+    const noHol = switchEl({ id: f + "NoHol", disabled: true });
     $(f + "UntilRow").after(
       el("div", { class: "form-rows", id: f + "TimesRow", hidden: true }, recRow("回数", times, { opt: true, unit: "回" })),
       el("div", { class: "form-rows", id: f + "NoHolRow", hidden: true }, el("label", { class: "flabel", for: f + "NoHol" }, "祝日はお休み"), el("div", { class: "ffield" }, noHol)));
@@ -35395,7 +35429,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function cal3ReadLimit() { const n = Math.round(Number($("ttLimit")?.value)); return n >= 1 && n <= 99 ? n : undefined; }
   function cal3TTHolRow() {
-    const sw = el("input", { type: "checkbox", id: "ttNoHol", class: "switch", role: "switch", checked: !!ttGet().noHol });
+    const sw = switchEl({ id: "ttNoHol", checked: !!ttGet().noHol });
     sw.addEventListener("change", () => ttApply({ ...ttGet(), noHol: sw.checked }, sw.checked ? "祝日の授業を休みにしました" : "祝日も授業の予定を入れます"));
     return [el("label", { class: "flabel", for: "ttNoHol" }, "祝日は休み"), el("div", { class: "ffield" }, sw)];
   }
@@ -35584,8 +35618,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function cal4FillList(list, key) { list.replaceChildren(...cal4Often(key).map((v) => el("option", { value: v }))); }
   for (const f of ["plan", "ed"]) {
-    const star = el("input", { type: "checkbox", id: f + "Star", class: "switch", role: "switch" });
-    const endNote = el("input", { type: "checkbox", id: f + "EndNote", class: "switch", role: "switch" });
+    const star = switchEl({ id: f + "Star" });
+    const endNote = switchEl({ id: f + "EndNote" });
     $(f + "Count").parentElement.after(
       el("label", { class: "flabel", for: f + "Star" }, "大事な予定"), el("div", { class: "ffield" }, star),
       el("div", { class: "form-rows", id: f + "EndNoteRow" }, el("label", { class: "flabel", for: f + "EndNote" }, "終わったらお知らせ"), el("div", { class: "ffield" }, endNote)),
@@ -35922,7 +35956,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the gear: after 前の晩のお知らせ
   $("calEveFoot").after(el("h3", { class: "group-head" }, "来週の予定のお知らせ"),
     el("form", { class: "add", id: "cal5WeekForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
-      el("label", { class: "flabel", for: "cal5WeekOn" }, "お知らせ"), el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "cal5WeekOn", class: "switch", role: "switch" })),
+      el("label", { class: "flabel", for: "cal5WeekOn" }, "お知らせ"), el("div", { class: "ffield" }, switchEl({ id: "cal5WeekOn" })),
       ...recRow("曜日", el("select", { id: "cal5WeekWd" }, [0, 6, 1, 5].map((w) => el("option", { value: String(w) }, WD[w] + "曜日")))),
       ...recRow("時刻", el("input", { type: "time", id: "cal5WeekAt", value: "20:00" }))),
     el("p", { class: "group-foot", id: "cal5WeekFoot" }));
@@ -36486,7 +36520,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   $("cal5WeekFoot").after(el("h3", { class: "group-head" }, "大事な予定の前の日のお知らせ"),
     el("form", { class: "add", id: "cal7StarForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
-      el("label", { class: "flabel", for: "cal7StarOn" }, "お知らせ"), el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "cal7StarOn", class: "switch", role: "switch" })),
+      el("label", { class: "flabel", for: "cal7StarOn" }, "お知らせ"), el("div", { class: "ffield" }, switchEl({ id: "cal7StarOn" })),
       ...recRow("時刻", el("input", { type: "time", id: "cal7StarAt", value: "20:00" }))),
     el("p", { class: "group-foot", id: "cal7StarFoot" }));
   $("cal7StarOn").addEventListener("change", (ev) => { saveCalSet({ starEve: { ...cal7StarEve(), on: ev.target.checked } }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderCalSeven); });
@@ -36891,10 +36925,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function cal8Print(ym) {
     $("cal8Print")?.remove();
     const box = cal8PrintBox(ym);
-    document.body.append(box);
-    const gone = () => { box.remove(); window.removeEventListener("afterprint", gone); };
-    window.addEventListener("afterprint", gone);
-    setTimeout(() => { try { window.print(); } catch { gone(); flash("この端末では印刷できません"); } }, 60);
+    printBox(box);
   }
   $("cal6Sum").after(el("div", { class: "card" }, el("button", { type: "button", class: "link-btn sheet-row", id: "cal8PrintBtn", onclick: () => { if (pickYM) cal8Print(`${pickYM[0]}-${pad(pickYM[1])}`); } }, "この月を印刷・PDFにする")));
 
@@ -37697,7 +37728,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑦ オンライン and ⑧ 電話: in the forms, オンライン over 場所 (switched on, the way there is none) and a phone number
   // under the URL; the plan opened offers 参加する (its URL) and 電話をかける at the top; a day's list says オンライン
   for (const f of ["plan", "ed"]) {
-    const on = el("input", { type: "checkbox", id: f + "Online", class: "switch", role: "switch" });
+    const on = switchEl({ id: f + "Online" });
     $(f + "Place").closest(".cal3-place").before(el("label", { class: "flabel", for: f + "Online" }, "オンライン"), el("div", { class: "ffield" }, on));
     on.addEventListener("change", () => { if (on.checked) for (const [id, v] of [["Travel", "0"], ["TravelBack", "0"], ["By", ""]]) if ($(f + id)) putWhen(f, id, v); });
     const tel = el("input", { type: "tel", id: f + "Tel", maxlength: 30, autocomplete: "off", inputmode: "tel", placeholder: "電話番号", "aria-label": "電話番号" });
@@ -38066,7 +38097,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return out;
   }
   {
-    const on = el("input", { type: "checkbox", id: "cal12CountOn", class: "switch", role: "switch" }), at = el("input", { type: "time", id: "cal12CountAt", value: "09:00" });
+    const on = switchEl({ id: "cal12CountOn" }), at = el("input", { type: "time", id: "cal12CountAt", value: "09:00" });
     const days = el("div", { class: "cal12-days", id: "cal12CountDays", role: "group", "aria-label": "お知らせする日" }, CAL12_COUNT.map(([n, w]) => el("button", { type: "button", class: "chip-btn", "data-n": n, "aria-pressed": "false",
       onclick: () => { const r = cal12Count(), next = r.days.includes(n) ? r.days.filter((x) => x !== n) : [...r.days, n]; saveCalSet({ count12: { ...r, days: next } }); } }, w)));
     $("cal7StarFoot").after(el("h3", { class: "group-head" }, "カウントダウンのお知らせ"),
@@ -38226,7 +38257,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       flash(`ゴミの日「${n}」を入れました`);
     };
     name.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing) { ev.preventDefault(); add(); } });
-    const on = el("input", { type: "checkbox", id: "cal13TrashOn", class: "switch", role: "switch" }), at = el("input", { type: "time", id: "cal13TrashAt", value: "20:00" });
+    const on = switchEl({ id: "cal13TrashOn" }), at = el("input", { type: "time", id: "cal13TrashAt", value: "20:00" });
     const when = el("select", { id: "cal13TrashWhen" }, el("option", { value: "eve" }, "前の日"), el("option", { value: "day" }, "その日"));
     $("cal12CountFoot").after(el("h3", { class: "group-head" }, "ゴミの日"), el("ul", { class: "list card cal13-trash-list", id: "cal13TrashList" }),
       el("div", { class: "card pad cal13-trash-add" }, el("div", { class: "cal12-hw-row" }, name, el("button", { type: "button", class: "btn sm", "data-k": "trash-add", onclick: add }, "追加")), wds, nths,
@@ -38239,7 +38270,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     at.addEventListener("change", () => { if (isHm(at.value)) saveCal13Trash({ at: at.value }); });
   }
   {
-    const on = el("input", { type: "checkbox", id: "cal13EvOn", class: "switch", role: "switch" });
+    const on = switchEl({ id: "cal13EvOn" });
     $("cal13TrashFoot").after(el("h3", { class: "group-head" }, "季節の行事"),
       el("form", { class: "add", id: "cal13EvForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, el("label", { class: "flabel", for: "cal13EvOn" }, "カレンダーに出す"), el("div", { class: "ffield" }, on)),
       el("p", { class: "group-foot" }, "節分・バレンタインデー・ひな祭り・ホワイトデー・母の日・父の日・七夕・お盆・ハロウィン・七五三・クリスマス・大晦日を、祝日のように（灰色で）出します。"));
@@ -38730,8 +38761,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // the gear: ⑦ and ⑧, under 季節の行事
   {
-    const on = el("input", { type: "checkbox", id: "cal14ReviewOn", class: "switch", role: "switch" }), at = el("input", { type: "time", id: "cal14ReviewAt", value: "21:30" });
-    const dim = el("input", { type: "checkbox", id: "cal14PastDim", class: "switch", role: "switch" });
+    const on = switchEl({ id: "cal14ReviewOn" }), at = el("input", { type: "time", id: "cal14ReviewAt", value: "21:30" });
+    const dim = switchEl({ id: "cal14PastDim" });
     $("cal13EvForm").nextElementSibling.after(
       el("h3", { class: "group-head" }, "1日のふりかえりのお知らせ"),
       el("form", { class: "add", id: "cal14ReviewForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
@@ -39624,10 +39655,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function cal17PrintWeek(d) {
     $("cal8Print")?.remove();
     const box = cal17WeekBox(d);
-    document.body.append(box);
-    const gone = () => { box.remove(); window.removeEventListener("afterprint", gone); };
-    window.addEventListener("afterprint", gone);
-    setTimeout(() => { try { window.print(); } catch { gone(); flash("この端末では印刷できません"); } }, 60);
+    printBox(box);
   }
   $("dayShareBox").append(el("button", { type: "button", class: "chip-btn", "data-share": "week-print", onclick: () => { $("dayShareBox").hidden = true; cal17PrintWeek(calDay); } }, "この週を印刷"));
 
@@ -39716,9 +39744,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the gear: ① 新しい予定の長さ, ⑤ 月のマスに時刻, ④ 時限の帯, ⑥ すきま時間のお知らせ
   {
     const len = el("select", { id: "cal17Len" }, CAL17_LENS.map(([m, w]) => el("option", { value: String(m) }, w)));
-    const bar = el("input", { type: "checkbox", id: "cal17BarTime", class: "switch", role: "switch" });
-    const bands = el("input", { type: "checkbox", id: "cal17Bands", class: "switch", role: "switch" });
-    const gapOn = el("input", { type: "checkbox", id: "cal17GapOn", class: "switch", role: "switch" });
+    const bar = switchEl({ id: "cal17BarTime" });
+    const bands = switchEl({ id: "cal17Bands" });
+    const gapOn = switchEl({ id: "cal17GapOn" });
     const gapMin = el("select", { id: "cal17GapMin" }, CAL17_GAPS.map(([m, w]) => el("option", { value: String(m) }, w)));
     $("cal14DimForm").after(
       el("h3", { class: "group-head" }, "新しい予定と表示"),
@@ -39893,10 +39921,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function cal18Print(box) {
     $("cal8Print")?.remove();
-    document.body.append(box);
-    const gone = () => { box.remove(); window.removeEventListener("afterprint", gone); };
-    window.addEventListener("afterprint", gone);
-    setTimeout(() => { try { window.print(); } catch { gone(); flash("この端末では印刷できません"); } }, 60);
+    printBox(box);
   }
   function cal18TT() {
     if (!calEighteen) return;
@@ -39950,7 +39975,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function cal18Hid(e) { return !!calEighteen && !!e?.secret; }
   function cal18Name(e) { return cal18Hid(e) ? "ひみつの予定" : e?.title || ""; }
   for (const f of ["plan", "ed"]) {
-    const sw = el("input", { type: "checkbox", id: f + "Secret", class: "switch", role: "switch" });
+    const sw = switchEl({ id: f + "Secret" });
     $(f + "Star").parentElement.after(el("label", { class: "flabel", for: f + "Secret" }, "ひみつ"), el("div", { class: "ffield" }, sw));
   }
   function cal18Hide(out) {
@@ -40068,7 +40093,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // the gear: ⑨, with ① and ⑥ drawn with the calendar
   {
-    const last = el("input", { type: "checkbox", id: "cal18Last", class: "switch", role: "switch" });
+    const last = switchEl({ id: "cal18Last" });
     $("cal17GapFoot").after(el("h3", { class: "group-head" }, "最後の回のお知らせ"),
       el("form", { class: "add", id: "cal18LastForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
         el("label", { class: "flabel", for: "cal18Last" }, "お知らせ"), el("div", { class: "ffield" }, last)),
@@ -41512,7 +41537,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!box) return;
     const t = goalTime(g), subs = sortedSubjects(), st = g.study || {};
     const top = [...t.per].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([e, m]) => `${clip(oneLine(g.mandala?.[e]?.t), 10)} ${keepUnits(durText(m))}`);
-    const on = el("input", { type: "checkbox", class: "switch", role: "switch", id: "mStudyOn", checked: !!st.on, onchange: (ev) => setGoalStudy(g.id, { on: ev.target.checked }) });
+    const on = switchEl({ id: "mStudyOn", checked: !!st.on, onchange: (ev) => setGoalStudy(g.id, { on: ev.target.checked }) });
     const sub = subs.length ? el("select", { id: "mStudySub", disabled: !st.on, "aria-label": "勉強の科目", onchange: (ev) => setGoalStudy(g.id, { sub: ev.target.value || undefined }) },
       el("option", { value: "" }, "科目なし"), subs.map((x) => el("option", { value: x.id, selected: st.sub === x.id }, x.name))) : null;
     setChildren(box, el("p", { class: "m-time-sum" }, t.all ? [el("strong", {}, keepUnits(durText(t.all))), `（この7日 ${keepUnits(durText(t.week))}）`] : "まだ記録がありません"),
@@ -43327,7 +43352,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     let cats = [];
     try { cats = exCats("out"); } catch {}
     const cat = el("select", { class: "m-cnt-in", "aria-label": "家計簿の費目", disabled: !moneyToBook }, cats.map((c) => el("option", { value: c, selected: c === (cats.includes("教育費") ? "教育費" : cats[0]) }, c)));
-    const book = el("input", { type: "checkbox", class: "switch", role: "switch", checked: moneyToBook, "aria-label": "家計簿にも記録する", onchange: (ev) => { moneyToBook = ev.target.checked; cat.disabled = !moneyToBook; } });
+    const book = switchEl({ checked: moneyToBook, "aria-label": "家計簿にも記録する", onchange: (ev) => { moneyToBook = ev.target.checked; cat.disabled = !moneyToBook; } });
     const budIn = el("input", { type: "number", class: "m-cnt-in", min: 0, step: 1000, inputmode: "numeric", value: bud || "", placeholder: "予算", "aria-label": "予算（円）",
       onchange: (ev) => { const v = Math.max(0, Math.round(Number(ev.target.value) || 0)); if (v !== bud) sixPatch(g.id, { budget: v || undefined }, v ? `予算を ${fmtYen(v)}にしました` : "予算をはずしました", { budget: g.budget }); } });
     const r = bud ? sum / bud : 0;
@@ -43983,7 +44008,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const box = $("goalShowList"), off = goalShowOff();
     if (!box) return;
     setChildren(box, GOAL_SHOWS.map(([k, w]) => el("label", { class: "m-time-row" }, el("span", {}, w),
-      el("input", { type: "checkbox", class: "switch", role: "switch", checked: !off.has(k), "aria-label": `${w}を目標のページに出す`, onchange: (ev) => setGoalShow(k, ev.target.checked) }))));
+      switchEl({ checked: !off.has(k), "aria-label": `${w}を目標のページに出す`, onchange: (ev) => setGoalShow(k, ev.target.checked) }))));
   }
 
   // the goal's own level: ②③⑥⑦
@@ -45103,11 +45128,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!g) return;
     $("goalPrint")?.remove();
     const box = goalPrintBox(g);
-    document.body.append(box);
-    const gone = () => { box.remove(); window.removeEventListener("afterprint", gone); };
-    window.addEventListener("afterprint", gone);
-    setTimeout(gone, 60000); // (a browser that never says the print is over: gone all the same, before another page prints)
-    setTimeout(() => { try { window.print(); } catch { gone(); flash("この端末では印刷できません"); } }, 60);
+    printBox(box, 60000);
   }
   $("mPrint").addEventListener("click", goalPrint);
 
@@ -46193,11 +46214,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       [...by].map(([k, xs]) => el("section", {}, el("h2", {}, k), el("ul", {}, xs.map((l) => el("li", {}, el("span", { class: "g16-box" }, "☐"), el("span", {}, l.name, l.above.length > 1 ? el("small", {}, `（${l.above.slice(1).join(" › ")}）`) : null),
         el("span", { class: "g16-due" }, [isDay(l.cell.due || "") ? `期限 ${fmtMD(l.cell.due)}` : "", estOf(l.cell) ? `約${durText(estOf(l.cell)).replace(/ /g, "")}` : ""].filter(Boolean).join("・"))))))),
       el("p", { class: "gp13-foot" }, `つみかさね　${fmtDayLong(todayKey)}に印刷`));
-    document.body.append(box);
-    const gone = () => { box.remove(); window.removeEventListener("afterprint", gone); };
-    window.addEventListener("afterprint", gone);
-    setTimeout(gone, 60000);
-    setTimeout(() => { try { window.print(); } catch { gone(); flash("この端末では印刷できません"); } }, 60);
+    printBox(box, 60000);
   }
   $("mPrintTodo").addEventListener("click", printTodo);
 
@@ -49645,7 +49662,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const ta = el("textarea", { class: "td6-imp-ta", rows: 7, spellcheck: "false", placeholder: "1行に1件。CSV（名前,期限,メモ）も読めます", "aria-label": "取り込むToDo（1行に1件）" });
       const sel = el("select", { id: "td6ImpList" }, el("option", { value: "" }, "リストなし"), sortedTodoLists().map((l) => el("option", { value: l.id }, l.name)));
       sel.value = todoTab && todoLists.get(todoTab) ? todoTab : "";
-      const same = el("input", { type: "checkbox", id: "td6ImpSame", class: "switch", role: "switch", checked: true });
+      const same = switchEl({ id: "td6ImpSame", checked: true });
       const file = el("input", { type: "file", accept: ".csv,.tsv,.txt,text/csv,text/plain", hidden: true });
       const out = el("div", { class: "td6-imp-out" });
       file.addEventListener("change", async () => {
@@ -50239,11 +50256,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const f of gone) td7Files.delete(f.todoId);
   }
   const td7Size = (n) => (n >= 1048576 ? `${(Math.round((n / 1048576) * 10) / 10).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
-  function td7OpenFile(f) {
-    const u = URL.createObjectURL(f.blob), a = el("a", { href: u, download: f.name || "file", hidden: true }); // (as itself, by its name: the page stays)
-    document.body.append(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(u), 60000);
-  }
+  function td7OpenFile(f) { downloadBlob(f.blob, f.name || "file"); } // (as itself, by its name: the page stays)
   function td7FilesEditor(todoId) {
     const box = el("div", { class: "full td7-files", id: "reFiles" });
     const draw = () => {
@@ -50801,7 +50814,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("label", { class: "flabel", for: "td8ViewName" }, "名前"), el("div", { class: "ffield" }, el("input", { type: "text", id: "td8ViewName", maxlength: 20, value: d.name })),
       sel("td8ViewList", "リスト", [["", "どのリストでも"], ["none", "リストなし"], ...td8Lists().map((l) => [l.id, l.name])], d.listId),
       sel("td8ViewLabel", "ラベル", [["", "どのラベルでも"], ["none", "ラベルなし"], ...labs.map((l) => [l.id, l.name])], d.labelId),
-      el("label", { class: "flabel", for: "td8ViewFlag" }, "重要だけ"), el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "td8ViewFlag", class: "switch", role: "switch", checked: !!d.flag })),
+      el("label", { class: "flabel", for: "td8ViewFlag" }, "重要だけ"), el("div", { class: "ffield" }, switchEl({ id: "td8ViewFlag", checked: !!d.flag })),
       sel("td8ViewDue", "期限", TD8_DUES, d.due), sel("td8ViewMins", "かかる時間", TD8_MINS, num(d.mins)),
       el("div", { class: "full td8-view-acts" }, el("button", { type: "submit", class: "btn sm" }, d.id ? "保存して絞り込む" : "作って絞り込む"),
         el("button", { type: "button", class: "link-btn", onclick: () => { td8ViewEdit = null; renderTd4View(); } }, "やめる"),
@@ -50940,7 +50953,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren($("td9ShowList"), td9Cards().map(([k, name]) => {
       const id = "td9Show_" + k, on = k === "now" ? !!$("td6NowOn")?.checked : !off.has(k);
       return el("li", { class: "td9-show-row" }, el("label", { class: "td9-show-name", for: id }, name),
-        el("input", { type: "checkbox", id, class: "switch", role: "switch", checked: on, onchange: (ev) => td9SetShown(k, ev.target.checked) }));
+        switchEl({ id, checked: on, onchange: (ev) => td9SetShown(k, ev.target.checked) }));
     }));
     $("td9AskOn").checked = td9AskOn();
   }
@@ -52055,7 +52068,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ToDo's 編集: ③ the fields, ⑩ the days by the 期限, ② the swipe, ⑧ the sound
   function td11Switch(id, name, on, onChange) {
-    return el("li", { class: "td9-show-row" }, el("label", { class: "td9-show-name", for: id }, name), el("input", { type: "checkbox", id, class: "switch", role: "switch", checked: on, onchange: (ev) => onChange(ev.target.checked) }));
+    return el("li", { class: "td9-show-row" }, el("label", { class: "td9-show-name", for: id }, name), switchEl({ id, checked: on, onchange: (ev) => onChange(ev.target.checked) }));
   }
   function td11InitSettings() {
     const foot = $("td9ShowList")?.nextElementSibling, s = td11Set();
@@ -52314,10 +52327,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function td12Print() {
     $("td12Print")?.remove();
     const box = td12PrintBox();
-    document.body.append(box);
-    const gone = () => { box.remove(); window.removeEventListener("afterprint", gone); };
-    window.addEventListener("afterprint", gone);
-    setTimeout(() => { try { window.print(); } catch { gone(); flash("この端末では印刷できません"); } }, 60);
+    printBox(box);
   }
 
   // ⑧ 関連するToDo (rel: ids): in a ToDo's sheet, those joined to it, each opened at a press (what was changed in the
@@ -53357,7 +53367,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return all ? { ...out, noHol: t.noHol } : { ...out, ...(t.noHol ? { noHol: true } : {}) };
   };
   function td15HolRow(id, on, repeat) {
-    const box = el("input", { type: "checkbox", id, class: "switch", role: "switch", checked: !!on });
+    const box = switchEl({ id, checked: !!on });
     const row = el("div", { class: "form-rows td15-hol-row", id: id + "Row", hidden: true }, el("label", { class: "flabel", for: id }, "祝日はとばす"), el("div", { class: "ffield" }, box));
     const sync = () => { row.hidden = !td15HolOk(repeat.value); };
     repeat.addEventListener("change", sync);
@@ -54172,7 +54182,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("label", { class: "flabel", for: "td17DefDue" }, "期限"),
         el("div", { class: "ffield" }, el("select", { id: "td17DefDue", onchange: (ev) => put({ due: ev.target.value }) }, TD17_DUE.map(([k, n]) => el("option", { value: k, selected: k === d.due }, n)))),
         el("label", { class: "flabel", for: "td17DefFlag" }, "重要"),
-        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "td17DefFlag", class: "switch", role: "switch", checked: d.flag, onchange: (ev) => put({ flag: ev.target.checked }) })),
+        el("div", { class: "ffield" }, switchEl({ id: "td17DefFlag", checked: d.flag, onchange: (ev) => put({ flag: ev.target.checked }) })),
         el("label", { class: "flabel", for: "td17DefLabel" }, "ラベル"),
         el("div", { class: "ffield" }, el("select", { id: "td17DefLabel", onchange: (ev) => put({ label: ev.target.value }) }, el("option", { value: "" }, "付けない"), sortedTodoLabels().map((x) => el("option", { value: x.id, selected: x.id === d.label }, x.name))))),
       el("p", { class: "group-foot" }, td17DefOn(d) ? `いまの決まり：${td17DefWords(d)}` : "いまは何も付けません。"));
@@ -55329,7 +55339,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function td20InitSettings() {
     const foot = $("td18TodayForm")?.nextElementSibling;
     if (!foot) return;
-    const sw = (id, on) => el("input", { type: "checkbox", id, class: "switch", role: "switch", onchange: on });
+    const sw = (id, on) => switchEl({ id, onchange: on });
     foot.after(el("h3", { class: "group-head" }, "前の晩のまとめ"),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, el("label", { class: "flabel", for: "td20EveOn" }, "お知らせ"), el("div", { class: "ffield" }, sw("td20EveOn", (ev) => { td20Put({ eve: { ...td20Set().eve, on: ev.target.checked } }); renderTd20Settings(); })),
         el("label", { class: "flabel", for: "td20EveAt" }, "時刻"), el("div", { class: "ffield" }, el("input", { type: "time", id: "td20EveAt", onchange: (ev) => { if (isHm(ev.target.value)) td20Put({ eve: { ...td20Set().eve, at: ev.target.value } }); } }))),
@@ -55641,7 +55651,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("p", { class: "group-foot" }, "1週間に終えるToDoの数です（1日の目標と同じ数え方）。「すべて」の上の目標のカードに出ます。"),
       el("h3", { class: "group-head" }, "集中しているあいだ"),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, el("label", { class: "flabel", for: "td21WakeOn" }, "画面を消さない"),
-        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "td21WakeOn", class: "switch", role: "switch", onchange: (ev) => { lsJsonPut(TD21_WAKE_KEY, ev.target.checked ? null : false); td21WakeSync(); } }))),
+        el("div", { class: "ffield" }, switchEl({ id: "td21WakeOn", onchange: (ev) => { lsJsonPut(TD21_WAKE_KEY, ev.target.checked ? null : false); td21WakeSync(); } }))),
       el("p", { class: "group-foot" }, "集中タイマーが動いているあいだと、1件に集中する画面のあいだ、画面が暗くならないようにします（この端末だけ）。"));
     renderTd21Settings();
   }
@@ -56270,7 +56280,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const after = $("td21WakeOn")?.closest("form")?.nextElementSibling;
     if (after) after.after(el("h3", { class: "group-head" }, "買い物リスト"),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, el("label", { class: "flabel", for: "td22ShopWake" }, "画面を消さない"),
-        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "td22ShopWake", class: "switch", role: "switch", onchange: (ev) => { lsJsonPut(TD22_SHOP_WAKE, ev.target.checked ? null : false); td22Touch = Date.now(); td21WakeSync(); } }))),
+        el("div", { class: "ffield" }, switchEl({ id: "td22ShopWake", onchange: (ev) => { lsJsonPut(TD22_SHOP_WAKE, ev.target.checked ? null : false); td22Touch = Date.now(); td21WakeSync(); } }))),
       el("p", { class: "group-foot", id: "td22ShopFoot" }, el("span", { class: "phrase" }, "買い物リストを開いているあいだ、画面が暗くならないようにします。"), el("span", { class: "phrase" }, "さわらないまま10分たつと、ふつうに戻ります（この端末だけ）。")));
     renderTd22Settings();
   }
@@ -56363,7 +56373,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const off = td23RowOff();
     setChildren($("tdPanelBody"), el("p", { class: "group-foot td-panel-lead" }, el("span", { class: "phrase" }, "ToDoの一覧の行に出すものです。"), el("span", { class: "phrase" }, "名前・期限・時刻はいつも出ます（この端末だけ）。")),
       el("ul", { class: "list card td23-rows" }, TD23_ROW.map(([k, name]) => el("li", {}, el("label", { class: "td23-row-name", for: "td23Row-" + k }, name),
-        el("input", { type: "checkbox", id: "td23Row-" + k, class: "switch", role: "switch", checked: !off.has(k), onchange: (ev) => td23RowPut(k, ev.target.checked) })))),
+        switchEl({ id: "td23Row-" + k, checked: !off.has(k), onchange: (ev) => td23RowPut(k, ev.target.checked) })))),
       off.size ? el("div", { class: "td-plan-go" }, el("button", { type: "button", class: "link-btn", onclick: () => { lsJsonPut(TD23_ROW_KEY, null); td23RowStyle(); renderTdPanel(); } }, "すべて出す")) : null);
   }
 
@@ -56725,11 +56735,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!foot) return;
     foot.after(el("h3", { class: "group-head" }, "サブタスク"),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, el("label", { class: "flabel", for: "td23AutoDone" }, "ぜんぶ終えたら完了"),
-        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "td23AutoDone", class: "switch", role: "switch", onchange: (ev) => td23Put({ autoDone: ev.target.checked }) }))),
+        el("div", { class: "ffield" }, switchEl({ id: "td23AutoDone", onchange: (ev) => td23Put({ autoDone: ev.target.checked }) }))),
       el("p", { class: "group-foot" }, "最後のサブタスクにチェックを付けたら、ToDoも完了にします。"),
       el("h3", { class: "group-head" }, "片手で追加"),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, el("label", { class: "flabel", for: "td23FabOn" }, "下に＋を出す"),
-        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "td23FabOn", class: "switch", role: "switch", onchange: (ev) => { lsJsonPut(TD23_FAB_KEY, ev.target.checked ? null : false); td23FabSync(); } }))),
+        el("div", { class: "ffield" }, switchEl({ id: "td23FabOn", onchange: (ev) => { lsJsonPut(TD23_FAB_KEY, ev.target.checked ? null : false); td23FabSync(); } }))),
       el("p", { class: "group-foot", id: "td23FabFoot" }, el("span", { class: "phrase" }, "スマホで、ToDoのページの右下にも＋を出します。"), el("span", { class: "phrase" }, "この端末だけの設定です。")));
     renderTd23Settings();
   }
@@ -57110,7 +57120,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!foot) return;
     const at = el("select", { id: "td24StreakAt", onchange: (ev) => td24Put({ at: ev.target.value }) }, TD24_STREAK_AT.map((hm) => el("option", { value: hm }, hm)));
     foot.after(el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
-        el("label", { class: "flabel", for: "td24StreakOn" }, "連続を守るお知らせ"), el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "td24StreakOn", class: "switch", role: "switch", onchange: (ev) => td24Put({ streak: ev.target.checked }) })),
+        el("label", { class: "flabel", for: "td24StreakOn" }, "連続を守るお知らせ"), el("div", { class: "ffield" }, switchEl({ id: "td24StreakOn", onchange: (ev) => td24Put({ streak: ev.target.checked }) })),
         el("label", { class: "flabel", for: "td24StreakAt" }, "知らせる時刻"), el("div", { class: "ffield" }, at)),
       el("p", { class: "group-foot", id: "td24StreakFoot" }, "1日の目標を2日以上続けて達成しているとき、その日がまだなら、決めた時刻にお知らせします。"));
     renderTd24Settings();
@@ -57618,13 +57628,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function td25InitSettings() {
     const form = $("focusForm");
     if (form) {
-      form.append(el("label", { class: "flabel", for: "td25AutoOn" }, "自動で続ける"), el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "td25AutoOn", class: "switch", role: "switch", onchange: (ev) => td25Put({ auto: ev.target.checked }) })));
+      form.append(el("label", { class: "flabel", for: "td25AutoOn" }, "自動で続ける"), el("div", { class: "ffield" }, switchEl({ id: "td25AutoOn", onchange: (ev) => td25Put({ auto: ev.target.checked }) })));
       form.nextElementSibling?.append(el("span", { class: "phrase" }, "「自動で続ける」をオンにすると、休憩が終わったとき次の集中が自動で始まります（長い休憩のあとは止まります）。"));
     }
     const foot = $("td9AskForm")?.nextElementSibling;
     if (foot) foot.after(el("h3", { class: "group-head" }, "終えたときのかかった時間"),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, el("label", { class: "flabel", for: "td25AskOn" }, "かかった時間を聞く"),
-        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "td25AskOn", class: "switch", role: "switch", onchange: (ev) => td25Put({ ask: ev.target.checked }) }))),
+        el("div", { class: "ffield" }, switchEl({ id: "td25AskOn", onchange: (ev) => td25Put({ ask: ev.target.checked }) }))),
       el("p", { class: "group-foot", id: "td25AskFoot" }, el("span", { class: "phrase" }, "集中タイマーを使わずに終えたToDoに、一覧の上で「どれくらいかかった？」と聞きます。"), el("span", { class: "phrase" }, "選んだ時間は、見積もりのくせや時間の使いかたに入ります。")));
     renderTd25Settings();
   }
@@ -58003,9 +58013,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     let box = $("wxMoreBox");
     if (box) return box;
     box = el("div", { class: "td-panel wx-more", id: "wxMoreBox", hidden: true });
-    const on = el("input", { type: "checkbox", id: "wxMornOn", class: "switch", role: "switch", onchange: (ev) => wxMorningPut({ on: ev.target.checked }) });
+    const on = switchEl({ id: "wxMornOn", onchange: (ev) => wxMorningPut({ on: ev.target.checked }) });
     const at = el("input", { type: "time", id: "wxMornAt", onchange: (ev) => { if (isHm(ev.target.value)) wxMorningPut({ at: ev.target.value }); } });
-    const rainOnly = el("input", { type: "checkbox", id: "wxMornRain", class: "switch", role: "switch", onchange: (ev) => wxMorningPut({ rainOnly: ev.target.checked }) });
+    const rainOnly = switchEl({ id: "wxMornRain", onchange: (ev) => wxMorningPut({ rainOnly: ev.target.checked }) });
     const find = el("input", { type: "search", id: "wxFindIn", maxlength: 60, enterkeyhint: "search", "aria-label": "場所の名前" });
     const go = () => { find.blur(); wxFind(find.value); };
     find.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.isComposing && ev.keyCode !== 229) { ev.preventDefault(); go(); } });
@@ -58299,10 +58309,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // (under the page, after 朝の天気のお知らせ: built once, kept)
   function wx3MoreBuild() {
     if ($("wx3RainBox") || !$("wxMornNote")) return;
-    const on = el("input", { type: "checkbox", id: "wx3RainOn", class: "switch", role: "switch", onchange: (ev) => wx3RainPut({ on: ev.target.checked }) });
+    const on = switchEl({ id: "wx3RainOn", onchange: (ev) => wx3RainPut({ on: ev.target.checked }) });
     const before = el("select", { id: "wx3RainBefore", "aria-label": "どのくらい前に", onchange: (ev) => wx3RainPut({ before: Number(ev.target.value) }) }, [[60, "1時間前"], [30, "30分前"]].map(([v, w]) => el("option", { value: v }, w)));
-    const auto = el("input", { type: "checkbox", id: "wx3AutoOn", class: "switch", role: "switch", onchange: (ev) => { wx3AutoPut(ev.target.checked); if (ev.target.checked) wx3AutoPlace(true); } });
-    const end = el("input", { type: "checkbox", id: "wx4RainEnd", class: "switch", role: "switch", onchange: (ev) => wx3RainPut({ end: ev.target.checked }) }); // (天気 その4 ⑩)
+    const auto = switchEl({ id: "wx3AutoOn", onchange: (ev) => { wx3AutoPut(ev.target.checked); if (ev.target.checked) wx3AutoPlace(true); } });
+    const end = switchEl({ id: "wx4RainEnd", onchange: (ev) => wx3RainPut({ end: ev.target.checked }) }); // (天気 その4 ⑩)
     $("wxMornNote").after(el("div", { id: "wx3RainBox" }, el("h3", { class: "group-head" }, "雨のお知らせ"),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, recRow("降り出す前", on), recRow("いつ", before), recRow("やむとき", end)),
       el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "きょうとあした、雨や雪が降り出す前と、やむ少し前（10分前）にお知らせします（6時〜22時）。"), el("span", { class: "phrase" }, "アプリを開いたときの予報から決めるので、ときどき開いてください。"))));
@@ -58822,7 +58832,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // (under the page: あしたの天気のお知らせ after 朝の, 行きと帰りの天気 after 雨のお知らせ; built once, kept)
   function wx4MoreBuild() {
     if ($("wx4EveBox") || !$("wxMornNote") || !$("wx3RainBox")) return;
-    const sw = (id, put) => el("input", { type: "checkbox", id, class: "switch", role: "switch", onchange: (ev) => put(ev.target.checked) });
+    const sw = (id, put) => switchEl({ id, onchange: (ev) => put(ev.target.checked) });
     const tm = (id, put) => el("input", { type: "time", id, onchange: (ev) => { if (isHm(ev.target.value)) put(ev.target.value); } });
     const form = (...rows) => el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, ...rows); // (each row a label and its field)
     $("wxMornNote").after(el("div", { id: "wx4EveBox" }, el("h3", { class: "group-head" }, "あしたの天気のお知らせ"),
@@ -59145,7 +59155,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // (under the page, after 雨のお知らせ: built once, kept)
   function wx5MoreBuild() {
     if ($("wx5Box") || !$("wx3RainBox")) return;
-    const sw = (id, put) => el("input", { type: "checkbox", id, class: "switch", role: "switch", onchange: (ev) => put(ev.target.checked) });
+    const sw = (id, put) => switchEl({ id, onchange: (ev) => put(ev.target.checked) });
     $("wx3RainBox").after(el("div", { id: "wx5Box" }, el("h3", { class: "group-head" }, "体調のお知らせ"),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
         recRow("気圧が下がる前", sw("wx5PressOn", (on) => wx5PressPut({ on }))), recRow("少しでも", sw("wx5PressSmall", (small) => wx5PressPut({ small }))),
@@ -59547,7 +59557,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     box.append(el("div", { id: "wx7Box" }, el("h3", { class: "group-head" }, "表示する項目"),
       el("details", { class: "wx6-next wx7-show", id: "wx7Show" }, el("summary", { id: "wx7ShowSum" }),
         el("ul", { class: "list card", id: "wx7ShowList" }, WX7_SECS.map(([k, label]) => el("li", { class: "wx7-sw" }, el("label", { for: "wx7s-" + k }, label),
-          el("input", { type: "checkbox", id: "wx7s-" + k, class: "switch", role: "switch", onchange: (ev) => wx7HidePut(k, !ev.target.checked) }))))),
+          switchEl({ id: "wx7s-" + k, onchange: (ev) => wx7HidePut(k, !ev.target.checked) }))))),
       el("p", { class: "group-foot" }, "オフにした項目は、天気のページに出しません（アカウントの設定に残るので、ほかの端末でも同じです）。")));
   }
   function wx7MoreSync() {
@@ -59623,9 +59633,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!blob) { flash("画像を作れませんでした"); return; }
     const file = new File([blob], `天気-${day}.png`, { type: "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: `${fmtMDW(day)}の天気` }); } catch {} return; }
-    const url = URL.createObjectURL(blob), a = el("a", { href: url, download: file.name });
-    document.body.append(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    downloadBlob(blob, file.name);
     flash("天気の画像を保存しました");
   }
   function wx8PicBtn() { return el("button", { type: "button", class: "link-btn wx5-speak wx8-pic", id: "wx8Pic", "aria-label": "天気を画像で送る", title: "画像で送る", onclick: () => wx8Picture(wxSel && wxDay(wxSel) ? wxSel : todayKey) }, icon("export", 18)); }
@@ -59705,7 +59713,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function wx8MornAt(m, d) { const wd = parseYmd(d).getDay(); return m.weAt && (wd === 0 || wd === 6 || !!holidayName(d)) ? m.weAt : m.at; }
   function wx8MoreBuild() {
     if ($("wx8WeOn") || !$("wxMornOn")) return;
-    const on = el("input", { type: "checkbox", id: "wx8WeOn", class: "switch", role: "switch", onchange: (ev) => wxMorningPut({ weAt: ev.target.checked ? $("wx8WeAt").value || "09:00" : null }) });
+    const on = switchEl({ id: "wx8WeOn", onchange: (ev) => wxMorningPut({ weAt: ev.target.checked ? $("wx8WeAt").value || "09:00" : null }) });
     const at = el("input", { type: "time", id: "wx8WeAt", value: "09:00", onchange: (ev) => { if (isHm(ev.target.value) && wxMorning().weAt) wxMorningPut({ weAt: ev.target.value }); } });
     $("wxMornOn").closest("form").append(...recRow("土日・祝日は別", on), ...recRow("土日・祝日", at));
   }
@@ -59939,7 +59947,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // (under the page: 外の予定のお知らせ after 体調のお知らせ; 傘 with 行きと帰り; その日の注意 with 朝の)
   function wx9MoreBuild() {
     if ($("wx9Box") || !$("wx5Box") || !$("wx4ComOn") || !$("wxMornOn")) return;
-    const sw = (id, put) => el("input", { type: "checkbox", id, class: "switch", role: "switch", onchange: (ev) => put(ev.target.checked) });
+    const sw = (id, put) => switchEl({ id, onchange: (ev) => put(ev.target.checked) });
     const words = el("input", { type: "text", id: "wx9Words", maxlength: 200, placeholder: "例：部活、練習", onchange: (ev) => { const t = oneLine(ev.target.value).slice(0, 200); act(() => (t ? settings.set("wxOutWords", { text: t, updatedAt: Date.now() }) : settings.remove("wxOutWords"))); wxShare(); pushSoon(); wx4Redraw(); } });
     $("wx5Box").after(el("div", { id: "wx9Box" }, el("h3", { class: "group-head" }, "外の予定のお知らせ"),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, recRow("雨のとき前の晩", sw("wx9OutOn", (on) => { lsJsonPut(LS_PREFIX + "wxOutPlanAlert", on ? 1 : null); wxShare(); pushSoon(); wxMoreSync(); })), recRow("足すことば", words)),
@@ -59965,7 +59973,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // asked for its week (kept 3 hours); the rest from the forecast kept; the choices on this device. Function declarations
   // and var ----------
   var wxTen = false;
-  const wx10Sw = (id, put) => el("input", { type: "checkbox", id, class: "switch", role: "switch", onchange: (ev) => put(ev.target.checked) });
+  const wx10Sw = (id, put) => switchEl({ id, onchange: (ev) => put(ev.target.checked) });
   const wx10Flag = (k) => !!lsJson(LS_PREFIX + k), wx10FlagPut = (k, on) => { lsJsonPut(LS_PREFIX + k, on ? 1 : null); wxShare(); pushSoon(); wxMoreSync(); };
   const wx10At = (d, h, mi = 0) => { const p = parseYmd(d); return new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime(); };
 
@@ -61087,7 +61095,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const keep = (id) => setTimeout(() => { const x = $(id); if (x && document.activeElement !== x) x.focus({ preventScroll: true }); }, 60); // (the page drawn again with the account's settings)
     return el("details", { class: "wx6-next wx14-prep", id: "wx14Prep", open: wx14PrepOpen, ontoggle: (ev) => { wx14PrepOpen = ev.target.open; } }, el("summary", { id: "wx14PrepSum" }, `防災の備え（${WX14_PREP.length}個のうち${n}個）`),
       el("ul", { class: "list card", id: "wx14PrepList" }, WX14_PREP.map((t, i) => el("li", { class: "wx7-sw" }, el("label", { for: "wx14p" + i }, t),
-        el("input", { type: "checkbox", id: "wx14p" + i, class: "switch", role: "switch", checked: p.done.includes(t), onchange: (ev) => { const l = new Set(wx14Prep().done); if (ev.target.checked) l.add(t); else l.delete(t); wx14PrepPut({ done: WX14_PREP.filter((x) => l.has(x)) }); sync(); keep("wx14p" + i); } })))),
+        switchEl({ id: "wx14p" + i, checked: p.done.includes(t), onchange: (ev) => { const l = new Set(wx14Prep().done); if (ev.target.checked) l.add(t); else l.delete(t); wx14PrepPut({ done: WX14_PREP.filter((x) => l.has(x)) }); sync(); keep("wx14p" + i); } })))),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() }, recRow("家族の集合場所", el("input", { type: "text", id: "wx14Meet", maxlength: 60, value: p.meet, placeholder: "例：〇〇小学校の校庭", onchange: (ev) => wx14PrepPut({ meet: oneLine(ev.target.value).trim().slice(0, 60) }) }), { long: true })),
       el("p", { class: "group-foot" }, "アカウントの設定に残るので、家族と同じアカウントでなければ、それぞれで。台風や大雨の前に見なおしを。"));
   }
@@ -62426,7 +62434,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "押すと、その見本のタイルだけを出します（元に戻せます）。"), el("span", { class: "phrase" }, "出したあとで、上の一覧から1つずつ選びなおせます。"),
         el("span", { class: "phrase" }, "タイルを長押しすると、名前と数字だけに「たたむ」こともできます。")),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
-        recRow("誕生日・記念日", el("input", { type: "checkbox", id: "h5AnnivOn", class: "switch", role: "switch", onchange: (ev) => saveHomePrefs({ noAnniv: !ev.target.checked }) }))),
+        recRow("誕生日・記念日", switchEl({ id: "h5AnnivOn", onchange: (ev) => saveHomePrefs({ noAnniv: !ev.target.checked }) }))),
       el("p", { class: "group-foot" }, "カレンダーの毎年の予定（誕生日・記念日）を、日付の下に1週間前から出します。")));
   }
   function h5SetSync() { if ($("h5AnnivOn")) $("h5AnnivOn").checked = !homePrefs().noAnniv; }
@@ -64714,7 +64722,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ⑩ 体重のグラフを画像に: the 30 days, 90 days, year or all, as a PNG (1200 × 800): each day's weight, the 7日平均 and
   // 目標体重, with the first and last 7日平均's change; shared (a phone's share sheet) or saved
-  var dt8ImgDays = 90, dt8ImgBlob = null;
+  var dt8ImgDays = 90;
   function dt8Png(days, from0, to0) {
     const all = sortedWeights().filter((r) => r.id <= (to0 || todayKey));
     if (!all.length) return null;
@@ -64749,31 +64757,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     g.textAlign = "right"; g.fillText("つみかさね", W - R, H - 22);
     return c;
   }
-  function dt8Viewer() {
-    let d = $("dt8ImgView");
-    if (d) return d;
-    const share = el("button", { type: "button", class: "link-btn", id: "dt8ImgShare" }, "共有"), save = el("button", { type: "button", class: "link-btn", id: "dt8ImgSave" }, "保存"), shut = el("button", { type: "button", class: "link-btn", id: "dt8ImgClose" }, "閉じる");
-    d = el("dialog", { class: "td-photo-view dt8-img-view", id: "dt8ImgView", "aria-label": "体重のグラフの画像" }, el("img", { id: "dt8ImgPic", alt: "体重のグラフ" }), el("div", { class: "td-photo-bar" }, share, save, shut));
-    const file = () => new File([dt8ImgBlob], `体重_${todayKey}.png`, { type: "image/png" });
-    share.addEventListener("click", async () => { if (!dt8ImgBlob) return; try { await navigator.share({ files: [file()], title: "体重の記録" }); } catch (e) { if (!e || e.name !== "AbortError") flash("共有できませんでした"); } });
-    save.addEventListener("click", () => { if (!dt8ImgBlob) return; const u = URL.createObjectURL(dt8ImgBlob), a = el("a", { href: u, download: `体重_${todayKey}.png` }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 10000); flash("画像を保存しました"); });
-    shut.addEventListener("click", () => d.close());
-    d.addEventListener("click", (ev) => { if (ev.target === d) d.close(); });
-    d.addEventListener("close", () => { const i = $("dt8ImgPic"); if (i.src.startsWith("blob:")) URL.revokeObjectURL(i.src); i.removeAttribute("src"); });
-    document.body.append(d);
-    return d;
-  }
   function dt8MakeImg() {
     const c = dt8Png(dt8ImgDays);
     if (!c) { flash("この期間の体重が2回以上ないと、グラフにできません"); return; }
     c.toBlob((blob) => {
       if (!blob) { flash("画像を作れませんでした"); return; }
-      dt8ImgBlob = blob;
-      const d = dt8Viewer();
-      $("dt8ImgPic").src = URL.createObjectURL(blob);
-      $("dt8ImgShare").hidden = !(navigator.canShare && navigator.canShare({ files: [new File([blob], "a.png", { type: "image/png" })] }));
-      d.showModal();
-      $("dt8ImgClose").focus();
+      picShow("dt8", blob, `体重_${todayKey}.png`, "体重の記録", "体重のグラフの画像", "体重のグラフ");
     }, "image/png");
   }
   function renderDt8Img() {
@@ -64899,29 +64888,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     g.textAlign = "right"; g.font = font(22); g.fillStyle = "#8e8e93"; g.fillText("つみかさね", W - L, H - 36);
     return new Promise((ok) => c.toBlob(ok, "image/png"));
   }
-  var dt9ImgBlob = null, dt9ImgName = "";
-  function dt9Viewer() {
-    let dlg = $("dt9ImgView");
-    if (dlg) return dlg;
-    const share = el("button", { type: "button", class: "link-btn", id: "dt9ImgShare" }, "共有"), save = el("button", { type: "button", class: "link-btn", id: "dt9ImgSave" }, "保存"), shut = el("button", { type: "button", class: "link-btn", id: "dt9ImgClose" }, "閉じる");
-    dlg = el("dialog", { class: "td-photo-view dt8-img-view", id: "dt9ImgView", "aria-label": "食事の画像" }, el("img", { id: "dt9ImgPic", alt: "その日の食事" }), el("div", { class: "td-photo-bar" }, share, save, shut));
-    share.addEventListener("click", async () => { try { await navigator.share({ files: [new File([dt9ImgBlob], dt9ImgName, { type: "image/png" })], title: "食事の記録" }); } catch (e) { if (!e || e.name !== "AbortError") flash("共有できませんでした"); } });
-    save.addEventListener("click", () => { const u = URL.createObjectURL(dt9ImgBlob), a = el("a", { href: u, download: dt9ImgName }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 10000); flash("画像を保存しました"); });
-    shut.addEventListener("click", () => dlg.close());
-    dlg.addEventListener("click", (ev) => { if (ev.target === dlg) dlg.close(); });
-    dlg.addEventListener("close", () => { const i = $("dt9ImgPic"); if (i.src.startsWith("blob:")) URL.revokeObjectURL(i.src); i.removeAttribute("src"); });
-    document.body.append(dlg);
-    return dlg;
-  }
   async function dt9MakeDayImg() {
     const d = viewDate, blob = await dt9DayPng(d).catch(() => null);
     if (!blob) { flash("画像を作れませんでした"); return; }
-    dt9ImgBlob = blob; dt9ImgName = `食事_${d}.png`;
-    const dlg = dt9Viewer();
-    $("dt9ImgPic").src = URL.createObjectURL(blob);
-    $("dt9ImgShare").hidden = !(navigator.canShare && navigator.canShare({ files: [new File([blob], "a.png", { type: "image/png" })] }));
-    dlg.showModal();
-    $("dt9ImgClose").focus();
+    picShow("dt9", blob, `食事_${d}.png`, "食事の記録", "食事の画像", "その日の食事");
   }
   function renderDt9DayImg() {
     let p = $("dt9DayImg");
@@ -65059,10 +65029,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function dt9Print() {
     $("dt9Print")?.remove();
     const box = dt9ReportBox(viewDate.slice(0, 7));
-    document.body.append(box);
-    const gone = () => { box.remove(); window.removeEventListener("afterprint", gone); };
-    window.addEventListener("afterprint", gone);
-    setTimeout(() => { try { window.print(); } catch { gone(); flash("この端末では印刷できません"); } }, 60);
+    printBox(box);
   }
   function renderDt9PrintBtn() {
     let p = $("dt9PrintRow");
@@ -68596,7 +68563,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("span", { class: "wo-move-btns" },
         el("button", { type: "button", class: "icon-btn up", "aria-label": `${x.name}を上へ`, disabled: i === 0, onclick: () => mo2MovePay(x.id, -1) }, icon("prev", 18)),
         el("button", { type: "button", class: "icon-btn down", "aria-label": `${x.name}を下へ`, disabled: i === list.length - 1, onclick: () => mo2MovePay(x.id, 1) }, icon("next", 18))),
-      el("input", { type: "checkbox", class: "switch", role: "switch", checked: !x.off, "aria-label": `${x.name}を入力のメニューに出す`, onchange: (ev) => mo2ShowPay(x.id, ev.currentTarget) }),
+      switchEl({ checked: !x.off, "aria-label": `${x.name}を入力のメニューに出す`, onchange: (ev) => mo2ShowPay(x.id, ev.currentTarget) }),
       el("label", { class: "mo2-pay-card" }, el("input", { type: "checkbox", checked: !!x.card, onchange: (ev) => mo2CardPay(x.id, ev.currentTarget.checked) }), el("span", {}, "クレジットカード")),
       mine(x.id) && !used.has(x.id) ? delButton(() => mo2DropPay(x.id), "削除", x.name) : null)));
   }
@@ -74090,7 +74057,7 @@ ${parts.join("\n")}
     if (!$("rt2DownOn")) $("rtOrderList").nextElementSibling.after(
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
         el("label", { class: "flabel", for: "rt2DownOn" }, "できた項目を下へ"),
-        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "rt2DownOn", class: "switch", role: "switch",
+        el("div", { class: "ffield" }, switchEl({ id: "rt2DownOn",
           onchange: (ev) => act(() => settings.set(RT2_DOWN, { on: ev.target.checked, updatedAt: Date.now() })) }))),
       el("p", { class: "group-foot" }, "チェックした項目を、一覧の下にまとめます。まだの項目が上に来ます。"));
   }
@@ -74598,10 +74565,7 @@ ${parts.join("\n")}
     if (!bt11MonthRows(ym).length) { flash("この月の勤務がありません"); return; }
     $("bt11Print")?.remove();
     const box = bt11PrintBox(ym);
-    document.body.append(box);
-    const gone = () => { box.remove(); window.removeEventListener("afterprint", gone); };
-    window.addEventListener("afterprint", gone);
-    setTimeout(() => { try { window.print(); } catch { gone(); flash("この端末では印刷できません"); } }, 60);
+    printBox(box);
   }
 
   // ⑧ カレンダーに入れる: the month's shifts as an .ics, each with its own UID (put in again, it is the same plan)
@@ -74965,7 +74929,7 @@ ${parts.join("\n")}
     $("rtRemindFoot").after(
       el("form", { class: "add", id: "rt3WeekForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
         el("label", { class: "flabel", for: "rt3WeekOn" }, "週のまとめ"),
-        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "rt3WeekOn", class: "switch", role: "switch",
+        el("div", { class: "ffield" }, switchEl({ id: "rt3WeekOn",
           onchange: (ev) => { const on = ev.target.checked; saveRt3Week({ on }); if (on && pushState() === "off") pushEnable().then(renderRt3Settings); } })),
         el("label", { class: "flabel", for: "rt3WeekAt" }, "時刻"),
         el("div", { class: "ffield" }, el("input", { type: "time", id: "rt3WeekAt", value: "21:00", onchange: (ev) => { if (/^\d\d:\d\d$/.test(ev.target.value)) saveRt3Week({ at: ev.target.value }); } }))),
@@ -75428,10 +75392,7 @@ ${parts.join("\n")}
     if (!sortedRoutines().some((r) => Array.from({ length: daysInMonth(ym) }, (_, i) => `${ym}-${pad(i + 1)}`).some((d) => rtActive(r, d)))) { flash("この月の項目がありません"); return; }
     $("rt4Print")?.remove();
     const box = rt4PrintBox(ym);
-    document.body.append(box);
-    const gone = () => { box.remove(); window.removeEventListener("afterprint", gone); };
-    window.addEventListener("afterprint", gone);
-    setTimeout(() => { try { window.print(); } catch { gone(); flash("この端末では印刷できません"); } }, 60);
+    printBox(box);
   }
 
   // ⑧ コンパクト表示 (in the gear, kept with the account): the day's list by name alone (no メモ nor line under it), shorter
@@ -75530,12 +75491,12 @@ ${parts.join("\n")}
     $("rt2DownOn").closest("form").nextElementSibling.after(
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
         el("label", { class: "flabel", for: "rt4CompactOn" }, "コンパクト表示"),
-        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "rt4CompactOn", class: "switch", role: "switch", onchange: (ev) => act(() => settings.set(RT4_COMPACT, { on: ev.target.checked, updatedAt: Date.now() })) }))),
+        el("div", { class: "ffield" }, switchEl({ id: "rt4CompactOn", onchange: (ev) => act(() => settings.set(RT4_COMPACT, { on: ev.target.checked, updatedAt: Date.now() })) }))),
       el("p", { class: "group-foot" }, "一覧を名前だけにして、たくさんの項目が一度に見えるようにします。"));
     $("rt3WeekFoot").after(
       el("form", { class: "add", id: "rt4GuardForm", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
         el("label", { class: "flabel", for: "rt4GuardOn" }, "連続を守る"),
-        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "rt4GuardOn", class: "switch", role: "switch",
+        el("div", { class: "ffield" }, switchEl({ id: "rt4GuardOn",
           onchange: (ev) => { const on = ev.target.checked; saveRt4Guard({ on }); if (on && pushState() === "off") pushEnable().then(renderRt4Settings); } })),
         el("label", { class: "flabel", for: "rt4GuardAt" }, "時刻"),
         el("div", { class: "ffield" }, el("input", { type: "time", id: "rt4GuardAt", value: "21:30", onchange: (ev) => { if (/^\d\d:\d\d$/.test(ev.target.value)) saveRt4Guard({ at: ev.target.value }); } }))),
@@ -77779,9 +77740,9 @@ ${parts.join("\n")}
       el("h3", { class: "group-head" }, "チェックの音"),
       el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
         el("label", { class: "flabel", for: "rt6SoundOn" }, "音"),
-        el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "rt6SoundOn", class: "switch", role: "switch", onchange: (ev) => { rt6LsPut(RT6_SOUND, ev.target.checked); if (ev.target.checked) rt6Tone(RT6_TONES.check); } })),
+        el("div", { class: "ffield" }, switchEl({ id: "rt6SoundOn", onchange: (ev) => { rt6LsPut(RT6_SOUND, ev.target.checked); if (ev.target.checked) rt6Tone(RT6_TONES.check); } })),
         typeof navigator.vibrate === "function" ? [el("label", { class: "flabel", for: "rt6BuzzOn" }, "ふるえ"),
-          el("div", { class: "ffield" }, el("input", { type: "checkbox", id: "rt6BuzzOn", class: "switch", role: "switch", onchange: (ev) => { rt6LsPut(RT6_BUZZ, ev.target.checked); if (ev.target.checked) { try { navigator.vibrate(14); } catch {} } } }))] : null),
+          el("div", { class: "ffield" }, switchEl({ id: "rt6BuzzOn", onchange: (ev) => { rt6LsPut(RT6_BUZZ, ev.target.checked); if (ev.target.checked) { try { navigator.vibrate(14); } catch {} } } }))] : null),
       el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "チェックしたときに短い音を鳴らします。ぜんぶできたときは、ちがう音です。"),
         el("span", { class: "phrase" }, "この端末だけの設定です。"), el("span", { class: "phrase" }, "iPhoneは、マナーモードのときは鳴りません。")));
     rt6HoldWire();
