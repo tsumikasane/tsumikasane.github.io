@@ -12262,6 +12262,32 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // replaceChildren() would print "null" for a skipped child, so drop those first
   function setChildren(parent, ...kids) { parent.replaceChildren(...kids.flat().filter((k) => k != null && k !== false)); }
+  // ---------- 文字で送る・コピー (shared, 2026-11-17: what each page did on its own, in one place) ----------
+  // words to the clipboard; where that is refused (an older iPhone, no permission), by a hidden field. Says if it worked
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch {
+      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
+      document.body.append(ta); ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch {}
+      ta.remove();
+      return ok;
+    }
+  }
+  // copied, and said so: 「（what を）文字でコピーしました。LINEなどに貼り付けられます」
+  async function copySay(text, what) {
+    const ok = await copyText(text);
+    flash(ok ? `${what ? what + "を" : ""}文字でコピーしました。LINEなどに貼り付けられます` : "コピーできませんでした");
+    return ok;
+  }
+  // 文字で送る: the phone's share sheet (LINE and the like); where there is none, or it fails, copied and said so. Says how
+  // it went: "shared", "cancel" (the sheet closed), "copied" or "failed"
+  async function sendText(text, title, what) {
+    if (navigator.share) {
+      try { await navigator.share(title ? { title, text } : { text }); return "shared"; } catch (e) { if (e?.name === "AbortError") return "cancel"; }
+    }
+    return (await copySay(text, what)) ? "copied" : "failed";
+  }
   // the chosen option of a radio group (the segmented controls inside the forms)
   const checkedValue = (name) => (document.querySelector(`input[name="${name}"]:checked`) || {}).value || "";
   const SVG_NS = "http://www.w3.org/2000/svg";
@@ -27697,10 +27723,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("rec2DayShare").addEventListener("click", async () => {
     const d = recDayAt, text = rec2DayText(d);
     if (!text) { flash("送る記録がありません"); return; }
-    if (navigator.share) {
-      try { await navigator.share({ title: `${fmtDayLong(d)}の記録`, text }); return; } catch (e) { if (e?.name === "AbortError") return; }
-    }
-    flash((await td6Copy(text)) ? "この日の記録を文字でコピーしました。LINEなどに貼り付けられます" : "コピーできませんでした");
+    await sendText(text, `${fmtDayLong(d)}の記録`, "この日の記録");
   });
 
   // ③ the kinds of what was found, as chips with their counts: one pressed, only its records, more days of them (30)
@@ -28349,10 +28372,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("rec5TextBtn").addEventListener("click", async () => {
     const t = rec5ListText();
     if (!t) { flash("送る記録がありません"); return; }
-    if (navigator.share) {
-      try { await navigator.share({ title: t.title, text: t.text }); return; } catch (e) { if (e?.name === "AbortError") return; }
-    }
-    flash((await td6Copy(t.text)) ? "見つかった記録を文字でコピーしました。LINEなどに貼り付けられます" : "コピーできませんでした");
+    await sendText(t.text, t.title, "見つかった記録");
   });
 
   // ④ the days of the week to narrow to, any of them, with the span's fields (and put away with them), in the order of
@@ -29886,8 +29906,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!rec3Sel?.size || !spec) return;
     const xs = spec.items().filter((x) => rec3Sel.has(x.id)), tot = spec.total?.(xs), byDay = groupBy(xs, (x) => x.date);
     const text = [`${spec.label}の記録 ${xs.length} 件${tot ? "・" + tot : ""}`, ...[...byDay.keys()].sort().flatMap((d) => ["", `【${fmtDayLong(d)}】`, ...byDay.get(d).map((x) => (kind === "journal" ? oneLine(x.text) : rec2Line(kind, x)))])].join("\n");
-    if (navigator.share) { try { await navigator.share({ title: `${spec.label}の記録`, text }); return; } catch (e) { if (e?.name === "AbortError") return; } }
-    flash((await td6Copy(text)) ? "選んだ記録を文字でコピーしました。LINEなどに貼り付けられます" : "コピーできませんでした");
+    await sendText(text, `${spec.label}の記録`, "選んだ記録");
   });
 
   // ⑦ 先の日付: a kind's entries dated after today (shown nowhere else here, as the lists go up to today), told of under
@@ -32362,10 +32381,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   var ts6Kinds = (bs) => Object.keys(TSUMI_KINDS).map((k) => [k, bs.filter((b) => b.kind === k).length]).filter(([, n]) => n);
   var ts6KindWords = (bs) => ts6Kinds(bs).map(([k, n]) => `${TSUMI_KINDS[k].label} ${fmtN(n)}`).join("・");
   async function ts6Send(text, title, n) {
-    if (navigator.share) {
-      try { await navigator.share({ title, text }); return; } catch (e) { if (e?.name === "AbortError") return; }
-    }
-    flash((await td6Copy(text)) ? `${title}（${fmtN(n)} こ）を文字でコピーしました。LINEなどに貼り付けられます` : "コピーできませんでした");
+    await sendText(text, title, `${title}（${fmtN(n)} こ）`);
   }
 
   // 1 文字で送る: today's blocks, each with its time, kind and words; or the last 7 days, a line a day
@@ -33946,17 +33962,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   async function tdShare() {
     const { name, text, n } = tdShareText();
     if (!n) { flash("送るToDoがありません"); return; }
-    if (navigator.share) {
-      try { await navigator.share({ title: name || "ToDo", text }); return; } catch (e) { if (e?.name === "AbortError") return; }
-    }
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
-    flash(ok ? `ToDo ${n} 件を文字でコピーしました。LINEなどに貼り付けられます` : "コピーできませんでした");
+    await sendText(text, name || "ToDo", `ToDo ${n} 件`);
   }
 
   // ---------- ToDo その3 ①〜⑩ (the user's calls, 2026-11-11): きょうやる (①), お知らせ ahead of the 期限 (②), the evening's
@@ -34487,17 +34493,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑤ as words to send (LINE and the like): a plan, a day's or a week's plans, the free hours of the 7 days from a day;
   // from the share sheet, or copied where there is none
   async function calShare(title, text) {
-    if (navigator.share) {
-      try { await navigator.share({ title, text }); return; } catch (e) { if (e?.name === "AbortError") return; }
-    }
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
-    flash(ok ? "文字でコピーしました。LINEなどに貼り付けられます" : "コピーできませんでした");
+    await sendText(text, title);
   }
   function calWhenText(e, start) {
     const extra = extraDays(e), end = addDays(start, extra), tm = e.time ? e.time + (e.endTime && e.endTime !== e.time ? "〜" + e.endTime : "") : "終日";
@@ -38993,21 +38989,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $(f + "Tel").closest(".ffield").after(el("div", { class: "full ffield" }, v));
   }
   function cal15Resv(e) { return calFifteen && typeof e?.resv === "string" ? oneLine(e.resv).slice(0, 60) : ""; }
-  async function cal15Copy(text) {
-    try { await navigator.clipboard.writeText(text); return true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      let ok = false;
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-      return ok;
-    }
-  }
   function cal15ResvCard(e) {
     const v = cal15Resv(e);
     if (!v) return null;
     return el("div", { class: "card pad cal15-resv" }, el("span", { class: "sub" }, "予約番号"), el("strong", { class: "cal15-resv-v" }, v),
-      el("button", { type: "button", class: "btn sm ghost", "data-k": "resv-copy", "aria-label": `予約番号 ${v} をコピー`, onclick: async () => flash((await cal15Copy(v)) ? "予約番号をコピーしました" : "コピーできませんでした") }, "コピー"));
+      el("button", { type: "button", class: "btn sm ghost", "data-k": "resv-copy", "aria-label": `予約番号 ${v} をコピー`, onclick: async () => flash((await copyText(v)) ? "予約番号をコピーしました" : "コピーできませんでした") }, "コピー"));
   }
 
   // the forms: ①⑦ (an empty one taken off)
@@ -49467,16 +49453,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return [`「${oneLine(t.text)}」をお願いできますか？`, isDay(t.due || "") ? `期限：${fmtDay(t.due)}${isHm(t.time) ? " " + t.time : ""}` : "", p ? `場所：${oneLine(p)}` : "", t.memo ? `メモ：${String(t.memo).trim()}` : "",
       ...(Array.isArray(t.steps) ? t.steps : []).filter((s) => s && s.text && !s.done).map((s) => `・${oneLine(s.text)}`)].filter(Boolean).join("\n");
   }
-  async function td6Copy(text) {
-    try { await navigator.clipboard.writeText(text); return true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      let ok = false;
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-      return ok;
-    }
-  }
   function td6AskAsk(t) {
     const x = todos.get(t.id);
     if (!x || x.done) return;
@@ -49492,7 +49468,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (navigator.share) {
       try { await navigator.share({ text }); how = "sent"; } catch (e) { if (e?.name === "AbortError") return; }
     }
-    if (!how) how = (await td6Copy(text)) ? "copied" : "";
+    if (!how) how = (await copyText(text)) ? "copied" : "";
     if (!how) { flash("頼む文を送れませんでした（コピーもできませんでした）"); return; }
     const x = todos.get(t.id);
     if (!x || x.done) return;
@@ -52586,17 +52562,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const x = todos.get(t.id);
     if (!x) return;
     const text = td13OneText(x);
-    if (navigator.share) {
-      try { await navigator.share({ title: oneLine(x.text), text }); return; } catch (e) { if (e?.name === "AbortError") return; }
-    }
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
-    flash(ok ? `「${clip(oneLine(x.text), 30)}」を文字でコピーしました。LINEなどに貼り付けられます` : "コピーできませんでした");
+    await sendText(text, oneLine(x.text), `「${clip(oneLine(x.text), 30)}」`);
   }
 
   // ③ ひみつ (secret): on ToDo's page its name shows as ひみつのToDo, its memo, steps and photos left out (looked for,
@@ -52886,17 +52852,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const td14Name = (t) => (todoThirteen ? td13Name(t) : oneLine(t.text));
   // a few words handed to another app, or copied where it can't be
   async function td14Hand(title, text, said) {
-    if (navigator.share) {
-      try { await navigator.share({ title, text }); return; } catch (e) { if (e?.name === "AbortError") return; }
-    }
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
-    flash(ok ? `${said}を文字でコピーしました。LINEなどに貼り付けられます` : "コピーできませんでした");
+    await sendText(text, title, said);
   }
 
   // ① 繰り返しの記録: in a repeating ToDo's sheet, under これまで, a month's calendar of the days its turns were done (‹ ›
@@ -61546,17 +61502,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     } }, "文字で送る");
   }
   async function h2Share(title, text) {
-    if (navigator.share) {
-      try { await navigator.share({ title, text }); return; } catch (e) { if (e?.name === "AbortError") return; }
-    }
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
-    flash(ok ? "文字でコピーしました。LINEなどに貼り付けられます" : "コピーできませんでした");
+    await sendText(text, title);
   }
 
   // ⑩ きょう pulled down from its top (the user's call): the weather got afresh and the records synced now, a mark at the
@@ -63542,14 +63488,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   async function dt5CopyDay() {
     const text = dt5DayText(viewDate);
     if (!text) { flash("この日の食事はまだありません"); return; }
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
-    flash(ok ? "この日の食事を文字でコピーしました。LINEなどに貼り付けられます" : "コピーできませんでした");
+    await copySay(text, "この日の食事");
   }
   function renderDt5Copy() {
     let p = $("dt5Copy");
@@ -64094,13 +64033,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   var dietSeven = false;
   // words put on the clipboard (or, failing that, through a hidden field), and said
   async function dt7Copy(text, words) {
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
+    let ok = await copyText(text);
     flash(ok ? words : "コピーできませんでした");
   }
 
@@ -68540,15 +68473,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   async function bt2Share() {
     const { n, text } = bt2ShareText();
     if (!n) { flash("この月のシフトはまだありません"); return; }
-    if (navigator.share) { try { await navigator.share({ title: "シフト", text }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
-    flash(ok ? `シフト ${n} 回分を文字でコピーしました。LINEなどに貼り付けられます` : "コピーできませんでした");
+    await sendText(text, "シフト", `シフト ${n} 回分`);
   }
 
   // ⑩ a price in hours of work: by the first job's 時給 now, and in shifts as long as the last ten were
@@ -69966,15 +69891,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("st2Share").addEventListener("click", async () => {
     const text = st2WeekText();
     if (!text) { flash("この1週間の勉強はまだありません"); return; }
-    if (navigator.share) { try { await navigator.share({ title: "勉強", text }); return; } catch (e) { if (e?.name === "AbortError") return; } }
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
-    flash(ok ? "この1週間の勉強を文字でコピーしました。LINEなどに貼り付けられます" : "コピーできませんでした");
+    await sendText(text, "勉強", "この1週間の勉強");
   });
   // a record's 始め〜終わり and 復習 on its row in the day's list (①②)
   function st2MarkRows() {
@@ -70251,13 +70168,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   async function bt3SendText(text, title, okWords) {
     if (navigator.share) { try { await navigator.share({ title, text }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
+    let ok = await copyText(text);
     flash(ok ? okWords : "コピーできませんでした");
   }
   function bt3AskSend() {
@@ -71454,14 +71365,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         return;
       } catch (e) { if (e?.name === "AbortError") return; }
     }
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
-    flash(ok ? "この日の日記を文字でコピーしました。LINEなどに貼り付けられます" : "コピーできませんでした");
+    await copySay(text, "この日の日記");
   });
 
   // ⑤ 写真ごと書き出す: the month or the year of the day shown, or all of it, as one page (a self-contained HTML file):
@@ -75567,15 +75471,7 @@ ${parts.join("\n")}
   }
   async function rt4Send(text, what) {
     if (!text) { flash(`${what}は、まだ記録がありません`); return; }
-    if (navigator.share) { try { await navigator.share({ title: "ルーティーン", text }); return; } catch (e) { if (e?.name === "AbortError") return; } }
-    let ok = false;
-    try { await navigator.clipboard.writeText(text); ok = true; } catch {
-      const ta = el("textarea", { readonly: true, style: "position:fixed;top:0;left:0;opacity:0" }, text);
-      document.body.append(ta); ta.select();
-      try { ok = document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
-    flash(ok ? `${what}を文字でコピーしました。LINEなどに貼り付けられます` : "コピーできませんでした");
+    await sendText(text, "ルーティーン", what);
   }
 
   // ⑨ 連続を守るお知らせ (in the gear, kept with the account): at its time, today, the items on a run of 3 days or more
