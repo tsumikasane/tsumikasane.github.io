@@ -12,6 +12,13 @@ const W = (p, f, ...a) => p.evaluate(({ f, a }) => window.__dt10[f](...a), { f, 
 const WHEN = new Date("2026-11-14T12:00:00+09:00");
 const base = () => ({ weights: D.weights(), meals: D.meals(), workouts: D.workouts(), bodyDays: D.bodyDays(), settings: D.settings() });
 async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(P + "dietPart", k), { P, k }); await p.reload(); await p.waitForTimeout(1000); }
+// (食事の記録画面, 2026-11-18) a 区分's screen opened (the one picked when none is given), and a tile's panel; closed
+async function rec(p, slot, panel) {
+  if (!(await p.evaluate(() => document.getElementById("mealRec").open))) { const s = slot || (await p.evaluate(() => document.querySelector('input[name="mealSlot"]:checked')?.value || "朝食")); await p.click(`#mealSlots button[data-slot="${s}"]`); await p.waitForTimeout(300); }
+  else if (slot) { await p.click(`#mealRecSlots button:has-text("${slot}")`); await p.waitForTimeout(200); }
+  if (panel && !(await p.evaluate((k) => document.getElementById({ often: "mealOften", sets: "dt4Sets", recipe: "dt18Recipe", label: "dt18Label", bulk: "dt8Bulk" }[k])?.classList.contains("mr-on"), panel))) { await p.click(panel === "bulk" ? "#mealRecBulk" : `#mealRecTiles button[data-tile="${panel}"]`); await p.waitForTimeout(250); }
+}
+async function unrec(p) { if (await p.evaluate(() => document.getElementById("mealRec").open)) { await p.click("#mealRecClose"); await p.waitForTimeout(200); } }
 (async () => {
   const b = await chromium.launch();
   const p = await phone(b, WHEN, { deviceScaleFactor: 1 });
@@ -22,6 +29,7 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
 
   // ① 量を変える: ×1.5, ×2 from what was typed, もとに戻す; added at ×2
   ok(!(await p.isVisible("#dt10Mul")), "① none without kcal");
+  await rec(p);
   await p.fill("#mealText", "ごはん"); await p.fill("#mealKcal", "300"); await p.fill("#mealP", "5"); await p.waitForTimeout(150);
   ok(await p.isVisible("#dt10Mul"), "① shown with kcal");
   await p.click('#dt10Mul button:has-text("×1.5")'); await p.waitForTimeout(100);
@@ -30,10 +38,11 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   ok((await p.inputValue("#mealKcal")) === "600" && (await p.inputValue("#mealP")) === "10" && (await p.inputValue("#mealText")) === "ごはん（×2）", "① ×2 from the first", [await p.inputValue("#mealKcal"), await p.inputValue("#mealText")]);
   await p.click('#dt10Mul button:has-text("もとに戻す")'); await p.waitForTimeout(100);
   ok((await p.inputValue("#mealKcal")) === "300" && (await p.inputValue("#mealText")) === "ごはん", "① もとに戻す");
-  await p.click('#dt10Mul button:has-text("×2")'); await p.click('#mealForm button[type="submit"]'); await p.waitForTimeout(500);
+  await p.click('#dt10Mul button:has-text("×2")'); await p.click("#mealRecAdd"); await p.waitForTimeout(500);
   const g2 = (await ls(p, "meals")).find((m) => m.text === "ごはん（×2）");
   ok(g2 && g2.kcal === 600 && g2.p === 10, "① added at ×2", g2);
   ok(!(await p.isVisible("#dt10Mul")), "① gone with the form emptied");
+  await unrec(p);
   // ② 平日と週末: weekends 500 kcal more, every weekend day late
   const sp = await W(p, "split");
   ok(sp.we.kcal - sp.wd.kcal >= 500 && sp.wd.kcal === 1600 && sp.we.late === 100 && sp.wd.late === 0, "② worked out (today has ① too)", sp);

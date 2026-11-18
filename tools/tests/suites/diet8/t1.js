@@ -12,6 +12,13 @@ const W = (p, f, ...a) => p.evaluate(({ f, a }) => window.__dt8[f](...a), { f, a
 const WHEN = new Date("2026-11-14T12:00:00+09:00");
 const base = () => ({ weights: D.weights(), meals: D.meals(), workouts: D.workouts(), bodyDays: D.bodyDays(), settings: D.settings() });
 async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(P + "dietPart", k), { P, k }); await p.reload(); await p.waitForTimeout(1000); }
+// (食事の記録画面, 2026-11-18) a 区分's screen opened (the one picked when none is given), and a tile's panel; closed
+async function rec(p, slot, panel) {
+  if (!(await p.evaluate(() => document.getElementById("mealRec").open))) { const s = slot || (await p.evaluate(() => document.querySelector('input[name="mealSlot"]:checked')?.value || "朝食")); await p.click(`#mealSlots button[data-slot="${s}"]`); await p.waitForTimeout(300); }
+  else if (slot) { await p.click(`#mealRecSlots button:has-text("${slot}")`); await p.waitForTimeout(200); }
+  if (panel && !(await p.evaluate((k) => document.getElementById({ often: "mealOften", sets: "dt4Sets", recipe: "dt18Recipe", label: "dt18Label", bulk: "dt8Bulk" }[k])?.classList.contains("mr-on"), panel))) { await p.click(panel === "bulk" ? "#mealRecBulk" : `#mealRecTiles button[data-tile="${panel}"]`); await p.waitForTimeout(250); }
+}
+async function unrec(p) { if (await p.evaluate(() => document.getElementById("mealRec").open)) { await p.click("#mealRecClose"); await p.waitForTimeout(200); } }
 (async () => {
   const b = await chromium.launch();
   const p = await phone(b, WHEN, { deviceScaleFactor: 1, permissions: ["clipboard-read", "clipboard-write"], acceptDownloads: true });
@@ -30,7 +37,7 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   const pz = await W(p, "parse", "朝 トースト 200、納豆（1パック）\n昼 定食 700\n夜 カレー\n夜食 300、おにぎり 2個", "間食");
   ok(pz.length === 6 && pz[0].slot === "朝食" && pz[0].kcal === 200 && pz[1].kcal === 86 && pz[1].guessed && pz[2].slot === "昼食" && pz[3].slot === "夕食" && pz[3].kcal === 750 && pz[3].guessed
     && pz[4].text === "夜食" && pz[4].slot === "夕食" && pz[4].kcal === 300 && pz[5].text === "おにぎり 2個" && pz[5].kcal === undefined, "① parsed", pz);
-  await p.click("#dt8Bulk > summary"); await p.waitForTimeout(200);
+  await rec(p, null, "bulk");
   await p.fill("#dt8BulkText", "朝 トースト 200、納豆（1パック）\n昼 定食 700\n夜 カレー"); await p.waitForTimeout(200);
   r = await txt(p, "#dt8BulkList");
   ok(/朝食 トースト 200 kcal/.test(r) && /朝食 納豆（1パック） 約 86 kcal/.test(r) && /昼食 定食 700 kcal/.test(r) && /夕食 カレー 約 750 kcal/.test(r), "① the preview", r);

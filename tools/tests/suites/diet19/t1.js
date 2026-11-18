@@ -12,6 +12,13 @@ const W = (p, f, ...a) => p.evaluate(({ f, a }) => window.__dt19[f](...a), { f, 
 const WHEN = new Date("2026-11-16T12:00:00+09:00");
 const base = () => ({ weights: D.weights(), meals: D.meals(), workouts: D.workouts(), bodyDays: D.bodyDays(), settings: D.settings() });
 async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(P + "dietPart", k), { P, k }); await p.reload(); await p.waitForTimeout(1000); }
+// (食事の記録画面, 2026-11-18) a 区分's screen opened (the one picked when none is given), and a tile's panel; closed
+async function rec(p, slot, panel) {
+  if (!(await p.evaluate(() => document.getElementById("mealRec").open))) { const s = slot || (await p.evaluate(() => document.querySelector('input[name="mealSlot"]:checked')?.value || "朝食")); await p.click(`#mealSlots button[data-slot="${s}"]`); await p.waitForTimeout(300); }
+  else if (slot) { await p.click(`#mealRecSlots button:has-text("${slot}")`); await p.waitForTimeout(200); }
+  if (panel && !(await p.evaluate((k) => document.getElementById({ often: "mealOften", sets: "dt4Sets", recipe: "dt18Recipe", label: "dt18Label", bulk: "dt8Bulk" }[k])?.classList.contains("mr-on"), panel))) { await p.click(panel === "bulk" ? "#mealRecBulk" : `#mealRecTiles button[data-tile="${panel}"]`); await p.waitForTimeout(250); }
+}
+async function unrec(p) { if (await p.evaluate(() => document.getElementById("mealRec").open)) { await p.click("#mealRecClose"); await p.waitForTimeout(200); } }
 // the app's reckonings, done here from the example
 const ws = D.weights(), kgOn = new Map(ws.map((w) => [w.id, w.kg]));
 const avg7 = (d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.addDays(d, -6)); return xs.reduce((s, w) => s + w.kg, 0) / xs.length; };
@@ -24,6 +31,7 @@ const avg7 = (d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.addDays
   await part(p, "meal");
 
   // ① 作りおきの残り: カレー 2 left from 11/13 (its 4th day), one eaten, 冷凍した, another made
+  await rec(p, null, "recipe");
   let r = await txt(p, "#dt19Stock");
   ok(/^作りおきの残り 2 人分 カレー 1人分 350 kcal 残り 2 \/ 4 11\/13（金）に作った・作って4日目です。きょうのうちに食べるか、冷凍しましょう。 1人分 食べた 冷凍した なくなった レシピで作ったら： ＋ カレー（4 人分）$/.test(r) && (await p.locator("#dt19Stock .sub.warn").count()) === 1, "① what is left", r);
   const slot = await p.evaluate(() => document.querySelector('input[name="mealSlot"]:checked')?.value || "朝食");
@@ -39,6 +47,7 @@ const avg7 = (d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.addDays
   await p.click('#dt19Stock button[aria-label="「カレー」を 4 人分 作った"]'); await p.waitForTimeout(400);
   st = (await setting(p, "mealStock"))?.list || [];
   ok(st.length === 2 && st[1].left === 4 && st[1].made === D.DAY && st[1].rid === "r1" && /^作りおきの残り 6 人分/.test(await txt(p, "#dt19Stock")), "① another made", st);
+  await unrec(p);
   // ② 食べすぎたあとの戻り: 11/2, 11/8 and 11/13
   const bk = await W(p, "back");
   r = await txt(p, "#dt19Back");

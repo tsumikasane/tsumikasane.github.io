@@ -13,6 +13,13 @@ const flashes = (p) => p.evaluate(() => window.__flashes || []);
 const WHEN = new Date("2026-11-14T12:00:00+09:00");
 const base = () => ({ weights: D.weights(), meals: D.meals(), workouts: D.workouts(), bodyDays: D.bodyDays(), settings: D.settings() });
 async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(P + "dietPart", k), { P, k }); await p.reload(); await p.waitForTimeout(1000); }
+// (食事の記録画面, 2026-11-18) a 区分's screen opened (the one picked when none is given), and a tile's panel; closed
+async function rec(p, slot, panel) {
+  if (!(await p.evaluate(() => document.getElementById("mealRec").open))) { const s = slot || (await p.evaluate(() => document.querySelector('input[name="mealSlot"]:checked')?.value || "朝食")); await p.click(`#mealSlots button[data-slot="${s}"]`); await p.waitForTimeout(300); }
+  else if (slot) { await p.click(`#mealRecSlots button:has-text("${slot}")`); await p.waitForTimeout(200); }
+  if (panel && !(await p.evaluate((k) => document.getElementById({ often: "mealOften", sets: "dt4Sets", recipe: "dt18Recipe", label: "dt18Label", bulk: "dt8Bulk" }[k])?.classList.contains("mr-on"), panel))) { await p.click(panel === "bulk" ? "#mealRecBulk" : `#mealRecTiles button[data-tile="${panel}"]`); await p.waitForTimeout(250); }
+}
+async function unrec(p) { if (await p.evaluate(() => document.getElementById("mealRec").open)) { await p.click("#mealRecClose"); await p.waitForTimeout(200); } }
 (async () => {
   const b = await chromium.launch();
   const p = await phone(b, WHEN, { deviceScaleFactor: 1, acceptDownloads: true });
@@ -46,13 +53,14 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   await part(p, "meal");
   // ① 食べた理由: picked, kept with the 食事, cleared; under its name; changed in 食事を編集
   ok((await p.locator("#dt9WhyField .dt9-why-chip").count()) === 6, "① the chips");
+  await rec(p, "間食"); await p.fill("#mealText", "チョコ");
   await p.click('#dt9WhyField button:has-text("ストレス")');
-  await p.click('label:has(input[name="mealSlot"][value="間食"])');
-  await p.fill("#mealText", "チョコ"); await p.fill("#mealKcal", "200"); await p.click('#mealForm button[type="submit"]'); await p.waitForTimeout(600);
+  await p.fill("#mealKcal", "200"); await p.click("#mealRecAdd"); await p.waitForTimeout(600);
   let m = (await ls(p, "meals")).find((x) => x.text === "チョコ");
   ok(m && m.why === "stress" && m.slot === "間食", "① kept", m);
   ok((await p.locator('#dt9WhyField [aria-pressed="true"]').count()) === 0, "① cleared");
   ok(/チョコ.*ストレス/.test(await txt(p, "#mealList")), "① under its name", await txt(p, "#mealList"));
+  await unrec(p);
   await p.click('#mealList [aria-label="「チョコ」を編集"]'); await p.waitForTimeout(500);
   await p.click('.dt9-why-edit button:has-text("つきあい")'); await p.waitForTimeout(300);
   m = (await ls(p, "meals")).find((x) => x.text === "チョコ");

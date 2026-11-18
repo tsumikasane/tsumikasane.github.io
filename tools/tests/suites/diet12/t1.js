@@ -12,6 +12,13 @@ const W = (p, f, ...a) => p.evaluate(({ f, a }) => window.__dt12[f](...a), { f, 
 const WHEN = new Date("2026-11-15T12:00:00+09:00");
 const base = () => ({ weights: D.weights(), meals: D.meals(), workouts: D.workouts(), bodyDays: D.bodyDays(), settings: D.settings() });
 async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(P + "dietPart", k), { P, k }); await p.reload(); await p.waitForTimeout(1000); }
+// (食事の記録画面, 2026-11-18) a 区分's screen opened (the one picked when none is given), and a tile's panel; closed
+async function rec(p, slot, panel) {
+  if (!(await p.evaluate(() => document.getElementById("mealRec").open))) { const s = slot || (await p.evaluate(() => document.querySelector('input[name="mealSlot"]:checked')?.value || "朝食")); await p.click(`#mealSlots button[data-slot="${s}"]`); await p.waitForTimeout(300); }
+  else if (slot) { await p.click(`#mealRecSlots button:has-text("${slot}")`); await p.waitForTimeout(200); }
+  if (panel && !(await p.evaluate((k) => document.getElementById({ often: "mealOften", sets: "dt4Sets", recipe: "dt18Recipe", label: "dt18Label", bulk: "dt8Bulk" }[k])?.classList.contains("mr-on"), panel))) { await p.click(panel === "bulk" ? "#mealRecBulk" : `#mealRecTiles button[data-tile="${panel}"]`); await p.waitForTimeout(250); }
+}
+async function unrec(p) { if (await p.evaluate(() => document.getElementById("mealRec").open)) { await p.click("#mealRecClose"); await p.waitForTimeout(200); } }
 const meal = async (p, text) => (await ls(p, "meals")).find((m) => m.text === text);
 (async () => {
   const b = await chromium.launch();
@@ -22,16 +29,17 @@ const meal = async (p, text) => (await ls(p, "meals")).find((m) => m.text === te
   await part(p, "meal");
 
   // ① カロリーの目安: 昼食 by the clock; its records (定食 700 mostly) much the same, so 70%・the middle・130%
+  await rec(p, "昼食"); await p.fill("#mealText", "テスト"); await p.waitForTimeout(150);
   let r = await txt(p, "#dt12Est");
   ok(/わからないときは 軽め 490 kcal ふつう 700 kcal 多め 910 kcal （これまでの記録から）/.test(r), "① 昼食 from the records", r);
   await p.click('#dt12Est button:has-text("多め")'); await p.waitForTimeout(100);
   ok(await p.inputValue("#mealKcal") === "910", "① pressed: in the field", await p.inputValue("#mealKcal"));
-  await p.click('label:has(input[name="mealSlot"][value="間食"])'); await p.waitForTimeout(200);
+  await rec(p, "間食"); await p.waitForTimeout(100);
   r = await txt(p, "#dt12Est");
   ok(/軽め 100 kcal ふつう 200 kcal 多め 400 kcal （よくある量の目安）/.test(r), "① 間食: too few records, the common 目安", r);
   const e = await W(p, "est", "朝食");
   ok(e.own && e.v.join() === "210,300,390", "① 朝食 (トースト 300 every day)", e);
-  await p.fill("#mealKcal", "");
+  await p.fill("#mealKcal", ""); await p.fill("#mealText", ""); await unrec(p);
 
   // ② カロリーを入れ忘れた食事: 3, folded; the おにぎり's 目安 from the common dishes put in with nothing typed, then taken back
   r = await txt(p, "#dt12NoKcal summary");

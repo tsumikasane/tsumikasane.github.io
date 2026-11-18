@@ -35,7 +35,7 @@ const off = (p, id) => p.evaluate((id) => document.getElementById(id)?.classList
   // ⑨ もくじ: open, a card gone to
   await p.click("#dt16Toc-meal summary"); await p.waitForTimeout(200);
   r = await txt(p, "#dt16Toc-meal summary");
-  const shownMeal = await p.evaluate(() => [...document.getElementById("part-meal").children].filter((e) => e.id && e.matches(".card, details") && !e.hidden && !e.classList.contains("dt16-off") && !["mealForm", "mealList", "mealGoalCard", "dt16Toc-meal"].includes(e.id)).length);
+  const shownMeal = await p.evaluate(() => [...document.getElementById("part-meal").children].filter((e) => e.id && e.matches(".card, details") && !e.hidden && !e.classList.contains("dt16-off") && !["mealForm", "mealSlots", "mealList", "mealGoalCard", "dt16Toc-meal"].includes(e.id)).length);
   ok(r === `もくじ（${shownMeal}）` && (await p.locator("#dt16Toc-meal .dt16-toc-go").count()) === shownMeal, "⑨ every card shown listed", [r, shownMeal]);
   const lastId = await p.getAttribute("#dt16Toc-meal .dt16-toc-go >> nth=-1", "data-id");
   await p.click("#dt16Toc-meal .dt16-toc-go >> nth=-1");

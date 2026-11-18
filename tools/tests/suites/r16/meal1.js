@@ -31,6 +31,8 @@ const DATA = {
   ok(g.startsWith("きょうの食事 8 / 2,500 kcal") && g.includes("あと 2,492 kcal"), "④ " + g);
   // ⑧ the form's time is now
   ok((await p.inputValue("#mealAt")) === "12:00", "⑧ the time: " + await p.inputValue("#mealAt"));
+  // (食事の記録画面, 2026-11-18) 昼食's screen, よく食べる open
+  await p.click('#mealSlots button[data-slot="昼食"]'); await p.waitForTimeout(300); await p.click('#mealRecTiles button[data-tile="often"]'); await p.waitForTimeout(200);
   // ② よく食べる
   let often = await txt(p, "#mealOften");
   ok(often === "よく食べる プロテイン 115 kcal 牛丼（並） 650 kcal", "② " + often);
@@ -59,7 +61,7 @@ const DATA = {
   // ⑨ with a price: into 家計簿 too
   await p.locator("#mealText").fill("ランチ"); await p.fill("#mealKcal", "800"); await p.fill("#mealPrice", "900"); await p.waitForTimeout(100);
   ok(await p.isVisible("#mealPriceNote"), "⑨ says it goes into 家計簿");
-  await p.locator("#mealForm button[type=submit]").click(); await p.waitForTimeout(400);
+  await p.locator("#mealRecAdd").click(); await p.waitForTimeout(400);
   let lunch = (await ls(p, "meals")).find((m) => m.text === "ランチ"), ex = (await ls(p, "expenses")).find((e) => e.meal === lunch?.id);
   ok(lunch && lunch.exId === ex?.id && ex.amount === 900 && ex.category === "食費" && ex.memo === "ランチ" && ex.date === today && lunch.at === "12:00", "⑨ kept both: " + JSON.stringify([lunch, ex]));
   const lrow = await p.evaluate(() => [...document.querySelectorAll("#mealList li")].find((li) => li.textContent.includes("ランチ"))?.querySelector(".sub")?.textContent.replace(/[\s\u2060]+/g, " ").trim());
@@ -69,6 +71,7 @@ const DATA = {
   const kana = await p.evaluate(() => [...document.querySelectorAll("#mealSuggest button")].map((b) => b.querySelector(".meal-pick-name").textContent));
   ok(kana.includes("カレーライス") && kana.every((n) => n.includes("カレー")), "⑥ かれー finds カレー", kana);
   await p.locator("#mealText").fill(""); await p.waitForTimeout(100);
+  await p.click("#mealRecClose"); await p.waitForTimeout(200);
   // ⑨ changed in its sheet: 1,000 円; emptied: gone from 家計簿
   await p.locator('#mealList [data-edit]:has-text("ランチ")').click(); await p.waitForTimeout(500);
   ok((await p.inputValue("#rePrice")) === "900" && (await p.inputValue("#reAt")) === "12:00", "⑨ its sheet has the price and time");

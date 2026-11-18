@@ -12,6 +12,13 @@ const W = (p, f, ...a) => p.evaluate(({ f, a }) => window.__dt18[f](...a), { f, 
 const WHEN = new Date("2026-11-16T12:00:00+09:00"), N = new Intl.NumberFormat("ja-JP");
 const base = () => ({ weights: D.weights(), meals: D.meals(), workouts: D.workouts(), events: D.events(), settings: D.settings() });
 async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(P + "dietPart", k), { P, k }); await p.reload(); await p.waitForTimeout(1000); }
+// (食事の記録画面, 2026-11-18) a 区分's screen opened (the one picked when none is given), and a tile's panel; closed
+async function rec(p, slot, panel) {
+  if (!(await p.evaluate(() => document.getElementById("mealRec").open))) { const s = slot || (await p.evaluate(() => document.querySelector('input[name="mealSlot"]:checked')?.value || "朝食")); await p.click(`#mealSlots button[data-slot="${s}"]`); await p.waitForTimeout(300); }
+  else if (slot) { await p.click(`#mealRecSlots button:has-text("${slot}")`); await p.waitForTimeout(200); }
+  if (panel && !(await p.evaluate((k) => document.getElementById({ often: "mealOften", sets: "dt4Sets", recipe: "dt18Recipe", label: "dt18Label", bulk: "dt8Bulk" }[k])?.classList.contains("mr-on"), panel))) { await p.click(panel === "bulk" ? "#mealRecBulk" : `#mealRecTiles button[data-tile="${panel}"]`); await p.waitForTimeout(250); }
+}
+async function unrec(p) { if (await p.evaluate(() => document.getElementById("mealRec").open)) { await p.click("#mealRecClose"); await p.waitForTimeout(200); } }
 // the app's reckonings, done here from the example
 const days = (a, b) => Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 864e5);
 const ws = D.weights(), kgOn = new Map(ws.map((w) => [w.id, w.kg]));
@@ -26,6 +33,7 @@ const mmss = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 
   await part(p, "meal");
 
   // ① 手作り料理のカロリー: the カレー kept, put in; a サンドイッチ written (ゆで卵 the last time's, からし none), kept; カレー mended
+  await rec(p, null, "recipe");
   let r = await txt(p, "#dt18Recipe");
   ok(/^手作り料理のカロリー 保存 1 カレー 1人分 350 kcal（4 人分） 記録 直す 消す レシピを作る/.test(r), "① the one kept", r);
   const slot = await p.evaluate(() => document.querySelector('input[name="mealSlot"]:checked')?.value || "朝食");
@@ -53,17 +61,19 @@ const mmss = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 
   await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
   ok(((await setting(p, "recipes"))?.list || []).length === 2, "① brought back");
   // ② 栄養成分表示から: 100 g あたり 250 kcal・P 10・F 8・C 35, 120 g eaten; then 1袋 180 kcal × 2
-  await p.click("#dt18Label > summary"); await p.waitForTimeout(200);
+  await rec(p, null, "label");
   await p.fill("#dt18L-kcal", "250"); await p.fill("#dt18L-amt", "120"); await p.fill("#dt18L-p", "10"); await p.fill("#dt18L-f", "8"); await p.fill("#dt18L-c", "35"); await p.waitForTimeout(150);
   r = await txt(p, "#dt18LOut");
   ok(r === "120 gで 300 kcal（P 12 g・F 9.6 g・C 42 g）", "② worked out", r);
   await p.click("#dt18LGo"); await p.waitForTimeout(300);
   const form = await p.evaluate(() => ["mealKcal", "mealP", "mealF", "mealC"].map((id) => document.getElementById(id).value));
   ok(form.join() === "300,12,9.6,42", "② put in the form", form);
+  await rec(p, null, "label");
   await p.click('#dt18Label .dt18-l-per button:has-text("1個・1袋あたり")'); await p.waitForTimeout(200);
   await p.fill("#dt18L-kcal", "180"); await p.fill("#dt18L-amt", "2"); await p.fill("#dt18L-p", ""); await p.fill("#dt18L-f", ""); await p.fill("#dt18L-c", ""); await p.waitForTimeout(150);
   ok((await txt(p, "#dt18LOut")) === "2 個で 360 kcal" && (await p.textContent("#dt18LUnit")) === "個", "② by the 袋", await txt(p, "#dt18LOut"));
   await p.evaluate(() => { for (const id of ["mealKcal", "mealP", "mealF", "mealC"]) document.getElementById(id).value = ""; });
+  await unrec(p);
   // ③ がまんできたもの: the chips (ポテトチップス, チョコ, then ケーキ, アイス), ケーキ pressed, ドーナツ 300 typed; one out and back
   const chips = await W(p, "chips");
   ok(JSON.stringify(chips) === '[["ポテトチップス",330],["チョコ",250],["ケーキ",400],["アイス",250]]', "③ the chips", chips);

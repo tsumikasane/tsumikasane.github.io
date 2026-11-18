@@ -12,6 +12,13 @@ const W = (p, f, ...a) => p.evaluate(({ f, a }) => window.__dt11[f](...a), { f, 
 const WHEN = new Date("2026-11-14T12:00:00+09:00");
 const base = () => ({ weights: D.weights(), meals: D.meals(), workouts: D.workouts(), bodyDays: D.bodyDays(), settings: D.settings() });
 async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(P + "dietPart", k), { P, k }); await p.reload(); await p.waitForTimeout(1000); }
+// (食事の記録画面, 2026-11-18) a 区分's screen opened (the one picked when none is given), and a tile's panel; closed
+async function rec(p, slot, panel) {
+  if (!(await p.evaluate(() => document.getElementById("mealRec").open))) { const s = slot || (await p.evaluate(() => document.querySelector('input[name="mealSlot"]:checked')?.value || "朝食")); await p.click(`#mealSlots button[data-slot="${s}"]`); await p.waitForTimeout(300); }
+  else if (slot) { await p.click(`#mealRecSlots button:has-text("${slot}")`); await p.waitForTimeout(200); }
+  if (panel && !(await p.evaluate((k) => document.getElementById({ often: "mealOften", sets: "dt4Sets", recipe: "dt18Recipe", label: "dt18Label", bulk: "dt8Bulk" }[k])?.classList.contains("mr-on"), panel))) { await p.click(panel === "bulk" ? "#mealRecBulk" : `#mealRecTiles button[data-tile="${panel}"]`); await p.waitForTimeout(250); }
+}
+async function unrec(p) { if (await p.evaluate(() => document.getElementById("mealRec").open)) { await p.click("#mealRecClose"); await p.waitForTimeout(200); } }
 (async () => {
   const b = await chromium.launch();
   const p = await phone(b, WHEN, { deviceScaleFactor: 1 });
@@ -27,8 +34,7 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   let r = await txt(p, "#dt11Snack");
   ok(/今週の間食 3 \/ 3 回/.test(r) && /あと 0 回まで・\d+ 週続けて目標どおり/.test(r), "① against it", r);
   // ② ちょい足し: マヨネーズ, under the 区分 picked
-  await p.click('label:has(input[name="mealSlot"][value="昼食"])');
-  await p.click("#dt11Add > summary"); await p.waitForTimeout(150);
+  await rec(p, "昼食", "often");
   await p.click('#dt11Add button:has-text("マヨネーズ（大さじ1）")'); await p.waitForTimeout(500);
   const mayo = (await ls(p, "meals")).find((m) => m.text === "マヨネーズ（大さじ1）");
   ok(mayo && mayo.kcal === 84 && mayo.slot === "昼食" && mayo.date === D.DAY, "② put in", mayo);
