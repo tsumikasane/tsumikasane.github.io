@@ -22025,7 +22025,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const l = labelOf(t.e);
       add(l ? l.id : "", l ? l.name : "ラベルなし", labelHue(l), sp[1] - sp[0]);
     }
-    for (const parts of shiftsByDay(from, to).values()) for (const p of parts) add("\u0001shift", "バイト", "var(--c-money)", p.end - p.s);
+    for (const parts of shiftsByDay(from, to).values()) for (const p of parts) add("\u0001shift", "バイト", cjHue(p.x), p.end - p.s); // (in the バイト label's colour)
     return [...by.values()].filter((x) => x.m > 0).sort((a, b) => b.m - a.m);
   }
   function sumSection() {
@@ -25610,7 +25610,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月18日 18:15"; // 33342ddf (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月18日 18:48"; // d1133352 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -36747,7 +36747,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const ws = weekStart(), first = addDays(d, -((parseYmd(d).getDay() - ws + 7) % 7)), last = addDays(first, 6), hidden = calHidden(), tb = turnsByDay(first, last), sb = shiftsByDay(first, last);
     const days = Array.from({ length: 7 }, (_, i) => addDays(first, i)).map((x) => ({ d: x, lines: [
       ...(tb.get(x) || []).filter((t) => onCalendar(t.e, hidden) && !t.e.cand && !cal4Cx(t.e, t.start)).map((t) => ({ k: turnTime(t), w: `${turnTimeText(t)}  ${cal4Name(t)}`, c: labelHue(labelOf(t.e)) })),
-      ...(sb.get(x) || []).filter((p) => p.first).map((p) => ({ k: p.x.start, w: `${shiftText(p.x)}  ${shiftName(p.x)}`, c: "var(--c-money)" }))].sort((a, b) => a.k.localeCompare(b.k)) }));
+      ...(sb.get(x) || []).filter((p) => p.first).map((p) => ({ k: p.x.start, w: `${shiftText(p.x)}  ${shiftName(p.x)}`, c: cjHue(p.x) }))].sort((a, b) => a.k.localeCompare(b.k)) }));
     const W = 1080, P = 60, LH = 48, HH = 64, TH = 120, H = TH + days.reduce((s, x) => s + HH + Math.max(1, x.lines.length) * LH + 18, 0) + P;
     const cv = document.createElement("canvas");
     cv.width = W; cv.height = H;
@@ -39700,7 +39700,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // a shift on the calendar in its job's colour (バイト その11 ⑨), so one made from a plan looks as the plan did; and its
   // pay on its row in a day's list
-  function cjHue(x) { const k = bt11Key(jobOf(x.jobId)); return k ? `var(--lc-${k})` : "var(--c-money)"; }
+  // a shift's colour in the calendar (月・週・日, the day's list, この週を画像で, ラベルごとの時間): its バイト label's, so one
+  // put in with シフトを追加 looks as the plans of that label do (the user's call, 2026-11-18: 「カレンダーのバイトのラベルの
+  // 色と、追加ボタンを通して追加したバイトのラベルの色を同一にして欲しい」); with none, its job's, else 家計簿's
+  function cjHue(x) { const lab = cjLabelOf(x); if (lab) return labelHue(lab); const k = bt11Key(jobOf(x.jobId)); return k ? `var(--lc-${k})` : "var(--c-money)"; }
+  // a shift's バイト label: the one 家計簿のバイト links its job by (つなぐ, by label), else one named バイト or アルバイト
+  // (バイト（カフェ） too, as a plan's name is taken), else one named as its job
+  function cjLabelOf(x) {
+    const j = jobOf(x.jobId), l = cjLink(), linked = l && l.by === "label" && j && l.job === j.id ? labels.get(l.label) : null;
+    if (linked) return linked;
+    const named = (w) => (w.length >= 2 ? labels.items.find((lab) => lab && cjNamed(lab.name, [w])) : null);
+    return named(foldText("バイト")) || named(foldText("アルバイト")) || (j ? named(foldText(oneLine(j.name || ""))) : null) || null;
+  }
   function cjPayText(x) {
     const j = jobOf(x.jobId);
     if (!j || !(num(j.wage) > 0 || num(x.wage) > 0 || num(x.dayPay) > 0)) return null;
