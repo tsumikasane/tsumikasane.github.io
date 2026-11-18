@@ -2842,7 +2842,7 @@ a.bt17-app { text-decoration: none; }
 }
 /* 家計簿 その2 ①〜⑩ (2026-11-13). The parts' cards apart from each other, as the page's own were before 家計簿 and バイト
    were put in parts (#moneyBook's block had them touching) */
-#moneyBook, #moneyStats, #moneyJob, #mo2Loan { display: flex; flex-direction: column; gap: var(--space-2); }
+#moneyBook, #moneyStats, #moneyJob { display: flex; flex-direction: column; gap: var(--space-2); }
 #moneyBook .ex-often { margin: 0; }
 /* ① ひとことで追加: its field and 追加 in a row over the form, what it reads as under them */
 .mo2-quick-row { display: flex; align-items: center; gap: 8px; }
@@ -2905,30 +2905,9 @@ a.bt17-app { text-decoration: none; }
 .mo2-want-row select { flex: 1 1 8em; }
 .mo2-want-row .btn { flex: none; }
 .mo2-want-note { margin: 0; padding: 0 var(--space-2) 10px; }
-details.mo2-want-done > summary, details.mo2-loan-done > summary, details.mo2-bill > summary { display: flex; align-items: center; min-height: 48px; padding: 0 var(--space-2); font-weight: 600; cursor: pointer; }
+details.mo2-want-done > summary { display: flex; align-items: center; min-height: 48px; padding: 0 var(--space-2); font-weight: 600; cursor: pointer; }
 details.mo2-want-done { border-top: .5px solid var(--separator); }
 details.mo2-want-done > summary { color: var(--accent); font-weight: 400; }
-/* ⑩ 貸し借り */
-.mo2-loan-none { margin: 0; line-height: 1.5; }
-.mo2-loan-none .sub { display: block; margin-top: 4px; }
-.mo2-loan-sum .money-sum { margin-block: -8px; }
-.mo2-loan-people { display: grid; gap: 4px; margin: 0; padding: 10px 0 0; border-top: .5px solid var(--separator); list-style: none; font-size: var(--t-sub); }
-.mo2-loan-people li { display: flex; justify-content: space-between; gap: 12px; }
-.mo2-loan-people .warn { color: var(--warn); }
-#mo2LoanList li.mo2-loan, #mo2LoanDoneList li.mo2-loan { align-items: flex-start; }
-.mo2-loan-back { align-self: flex-start; margin-top: 6px; }
-.mo2-bill-body { display: grid; gap: 10px; padding: 0 var(--space-2) 14px; }
-.mo2-bill-row { display: flex; align-items: center; gap: 8px; }
-.mo2-bill-row label { flex: none; min-width: 3em; }
-.mo2-bill-row input, .mo2-bill-row select, #mo2BillNames { min-height: 44px; min-width: 0; padding: 0 12px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 12px; line-height: 1.3; }
-.mo2-bill-row input { flex: 0 1 8em; text-align: right; font-variant-numeric: tabular-nums; }
-.mo2-bill-row select { flex: 0 1 8em; }
-.mo2-bill-out { margin: 0; font-weight: 600; }
-.mo2-bill-out.hint { font-weight: 400; color: var(--muted); }  /* (what to put in, before there is a share to say) */
-.mo2-bill-label { margin-top: 4px; }
-.mo2-bill-body > .sub { margin: -4px 0 0; }
-.mo2-bill-acts { display: flex; flex-wrap: wrap; gap: 8px; }
-.mo2-bill-acts .btn:disabled { opacity: .45; cursor: default; }  /* (no total yet: nothing to put in) */
 /* 家計簿 その3 */
 .mo3-week { margin: calc(-1 * var(--space-1)) 0 0; font-size: var(--t-sub); line-height: 1.45; color: var(--muted); }
 .mo3-week .warn { color: var(--warn); font-weight: 600; }
@@ -9442,7 +9421,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="seg money-parts" role="group" aria-label="家計簿かバイトか" id="moneyParts">
           <button type="button" data-part="book" aria-pressed="true">家計簿</button>
           <button type="button" data-part="stats" aria-pressed="false">まとめ</button>
-          <button type="button" data-part="loan" aria-pressed="false">貸し借り</button>
           <button type="button" data-part="job" aria-pressed="false">バイト</button>
         </div>
         <div id="moneyBook">
@@ -9596,51 +9574,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <div class="card-head" id="mo2YearHead">1年のまとめ</div>
             <div class="mo2-year" id="mo2Year"></div>
           </div>
-        </div>
-        <!-- (家計簿 その2 ⑩) 貸し借り: lent or borrowed, with whom, till it is settled; 割り勘 worked out. Neither 収入 nor 支出 -->
-        <div id="mo2Loan" hidden>
-          <div class="card pad mo2-loan-sum" id="mo2LoanSum"></div>
-          <form class="add" id="mo2LoanForm" autocomplete="off">
-            <span class="flabel" id="mo2LoanDirLabel">種類</span>
-            <div class="ffield">
-              <div class="seg seg-radio" role="radiogroup" aria-labelledby="mo2LoanDirLabel">
-                <label><input type="radio" name="mo2LoanDir" value="lend" checked><span>貸した</span></label>
-                <label><input type="radio" name="mo2LoanDir" value="borrow"><span>借りた</span></label>
-              </div>
-            </div>
-            <label class="flabel" for="mo2LoanWho">相手</label>
-            <div class="ffield"><input type="text" id="mo2LoanWho" maxlength="30" list="mo2LoanWhoList" required></div>
-            <datalist id="mo2LoanWhoList"></datalist>
-            <label class="flabel" for="mo2LoanAmount">金額<span class="sr-only">（円）</span></label>
-            <div class="ffield"><input type="number" id="mo2LoanAmount" placeholder="0" min="1" max="99999999" step="1" inputmode="numeric" required><span class="unit">円</span></div>
-            <label class="flabel" for="mo2LoanDate">日付</label>
-            <div class="ffield"><input type="date" id="mo2LoanDate" required></div>
-            <input type="text" id="mo2LoanMemo" class="full" placeholder="メモ" aria-label="メモ" maxlength="200">
-            <div class="actions"><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
-          </form>
-          <details class="card mo2-bill" id="mo2Bill">
-            <summary>割り勘を計算する</summary>
-            <div class="mo2-bill-body">
-              <div class="mo2-bill-row"><label for="mo2BillTotal">合計</label><input type="number" id="mo2BillTotal" min="1" max="99999999" step="1" inputmode="numeric" placeholder="0"><span class="unit">円</span></div>
-              <div class="mo2-bill-row"><label for="mo2BillPeople">人数</label><select id="mo2BillPeople"></select></div>
-              <p class="mo2-bill-out" id="mo2BillOut" role="status"></p>
-              <label class="mo2-bill-label" for="mo2BillNames">払ってもらう人の名前</label>
-              <input type="text" id="mo2BillNames" maxlength="200" aria-describedby="mo2BillNamesNote">
-              <p class="sub" id="mo2BillNamesNote">「、」で区切って書きます。書かなくても入れられます。</p>
-              <div class="mo2-bill-acts">
-                <button type="button" class="btn sm" id="mo2BillLend">ほかの人の分を貸しに入れる</button>
-                <button type="button" class="btn ghost sm" id="mo2BillMine">自分の分を支出に入れる</button>
-              </div>
-            </div>
-          </details>
-          <div class="card" id="mo2LoanCard" hidden>
-            <div class="card-head">いまの貸し借り</div>
-            <ul class="list" id="mo2LoanList"></ul>
-          </div>
-          <details class="card mo2-loan-done" id="mo2LoanDone" hidden>
-            <summary id="mo2LoanDoneHead">終わった貸し借り</summary>
-            <ul class="list" id="mo2LoanDoneList"></ul>
-          </details>
         </div>
         <!-- バイト: each job's month as its 締め日 has it (its pay worked out from 時給, its days and hours, its 給料日 and
              収入に入れる), the form for a shift, the month's shifts, and the year's pay against a mark -->
@@ -15081,7 +15014,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function syncMoneyPart() {
     for (const b of $("moneyParts").querySelectorAll("button[data-part]")) b.setAttribute("aria-pressed", String(b.dataset.part === moneyPart));
     $("moneyBook").hidden = moneyPart !== "book"; $("moneyJob").hidden = moneyPart !== "job"; $("moneyStats").hidden = moneyPart !== "stats";
-    $("mo2Loan").hidden = moneyPart !== "loan"; // (家計簿 その2 ⑩ 貸し借り)
     $("moneySettings").setAttribute("aria-label", moneyPart === "job" ? "バイトの設定" : "家計簿の設定");
   }
   function setMoneyPart(p) { moneyPart = p; lsPut(MONEY_PART_KEY, p); renderMoney(); }
@@ -17170,7 +17102,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- 家計簿 ----------
   // 家計簿 or バイト, as last shown on this device
   const MONEY_PART_KEY = LS_PREFIX + "moneyPart";
-  let moneyPart = (() => { try { const v = localStorage.getItem(MONEY_PART_KEY); return v === "job" || v === "stats" || v === "loan" ? v : "book"; } catch { return "book"; } })();
+  let moneyPart = (() => { try { const v = localStorage.getItem(MONEY_PART_KEY); return v === "job" || v === "stats" ? v : "book"; } catch { return "book"; } })();
   let exFromPay = null; // { key, amount }: 収入 filled in from a month's pay, marked as put in when added as it is
   const exDate = $("exDate"), exCat = $("exCat"), budgetInput = $("budgetInput");
   const exKind = () => (checkedValue("exKind") === "in" ? "in" : "out");
@@ -25807,7 +25739,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月17日 12:30"; // 0f2b915c (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月18日 12:44"; // e97dd661 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -68500,16 +68432,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- 家計簿 その2 ①〜⑩ (the user's calls, 2026-11-13): a line of words put in as it is (①), a receipt split over
   // its 費目 (②), the ways of paying of one's own (③), a word as the budget runs low or the same one goes in twice (④), the
   // month's end at this pace (⑤), お知らせ when the day has nothing in by night (⑥), each 支出 looked back on (⑦), the year
-  // (⑧), the things wanted (⑨), and what is lent and borrowed (⑩). Function declarations and var, as the page may draw
-  // before this runs ----------
+  // (⑧) and the things wanted (⑨). (⑩ 貸し借り and its 割り勘 taken out, the user's call 2026-11-18: the records kept in
+  // settings "loans", no longer read.) Function declarations and var, as the page may draw before this runs ----------
 
   // drawn with 家計簿 (renderMoney), before its own cards: the ways of paying first, as the rest of it reads them
   function renderMo2(m) {
     mo2SyncPay();
     if (moneyPart === "book") { draw(mo2QuickSay); draw(mo2SplitSync); draw(renderMo2Fore); draw(renderMo2Zero); }
     if (moneyPart === "stats") { draw(() => renderMo2Feel(m)); draw(renderMo2Wants); draw(renderMo2Year); }
-    if (moneyPart === "loan") draw(renderMo2Loan);
-    $("monthNav").hidden = moneyPart === "loan"; // (貸し借り is no month's)
   }
   function mo2DayWord(d) { return d === todayKey ? "きょう" : d === addDays(todayKey, -1) ? "きのう" : fmtDay(d); }
   // records put in (one, or several at once), as they are in the store now: an add pushes them at its end as it is called
@@ -69019,98 +68949,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     mo2SaveWants([...was, dropUndef({ id: uid(), name, price: price > 0 ? Math.min(price, 99999999) : undefined, wait, at: todayKey })]);
     $("mo2WantName").value = ""; $("mo2WantPrice").value = "";
     flash(`ほしいものに「${name}」を入れました${wait ? `。${fmtMDW(addDays(todayKey, wait))}まで待ってみましょう` : ""}`, mo2WantsBack(was));
-  });
-
-  // ⑩ 貸し借り (the user's call): lent (貸した) or borrowed (借りた), with whom, how much, the day and a メモ, kept with the
-  // account till it is settled (返ってきた, 返した); neither 収入 nor 支出. 割り勘 worked out: each one's share rounded up,
-  // what is left of it one's own; the others' put in as lent, one's own as a 支出
-  function mo2Loans() { const s = settings.get("loans"); return s && Array.isArray(s.items) ? s.items.filter((x) => x && typeof x.id === "string" && num(x.amount) > 0) : []; }
-  function mo2SaveLoans(items) { act(() => settings.set("loans", { items, updatedAt: Date.now() })); }
-  function mo2LoansBack(was) { return () => { act(() => settings.set("loans", { items: was, updatedAt: Date.now() })); flash("元に戻しました"); }; }
-  function renderMo2Loan() {
-    const all = mo2Loans(), open = all.filter((x) => !x.back), done = all.filter((x) => x.back);
-    const lend = open.filter((x) => x.dir !== "borrow"), borrow = open.filter((x) => x.dir === "borrow"), people = new Map();
-    for (const x of open) { const k = x.who || "名前なし"; people.set(k, (people.get(k) || 0) + (x.dir === "borrow" ? -1 : 1) * num(x.amount)); }
-    setChildren($("mo2LoanSum"), !open.length
-      ? el("p", { class: "mo2-loan-none" }, el("span", { class: "phrase" }, "いまの貸し借りはありません。"), el("span", { class: "sub" }, "立て替えたお金や借りたお金を記録しておくと、終わるまでここに出ます。収入や支出には入りません。"))
-      : [el("div", { class: "money-sum" }, stat("貸している", fmtYen(sum(lend, (x) => x.amount)), `${lend.length} 件`), stat("借りている", fmtYen(sum(borrow, (x) => x.amount)), `${borrow.length} 件`)),
-        people.size > 1 ? el("ul", { class: "mo2-loan-people" }, [...people.entries()].sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).map(([k, v]) => el("li", {}, el("span", { class: "text" }, k),
-          el("span", { class: "amount" + (v < 0 ? " warn" : "") }, v === 0 ? "差し引き 0 円" : `${v > 0 ? "貸し" : "借り"} ${fmtYen(Math.abs(v))}`)))) : null]);
-    const row = (x) => el("li", { class: "mo2-loan" },
-      el("span", { class: "chip", style: `--chip-c: ${x.dir === "borrow" ? "var(--warn)" : "var(--c-money)"}` }, x.dir === "borrow" ? "借り" : "貸し"),
-      el("span", { class: "body" }, el("span", { class: "text" }, x.who || "名前なし"),
-        dotParts([fmtDay(x.date), x.memo, x.back ? `${fmtDay(x.back)}に${x.dir === "borrow" ? "返した" : "返ってきた"}` : null]),
-        x.back ? null : el("button", { type: "button", class: "btn ghost sm mo2-loan-back", onclick: () => mo2LoanBack(x.id) }, x.dir === "borrow" ? "返した" : "返ってきた")),
-      el("span", { class: "amount" }, fmtYen(x.amount)),
-      delButton(() => mo2LoanDrop(x.id), "削除", `${x.who || ""} ${fmtYen(x.amount)}`));
-    const byDay = (a, b) => String(b.date).localeCompare(String(a.date)) || num(b.at) - num(a.at);
-    $("mo2LoanCard").hidden = !open.length;
-    setChildren($("mo2LoanList"), [...open].sort(byDay).map(row));
-    $("mo2LoanDone").hidden = !done.length;
-    $("mo2LoanDoneHead").textContent = `終わった貸し借り（${done.length}）`;
-    setChildren($("mo2LoanDoneList"), [...done].sort((a, b) => String(b.back).localeCompare(String(a.back)) || byDay(a, b)).slice(0, 50).map(row));
-    // the names before, for the field; the day, today when empty
-    setChildren($("mo2LoanWhoList"), [...new Set([...all].sort(byDay).map((x) => x.who).filter(Boolean))].slice(0, 30).map((w) => el("option", { value: w })));
-    if (!isDay($("mo2LoanDate").value)) $("mo2LoanDate").value = todayKey;
-    mo2BillSync();
-  }
-  function mo2LoanBack(id) {
-    const was = JSON.parse(JSON.stringify(mo2Loans())), x = was.find((y) => y.id === id);
-    if (!x) return;
-    mo2SaveLoans(was.map((y) => (y.id === id ? { ...y, back: todayKey } : y)));
-    flash(keepUnits(`「${x.who || "名前なし"} ${fmtYen(x.amount)}」を${x.dir === "borrow" ? "返した" : "返ってきた"}ことにしました`), mo2LoansBack(was));
-  }
-  function mo2LoanDrop(id) {
-    const was = JSON.parse(JSON.stringify(mo2Loans()));
-    mo2SaveLoans(was.filter((y) => y.id !== id));
-    flash("貸し借りを削除しました", mo2LoansBack(was));
-  }
-  $("mo2LoanForm").addEventListener("submit", (ev) => {
-    ev.preventDefault();
-    const who = $("mo2LoanWho").value.trim().replace(/\s+/g, " ").slice(0, 30), amount = Math.round(num($("mo2LoanAmount").value)), date = $("mo2LoanDate").value;
-    if (!who) { $("mo2LoanWho").focus(); return; }
-    if (!(amount >= 1 && amount <= 99999999)) { $("mo2LoanAmount").focus(); return; }
-    if (!isDay(date)) { $("mo2LoanDate").focus(); return; }
-    const dir = checkedValue("mo2LoanDir") === "borrow" ? "borrow" : "lend", memo = $("mo2LoanMemo").value.trim().slice(0, 200);
-    const was = JSON.parse(JSON.stringify(mo2Loans()));
-    mo2SaveLoans([...was, dropUndef({ id: uid(), dir, who, amount, date, memo: memo || undefined, at: Date.now() })]);
-    $("mo2LoanAmount").value = ""; $("mo2LoanMemo").value = ""; $("mo2LoanDate").value = todayKey;
-    flash(keepUnits(`${who}${dir === "borrow" ? "から借りた" : "に貸した"} ${fmtYen(amount)} を記録しました`), mo2LoansBack(was));
-  });
-  // 割り勘
-  function mo2Bill() {
-    const total = Math.round(num($("mo2BillTotal").value)), n = clampTo(Math.round(num($("mo2BillPeople").value)) || 2, 2, 30);
-    if (!(total >= n)) return null;
-    const per = Math.ceil(total / n), mine = total - per * (n - 1);
-    return mine > 0 ? { total, n, per, mine } : { total, n, per: Math.floor(total / n), mine: total - Math.floor(total / n) * (n - 1) };
-  }
-  function mo2BillNames(b) { return $("mo2BillNames").value.normalize("NFKC").split(/[、,・\s]+/).map((s) => s.trim().slice(0, 30)).filter(Boolean).slice(0, b.n - 1); }
-  function mo2BillSync() {
-    const sel = $("mo2BillPeople");
-    if (!sel.options.length) { for (let i = 2; i <= 30; i++) sel.append(el("option", { value: i }, `${i}人`)); sel.value = "2"; }
-    const b = mo2Bill();
-    $("mo2BillLend").disabled = $("mo2BillMine").disabled = !b;
-    $("mo2BillOut").classList.toggle("hint", !b);
-    $("mo2BillOut").textContent = !b ? "合計と人数を入れると、1人あたりが出ます。" : keepUnits(b.mine === b.per ? `1人 ${fmtYen(b.per)}` : `1人 ${fmtYen(b.per)}（自分は ${fmtYen(b.mine)}）`);
-  }
-  for (const id of ["mo2BillTotal", "mo2BillPeople"]) $(id).addEventListener("input", mo2BillSync);
-  $("mo2BillPeople").addEventListener("change", mo2BillSync);
-  $("mo2BillLend").addEventListener("click", () => {
-    const b = mo2Bill();
-    if (!b) return;
-    const names = mo2BillNames(b), rest = b.n - 1 - names.length, memo = keepUnits(`割り勘（${fmtYen(b.total)}・${b.n}人）`), at = Date.now();
-    const list = names.map((w, i) => ({ id: uid() + i, dir: "lend", who: w, amount: b.per, date: todayKey, memo, at: at + i }));
-    if (rest > 0) list.push({ id: uid() + "r", dir: "lend", who: names.length ? `ほか${rest}人` : `割り勘の${rest}人`, amount: b.per * rest, date: todayKey, memo, at: at + list.length });
-    const was = JSON.parse(JSON.stringify(mo2Loans()));
-    mo2SaveLoans([...was, ...list]);
-    flash(keepUnits(`貸しに ${list.length} 件入れました（${fmtYen(b.per * (b.n - 1))}）`), mo2LoansBack(was));
-  });
-  $("mo2BillMine").addEventListener("click", () => {
-    const b = mo2Bill();
-    if (!b) return;
-    const outs = exCats("out"), category = outs.includes("交際費") ? "交際費" : outs.includes("食費") ? "食費" : outs[0];
-    const added = mo2AddNow([{ date: todayKey, kind: "out", category, amount: b.mine, memo: "割り勘", createdAt: Date.now(), ...($("exMethod").value ? { method: $("exMethod").value } : {}) }]);
-    mo2Speak(added, keepUnits(`自分の分 ${fmtYen(b.mine)} を支出（${category}）に入れました`), mo2TakeBack(added));
   });
 
   // ---------- 家計簿 その3 ①〜⑩ (the user's calls, 2026-11-14): each 費目 against its usual (①), a sum written in ひとことで
