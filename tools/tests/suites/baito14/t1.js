@@ -26,7 +26,7 @@ const block = (p, name) => p.evaluate((name) => [...document.querySelectorAll("#
   ok(JSON.stringify(by("bt14-wall:2026-12")) === JSON.stringify(["bt14-wall:2026-12", "2026-12-01T00:00:00.000Z", "年の目安に近づいています", "2026年の見込み 約 73,300円・目安 90,000円まで あと 約 16,700円"]) && !by("bt14-wall:2027-01"), "④ " + JSON.stringify(by("bt14-wall:2026-12")));
   // ⑧ 塾, left on 10/31
   const lf = await txt(p, "#bt14Left");
-  ok(lf === "やめたあとにすること 塾（10/31にやめた） ・ 最後の給料日 11月25日（水）（10月分 約 4,500 円） あと 5 日 ・ 2026年の源泉徴収票 やめてから1か月以内にもらえる決まりです。もらったら「源泉徴収票」に記録しましょう", "⑧ (返していないもの は消した: 2026-11-18) " + lf);
+  ok(lf === "やめたあとにすること 塾（10/31にやめた） ・ 最後の給料日 11月25日（水）（10月分 約 4,500 円） あと 5 日", "⑧ (返していないもの と 源泉徴収票 は消した: 2026-11-18) " + lf);
   // ⑨ これからとすんだ
   const seps = await p.evaluate(() => [...document.querySelectorAll("#shiftList > li")].map((li) => li.classList.contains("bt14-sep") ? "|" + li.textContent.replace(/\s+/g, " ") : li.dataset.shift));
   ok(JSON.stringify(seps) === JSON.stringify(["|これからの勤務（2）", "w21", "w20", "|すんだ勤務（6）", "w19", "w18", "w17", "w16", "w15", "n2"]), "⑨ " + JSON.stringify(seps));

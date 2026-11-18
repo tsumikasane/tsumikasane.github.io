@@ -1,4 +1,4 @@
-// バイト その17 ②④⑤⑩: what is pressed and typed (⑨ は使う人が消した: 2026-11-18)
+// バイト その17 ②④⑤: what is pressed and typed (⑨ と ⑩ 写真を見ながら入れる は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8879/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -32,15 +32,6 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   ok((await p.inputValue("#reShiftRole")) === "キッチン", "② in the sheet");
   await p.selectOption("#reShiftRole", "レジ"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   ok((await ls(p, "shifts")).find((x) => x.id === "n2").role === "レジ", "② changed");
-  // ⑩ the シフト表's photo kept in sight
-  await p.click("#bt7Photos summary"); await p.waitForTimeout(300);
-  await p.setInputFiles("#bt7PhotoFile", { name: "shift.png", mimeType: "image/png", buffer: PNG }); await p.waitForTimeout(1200);
-  await p.click("#bt17ViewOpen"); await p.waitForTimeout(600);
-  ok(!(await p.isHidden("#bt17Viewer")) && (await p.$$("#bt17Viewer img")).length === 1 && (await p.evaluate(() => getComputedStyle(document.getElementById("bt17Viewer")).position)) === "fixed", "⑩ open");
-  await p.click("#bt17ViewZoom"); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => document.querySelector("#bt17Viewer .bt17-view-img").classList.contains("zoom")), "⑩ 大きく");
-  await p.click("#bt17ViewClose"); await p.waitForTimeout(300);
-  ok(await p.isHidden("#bt17Viewer"), "⑩ closed");
   // ④⑤ the settings: 上限 off, 使いみち 50% 生活費
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   await p.fill("#bt17MonthMax", ""); await p.fill("#bt17WeekDays", ""); await p.dispatchEvent("#bt17WeekDays", "change"); await p.waitForTimeout(300);

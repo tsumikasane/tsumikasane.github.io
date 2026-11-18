@@ -1,4 +1,4 @@
-// バイト その15 ①②④⑤⑥⑦⑧⑨⑩: what is shown
+// バイト その15 ①②④⑤⑥⑧⑨⑩: what is shown (⑦ 年末調整と源泉徴収票 は使う人が消した: 2026-11-18; its ticks stay in the data)
 process.env.URL0 = process.env.URL0 || "http://localhost:8876/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -33,19 +33,18 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ok(JSON.stringify(st.bars[6]) === JSON.stringify(["100%", "10%"]) && JSON.stringify(st.keys) === JSON.stringify(["バイト", "勉強"]) && st.table === 8, "⑤ bars: " + JSON.stringify(st.bars));
   // ⑥ 次の給料日まで: 11/10 から 収入 7,500・支出 4,200・11/23 のスマホ 2,500 → のこり 800 ÷ 5 日
   ok((await txt(p, "#bt15Purse")) === "次の給料日までのやりくり 1日あたり 160 円 使えます 11月25日（水）の給料日まで あと 5 日（見込み 約 4,800 円・カフェ） 11/10からの収入 7,500 円 11/10からの支出 −4,200 円 これからの固定費（11/23 スマホ） −2,500 円 のこり 800 円 前の給料日からの、家計簿の収入と支出で数えています。", "⑥ " + (await txt(p, "#bt15Purse")));
-  // ⑦ 年末調整: カフェ (扶養控除等申告書) and 塾
-  ok((await txt(p, "#bt15Tax")) === "年末調整と源泉徴収票 ・ カフェ：年末調整があります 扶養控除等申告書を出したお店です。控除の書類（国民年金や保険）があれば、いっしょに出します ・ 塾：年末調整はありません 来年の1月に、源泉徴収票をもらいます", "⑦ " + (await txt(p, "#bt15Tax")));
-  // ⑦⑧ お知らせ: 面接の1時間前, 12/1 の年末調整
+  ok(!(await p.$("#bt15Tax")), "⑦ gone");
+  // ⑧ お知らせ: 面接の1時間前 (⑦ 12/1 の年末調整 no more, its taxChk though still in the data)
   const al = await p.evaluate(() => window.__bt15.alarms(Date.now()).filter((a) => /^bt15-/.test(a.tag)).map((a) => [a.tag, new Date(a.at).toISOString(), a.title, a.body]).sort((a, b) => a[1].localeCompare(b[1])));
-  ok(JSON.stringify(al) === JSON.stringify([["bt15-hunt:h1|2026-11-21T15:00", "2026-11-21T05:00:00.000Z", "面接まで1時間", "15:00から「本屋」の面接です（駅前）"], ["bt15-nencho:2026", "2026-12-01T00:00:00.000Z", "年末調整の書類は出しましたか？", "カフェで年末調整があります。控除の書類があれば、いっしょに出しましょう"]]), "⑦⑧ " + JSON.stringify(al));
+  ok(JSON.stringify(al) === JSON.stringify([["bt15-hunt:h1|2026-11-21T15:00", "2026-11-21T05:00:00.000Z", "面接まで1時間", "15:00から「本屋」の面接です（駅前）"]]), "⑧ " + JSON.stringify(al));
   // ⑩ 目標まで 10,375 円: いつもの 17:00〜22:00 (4,800 円) を、よく入る月曜から 3 日
   ok((await txt(p, "#bt15Reach")) === "目標に届く入れ方 いつもの 17:00〜22:00（カフェ）で あと 3 回入れると届きます 11/23（月）・11/28（土）・11/30（月） この日を仮のシフトで入れる", "⑩ " + (await txt(p, "#bt15Reach")));
   // ③⑧ the cards
   ok(!(await p.isHidden("#bt15Tpl")) && !(await p.isHidden("#bt15Hunt")), "③⑧ there");
-  // ①②⑦⑧ the settings
+  // ①②⑧ the settings (⑦'s rows no more)
   await p.click("#moneySettings"); await p.waitForTimeout(500);
-  const f = await p.evaluate(() => { const g = (k, id = "j1") => document.querySelector(`#jobForms [data-job="${id}"] [data-f="${k}"]`); return [g("lastTrain").value, g("toStation").value, g("round").value, g("fuyo").checked, g("fuyo", "j2").checked, g("round", "j2").value, document.getElementById("bt15TaxChk").checked, document.getElementById("bt15HuntChk").checked]; });
-  ok(JSON.stringify(f) === JSON.stringify(["23:40", "15", "15", true, false, "0", true, true]), "①②⑦⑧ the settings: " + JSON.stringify(f));
+  const f = await p.evaluate(() => { const g = (k, id = "j1") => document.querySelector(`#jobForms [data-job="${id}"] [data-f="${k}"]`); return [g("lastTrain").value, g("toStation").value, g("round").value, g("round", "j2").value, document.getElementById("bt15HuntChk").checked, !g("fuyo") && !document.getElementById("bt15TaxChk")]; });
+  ok(JSON.stringify(f) === JSON.stringify(["23:40", "15", "15", "0", true, true]), "①②⑧ the settings: " + JSON.stringify(f));
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

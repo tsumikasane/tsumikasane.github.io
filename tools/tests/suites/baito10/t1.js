@@ -21,8 +21,7 @@ const block = (p, name) => p.evaluate((name) => [...document.querySelectorAll("#
   const nx = await txt(p, "#bt10Next");
   ok(nx === "次の給料日 11月25日（水）（あと 9 日） カフェ：約 10,600 円（10月分） 12月10日（木）（あと 24 日） 配達：約 12,000 円（11月分）", "⑥ " + nx);
   // ② いっしょに入った人: 田中 3, 佐藤 1; on the rows
-  const w = await p.evaluate(() => [...document.querySelectorAll("#bt10With .chip-btn")].map((x) => x.innerText.replace(/\s+/g, " ").trim()));
-  ok((await txt(p, "#bt10With")).startsWith("いっしょに入った人（この3か月）") && JSON.stringify(w) === JSON.stringify(["田中 3 回", "佐藤 1 回"]), "② " + JSON.stringify(w));
+  ok((await txt(p, "#bt10With")) === "いっしょに入った人（この3か月） 田中 3 回・佐藤 1 回 名前は勤務の編集で入れられます。" && !(await p.$("#bt10With button")), "② (a line: 勤務を探す taken off 2026-11-18) " + (await txt(p, "#bt10With")));
   ok((await txt(p, '#shiftList li:has([data-edit="c3"])')).includes("いっしょ：田中"), "② on the row");
   // ⑦ 出来高: on the row, the month (20 件 × 300), its parts
   ok((await txt(p, '#shiftList li:has([data-edit="d1"])')).includes("12 件 × 300円"), "⑦ on the row: " + (await txt(p, '#shiftList li:has([data-edit="d1"])')));

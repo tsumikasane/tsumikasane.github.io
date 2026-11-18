@@ -1,4 +1,4 @@
-// バイト その6 ①③④⑤⑧⑨⑩: what is shown, and pressed on the page
+// バイト その6 ①③④⑤⑧⑩: what is shown, and pressed on the page (⑨ ふりかえり は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8866/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -21,12 +21,7 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   ok(await p.evaluate(() => document.querySelector('#bt6Cal [data-day="2026-11-09"]').classList.contains("tent")), "⑧ dashed in the calendar");
   await p.click("#jobSum .bt6-tent .link-btn"); await p.waitForTimeout(500);
   ok(!("tentative" in (await ls(p, "shifts")).find((x) => x.id === "n2")) && !(await txt(p, "#jobSum")).includes("仮のシフト"), "⑧ ぜんぶ確定にする");
-  // ⑨ yesterday's shift asked about
-  const fq = await txt(p, "#bt6Feel");
-  ok(fq.includes("きのう 17:00〜22:00") && fq.includes("バイトは、どうだった？"), "⑨ asked: " + fq);
-  await p.click('#bt6Feel [data-feel="hard"]'); await p.waitForTimeout(500);
-  ok((await ls(p, "shifts")).find((x) => x.id === "n3").feel === "hard" && await p.isHidden("#bt6Feel"), "⑨ kept");
-  ok(/ふりかえり：しんどかった 1/.test(await txt(p, "#jobSum")) && (await txt(p, '#shiftList li:has([data-edit="n3"])')).includes("しんどかった"), "⑨ said in the month");
+  ok(!(await p.$("#bt6Feel")) && !(await p.$("#bt6Bulk")), "⑨ ② gone");
   // ① the calendar: 3 days, a day pressed, この日に勤務を入れる
   const cal = await txt(p, "#bt6Cal");
   ok(cal.includes("11月の勤務カレンダー") && /3 日・15\s時間・15,000\s円/.test(cal) && (await txt(p, '#bt6Cal [data-day="2026-11-02"]')) === "2 5h", "① " + cal);

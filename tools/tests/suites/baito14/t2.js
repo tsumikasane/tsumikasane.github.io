@@ -43,12 +43,13 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   await p.click("#bt14What summary"); await p.waitForTimeout(300);
   await p.fill("#bt14WhatWage", "950"); await p.waitForTimeout(200);
   ok((await txt(p, "#bt14WhatOut")).includes("月 −900 円・年 −10,800 円"), "⑦ " + (await txt(p, "#bt14WhatOut")));
-  // ⑩ 給料明細の写真: kept apart from シフト表の写真
+  // ⑩ 給料明細の写真: before 勤務カレンダー, where シフト表の写真 was (taken off 2026-11-18); shown large
   await p.click("#bt14Slips summary"); await p.waitForTimeout(300);
   await p.setInputFiles("#bt14SlipFile", { name: "slip.png", mimeType: "image/png", buffer: PNG }); await p.waitForTimeout(1200);
-  ok((await p.$$("#bt14SlipList img")).length === 1 && (await txt(p, "#bt14SlipHead")) === "11月分の給料明細の写真（1）" && (await txt(p, "#bt7PhotoHead")) === "11月のシフト表の写真", "⑩ " + JSON.stringify([await txt(p, "#bt14SlipHead"), await txt(p, "#bt7PhotoHead")]));
-  await p.click("#bt7Photos summary"); await p.waitForTimeout(400);
-  ok((await p.$$("#bt7PhotoList img")).length === 0, "⑩ not among シフト表の写真");
+  ok((await p.$$("#bt14SlipList img")).length === 1 && (await txt(p, "#bt14SlipHead")) === "11月分の給料明細の写真（1）" && !(await p.$("#bt7Photos")) && (await p.evaluate(() => document.getElementById("bt14Slips").nextElementSibling?.id)) === "bt6Cal", "⑩ " + (await txt(p, "#bt14SlipHead")));
+  await p.click("#bt14SlipList .bt7-photo-open"); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => document.getElementById("bt7PhotoView").open && document.querySelector("#bt7PhotoView img")?.alt === "給料明細の写真"), "⑩ shown large");
+  await p.click("#bt7PhotoView .bt7-photo-close"); await p.waitForTimeout(200);
   ok(JSON.stringify(await p.evaluate(() => [window.__bt14.what("tsumikasane-baito-photos", { kind: "pay", ym: "2026-11" }), window.__bt14.what("tsumikasane-baito-photos", { ym: "2026-11" })])) === '["給料明細の写真","シフト表の写真"]', "⑩ apart in 記録's 写真とファイルを書き出す");
   // ②④ the cap taken off; 年の目安 off
   await p.click("#moneySettings"); await p.waitForTimeout(500);

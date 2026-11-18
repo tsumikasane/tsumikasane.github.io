@@ -1,4 +1,4 @@
-// バイト その7 ③④⑤⑥⑦⑧⑨⑩: what is typed in
+// バイト その7 ③④⑥⑦⑧⑨⑩: what is typed in (⑤ シフト表の写真 は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8867/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -52,15 +52,7 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   ok(ex.length === 2 && ex[1].name === "交通費の精算" && ex[1].amount === 1200 && (await txt(p, "#jobSum")).includes("交通費の精算：+1,200 円"), "⑥ added: " + JSON.stringify(ex));
   await p.click('#jobSum .bt7-extra .bt4-adv-x'); await p.waitForTimeout(400);
   ok((await setting(p, "bt7Extra")).items["j1|2026-11"].length === 1, "⑥ one taken off");
-  // ⑤ a photo of the shift table, on this device
-  await p.click("#bt7Photos summary"); await p.waitForTimeout(300);
-  await p.setInputFiles("#bt7PhotoFile", { name: "shift.png", mimeType: "image/png", buffer: PNG }); await p.waitForTimeout(1200);
-  ok(await p.evaluate(() => document.querySelectorAll("#bt7PhotoList img").length) === 1 && (await txt(p, "#bt7PhotoHead")) === "11月のシフト表の写真（1）", "⑤ kept: " + (await txt(p, "#bt7PhotoHead")));
-  await p.reload(); await p.waitForTimeout(800); await p.click("#bt7Photos summary"); await p.waitForTimeout(600);
-  ok(await p.evaluate(() => document.querySelectorAll("#bt7PhotoList img").length) === 1, "⑤ still there");
-  await p.click("#bt7PhotoList .bt7-photo-open"); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => document.getElementById("bt7PhotoView").open), "⑤ shown large");
-  await p.click("#bt7PhotoView .bt7-photo-close"); await p.waitForTimeout(200);
+  ok(!(await p.$("#bt7Photos")) && !(await p.$("#bt7PhotoFile")), "⑤ シフト表の写真: gone");
   // ⑦⑥ the job's form; ①⑧ the お知らせ
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   const f = '#jobForms [data-job="j1"]';

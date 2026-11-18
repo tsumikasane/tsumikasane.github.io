@@ -1,4 +1,4 @@
-// バイト その15 ①②③⑦⑧⑩: what is pressed and typed
+// バイト その15 ①②③⑧⑩: what is pressed and typed (⑦ 年末調整と源泉徴収票 は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8876/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -48,17 +48,14 @@ const copied = (p) => p.evaluate(() => window.__copied);
   await p.selectOption("#shiftJob", "j1"); await p.fill("#shiftDate", "2026-11-27"); await p.fill("#shiftStart", "18:00"); await p.fill("#shiftEnd", "23:45"); await p.fill("#shiftRest", "0");
   await p.locator('#shiftForm button[type="submit"]').click(); await p.waitForTimeout(500);
   ok((await txt(p, "#status")).includes("終電（23:40）に間に合わないかもしれません（駅まで 15 分）"), "① said: " + (await txt(p, "#status")));
-  // ② 1分ごとに; ⑦ 塾 ticked too; ⑦⑧ お知らせ off
+  // ② 1分ごとに, the job's ⑦ tick (j.fuyo) kept as its form is saved; ⑧ お知らせ off
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   await p.selectOption('#jobForms [data-job="j1"] [data-f="round"]', "0"); await p.waitForTimeout(900);
-  ok(!("round" in (await job(p, "j1"))), "② each minute");
-  await p.click('#jobForms [data-job="j2"] [data-f="fuyo"]'); await p.waitForTimeout(900);
-  ok((await job(p, "j2")).fuyo === true, "⑦ 塾 ticked");
-  await p.click("#bt15TaxChk"); await p.click("#bt15HuntChk"); await p.waitForTimeout(300);
-  ok((await setting(p, "bt15")).taxChk === false && (await setting(p, "bt15")).huntOff === true && !(await tags(p)).length, "⑦⑧ off: " + JSON.stringify(await tags(p)));
+  ok(!("round" in (await job(p, "j1"))) && (await job(p, "j1")).fuyo === true, "② each minute; ⑦'s tick kept");
+  await p.click("#bt15HuntChk"); await p.waitForTimeout(300);
+  ok((await setting(p, "bt15")).taxChk === true && (await setting(p, "bt15")).huntOff === true && !(await tags(p)).length, "⑧ off (⑦'s taxChk kept, nothing sent): " + JSON.stringify(await tags(p)));
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   ok((await txt(p, '#shiftList li[data-shift="c2"]')).includes("4,896 円") && !(await p.$("#jobSum .bt15-notes")), "② the 11/9 shift: " + (await txt(p, '#shiftList li[data-shift="c2"]')));
-  ok((await txt(p, "#bt15Tax")).includes("扶養控除等申告書は、1か所にしか出せません。"), "⑦ two of them: " + (await txt(p, "#bt15Tax")));
   // ⑧ the interview in the calendar; パン屋 in, 採用, made a job
   await p.click("#bt15Hunt summary"); await p.waitForTimeout(300);
   await p.click('#bt15HuntBody li[data-hunt="h1"] .btn.ghost'); await p.waitForTimeout(600);

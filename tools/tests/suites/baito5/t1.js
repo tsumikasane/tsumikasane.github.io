@@ -1,4 +1,4 @@
-// バイト その5 ①②③⑤⑥⑦⑧⑩ and ④⑤ in 次のバイト: what is shown (⑨ は使う人が消した: 2026-11-18)
+// バイト その5 ①②③⑤⑥⑦⑩ and ④⑤ in 次のバイト: what is shown (⑧ 勤務を探す と ⑨ は使う人が消した: 2026-11-18)
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
 const { DATA, today } = require("./data");
@@ -29,14 +29,7 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   // ⑦ the weeks: 12, this one 11/22〜 with 5 時間, the limit at 20
   const wk = await p.evaluate(() => ({ n: document.querySelectorAll("#bt5Weeks .bt5-weeks > div").length, label: document.querySelector("#bt5Weeks .bt5-weeks").getAttribute("aria-label"), limit: !!document.querySelector("#bt5Weeks .bt5-limit"), hidden: document.getElementById("bt5Weeks").hidden }));
   ok(!wk.hidden && wk.n === 12 && wk.label.includes("11/22の週 5時間") && wk.label.includes("11/1の週 5時間") && wk.limit, "⑦ " + JSON.stringify(wk));
-  // ⑧ 勤務を探す
-  await p.click("#bt5Find summary"); await p.waitForTimeout(300);
-  const find = async (q) => { await p.fill("#bt5FindText", q); await p.waitForTimeout(200); return txt(p, "#bt5FindSay"); };
-  ok((await find("研修")).startsWith("1 件") && (await txt(p, "#bt5FindList")).includes("11/16"), "⑧ 研修");
-  ok((await find("月")).startsWith("3 件"), "⑧ 月曜: " + (await find("月")));
-  ok((await find("11/9")).startsWith("1 件"), "⑧ 11/9");
-  ok((await find("10月 17:00")).startsWith("2 件"), "⑧ 10月 17:00: " + (await find("10月 17:00")));
-  ok((await find("あいう")) === "見つかりませんでした。", "⑧ none");
+  ok(!(await p.$("#bt5Find")), "⑧ 勤務を探す: gone");
   // ⑩ 2026 年: 10月分 10,000 + 11月分 27,500
   const yr = await txt(p, "#bt5Year");
   ok(yr.includes("2026年のバイトのまとめ") && yr.includes("37,500 円") && /30\s時間/.test(yr) && /6\s回/.test(yr), "⑩ " + yr);

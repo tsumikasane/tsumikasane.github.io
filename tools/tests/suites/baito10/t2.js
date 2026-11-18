@@ -51,11 +51,9 @@ const shift = async (p, id) => (await ls(p, "shifts")).find((x) => x.id === id);
   await p.fill("#reShiftUnits", "15"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   ok((await shift(p, "d1")).units === 15, "⑦ kept");
   ok(/出来高 23\s件・\+6,900\s円/.test(await p.evaluate(() => [...document.querySelectorAll("#jobSum .job-block")].find((b) => b.innerText.includes("配達"))?.innerText.replace(/\s+/g, " ") || "")), "⑦ the month again");
-  // ② 田中 pressed: looked for
-  const w = await p.evaluate(() => [...document.querySelectorAll("#bt10With .chip-btn")].map((x) => x.dataset.with));
-  ok(w[0] === "田中" && w.length === 3 && w.includes("鈴木"), "② the names: " + JSON.stringify(w));
-  await p.click('#bt10With .chip-btn[data-with="田中"]'); await p.waitForTimeout(500);
-  ok(await p.evaluate(() => document.getElementById("bt5Find").open) && (await p.inputValue("#bt5FindText")) === "田中" && (await txt(p, "#bt5FindSay")).startsWith("3 件"), "② found: " + (await txt(p, "#bt5FindSay")));
+  // ② the names, 鈴木 too (pressed to look for until 勤務を探す was taken off 2026-11-18)
+  const w = await txt(p, "#bt10With p.bt10-with");
+  ok(w.startsWith("田中 3 回・") && w.includes("鈴木 1 回") && w.split("・").length === 3 && !(await p.$("#bt10With button")), "② the names: " + w);
   // ⑦ ひとことで: 件数
   await p.fill("#bt3QuickText", "11/20 17-20 配達 10件"); await p.waitForTimeout(200);
   ok((await txt(p, "#bt3QuickSay")).includes("・10 件"), "⑦ said: " + (await txt(p, "#bt3QuickSay")));

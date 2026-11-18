@@ -40,8 +40,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   // ①③⑤⑨ the settings
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   await p.click("#bt16CardsBox summary"); await p.waitForTimeout(300);
-  const f = await p.evaluate(() => { const g = (k) => document.querySelector(`#jobForms [data-job="j1"] [data-f="${k}"]`); const c = (id) => document.querySelector(`#bt16Cards [data-card="${id}"]`); return [g("early").value, g("pass").value, document.getElementById("bt16MinWage").value, document.getElementById("bt16TentChk").checked, document.getElementById("bt16PassChk").checked, c("bt2Calc").checked, c("bt6Cal").checked, document.getElementById("bt16CardsHead").textContent, document.querySelectorAll("#bt16Cards [data-card]").length]; });
-  ok(JSON.stringify(f.slice(0, 8)) === JSON.stringify(["10", "2026-11-23", "1100", true, true, false, true, "カードを選ぶ（1 こ しまっています）"]) && f[8] >= 50, "①③⑤⑨ the settings: " + JSON.stringify(f));
+  const f = await p.evaluate(() => { const g = (k) => document.querySelector(`#jobForms [data-job="j1"] [data-f="${k}"]`); const c = (id) => document.querySelector(`#bt16Cards [data-card="${id}"]`); return [g("early").value, g("pass").value, document.getElementById("bt16MinWage").value, document.getElementById("bt16TentChk").checked, document.getElementById("bt16PassChk").checked, c("bt2Calc").checked, c("bt6Cal").checked, document.getElementById("bt16CardsHead").textContent, document.querySelectorAll("#bt16Cards [data-card]").length, [...document.querySelectorAll("#bt16Cards [data-card]")].map((x) => x.dataset.card)]; });
+  ok(JSON.stringify(f.slice(0, 8)) === JSON.stringify(["10", "2026-11-23", "1100", true, true, false, true, "カードを選ぶ（1 こ しまっています）"]) && f[8] >= 40 && !["bt15Tax", "bt6Feel", "bt6Bulk", "bt7Photos", "bt5Find", "bt12Cost", "bt9GensenCard", "bt12Feel"].some((id) => f[9].includes(id)), "①③⑤⑨ the settings: " + JSON.stringify(f));
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

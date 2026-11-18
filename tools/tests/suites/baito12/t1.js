@@ -1,4 +1,4 @@
-// バイト その12 ①③④⑤⑥⑦⑧: what is shown (⑩ と ⑦ のシフト希望は使う人が消した: 2026-11-18)
+// バイト その12 ①⑤⑥⑦⑧: what is shown (⑩ と ⑦ のシフト希望、③ ふりかえりの傾向 と ④ かかったお金 は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8863/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -14,12 +14,7 @@ const row = (p, id) => txt(p, `#shiftList li[data-shift="${id}"]`);
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
   // ⑤ 次のバイト: both
   ok((await txt(p, "#bt3Next .bt12-acts")) === "遅れる連絡 休む連絡", "⑤ " + (await txt(p, "#bt3Next .bt12-acts")));
-  // ③ ふりかえりの傾向
-  const fl = await txt(p, "#bt12Feel");
-  ok(fl === "ふりかえりの傾向（この3か月） 6 回：よかった 2・ふつう 1・しんどかった 3 しんどかったが多いのは 金曜（4 回のうち 3 回）・夜の勤務（4 回のうち 3 回）・カフェ（6 回のうち 3 回）", "③ " + fl);
-  // ④ 58,000 − (3,980 + 1,200)
-  const cs = await txt(p, "#bt12Cost");
-  ok(cs === "バイトのためにかかったお金（2026年） バイト代の見込み 58,000 円 − かかったお金 5,180 円 = 差し引き 52,820 円 11/5 黒いくつ 3,980 円 10/12 タクシー 1,200 円 家計簿に入れる（#バイト）", "④ " + cs);
+  ok(!(await p.$("#bt12Feel")) && !(await p.$("#bt12Cost")) && !(await row(p, "f5")).includes("しんどかった"), "③④ gone; no ふりかえり on a row");
   // ⑥⑦⑧ the rows
   ok((await row(p, "c1")).includes("変更あり（前は 18:00〜22:00）"), "⑥ " + (await row(p, "c1")));
   ok((await row(p, "w1")).includes("カフェの定休日（水曜）の勤務") && (await row(p, "h1")).includes("カフェの定休日（祝日）の勤務") && !(await row(p, "n1")).includes("定休日") && !(await row(p, "s1")).includes("定休日"), "⑦ the rows");

@@ -1,4 +1,4 @@
-// バイト その6 ②③④⑤⑥⑦⑧⑨: what is typed in
+// バイト その6 ③④⑤⑥⑦⑧: what is typed in (② 文字からまとめて入れる と ⑨ ふりかえり は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8866/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -27,25 +27,16 @@ const setting = async (p, id) => (await ls(p, "settings")).find((s) => s.id === 
   await p.fill("#shiftDate", "2026-11-29"); await p.fill("#shiftStart", "10:00"); await p.fill("#shiftEnd", "14:00"); await p.evaluate(() => { document.getElementById("shiftTent").checked = true; }); // (the toast may lie over it)
   await p.locator('#shiftForm button[type="submit"]').click(); await p.waitForTimeout(500);
   ok((await ls(p, "shifts")).some((x) => x.date === "2026-11-29" && x.tentative === true), "⑧ the form's 仮");
-  // ⑧⑨ in the sheet
+  // ⑧ in the sheet (⑨ its ふりかえり no more there)
   await p.click('#shiftList [data-edit="n1"]'); await p.waitForTimeout(500);
-  await p.evaluate(() => { document.getElementById("reShiftTent").checked = true; }); await p.selectOption("#reShiftFeel", "good"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
+  ok(!(await p.$("#reShiftFeel")), "⑨ no ふりかえり in the sheet");
+  await p.evaluate(() => { document.getElementById("reShiftTent").checked = true; }); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   let n1 = (await ls(p, "shifts")).find((x) => x.id === "n1");
-  ok(n1.tentative === true && n1.feel === "good", "⑧⑨ the sheet: " + JSON.stringify(n1));
+  ok(n1.tentative === true, "⑧ the sheet: " + JSON.stringify(n1));
   await p.click('#shiftList [data-edit="n1"]'); await p.waitForTimeout(500);
-  await p.evaluate(() => { document.getElementById("reShiftTent").checked = false; }); await p.selectOption("#reShiftFeel", ""); await p.locator("#recSave").click(); await p.waitForTimeout(600);
+  await p.evaluate(() => { document.getElementById("reShiftTent").checked = false; }); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   n1 = (await ls(p, "shifts")).find((x) => x.id === "n1");
-  ok(!("tentative" in n1) && !("feel" in n1), "⑧⑨ taken off");
-  // ② lines of words: the month, days alone, a pattern, 仮; one not read, one there already
-  await p.click("#bt6Bulk summary"); await p.waitForTimeout(300);
-  await p.fill("#bt6BulkText", "12月のシフト\n1(火) 17:00-22:00\n3(木) 早番\n12/6 10-15 休憩45 仮\nよろしくお願いします\n11/2 17-22");
-  await p.waitForTimeout(300);
-  const out = await p.evaluate(() => [...document.querySelectorAll("#bt6BulkOut li")].map((li) => li.className + "|" + li.innerText.replace(/\s+/g, " ")));
-  ok(out.length === 5 && out[0].includes("12/1（火） 17:00〜22:00") && out[1].includes("12/3（木） 09:00〜14:00・休憩 30分") && out[2].includes("12/6（日） 10:00〜15:00・休憩 45分・仮") && out[3].startsWith("bad|") && out[4].startsWith("dup|"), "② read: " + JSON.stringify(out));
-  ok(/^3\s件を入れる（約 [\d,]+\s円）$/.test(await p.textContent("#bt6BulkGo")), "② the button: " + (await p.textContent("#bt6BulkGo")));
-  await p.click("#bt6BulkGo"); await p.waitForTimeout(500);
-  const dec = (await ls(p, "shifts")).filter((x) => x.date >= "2026-12-01" && x.date <= "2026-12-06").sort((a, c) => a.date.localeCompare(c.date));
-  ok(dec.length === 3 && dec[0].start === "17:00" && dec[1].rest === 30 && dec[1].start === "09:00" && dec[2].rest === 45 && dec[2].tentative === true, "② put in: " + JSON.stringify(dec.map((x) => [x.date, x.start, x.end, x.rest, x.tentative])));
+  ok(!("tentative" in n1), "⑧ taken off");
   // ⑦ 退勤のつけ忘れ: 出勤 at 11:00 with no shift today → 20:00
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   await p.evaluate(() => { const c = document.getElementById("bt6OutOn"); c.checked = true; c.dispatchEvent(new Event("change")); }); await p.waitForTimeout(300);

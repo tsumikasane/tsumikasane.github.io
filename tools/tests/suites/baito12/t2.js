@@ -1,4 +1,4 @@
-// バイト その12 ①②③⑤⑥⑦⑧⑨: what is pressed and typed (⑩ と ⑦ のシフト希望は使う人が消した: 2026-11-18)
+// バイト その12 ①②⑤⑥⑦⑧⑨: what is pressed and typed (⑩ と ⑦ のシフト希望、③ ふりかえり は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8863/";
 const fs = require("fs");
 const { chromium } = require("playwright");
@@ -45,12 +45,12 @@ const shift = async (p, id) => (await ls(p, "shifts")).find((x) => x.id === id);
   ok(dn === "おつかれさまでした この勤務 5 時間・約 5,300 円 11月分は ここまで 3 回・約 13,900 円（あと 4 回の予定をふくめると 約 35,300 円） 帰る連絡を送る", "② " + dn); // (その13 ⑤ 帰る連絡 too)
   await p.click('#bt2Clock .bt12-done button[aria-label="まとめを閉じる"]'); await p.waitForTimeout(300);
   ok(!(await p.$("#bt2Clock .bt12-done")), "② closed");
-  // ③ しんどい three in a row: f5, f6, n1
-  for (const id of ["f6", "n1"]) {
-    await p.click(`#shiftList [data-edit="${id}"]`); await p.waitForTimeout(500);
-    await p.selectOption("#reShiftFeel", "hard"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
-  }
-  ok((await txt(p, "#bt12Feel")).includes("しんどい勤務が続いています。"), "③ the word: " + (await txt(p, "#bt12Feel")));
+  // ③ ふりかえり, no more in the sheet; one kept on a shift stays as the shift is changed there
+  await p.click('#shiftList [data-edit="f6"]'); await p.waitForTimeout(500);
+  ok(!(await p.$("#reShiftFeel")), "③ none in the sheet");
+  await p.fill("#reShiftMemo", "片づけ"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
+  const f6 = await shift(p, "f6");
+  ok(f6.feel === "good" && f6.memo === "片づけ", "③ its ふりかえり kept: " + JSON.stringify(f6));
   // ⑥ c1 changed again in the sheet: both kept
   await p.click('#shiftList [data-edit="c1"]'); await p.waitForTimeout(500);
   ok((await txt(p, ".bt12-changes")) === "変更の記録 11/20 に変更：前は 11/21（土） 18:00〜22:00", "⑥ in the sheet: " + (await txt(p, ".bt12-changes")));

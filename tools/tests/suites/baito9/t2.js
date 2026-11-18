@@ -1,4 +1,4 @@
-// バイト その9 ②⑦⑩: what is pressed and typed
+// バイト その9 ⑦⑩: what is pressed and typed (② 源泉徴収票 は使う人が消した: 2026-11-18)
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
 const { DATA, today } = require("./data");
@@ -32,16 +32,7 @@ const setting = async (p, id) => (await ls(p, "settings")).find((s) => s.id === 
   ok(!(await ls(p, "shifts")).some((x) => x.id === "o2") && (await ls(p, "shifts")).some((x) => x.id === "a1"), "⑩ deleted");
   await p.click("#bt9Pick"); await p.waitForTimeout(300);
   ok(await p.isHidden("#bt9Sel") && !!(await p.$('#shiftList li[data-shift="a1"] .del, #shiftList li[data-shift="a1"] button[aria-label*="削除"]')), "⑩ done");
-  // ② 源泉徴収票
-  await p.click("#bt9GensenCard summary"); await p.waitForTimeout(300);
-  ok((await txt(p, "#bt9GensenHead")) === "源泉徴収票（2026年）" && (await p.$$("#bt9GensenBody .bt9-gensen")).length === 2, "② both jobs of 2026");
-  await p.fill('#bt9GensenBody [data-key="2026|j1"] [data-g="pay"]', "20000"); await p.fill('#bt9GensenBody [data-key="2026|j1"] [data-g="tax"]', "300");
-  await p.dispatchEvent('#bt9GensenBody [data-key="2026|j1"] [data-g="tax"]', "change"); await p.waitForTimeout(400);
-  const g = (await setting(p, "bt9Gensen")).items["2026|j1"];
-  ok(g && g.pay === 20000 && g.tax === 300, "② kept: " + JSON.stringify(g));
-  await p.click("#bt9GensenCard summary"); await p.click("#bt9GensenCard summary"); await p.waitForTimeout(300);
-  const gt = await txt(p, '#bt9GensenBody [data-key="2026|j1"]');
-  ok(/このアプリの見込み [\d,]+\s円（支払金額との差 [+−][\d,]+\s円）/.test(gt) && gt.includes("もどることがあります"), "② against the year: " + gt);
+  ok(!(await p.$("#bt9GensenCard")), "② 源泉徴収票: gone");
   // ⑦ やめた: undone for 塾; カフェ asked first
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   ok((await txt(p, '#jobForms [data-job="j2"] .bt9-end')) === "やめたのを取り消す（11/10にやめた）", "⑦ 塾's");
