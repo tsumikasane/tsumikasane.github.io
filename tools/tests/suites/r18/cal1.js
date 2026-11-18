@@ -83,7 +83,7 @@ const closeSheet = async (p) => { await p.keyboard.press("Escape"); await p.wait
 
   // ② a plan from a few words
   await p.locator("#calAdd").click(); await p.waitForTimeout(500);
-  ok(await txt(p, "#planOften") === "よく使う ジム 19:00〜20:00", "③ よく使う in the new plan's form");
+  ok(!(await p.$("#planOften")) && !(await txt(p, "#planView")).includes("よく使う"), "③ no よく使う in the new plan's form (taken out at the user's call, 2026-11-18)");
   const cases = [
     ["あした 15時 歯医者", "11月11日（水） 15:00 「歯医者」にする", ["2026-11-11", "15:00", "16:00", "歯医者"]],
     ["金曜18:00-22:00バイト", "11月13日（金） 18:00〜22:00 「バイト」にする", ["2026-11-13", "18:00", "22:00", "バイト"]],
@@ -105,8 +105,6 @@ const closeSheet = async (p) => { await p.keyboard.press("Escape"); await p.wait
   await p.locator("#planTitle").fill("歯医者"); await p.waitForTimeout(120);
   ok(await p.isHidden("#planParse"), "② a name alone: nothing offered");
   await p.locator("#planTitle").fill(""); await p.waitForTimeout(120);
-  await p.locator("#planOften button").click(); await p.waitForTimeout(150);
-  ok(await p.inputValue("#planTitle") === "ジム" && await p.inputValue("#planTime") === "19:00" && await p.inputValue("#planPlace") === "駅前ジム" && await p.isHidden("#planOften"), "③ the form filled from よく使う");
   await closeSheet(p);
   await p.evaluate(() => { document.querySelector("#planTitle").value = ""; });
 

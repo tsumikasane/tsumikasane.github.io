@@ -103,15 +103,15 @@ let b;
   ok((await txt(p, "#planBusy")) === "この日は予定が合計 9 時間 30 分になります（目安 8 時間）", "⑥ the form says so", await txt(p, "#planBusy"));
   await closeSheet(p);
 
-  // ⑧ よく使う tidied
+  // ⑧ よく使う tidied: its 整理 in the new plan's form went with that よく使う (the user's call, 2026-11-18); one left out
+  // before stays listed in the gear, to bring back
   await p.click("#calAdd"); await p.waitForTimeout(700);
-  ok((await txt(p, "#planOften")).includes("ジム"), "⑧ ジム in よく使う");
-  await p.click("#planOftenTool .cal9-often-edit"); await p.waitForTimeout(200);
-  await p.locator("#planOften .cal9-often-x", { hasText: "ジム" }).click(); await p.waitForTimeout(500);
-  ok((await setting(p, "calendar")).oftenHide?.length === 1 && await p.isHidden("#planOften"), "⑧ left out");
+  ok(!(await p.$("#planOften")) && !(await p.$("#planOftenTool")) && !(await txt(p, "#planView")).includes("よく使う"), "⑧ no よく使う, no 整理 in the new plan's form");
   await closeSheet(p);
+  await p.evaluate((P) => { const st = JSON.parse(localStorage.getItem(P + "settings") || "[]"); const c = st.find((x) => x.id === "calendar"); c.oftenHide = ["ジム\u000118:00\u000119:00\u0001"]; c.updatedAt = Date.now(); localStorage.setItem(P + "settings", JSON.stringify(st)); }, P);
+  await p.reload(); await p.waitForTimeout(1200);
   await p.click("#calSettings"); await p.waitForTimeout(700);
-  ok((await txt(p, "#cal9OftenBack")).includes("ジム"), "⑧ in the gear");
+  ok((await txt(p, "#cal9OftenBack")).includes("ジム"), "⑧ one left out before: in the gear");
   await p.locator("#cal9OftenBack .link-btn", { hasText: "戻す" }).click(); await p.waitForTimeout(400);
   ok(!(await setting(p, "calendar")).oftenHide?.length, "⑧ 戻す");
   await closeSheet(p);

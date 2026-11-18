@@ -3167,10 +3167,9 @@ form.add .memo-area { display: none; }
 .tg-ghost .tm { font-size: calc(1rem - 5px); line-height: 1.25; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tg-free { position: absolute; left: 1px; right: 1px; display: block; margin: 0; padding: 2px 4px; overflow: hidden; border: 0; border-radius: 4px; background: color-mix(in srgb, var(--accent) 7%, transparent); color: var(--accent); font: inherit; font-size: calc(1rem - 6px); line-height: 1.25; text-align: start; cursor: pointer; }
 .tg-free.one { left: 2px; right: 2px; border: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 6px; background: color-mix(in srgb, var(--accent) 5%, transparent); }  /* (日: a band with its length) */
-/* ③ the plans made often, ② what the words say: in the form's card on its grey, as chips there are */
+/* ③ the plans made often (under a day's list), ② what the words say: in the form's card on its grey, as chips there are */
 .day-often { margin: var(--space-2) 0 0; }
-.plan-nl .chip-btn, .plan-often .chip-btn { background: var(--fill); box-shadow: none; }
-.plan-often { margin: 0; }
+.plan-nl .chip-btn { background: var(--fill); box-shadow: none; }
 .nl-pick { min-height: 36px; padding-block: 4px; text-align: start; }
 /* ⑧ the hours by label: a name, a bar in its label's colour, the hours */
 .cal-sum .row-between { margin-bottom: 4px; }
@@ -4911,11 +4910,6 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
 .cal9-quiet input { flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); }
 .cal9-quiet-acts { display: flex; align-items: center; gap: 14px; }
 .cal5-hours.cal9-over { color: var(--warn); }
-/* ⑧ よく使う, left out at a press */
-.cal9-often-x { display: inline-flex; align-items: center; gap: 4px; background: color-mix(in srgb, var(--warn) 10%, var(--surface)); box-shadow: none; color: var(--fg); }
-.cal9-often-tool[hidden] { display: none; }
-.cal9-often-tool { margin-top: -6px; }
-.cal9-often-edit { min-height: 32px; font-size: var(--t-sub); }
 /* カレンダー その10 ①〜⑩ (2026-11-14). ① the month's weeks under 毎月（第N曜日）, as the weekdays are under 毎週 */
 .cal10-nths[hidden] { display: none; }
 /* ② この回のメモ */
@@ -11315,9 +11309,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     <div class="sheet-view" id="planView" hidden>
       <form class="add" id="planForm" autocomplete="off">
         <input type="text" id="planTitle" class="full" placeholder="新しい予定" aria-label="予定の内容" maxlength="100" required>
-        <!-- ② what the words typed say (あした 15時 歯医者), put in at a press; ③ the plans made often, while the name is empty -->
+        <!-- ② what the words typed say (あした 15時 歯医者), put in at a press (③ よく使う here: taken out at the user's call,
+             2026-11-18) -->
         <div class="full plan-nl" id="planParse" hidden></div>
-        <div class="full ex-often plan-often" id="planOften" hidden></div>
         <!-- 終日予定, 開始 and 終了 as the iPhone's カレンダー has them (buildWhen), over the plan's own fields under them: its
              first and last days and its start and end times (the user's call). The repeat's end once it repeats -->
         <div class="full when" id="planWhen"></div>
@@ -19405,7 +19399,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function openPlanFromDay() {
     if (!$("planTitle").value.trim()) { clearPlanForm(); freshPlanTimes(); }
     $("planDate").value = calDay; whenOpen.plan = null; syncPlanRows("plan"); remember("plan");
-    planNew = true; planFromDay = true; renderPlanLabels(); syncSheetHead(); syncPlanSave(); renderPlanParse(); renderPlanOften();
+    planNew = true; planFromDay = true; renderPlanLabels(); syncSheetHead(); syncPlanSave(); renderPlanParse();
     sheetEl.scrollTop = 0;
     $("planTitle").focus();
   }
@@ -19730,7 +19724,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     resetSheet();
     if (!$("planTitle").value.trim()) { clearPlanForm(); $("planDate").value = planDay(); freshPlanTimes(); syncPlanRows("plan"); remember("plan"); }
     whenOpen.plan = null; syncWhen("plan");
-    planNew = true; renderPlanLabels(); syncSheetHead(); syncPlanSave(); renderPlanParse(); renderPlanOften();
+    planNew = true; renderPlanLabels(); syncSheetHead(); syncPlanSave(); renderPlanParse();
     presentSheet(byKey, "plan", $("planTitle"));
   }
   // a new ToDo: its text ready to type in; what was typed stays if the sheet is pulled away, as for a plan. One begun
@@ -21633,7 +21627,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("planTime").value = hm; $("planEndTime").value = atMin(Math.min(minOf(hm) + cal17Len(), 23 * 60 + 59)); // (カレンダー その17 ①)
     syncPlanRows("plan"); remember("plan");
     whenOpen.plan = null; syncWhen("plan");
-    planNew = true; renderPlanLabels(); syncSheetHead(); syncPlanSave(); renderPlanParse(); renderPlanOften();
+    planNew = true; renderPlanLabels(); syncSheetHead(); syncPlanSave(); renderPlanParse();
     presentSheet(false, "plan", $("planTitle"));
   }
   // a plan pressed in 週 or 日: its edit form straight away, in the sheet of the day it was pressed on; 保存, キャンセル and
@@ -21949,14 +21943,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if (end <= p.time) $("planEndDate").value = addDays($("planDate").value, 1); // (past midnight: the next day's)
     } else if (p.date) { $("planTime").value = ""; $("planEndTime").value = ""; }
     whenOpen.plan = null; syncPlanRows("plan"); syncPlanSave();
-    renderPlanParse(); renderPlanOften();
+    renderPlanParse();
     $("planTitle").focus();
   }
-  $("planTitle").addEventListener("input", () => { renderPlanParse(); renderPlanOften(); });
+  $("planTitle").addEventListener("input", () => { renderPlanParse(); });
 
   // ③ the plans made often: the same name, times and label two times or more in the last half year (a repeat, made
-  // once, not among them), the most made first. In a day's sheet a press adds one there (with 元に戻す); in a new plan's
-  // form, while its name is empty, a press fills the form
+  // once, not among them), the most made first. In a day's sheet a press adds one there (with 元に戻す) (in a new plan's
+  // form, where a press filled the form: taken out at the user's call, 2026-11-18, tools/REMOVED.md)
   function oftenPlans() {
     const since = addDays(todayKey, -183), by = new Map();
     for (const e of events.items) {
@@ -21979,12 +21973,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     act(async () => { id = await events.add(planFrom(e, d)); });
     flash(`「${e.title}」を${fmtMDW(d)}に追加しました`, () => { if (id) takeBack(events, [id]); flash("元に戻しました"); });
   }
-  function renderPlanOften() {
-    const box = $("planOften"), list = planNew && !planCopy && !$("planTitle").value.trim() ? oftenPlans() : [];
-    box.hidden = !list.length;
-    setChildren(box, list.length ? [el("span", { class: "often-head" }, "よく使う"), ...list.map((e) => (calNine && cal9OftenEdit ? cal9OftenChip(e) : oftenChip(e, `${e.title}（${oftenWhen(e)}）を入れる`, () => fillOften(e))))] : null);
-    if (calNine) cal9SyncOftenTool(); // (その9 ⑧ 整理, under it)
-  }
+  // a new plan's form filled from another one (前と同じにする, カレンダー その6 ⑤): its name, times, place, label and the rest
   function fillOften(e) {
     $("planTitle").value = e.title;
     $("planEndDate").value = "";
@@ -21995,7 +21984,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     cal3FillForm("plan", e, true); // (カレンダー その3 ⑥⑩: its alarms kept, its place on the map)
     planLabelChoice = labelOf(e) ? e.labelId : ""; renderPlanLabels();
     whenOpen.plan = null; syncPlanRows("plan"); syncPlanSave();
-    renderPlanParse(); renderPlanOften();
+    renderPlanParse();
   }
 
   // ⑥ the free hours: the gaps of 30 minutes or more between the plans with a time and the shifts, within the hours set
@@ -25639,7 +25628,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月18日 17:03"; // 31cf3ed3 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月18日 17:54"; // 503bc0d7 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -35753,7 +35742,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑤ a new plan whose name is one put in before: 前と同じにする fills in that one's time, place, label and the rest (its day
   // kept), as よく使う does. Shown while something there differs
   const cal6Same = el("div", { class: "full cal6-same", id: "planSame", hidden: true });
-  $("planOften").after(cal6Same);
+  $("planParse").after(cal6Same);
   function cal6SameOf(title) {
     const k = foldText(oneLine(title));
     if (!k) return null;
@@ -36548,11 +36537,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ---------- カレンダー その9 ①〜⑩ (the user's calls, 2026-11-14): a repeat every few days, weeks, months or years (①),
   // plans from lines of words at once (②), the people (③) and the places (④) of the plans, a while without 予定's
-  // notifications (⑤), a day's hours kept to a limit (⑥), the plans deleted lately (⑦), よく使う tidied (⑧), a week as a
-  // picture (⑨), and a day's own records in its sheet (⑩) ----------
+  // notifications (⑤), a day's hours kept to a limit (⑥), the plans deleted lately (⑦), よく使う tidied (⑧; its 整理 in the new
+  // plan's form went with that よく使う, 2026-11-18), a week as a picture (⑨), and a day's own records in its sheet (⑩) ----------
   // (what was there calls in here; before this part has run, as the page opens, these do nothing: those it calls are
   // function declarations, there from the start)
-  var calNine = false, cal9BulkOpen = false, cal9BulkFor = null, cal9OftenEdit = false;
+  var calNine = false, cal9BulkOpen = false, cal9BulkFor = null;
 
   // ① 間隔を決める… in the forms' 繰り返し: every 3 days, 3 weeks, 2 months, 2 years (ToDo その8's keys: every3w); the turns
   // counted from the plan's first day (turnStarts), in the lists as 3週間ごと, and .ics out and in with its INTERVAL
@@ -36755,28 +36744,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   const cal9TrashN = () => trashItems().filter((t) => t.store === "events").length;
 
-  // ⑧ よく使う, tidied: 整理 in the new plan's よく使う, each one × to leave out (元に戻す), 終わる; those left out come
-  // back from the gear
+  // ⑧ よく使う, tidied: those left out stay out of the day's よく使う, and come back from the gear (整理, in the new plan's
+  // よく使う, went with it at the user's call, 2026-11-18)
   const cal9OftenKey = (e) => [foldText(e.title), e.time || "", e.endTime || "", labelOf(e) ? e.labelId : ""].join("\u0001");
   const cal9Hidden = () => (calNine && Array.isArray(calSet().oftenHide) ? calSet().oftenHide.filter((x) => typeof x === "string") : []);
   function cal9OftenHidden(e) { return calNine && cal9Hidden().includes(cal9OftenKey(e)); }
-  // (under よく使う, not in it: its chips alone are in that row)
-  const cal9OftenToolBox = el("div", { class: "full cal9-often-tool", id: "planOftenTool", hidden: true });
-  $("planOften").after(cal9OftenToolBox);
-  function cal9SyncOftenTool() {
-    cal9OftenToolBox.hidden = $("planOften").hidden;
-    setChildren(cal9OftenToolBox, cal9OftenToolBox.hidden ? null : el("button", { type: "button", class: "link-btn cal9-often-edit", "aria-pressed": String(cal9OftenEdit),
-      onclick: () => { cal9OftenEdit = !cal9OftenEdit; renderPlanOften(); $("planOftenTool").querySelector("button")?.focus(); } }, cal9OftenEdit ? "整理を終わる" : "よく使うを整理"));
-  }
-  function cal9OftenChip(e) {
-    return el("button", { type: "button", class: "chip-btn cal9-often-x", "aria-label": `「${e.title}」をよく使うに出さない`, onclick: () => {
-      const before = cal9Hidden();
-      saveCalSet({ oftenHide: [...before, cal9OftenKey(e)].slice(-50) });
-      renderPlanOften();
-      flash(`「${e.title}」をよく使うに出さないようにしました`, () => { saveCalSet({ oftenHide: before }); renderPlanOften(); });
-    } }, e.title, icon("close", 14));
-  }
-  for (const id of ["calAdd", "dayAdd"]) $(id).addEventListener("click", () => { cal9OftenEdit = false; }, true); // (a new plan's form: よく使う as it is)
   const cal9OftenBack = el("div", { class: "cal9-often-back", id: "cal9OftenBack" });
   $("cal9MaxForm").nextElementSibling.after(cal9OftenBack);
   function renderCal9OftenBack() {
