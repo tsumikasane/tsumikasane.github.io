@@ -89,12 +89,9 @@ let b;
   ok(sh && sh.text.split("\n")[0] === "空いている時間（2 時間以上・土日・祝日・夜）" && sh.text.split("\n").slice(1).every((l) => /（[土日]）|11\/23/.test(l)), "③ what is sent says so", sh);
   await closeSheet(p);
 
-  // ⑩ 美術館 into 11/17's free hours
+  // ⑩ 日にち未定の予定を空き時間に: taken out with the day's 空き時間 (the user's call, 2026-11-18, tools/REMOVED.md)
   await openDayOf(p, "11月17日");
-  await p.click('.cal13-some [data-some="s1"]'); await p.waitForTimeout(700);
-  ok((await p.inputValue("#planTitle")) === "美術館" && (await p.inputValue("#planDate")) === "2026-11-17" && (await p.inputValue("#planTime")) === "09:00", "⑩ the form at the first free hour", [await p.inputValue("#planTitle"), await p.inputValue("#planTime")]);
-  await p.click("#planSave"); await p.waitForTimeout(900);
-  ok((await ls(p, "events")).some((e) => e.title === "美術館" && e.date === "2026-11-17") && !((await setting(p, "calendar")).someday || []).length, "⑩ added, and gone from 日にち未定");
+  ok(!(await p.$(".cal13-some")) && !(await p.$("#dayFree")), "⑩ no free hours, no 日にち未定 to put in them");
   await closeSheet(p);
 
   // ④ 家賃 on the weekday before; a new one on the weekday after

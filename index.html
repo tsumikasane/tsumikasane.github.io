@@ -3165,8 +3165,6 @@ form.add .memo-area { display: none; }
 .tg-ghost { position: absolute; z-index: 5; display: flex; flex-direction: column; min-height: 14px; padding: 1px 4px; overflow: hidden; border-radius: 6px; border-inline-start: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 24%, var(--surface)); box-shadow: 0 8px 20px rgba(0, 0, 0, .25); pointer-events: none; }
 .tg-ghost .t { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: calc(1rem - 5px); line-height: 1.25; font-weight: 600; }
 .tg-ghost .tm { font-size: calc(1rem - 5px); line-height: 1.25; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tg-free { position: absolute; left: 1px; right: 1px; display: block; margin: 0; padding: 2px 4px; overflow: hidden; border: 0; border-radius: 4px; background: color-mix(in srgb, var(--accent) 7%, transparent); color: var(--accent); font: inherit; font-size: calc(1rem - 6px); line-height: 1.25; text-align: start; cursor: pointer; }
-.tg-free.one { left: 2px; right: 2px; border: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 6px; background: color-mix(in srgb, var(--accent) 5%, transparent); }  /* (日: a band with its length) */
 /* ③ the plans made often (under a day's list), ② what the words say: in the form's card on its grey, as chips there are */
 .day-often { margin: var(--space-2) 0 0; }
 .plan-nl .chip-btn { background: var(--fill); box-shadow: none; }
@@ -9800,10 +9798,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="label-tools"><button type="button" class="link-btn" id="dayAdd"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>予定を追加</button><button type="button" class="link-btn" id="dayTodoAdd"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>ToDoを追加</button><button type="button" class="link-btn" id="dayShiftAdd" hidden><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>シフトを追加</button><button type="button" class="link-btn" id="dayShare" aria-haspopup="true"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-export"/></svg>文字で送る</button></div>
         <div class="cal-share-pick" id="dayShareBox" role="group" aria-label="文字で送るもの" hidden></div>
       </div>
-      <!-- ③ the plans made often, one more on this day at a press; ⑥ the day's free hours, a plan there at a press (the
-           user's calls, 2026-11-10) -->
+      <!-- ③ the plans made often, one more on this day at a press (the user's call, 2026-11-10; ⑥ the day's free hours under
+           it taken out at the user's call, 2026-11-18) -->
       <div class="ex-often day-often" id="dayOften" hidden></div>
-      <div id="dayFree" hidden></div>
     </div>
     <div class="sheet-view" id="editView" hidden>
       <!-- (カレンダー その2) ④ a 仮 plan's days to pick from, ⑨ its 持ち物・準備 for this turn, ⑩ how it went -->
@@ -9868,15 +9865,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <button type="button" data-ws="0" aria-pressed="true">日曜</button>
           <button type="button" data-ws="1" aria-pressed="false">月曜</button>
         </div>
-        <!-- ⑥⑦ what the calendar shows besides the plans (the user's calls, 2026-11-10): the free hours (and the hours they are
-             looked for in), the other records' marks. (⑤ the weather on its days taken off, 2026-11-12: きょう's 天気 has the week) -->
+        <!-- ⑥⑦ what the calendar shows besides the plans (the user's calls, 2026-11-10): the other records' marks, and the
+             hours free time is looked for in (the free hours shown, with their switch, taken out at the user's call, 2026-11-18).
+             (⑤ the weather on its days taken off, 2026-11-12: きょう's 天気 has the week) -->
         <h3 class="group-head">表示</h3>
         <form class="add" id="calShowForm" autocomplete="off" onsubmit="return false">
           <label class="flabel" for="calMarks">記録のしるし</label>
           <div class="ffield"><input type="checkbox" id="calMarks" class="switch" role="switch"></div>
-          <label class="flabel" for="calFreeOn">空き時間</label>
-          <div class="ffield"><input type="checkbox" id="calFreeOn" class="switch" role="switch"></div>
-          <label class="flabel" for="calFreeFrom">探す時間帯</label>
+          <label class="flabel" for="calFreeFrom">空き時間の時間帯</label>
           <div class="ffield cal-free-hours"><select id="calFreeFrom" aria-label="空き時間を探す時間帯の始まり"></select><span class="unit">〜</span><select id="calFreeTo" aria-label="空き時間を探す時間帯の終わり"></select></div>
         </form>
         <p class="group-foot" id="calShowFoot"></p>
@@ -21579,10 +21575,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         return { t, s, end: Math.max(end, s + 30) };
       }), ...(shiftBy.get(d) || []).map((p) => ({ p, s: p.s, end: Math.max(p.end, p.s + 30) }))];
       layoutCols(blocks);
-      const free = freeSlots(d, turnsBy.get(d) || [], shiftBy.get(d) || []); // ⑥
       return el("div", { class: "tg-col" + (d === todayKey && n > 1 ? " today" : ""), "data-day": d, role: "group", "aria-label": fmtMDW(d) + (blocks.length ? "" : "、予定なし") }, cal17Bands(d), // (カレンダー その17 ④ 時限の帯)
-        free.map((sl) => el("button", { type: "button", class: "tg-free" + (n === 1 ? " one" : ""), style: `top: ${sl[0] / 14.4}%; height: ${(sl[1] - sl[0]) / 14.4}%`,
-          "aria-label": `${fmtMDW(d)} ${slotText(sl)} は空いています。ここに予定を追加`, onclick: () => openNewPlanAt(d, atMin(sl[0])) }, n === 1 && sl[1] - sl[0] >= 45 ? el("span", {}, `空き ${durText(sl[1] - sl[0])}`) : null)),
         calTravelBands(blocks, n), cal8BackBands(blocks, n), // (カレンダー その2 ②, その8 ③ 帰り)
         blocks.map((x) => {
           if (x.p) {
@@ -21775,18 +21768,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     if (keptNote) list.append(keptNote);
   }
-  // ③⑥① under a day's list: the plans made often (one more there at a press), the free hours (a plan there at a press),
-  // and シフトを追加 once a job is set
+  // ③① under a day's list: the plans made often (one more there at a press), and シフトを追加 once a job is set (⑥, the
+  // free hours, taken out at the user's call, 2026-11-18)
   function renderDayExtras(d, evs) {
     const here = new Set(evs.map((t) => foldText(t.e.title) + "\u0001" + (t.e.time || "")));
     const often = oftenPlans().filter((e) => !here.has(foldText(e.title) + "\u0001" + (e.time || "")));
     $("dayOften").hidden = !often.length;
     setChildren($("dayOften"), often.length ? [el("span", { class: "often-head" }, "よく使う"), ...often.map((e) => oftenChip(e, `${e.title}（${oftenWhen(e)}）を${fmtMDW(d)}に追加`, () => addOftenPlan(e, d)))] : null);
-    const slots = freeSlots(d, evs, shiftsByDay(d, d).get(d) || []);
-    $("dayFree").hidden = !slots.length;
-    setChildren($("dayFree"), slots.length ? [el("h3", { class: "group-head" }, d === todayKey ? "きょうの空き時間" : "空き時間"), el("ul", { class: "list card" }, slots.map((sl) => el("li", { class: "btn-row" },
-      el("button", { type: "button", class: "row-btn nav", "aria-label": `${slotText(sl)}（${durText(sl[1] - sl[0])}）に予定を追加`, onclick: () => openPlanFromDayAt(sl[0], sl[1]) },
-        el("span", { class: "body" }, el("span", { class: "text" }, slotText(sl))), el("span", { class: "num" }, durText(sl[1] - sl[0])), el("span", { class: "chev" }, icon("plus", 16)))))), cal13SomeRow(d, slots)] : null); // (その13 ⑩ 日にち未定の予定を入れる)
     $("dayShiftAdd").hidden = !jobList().length;
   }
   // a plan's row in a list: its time, its title, and under it the label, the days a run covers (10/30〜11/2) and the
@@ -21988,17 +21976,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ⑥ the free hours: the gaps of 30 minutes or more between the plans with a time and the shifts, within the hours set
-  // (8:00〜22:00 at first); none on a day gone by, today's from now. In 週 and 日 a band each (in 日 with its length), a
-  // press making a plan there; in a day's sheet a list
+  // (8:00〜22:00 at first); none on a day gone by, today's from now. What looks for them (空き時間を探す, 次の空き時間, ToDo
+  // and 目標) has them; the calendar shows them no more (its bands in 週 and 日 and the list in a day's sheet, with their
+  // switch, taken out at the user's call, 2026-11-18; the callers' true, from when they were shown or not, is no more read)
   function freeHours() {
     const s = calSet(), ok = (t) => /^([01]\d|2[0-4]):[0-5]\d$/.test(t || "");
-    return { on: s.free !== false, from: ok(s.freeFrom) ? s.freeFrom : "08:00", to: ok(s.freeTo) ? s.freeTo : "22:00" };
+    return { from: ok(s.freeFrom) ? s.freeFrom : "08:00", to: ok(s.freeTo) ? s.freeTo : "22:00" };
   }
-  function freeSlots(d, turns, parts, any = false) {
+  function freeSlots(d, turns, parts) {
     const fh = freeHours();
     let at = minOf(fh.from);
     const hi = minOf(fh.to);
-    if ((!fh.on && !any) || d < todayKey || hi <= at) return []; // (any: ToDo's ④, while they aren't shown on the calendar)
+    if (d < todayKey || hi <= at) return [];
     if (d === todayKey) at = Math.max(at, Math.ceil(nowMinutes() / 15) * 15);
     const busy = [...turns.map(cal18Busy).filter(Boolean), ...parts.map((p) => cal18PadSpan([p.s, p.end]))].sort((a, b) => a[0] - b[0]), out = [];
     for (const [s, e] of busy) {
@@ -22011,12 +22000,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return out;
   }
   const slotText = ([a, b]) => `${atMin(a)}〜${b >= 1440 ? "24:00" : atMin(b)}`;
-  // a free time pressed in a day's sheet: the new plan's form there, at its start, for an hour (or what is left of it)
-  function openPlanFromDayAt(a, b) {
-    openPlanFromDay();
-    $("planTime").value = atMin(a); $("planEndTime").value = atMin(Math.min(a + cal17Len(), b, 23 * 60 + 59)); $("planEndDate").value = "";
-    whenOpen.plan = null; syncPlanRows("plan"); syncPlanSave();
-  }
 
   // ⑦ the day's other records, a dot each in its page's colour (日記, 運動, 勉強, 体重), on the month
   const MARKS = [["journal", "日記", "--c-journal"], ["workout", "運動", "--c-workout"], ["study", "勉強", "--c-study"], ["weight", "体重", "--c-weight"]];
@@ -22087,8 +22070,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑤⑥⑦ the switches, the free hours' span, and what the marks' colours are
   function renderCalShow() {
     const fh = freeHours();
-    $("calMarks").checked = marksOn(); $("calFreeOn").checked = fh.on;
-    for (const [id, v] of [["calFreeFrom", fh.from], ["calFreeTo", fh.to]]) { const f = $(id); if (document.activeElement !== f) f.value = v; f.disabled = !fh.on; }
+    $("calMarks").checked = marksOn();
+    for (const [id, v] of [["calFreeFrom", fh.from], ["calFreeTo", fh.to]]) { const f = $(id); if (document.activeElement !== f) f.value = v; }
     setChildren($("calShowFoot"),
       el("span", { class: "mark-legend" }, el("span", { class: "phrase" }, "記録のしるし："), MARKS.map(([, name, c]) => el("span", { class: "phrase" }, el("i", { style: `--mc: var(${c})` }), name))));
   }
@@ -22096,7 +22079,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   setChildren($("calFreeFrom"), Array.from({ length: 24 }, (_, h) => el("option", { value: `${pad(h)}:00` }, `${h}時`)));
   setChildren($("calFreeTo"), Array.from({ length: 24 }, (_, h) => el("option", { value: `${pad(h + 1)}:00` }, `${h + 1}時`)));
   $("calMarks").addEventListener("change", (ev) => saveCalSet({ marks: ev.target.checked }));
-  $("calFreeOn").addEventListener("change", (ev) => saveCalSet({ free: ev.target.checked }));
   for (const id of ["calFreeFrom", "calFreeTo"]) $(id).addEventListener("change", () => {
     const a = $("calFreeFrom").value, b = $("calFreeTo").value;
     if (/^\d\d:00$/.test(a) && /^\d\d:00$/.test(b) && a < b) saveCalSet({ freeFrom: a, freeTo: b });
@@ -25628,7 +25610,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月18日 17:54"; // 503bc0d7 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月18日 18:15"; // 33342ddf (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -36800,7 +36782,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑩ この日の記録: in a day's sheet (today and before), the day's 日記, 食事, 運動, 体重, 勉強 and 支出 in a line each;
   // pressed, that page on that day
   const cal9RecBox = el("div", { class: "cal9-rec", id: "cal9Rec", hidden: true });
-  $("dayFree").before(cal9RecBox);
+  $("dayOften").after(cal9RecBox);
   function cal9RecRows(d) {
     const rows = [], j = journal.items.find((x) => (x.date || x.id) === d && String(x.text || "").trim());
     if (j) rows.push(["journal", "日記", clip(oneLine(j.text), 40), "--c-journal"]);
@@ -37688,8 +37670,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- カレンダー その13 ①〜⑩ (the user's calls, 2026-11-15): the season's days on the calendar (①), the days the
   // rubbish goes out, with a notification (②), 空き時間を探す on weekdays or weekends, mornings, afternoons or evenings (③),
   // a monthly turn on a weekend or holiday moved to the weekday before or after (④), the term's week (⑤), the links in a
-  // plan's memo (⑥), the plans put in lately (⑦), a plan's photos kept on this device (⑧), the time an all-day plan's
-  // notifications are counted from (⑨), and a plan without a day put in a free hour (⑩) ----------
+  // plan's memo (⑥), the plans put in lately (⑦), a plan's photos kept on this device (⑧), and the time an all-day plan's
+  // notifications are counted from (⑨) (⑩, a plan without a day put in a day's free hour, went with it, 2026-11-18) ----------
   // (what was there calls in here; before this part has run, as the page opens, these do nothing: those it calls are
   // function declarations, there from the start)
   var calThirteen = false;
@@ -37949,22 +37931,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     t.addEventListener("change", () => { if (isHm(t.value)) saveCalSet({ allDayAt: t.value === ALL_DAY_AT ? undefined : t.value }); });
   }
 
-  // ⑩ 空き時間に日にち未定の予定を入れる: under a day's 空き時間, the plans without a day (その5 ⑧), each put in at a press at
-  // the first hour free (of an hour or more), its name in; once added it goes from the list, as there
-  function cal13SomeRow(d, slots) {
-    if (!calThirteen || d < todayKey) return null;
-    const list = cal5Some().slice(0, 6), sl = slots.find(([a, b]) => b - a >= 60) || slots[0];
-    if (!list.length || !sl) return null;
-    return el("div", { class: "cal5-lens cal13-some", role: "group", "aria-label": "日にち未定の予定を空き時間に入れる" }, el("span", { class: "cal5-lens-head" }, `日にち未定の予定を ${atMin(sl[0])} から`),
-      list.map((x) => el("button", { type: "button", class: "chip-btn", "data-some": x.id, "aria-label": `「${x.t}」を${slotText(sl)}に入れる`, onclick: () => cal13SomeIn(x, sl) }, x.t)));
-  }
-  function cal13SomeIn(x, sl) {
-    openPlanFromDayAt(sl[0], sl[1]);
-    const t = $("planTitle");
-    t.value = x.t;
-    t.dispatchEvent(new Event("input", { bubbles: true }));
-    cal5SomeFor = { id: x.id, t: x.t, at: Date.now() };
-  }
+  // ⑩ 空き時間に日にち未定の予定を入れる: taken out with the day's 空き時間 (the user's call, 2026-11-18)
 
   // the forms: ④ (an empty one taken off)
   function cal13FormExtras(f) {
@@ -39480,7 +39447,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑥ カレンダーでできること (the gear, at its end): the calendar's features by where they are, looked for by words
   const CAL18_HELP = [
     ["月・週・日・年", [
-      ["月の表示", "日を押すと、その日の予定・空き時間・記録が開きます。左右にスワイプで前後の月。"],
+      ["月の表示", "日を押すと、その日の予定・記録が開きます。左右にスワイプで前後の月。"],
       ["週・日の表示", "時間の流れで見ます。予定を長押しで動かす、下の端で長さを変える、空いているところを押して予定を入れる。"],
       ["7日・5日・3日・平日", "週の表示の日数。平日はその週の月〜金です。"],
       ["年の表示", "12か月の予定の多さ、大事な予定（★）、誕生日・記念日。"],
@@ -39503,7 +39470,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     ["日のリスト", [
       ["長押しでメニュー", "予定を長押しで、中止・ずらす・複製・文字で送る・削除。"],
       ["まとめて動かす", "この日の予定をまとめて、ほかの日に移す・コピー・中止・時間をずらす。"],
-      ["空き時間", "その日の空き時間。押すとそこに予定を入れます。"],
       ["地図でつなぐ", "その日の予定の場所を、時刻の順に地図で。"],
       ["文字で送る・画像・印刷", "この日・この週・この月の予定、空き時間、この週を画像で、この週を印刷。"],
       ["ひな形・まとめて入れる", "1日・1週間のひな形、文字でまとめて入れる。"],

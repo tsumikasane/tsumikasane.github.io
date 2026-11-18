@@ -56,8 +56,8 @@ const closeSheet = async (p) => { await p.keyboard.press("Escape"); await p.wait
   let day = await txt(p, "#calDayList");
   ok(day.indexOf("授業") < day.indexOf("ゼミ") && day.indexOf("ゼミ") < day.indexOf("コンビニ") && day.includes("17:00〜22:00・5 時間"), "① the day's list: the shift among the plans", day);
   ok(await p.isVisible("#dayShiftAdd"), "① シフトを追加 there (a job is set)");
-  // ⑥ the free hours, from now (8:30)
-  ok(await txt(p, "#dayFree") === "きょうの空き時間 08:30〜10:00 1 時間 30 分 12:00〜13:00 1 時間 14:30〜17:00 2 時間 30 分", "⑥ the day's free hours", await txt(p, "#dayFree"));
+  // ⑥ the free hours: taken out at the user's call (2026-11-18, tools/REMOVED.md)
+  ok(!(await p.$("#dayFree")), "⑥ no free hours in the day's sheet");
   // ③ the plans made often: one more today
   ok(await txt(p, "#dayOften") === "よく使う ジム 19:00〜20:00", "③ よく使う in the day's sheet", await txt(p, "#dayOften"));
   await p.locator("#dayOften button").click(); await p.waitForTimeout(400);
@@ -75,11 +75,7 @@ const closeSheet = async (p) => { await p.keyboard.press("Escape"); await p.wait
   await p.fill("#reStart", "09:00"); await p.fill("#reEnd", "12:00"); await p.fill("#reRest", ""); await p.locator("#recSave").click(); await p.waitForTimeout(400);
   let sh = (await ls(p, "shifts")).find((x) => x.start === "09:00");
   ok(sh && sh.date === today && sh.end === "12:00" && sh.jobId === "j1" && await p.isVisible("#calDayList"), "① added with its job, back to the list", sh);
-  ok(await txt(p, "#dayFree") === "きょうの空き時間 08:30〜09:00 30 分 12:00〜13:00 1 時間 14:30〜17:00 2 時間 30 分 21:00〜22:00 1 時間", "⑥ the shifts (9:00〜12:00 added, 〜21:00 now) out of the free hours", await txt(p, "#dayFree"));
-  // ⑥ a free time pressed: a new plan there
-  await p.locator("#dayFree button").first().click(); await p.waitForTimeout(400);
-  ok(await p.inputValue("#planTime") === "08:30" && await p.inputValue("#planEndTime") === "09:00" && await p.inputValue("#planDate") === today, "⑥ a plan at the free time, to its end", [await p.inputValue("#planTime"), await p.inputValue("#planEndTime")]);
-  await closeSheet(p); await closeSheet(p);
+  await closeSheet(p);
 
   // ② a plan from a few words
   await p.locator("#calAdd").click(); await p.waitForTimeout(500);
@@ -118,17 +114,16 @@ const closeSheet = async (p) => { await p.keyboard.press("Escape"); await p.wait
   ok(sum.startsWith("11/1〜11/30・合計") && sum.includes("大学 8 時間"), "⑧ this month (授業 2 h, ゼミ 4 × 1.5 h)", sum);
   await closeSheet(p);
 
-  // 週: ① the shift blocks, ⑤ the weather under the days, ⑥ the free bands
+  // 週: ① the shift blocks, ⑤ the weather under the days, ⑥ no free bands
   await p.locator('#calViews [data-view="week"]').click(); await p.waitForTimeout(500);
   ok(await p.locator('#tgBody .tg-ev.shift[data-shift="s1"]').count() === 1 && (await p.evaluate(() => [...document.querySelectorAll("#tgBody .tg-ev.shift")].map((x) => x.innerText.replace(/\s+/g, " ")))).includes("コンビニ 〜05:00"), "① 週: the shifts, the part past midnight to its end");
   ok((await p.evaluate(() => [...document.querySelectorAll("#tgHead .wxs")].map((x) => x.textContent))).join(" ") === "", "⑤ 週: no weather under the days (taken out)", await p.evaluate(() => [...document.querySelectorAll("#tgHead .wxs")].map((x) => x.textContent)));
-  ok(await p.locator("#tgBody .tg-free").count() > 4 && await p.locator("#tgBody .tg-free.one").count() === 0, "⑥ 週: the free bands, plain");
+  ok(await p.locator("#tgBody .tg-free").count() === 0, "⑥ 週: no free bands (taken out, 2026-11-18)");
   await p.screenshot({ path: __dirname + "/shots/c-week.png" });
   // 日
   await p.locator('#calViews [data-view="day"]').click(); await p.waitForTimeout(500);
   ok(!(await txt(p, "#tgWx")), "⑤ 日: no weather for the day (taken out)", await txt(p, "#tgWx"));
-  ok((await p.evaluate(() => [...document.querySelectorAll("#tgBody .tg-free.one")].map((x) => x.textContent))).join(",") === ",空き 1 時間,空き 2 時間 30 分,空き 1 時間", "⑥ 日: the free bands, a length on each but the short one",
-    await p.evaluate(() => [...document.querySelectorAll("#tgBody .tg-free.one")].map((x) => x.textContent)));
+  ok(await p.locator("#tgBody .tg-free").count() === 0, "⑥ 日: no free bands (taken out, 2026-11-18)");
   // ④ 授業 held and moved down 3 hours
   const box = await p.locator('#tgBody .tg-ev[data-ev^="e1|"]').boundingBox(), colH = (await p.locator("#tgBody .tg-col").boundingBox()).height;
   await p.mouse.move(box.x + box.width / 2, box.y + 5); await p.mouse.down(); await p.waitForTimeout(600);
@@ -175,7 +170,7 @@ const closeSheet = async (p) => { await p.keyboard.press("Escape"); await p.wait
   await closeSheet(p);
   ok(await p.locator(".cal-day .wx").count() === 0 && await p.locator(".cal-day .marks").count() === 0, "⑤⑦ off: none on the month");
   await daySheet(p, addDays(today, 1));
-  ok((await txt(p, "#dayFree")).startsWith("空き時間 09:00〜15:00"), "⑥ the span set: from 9:00", await txt(p, "#dayFree"));
+  ok(!(await p.$("#dayFree")), "⑥ the span kept for what looks for free time; no list in the day's sheet");
   await closeSheet(p);
 
   // ⑩ .ics read in
