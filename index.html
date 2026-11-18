@@ -4702,8 +4702,8 @@ ul.list > li.cal3-rep-row { gap: 0; }
 .cal3-att-chip.a-out { background: color-mix(in srgb, var(--warn) 14%, var(--surface)); color: var(--warn); }
 /* ② which turn the plan opened is, over its cards */
 .cal3-nth { margin: 0 0 -4px; padding: 0 var(--space-2); color: var(--muted); font-size: var(--t-sub); font-variant-numeric: tabular-nums; }
-/* ⑨ 年: under the months, the year's holidays and long weekends; those over greyed, the next in bold. The year scrolls
-   up and down on a phone to reach them */
+/* 年: the year scrolls up and down on a phone to reach what is under the months; .cal3-hols is the look of those
+   sections (大事な予定, 誕生日・記念日; it was made for その3 ⑨'s 祝日と連休, taken off 2026-11-18) */
 .cal-year { overflow-y: auto; overscroll-behavior: contain; }
 .cal3-hols { grid-column: 1 / -1; display: grid; gap: 10px; margin-top: 6px; }
 .cal3-hols .group-head { margin: 0; }
@@ -5046,7 +5046,7 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
 .cal15-resv .btn { flex: none; }
 .cal-sum .cal15-travel { margin: 8px 0 0; color: var(--muted); }
 .cal15-stars .text { overflow-wrap: anywhere; }
-/* カレンダー その16: ① 長押し, ② 繰り返しの回, ③ 補講・振替, ⑥ 曜日と時間帯, ⑦ 1年のまとめ, ⑧ 単位 */
+/* カレンダー その16: ① 長押し, ② 繰り返しの回, ③ 補講・振替, ⑥ 曜日と時間帯, ⑧ 単位 */
 #calDayList li[data-ev] .row-btn { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .cal16-next { margin: -2px 0 0; color: var(--muted); font-size: var(--t-sub); line-height: 1.45; font-variant-numeric: tabular-nums; }
 .cal16-next-head { font-weight: 600; }
@@ -5070,12 +5070,6 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
 .cal16-heat-h { color: var(--muted); font-size: 10px; line-height: 1; text-align: start; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .cal16-heat-wd { color: var(--muted); font-size: var(--t-foot); line-height: 1; }
 .cal16-heat-wd.sun { color: var(--warn); }
-.cal16-year { grid-column: 1 / -1; display: grid; gap: 10px; margin-top: 6px; }
-.cal16-year .group-head { margin: 0; }
-.cal16-year-card { gap: 6px; }
-.cal16-year-row { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
-.cal16-year-k { flex: none; width: 8.5em; color: var(--muted); font-size: var(--t-sub); }
-.cal16-year-v { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .tt-card .cal16-credits { margin: 8px 0 0; padding: 0 var(--space-2) 10px; color: var(--muted); font-size: var(--t-sub); }
 /* カレンダー その17: ② ラベルをまとめる, ④ 時限の帯, ⑦ この週を印刷, ⑧ ほかの回, ⑨ 写真のある予定, ⑩ 月のメモ */
 .cal17-merge { display: grid; gap: 8px; }
@@ -25700,7 +25694,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月18日 15:23"; // fe496db6 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月18日 15:35"; // 94dad6e3 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -34499,9 +34493,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("span", { class: "ym-h" }, el("strong", {}, `${i + 1}月`), total ? el("span", { class: "ym-n" }, `${total}件`) : null),
         el("span", { class: "ym-grid", "aria-hidden": "true" }, Array.from({ length: lead }, () => el("span", { class: "yd pad" })), days));
     }));
-    $("calYear").append(...cal16YearCard(y)); // (カレンダー その16 ⑦ 1年のまとめ)
     $("calYear").append(...cal15StarCard(y)); // (カレンダー その15 ⑨ 大事な予定)
-    if (calThree) $("calYear").append(...cal3HolCard(y)); // (カレンダー その3 ⑨ 祝日と連休)
+    // (その16 ⑦ その年のまとめ and その3 ⑨ 祝日と連休 taken off 2026-11-18, the user's call)
     if (calFive) $("calYear").append(...cal5AnnivCard(y)); // (カレンダー その5 ⑤ 誕生日・記念日)
   }
 
@@ -35291,54 +35284,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return [el("label", { class: "flabel", for: "ttNoHol" }, "祝日は休み"), el("div", { class: "ffield" }, sw)];
   }
 
-  // ⑨ 祝日と連休 (the user's call): under 年's months, the year's holidays, each with the days off around it: three or more
-  // in a row (土日 and 祝日) as one long weekend with its holidays' names, one more day off that would join it to the next
-  // days off (11/21（金）も休めば4連休), and how many days to go. Those over greyed, the next one in bold; a press shows its
-  // month
+  // a day off: 土日 or a 祝日 (その13 ④ moves a plan off one; ⑨ 祝日と連休 counted its long weekends with it until it was
+  // taken off, 2026-11-18)
   const cal3Off = (d) => { const w = parseYmd(d).getDay(); return w === 0 || w === 6 || !!holidayName(d); };
-  function cal3Holidays(y) {
-    const out = [], seen = new Set();
-    for (const [h] of [...holidaysOf(y)].sort((a, b) => a[0].localeCompare(b[0]))) {
-      if (seen.has(h)) continue;
-      let from = h, to = h;
-      while (cal3Off(addDays(from, -1))) from = addDays(from, -1);
-      while (cal3Off(addDays(to, 1))) to = addDays(to, 1);
-      const n = daysBetween(from, to) + 1, names = [];
-      for (let d = from; d <= to; d = addDays(d, 1)) { const nm = holidayName(d); if (nm) { if (!names.includes(nm)) names.push(nm); seen.add(d); } }
-      const join = [];
-      for (const dir of [1, -1]) {
-        const gap = addDays(dir > 0 ? to : from, dir), far = addDays(gap, dir);
-        if (cal3Off(gap) || !cal3Off(far)) continue;
-        let end = far;
-        while (cal3Off(addDays(end, dir))) end = addDays(end, dir);
-        const all = n + 1 + Math.abs(daysBetween(far, end)) + 1;
-        if (all >= 4) join.push({ gap, n: all });
-      }
-      out.push({ from, to, n, names, join });
-    }
-    return out;
-  }
-  function cal3HolCard(y) {
-    const list = cal3Holidays(y);
-    if (!list.length) return [];
-    const next = list.find((r) => r.to >= todayKey);
-    return [el("section", { class: "cal3-hols", "aria-labelledby": "cal3HolsHead" },
-      el("h3", { class: "group-head", id: "cal3HolsHead" }, `${y}年の祝日と連休`),
-      el("ul", { class: "list" }, list.map((r) => {
-        const long = r.n >= 3, past = r.to < todayKey, now = r.from <= todayKey && todayKey <= r.to;
-        const when = long ? `${fmtShort(r.from)}〜${fmtShort(r.to)}` : fmtShort(r.from);
-        const status = past ? "" : now ? (long ? "いま連休中" : "きょう") : `あと${daysBetween(todayKey, r.from)}日`;
-        const joins = r.join.map((j) => `${fmtShort(j.gap)}も休めば${j.n}連休`);
-        const sub = [long ? r.names.join("・") : "", ...joins].filter(Boolean).join("・");
-        return el("li", { class: "btn-row" + (past ? " past" : "") + (r === next ? " next" : "") },
-          el("button", { type: "button", class: "row-btn nav", "aria-label": `${when}${long ? `、${r.n}連休` : ""}、${r.names.join("、")}${joins.length ? "、" + joins.join("、") : ""}${status ? "、" + status : ""}。月で表示`,
-            onclick: () => setCalView("month", r.from) },
-            el("span", { class: "chip cal3-hol-chip", style: "--chip-c: var(--warn)" }, long ? `${r.n}連休` : "祝日"),
-            el("span", { class: "body" }, el("span", { class: "text" }, long ? when : `${when} ${r.names.join("・")}`), sub ? el("span", { class: "sub" }, sub) : null),
-            status ? el("span", { class: "num" }, status) : null));
-      })))];
-  }
-
   // ⑩ 場所 on the map (the user's call): beside a plan's 場所, 地図 opens it in the map app (Apple's on iPhone, Google's
   // elsewhere) and 経路 the way there by train, as URL has 開く
   const cal3Apple = () => /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
@@ -39222,36 +39170,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("p", { class: "sub" }, el("span", { class: "phrase" }, `この8週間（${fmtMD(from)}〜${fmtMD(todayKey)}）で、`), el("span", { class: "phrase" }, `いちばん多いのは${say}（${durText(top.m)}）`)))];
   }
 
-  // ⑦ 年: the year summed up over its 大事な予定 (the year so far, for this one; none for a year to come): its plans and
-  // their hours, the busiest month, its ★, and the places gone to and the people met most
-  function cal16YearCard(y) {
-    if (!calSixteen) return [];
-    const from = `${y}-01-01`, end = `${y}-12-31`, to = end < todayKey ? end : todayKey;
-    if (from > todayKey) return [];
-    let n = 0, mins = 0, stars = 0;
-    const byMonth = new Array(12).fill(0), places = new Map(), people = new Map();
-    const tally = (m, v) => { const k = foldText(v), x = m.get(k) || { v, n: 0 }; x.n++; m.set(k, x); };
-    for (const [d, list] of turnsByDay(from, to)) for (const t of list) {
-      if (t.day !== 0 || t.e.cand || cal4Cx(t.e, t.start) || typeof t.e.title !== "string") continue;
-      n++; byMonth[Number(d.slice(5, 7)) - 1]++;
-      const sp = turnSpan(t);
-      if (sp) mins += sp[1] - sp[0];
-      if (t.e.star) stars++;
-      if (typeof t.e.place === "string" && t.e.place.trim()) tally(places, oneLine(t.e.place));
-      if (typeof t.e.with === "string" && t.e.with.trim()) tally(people, oneLine(t.e.with));
-    }
-    if (!n) return [];
-    const top = (m) => [...m.values()].sort((a, b) => b.n - a.n).slice(0, 3).map((x) => `${x.v}（${x.n}回）`), best = byMonth.indexOf(Math.max(...byMonth));
-    const row = (k, ...v) => el("div", { class: "cal16-year-row" }, el("span", { class: "cal16-year-k" }, k), el("span", { class: "cal16-year-v" }, ...v));
-    return [el("section", { class: "cal16-year", "aria-labelledby": "cal16YearHead" },
-      el("h3", { class: "group-head", id: "cal16YearHead" }, `${y}年のまとめ${to < end ? "（きょうまで）" : ""}`),
-      el("div", { class: "card pad cal16-year-card" },
-        row("予定", `${n}件`), mins ? row("時間のある予定", durText(mins)) : null, row("いちばん多い月", `${best + 1}月（${byMonth[best]}件）`),
-        stars ? row("大事な予定（★）", `${stars}件`) : null,
-        places.size ? row("よく行った場所", phrasesOf(top(places))) : null,
-        people.size ? row("よくいっしょの人", phrasesOf(top(people))) : null))];
-  }
-
   // ⑧ 単位 (the timetable): each class's credits in its square's form (0.5 at a time); under the timetable, the term's
   // total (a class in several squares counted once, by its name)
   function cal16TTRows(x) {
@@ -39865,7 +39783,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       ["月の表示", "日を押すと、その日の予定・空き時間・記録が開きます。左右にスワイプで前後の月。"],
       ["週・日の表示", "時間の流れで見ます。予定を長押しで動かす、下の端で長さを変える、空いているところを押して予定を入れる。"],
       ["7日・5日・3日・平日", "週の表示の日数。平日はその週の月〜金です。"],
-      ["年の表示", "12か月の予定の多さ、その年のまとめ、大事な予定（★）、祝日と連休、誕生日・記念日。"],
+      ["年の表示", "12か月の予定の多さ、大事な予定（★）、誕生日・記念日。"],
       ["月のメモ", "日のリストの「〇月のメモ」から。月の表示の上に出ます。"],
       ["日のメモ・スタンプ", "その日のひとことや、日のスタンプを月の表示に出せます。"],
       ["時限の帯・月のマスの時刻", "設定で、週・日に時間割の時限を、月のマスに開始時刻を出せます。"],
