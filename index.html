@@ -5186,6 +5186,18 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
   #cal8Print.cal17-wk th { width: 18%; padding: 4pt; text-align: left; vertical-align: top; font-size: 10pt; }
   #cal8Print.cal17-wk td { height: 70pt; padding: 4pt; overflow: visible; font-size: 9.5pt; }
 }
+/* カレンダーのバイトを家計簿へ (2026-11-18): the gear's 家計簿のバイト (どの予定・バイト先・時給・休憩 and what つなぐ will do;
+   once linked, the month's pay so far) and the new plan's line under ラベル */
+.cj-form .cj-say { margin: 0; line-height: 1.5; }
+.cj-form .cj-note, .cj-form .cj-warn, #planForm .cj-hint { margin: 0; color: var(--muted); font-size: var(--t-sub); line-height: 1.45; }
+.cj-form .cj-warn { color: var(--warn); }
+.cj-preview { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: var(--bg); border-radius: 10px; }
+.cj-list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; font-size: var(--t-sub); font-variant-numeric: tabular-nums; }
+.cj-list li { overflow-wrap: anywhere; }
+.cj-list .cj-more { color: var(--muted); }
+.cj-form .cj-pay { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 0; color: var(--muted); font-size: var(--t-sub); }
+.cj-pay b { color: var(--fg); font-size: var(--t-title3); font-weight: 700; font-variant-numeric: tabular-nums; }
+.cj-form .cj-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin: 0; }
 /* 目標 その2 ①〜⑩ (2026-11-11). ① a counted cell: its ring (a press counts one) and the count by it, the cell filling
    from its foot as the count goes up; ⑦ an element's own colour: its cell tinted, with a line of it along the top */
 .m-cell[data-k] { --m-bg: var(--surface); }
@@ -18111,12 +18123,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the first days of e's turns that reach into from … to
   function turnStarts(e, from, to) {
     if (typeof e.date !== "string") return [];
-    if (calThirteen && cal13Biz(e)) return cal13BizStarts(e, from, to); // (カレンダー その13 ④ 土日・祝日は前か次の平日に)
+    if (calThirteen && cal13Biz(e)) return cjSkipDone(e, cal13BizStarts(e, from, to)); // (バイトを家計簿へ: the turns made shifts left out) // (カレンダー その13 ④ 土日・祝日は前か次の平日に)
     const lo = addDays(from, -extraDays(e));
     if (!e.repeat) return e.date >= lo && e.date <= to ? [e.date] : [];
     const last = e.repeatUntil && e.repeatUntil < to ? e.repeatUntil : to, skip = new Set(e.skip || []), out = [];
     const noHol = !e.toEnd && !!e.noHol; // (カレンダー その3 ③ 祝日はお休み: a plan's turns on a holiday left out)
-    const take = (d) => { if (d >= lo && d <= last && !skip.has(d) && !(noHol && (holidayName(d) || cal7OffName(d))) && !cal5Paused(e, d)) out.push(d); }; // (その7 ① 自分の休みの日 too) // (その5 ④ お休みの期間)
+    const take = (d) => { if (d >= lo && d <= last && !skip.has(d) && !(noHol && (holidayName(d) || cal7OffName(d))) && !cal5Paused(e, d) && !cjDoneDay(e, d)) out.push(d); }; // (バイトを家計簿へ: the turns made shifts left out) // (その7 ① 自分の休みの日 too) // (その5 ④ お休みの期間)
     const by8 = todoEight && e.toEnd ? td8Every(e.repeat) : !e.toEnd ? cal9Every(e.repeat) : null; // (カレンダー その9 ① N日・N週間・Nか月・N年ごと too) // (ToDo その8 ① 3日ごと, 3か月ごと: a ToDo's own)
     const days3 = !e.toEnd && e.repeat === "weekly" ? cal3Days(e) : null; // (カレンダー その3 ① 毎週 月・水・金)
     if (days3) { for (let d = lo > e.date ? lo : e.date; d <= last; d = addDays(d, 1)) if (days3.includes(parseYmd(d).getDay())) take(d); }
@@ -21658,7 +21670,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             // ① a shift (a part past midnight on the next day's, which can't be moved)
             const sx = x.p.x, name = shiftName(sx);
             return el("button", { type: "button", class: "tg-ev shift" + (x.end - x.s <= 45 ? " short" : "") + (blocks.some((y) => y !== x && y.s < x.end && x.s < y.end) ? " clash" : ""),
-              style: `top: ${x.s / 14.4}%; height: ${(Math.min(x.end, 1440) - x.s) / 14.4}%; left: ${(x.c / x.n) * 100}%; width: ${100 / x.n}%; --bc: var(--c-money)`,
+              style: `top: ${x.s / 14.4}%; height: ${(Math.min(x.end, 1440) - x.s) / 14.4}%; left: ${(x.c / x.n) * 100}%; width: ${100 / x.n}%; --bc: ${cjHue(sx)}`,
               "data-shift": x.p.first ? sx.id : null, "aria-label": `${name}の勤務（${shiftText(sx)}）を編集`, onclick: (ev) => openRecEdit("shift", sx.id, ev.detail === 0) },
               el("span", { class: "t" }, name), n >= 5 && x.end - x.s <= 45 ? null : el("span", { class: "tm" }, !x.p.first ? `〜${sx.end}` : n >= 5 ? sx.start : shiftText(sx)));
           }
@@ -21711,7 +21723,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   function renderCalendar() {
     syncCalView();
-    draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); draw(renderCalSix); draw(renderCalSeven); draw(renderCalEight); draw(renderCalNine); draw(renderCalTen); draw(renderCalTwelve); draw(renderCalThirteen); draw(renderCalFourteen); draw(renderCalSixteen); draw(renderCalSeventeen); draw(renderCalEighteen); // (その18 ①②⑥ and the gear; その17 ②③⑩ and the gear; その16 ④ 地図でつなぐ; その14 ⑨⑩ and the gear; その13 ①②⑤ the day's sheet, ①②⑨ the gear; その12 ②⑨ the gear; その10 ③⑤⑦; その9 ②⑤⑥⑦⑧⑩; その8 ①④⑤⑩; その7 ①③④⑥ the gear and the forms; その6 ①⑤⑧; その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
+    draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); draw(renderCalSix); draw(renderCalSeven); draw(renderCalEight); draw(renderCalNine); draw(renderCalTen); draw(renderCalTwelve); draw(renderCalThirteen); draw(renderCalFourteen); draw(renderCalSixteen); draw(renderCalSeventeen); draw(renderCalEighteen); draw(renderCalJob); // (バイトを家計簿へ: the gear and the plans made shifts; その18 ①②⑥ and the gear; その17 ②③⑩ and the gear; その16 ④ 地図でつなぐ; その14 ⑨⑩ and the gear; その13 ①②⑤ the day's sheet, ①②⑨ the gear; その12 ②⑨ the gear; その10 ③⑤⑦; その9 ②⑤⑥⑦⑧⑩; その8 ①④⑤⑩; その7 ①③④⑥ the gear and the forms; その6 ①⑤⑧; その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
     const title = calTitle();
     if ($("calMonthName").textContent !== title) $("calMonthName").textContent = title; // a live region: only a change is read out
     const todoBy = groupBy(todos.items, (t) => t.due);
@@ -21766,7 +21778,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const sh = (shiftBy.get(d) || []).filter((p) => p.first), mk = markBy.get(d);
         const plans = [
           ...[...own.map((t) => ({ k: cal14SortKey(t), text: cal17BarTime(t) + cal4Name(t), hue: labelHue(labelOf(t.e)), plain: !labelOf(t.e), ten: !!t.e.ten, cx: cal4Cx(t.e, t.start) })), // (カレンダー その4 ①③ ★ and 20歳, ② 中止)
-            ...sh.map((p) => ({ k: p.x.start, text: cal17ShiftTime(p) + shiftName(p.x), hue: "var(--c-money)" }))].sort((a, b) => a.k.localeCompare(b.k)),
+            ...sh.map((p) => ({ k: p.x.start, text: cal17ShiftTime(p) + shiftName(p.x), hue: cjHue(p.x) }))].sort((a, b) => a.k.localeCompare(b.k)),
           ...todosDue.map((t) => ({ text: t.text, hue: "var(--c-todo)", due: true })),
           ...goalsDue.map((g) => ({ text: g.title, hue: goalHue(g), due: true })),
         ];
@@ -21905,10 +21917,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return by;
   }
   function shiftRow(x, onclick) {
-    const m = shiftMinutes(x), name = shiftName(x), sub = [shiftText(x), durText(m.all), num(x.rest) > 0 ? `休憩 ${num(x.rest)} 分` : null].filter(Boolean);
-    return el("li", { class: "btn-row", style: "--lc: var(--c-money)" },
+    const m = shiftMinutes(x), name = shiftName(x), sub = [shiftText(x), durText(m.all), num(x.rest) > 0 ? `休憩 ${num(x.rest)} 分` : null, cjPayText(x)].filter(Boolean); // (バイトを家計簿へ: its pay)
+    return el("li", { class: "btn-row", style: `--lc: ${cjHue(x)}` },
       el("button", { type: "button", class: "row-btn nav", "aria-label": `${name}の勤務（${sub.join("・")}）を編集`, onclick },
-        el("span", { class: "chip when", style: "--chip-c: var(--c-money)" }, x.start),
+        el("span", { class: "chip when", style: `--chip-c: ${cjHue(x)}` }, x.start),
         el("span", { class: "body" }, el("span", { class: "text" }, name), el("span", { class: "sub" }, phrasesOf(sub))),
         el("span", { class: "chev" }, icon("next", 16))));
   }
@@ -25739,7 +25751,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月18日 12:44"; // e97dd661 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月18日 13:15"; // 325de3f9 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -35019,6 +35031,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // off only after the rows are drawn)
   const cal3Whole = (f) => f !== "ed" || !events.get(editingId)?.repeat || editScope !== "one";
   function cal3SyncRows(f) {
+    cjHintSync(f); // (バイトを家計簿へ)
     if (!calThree) return;
     const sel = $(f + "Repeat"), date = $(f + "Date").value;
     for (const [k, ok, kin] of [["monthlyEnd", cal3EndOk(date), "monthly"], ["monthlyLast", cal3LastOk(date), "monthlyNth"]]) {
@@ -40052,6 +40065,289 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("cal18Last").checked = !!calSet().last18;
   }
   calEighteen = true;
+
+  // ---------- カレンダーのバイトを家計簿へ (the user's call, 2026-11-18: 「カレンダーのバイトなんだけどさ、家計簿の方のバイトと
+  // 紐づけて給与計算できるように紐づけて欲しい」): バイト put in as plans (one of the user's labels, or named バイト) made into
+  // 家計簿's shifts of one job, so its pay, 締め日 and the year's total count them. Linked in the gear: the plans there become
+  // shifts at once (元に戻す), and one saved later as it is saved (元に戻す keeps it a plan: jobNo). A plan becomes one
+  // shift and goes (it moved: not in 最近削除した項目); a repeating one stays, its turns becoming shifts up to two months
+  // ahead as the days go (e.jobDays, the turns made shifts, are left out of its turns), and while a turn's shift to come is
+  // as it was made (cjFrom) an edit of the plan carries on to it, a little after the last change (so 元に戻す comes first).
+  // A shift made so has the id cj-<plan>-<day>, the same on every device, so two devices never make it twice. Function
+  // declarations and var, as the page may draw before this runs ----------
+  var cjReady = false, cjQueued = false, cjSettle = null, cjDraft = null, cjBox = null, cjHintEl = null;
+  var CJ_AHEAD = 62; // the days ahead a repeating plan's turns are shifts
+  function cjLink() { const v = calSet().jobLink; return v && typeof v === "object" && (v.by === "label" || v.by === "word") && typeof v.job === "string" ? v : null; }
+  function cjJob(l = cjLink()) { return l ? jobList().find((j) => j.id === l.job) || null : null; }
+  function cjJobName(j) { return oneLine((j && j.name) || "").slice(0, 20) || "バイト"; }
+  // the names that make a plan the job's: バイト, アルバイト and the job's own (two letters at least)
+  function cjWords(j) { return [...new Set(["バイト", "アルバイト", oneLine((j && j.name) || "")].map((w) => foldText(w)).filter((w) => w.length >= 2))]; }
+  // a name that is one of them, or begins with one before a space, a bracket, a number or the like (バイト（早番）, バイト
+  // 17-22, カフェ 早番; not バイトの面接)
+  function cjNamed(title, words) {
+    const t = foldText(oneLine(title || ""));
+    return words.some((w) => t.startsWith(w) && (t.length === w.length || /[\s\d()[\]「」【】『』・/:\-~〜]/.test(t[w.length])));
+  }
+  function cjMatch(e, l, j) {
+    if (!l || !j || !e || e.toEnd || e.jobNo || typeof e.date !== "string" || (Array.isArray(e.cands) && e.cands.length)) return false; // (仮の予定 with 候補日: not one day yet)
+    return l.by === "label" ? !!l.label && e.labelId === l.label : cjNamed(e.title, cjWords(j));
+  }
+  // the shift a turn of a plan becomes, or null when it can't be one (終日, no end, longer than a day): its times (one into
+  // the next morning ends there), 休憩 as 家計簿 fills it in by the length when it does so (バイト その4 ⑤), the plan's name
+  // when it says more than バイト, its メモ and 場所 as the shift's メモ, and 仮 as 仮のシフト
+  function cjShiftOf(e, d, j) {
+    if (!isHm(e.time || "") || !isHm(e.endTime || "")) return null;
+    const over = extraDays(e);
+    if (over > 1 || (over === 1 && e.endTime > e.time) || (over === 0 && e.endTime <= e.time)) return null;
+    const t = oneLine(e.title || ""), memo = [cjWords(j).includes(foldText(t)) ? "" : t, oneLine(e.memo || ""), oneLine(e.place || "")].filter(Boolean).join("・").slice(0, 100);
+    const x = { date: d, start: e.time, end: e.endTime, rest: bt4Set().autoRest ? bt4RestFor(e.time, e.endTime) : 0, jobId: j.id, cj: `${e.id}|${d}` };
+    if (memo) x.memo = memo;
+    if (e.ten) x.tentative = true;
+    return x;
+  }
+  // a shift put in by hand in 家計簿 for the job over the same hours: the plan is taken as that one, not a second
+  function cjSpan(s) { const a = clockMin(s.start), b0 = clockMin(s.end); return a === null || b0 === null ? null : [a, b0 <= a ? b0 + 1440 : b0]; }
+  function cjHandOver(byDay, x, j) {
+    const ids = jobList().map((y) => y.id), sp = cjSpan(x);
+    return !!sp && (byDay.get(x.date) || []).some((s) => { if (s.cj || (ids.includes(s.jobId) ? s.jobId : ids[0]) !== j.id) return false; const q = cjSpan(s); return !!q && q[0] < sp[1] && sp[0] < q[1]; });
+  }
+  // what the link does as things are: the shifts to put in, the plans that become them (gone), the turns to mark on a
+  // repeating one ([id, before, after]), the ones taken as a shift there already (linked), and the plans of the link that
+  // can't be shifts (timeless); first: a plan made a shift for the first time (said, with 元に戻す), not just a turn of a
+  // repeating one coming within the two months
+  function cjPlan(l, j) {
+    const out = { put: [], gone: [], marks: [], linked: 0, timeless: [], first: false };
+    if (!l || !j) return out;
+    const ids = new Set(shifts.items.map((s) => s.id)), byDay = new Map();
+    for (const s of shifts.items) { if (!byDay.has(s.date)) byDay.set(s.date, []); byDay.get(s.date).push(s); }
+    const hi = addDays(todayKey, CJ_AHEAD), lo0 = `${Number(todayKey.slice(0, 4)) - 1}-01-01`, made = (e) => num(e.createdAt) || Date.now();
+    for (const e of events.items) {
+      if (!cjMatch(e, l, j)) continue;
+      if (!cjShiftOf(e, e.date, j)) { out.timeless.push(e); continue; }
+      if (!e.repeat) {
+        if (cal4Cx(e, e.date)) continue; // (中止: a plan as it is)
+        const x = cjShiftOf(e, e.date, j), id = `cj-${e.id}-${e.date}`;
+        if (ids.has(id) || cjHandOver(byDay, x, j)) out.linked++; else out.put.push({ id, ...x, createdAt: made(e) });
+        out.gone.push(e); out.first = true;
+        continue;
+      }
+      const add = [];
+      for (const d of turnStarts(e, e.date > lo0 ? e.date : lo0, hi)) { // (the turns made shifts already are left out)
+        if (cal4Cx(e, d)) continue;
+        const x = cjShiftOf(e, d, j), id = `cj-${e.id}-${d}`;
+        if (ids.has(id) || cjHandOver(byDay, x, j)) out.linked++; else out.put.push({ id, ...x, cjFrom: [x.start, x.end], createdAt: made(e) });
+        add.push(d);
+      }
+      if (!add.length) continue;
+      out.marks.push([e.id, e.jobDays, [...new Set([...(e.jobDays || []), ...add])].sort()]);
+      if (!(e.jobDays || []).length) out.first = true;
+    }
+    return out;
+  }
+  // done: a shift id taken back before (元に戻す) is in use again; gives what 元に戻す needs
+  function cjApply(p) {
+    const r = { put: p.put.map((x) => x.id), gone: p.gone.map((e) => JSON.parse(JSON.stringify(e))), marks: p.marks };
+    if (p.put.length) { undelete(shifts, ...r.put); shifts.putMany(p.put); }
+    if (p.gone.length) takeBack(events, p.gone.map((e) => e.id));
+    if (p.marks.length) events.updateMany(p.marks.map(([id, , after]) => [id, { jobDays: after }]));
+    return r;
+  }
+  // 元に戻す: the plans as they were, the shifts taken back; keep, after a plan was saved: it stays a plan (jobNo)
+  function cjUndo(r, keep) {
+    act(async () => {
+      if (r.put.length) takeBack(shifts, r.put);
+      if (r.gone.length) await events.putBack(r.gone.map((e) => (keep ? { ...e, jobNo: true } : e)));
+      if (r.marks.length) await events.updateMany(r.marks.map(([id, before]) => [id, keep ? { jobDays: before, jobNo: true } : { jobDays: before }]));
+    });
+  }
+  // after each change: the plans of the link made shifts at once, and their edits carried on a little after the last one
+  function cjSoon() {
+    if (!cjReady) return;
+    if (!cjQueued) { cjQueued = true; setTimeout(cjSweep, 0); }
+    clearTimeout(cjSettle); cjSettle = setTimeout(cjCarry, 10000);
+  }
+  function cjSweep() {
+    cjQueued = false;
+    const l = cjLink(), j = cjJob(l);
+    if (!j || !events.loaded || !shifts.loaded) return;
+    const p = cjPlan(l, j);
+    if (!p.put.length && !p.gone.length && !p.marks.length) return;
+    const r = cjApply(p);
+    if (p.first) flash(`${cjJobName(j)}の勤務にしました（${p.put.length + p.linked}回分）。家計簿の給料の見込みに入ります`, () => { cjUndo(r, true); flash("予定のまま残しました"); });
+  }
+  // a turn of a repeating plan, as if none of its turns were shifts
+  function cjRawTurn(e, d) { const { jobDays, ...bare } = e; return turnStarts(bare, d, d).includes(d); }
+  // the shifts a repeating plan's turns made, still to come and still as they were made, follow the plan: its times changed,
+  // the shift's too; the turn gone (この回以降, 終える, the label taken off, the plan deleted), the shift goes and the turn is
+  // no longer marked. One put right by hand (times, day, job) is left as it is
+  function cjCarry() {
+    const l = cjLink(), j = cjJob(l);
+    if (!j || !events.loaded || !shifts.loaded) return;
+    const drop = [], fix = [], unmark = new Map();
+    for (const x of shifts.items) {
+      if (!Array.isArray(x.cjFrom) || typeof x.cj !== "string" || x.date < todayKey || x.jobId !== j.id) continue;
+      const [eid, d] = x.cj.split("|");
+      if (x.date !== d || x.start !== x.cjFrom[0] || x.end !== x.cjFrom[1]) continue;
+      const e = events.get(eid);
+      if (!e) { if (deleted.get(delKey(events, eid))) drop.push(x.id); continue; } // (its plan deleted; not one still on its way from another device)
+      const y = cjMatch(e, l, j) && e.repeat && !cal4Cx(e, d) && cjRawTurn(e, d) ? cjShiftOf(e, d, j) : null;
+      if (!y) { drop.push(x.id); if (!unmark.has(eid)) unmark.set(eid, new Set()); unmark.get(eid).add(d); continue; }
+      if (y.start !== x.start || y.end !== x.end) fix.push([x.id, { start: y.start, end: y.end, rest: y.rest, cjFrom: [y.start, y.end] }]);
+    }
+    if (drop.length) takeBack(shifts, drop);
+    if (fix.length) shifts.updateMany(fix);
+    if (unmark.size) events.updateMany([...unmark].map(([id, ds]) => [id, { jobDays: (events.get(id).jobDays || []).filter((d) => !ds.has(d)) }]));
+  }
+  // a turn made a shift: left out of the plan's turns (turnStarts)
+  function cjDoneDay(e, d) { return !!e.jobDays && e.jobDays.includes(d); }
+  function cjSkipDone(e, list) { return e.jobDays ? list.filter((d) => !e.jobDays.includes(d)) : list; }
+
+  // a shift on the calendar in its job's colour (バイト その11 ⑨), so one made from a plan looks as the plan did; and its
+  // pay on its row in a day's list
+  function cjHue(x) { const k = bt11Key(jobOf(x.jobId)); return k ? `var(--lc-${k})` : "var(--c-money)"; }
+  function cjPayText(x) {
+    const j = jobOf(x.jobId);
+    if (!j || !(num(j.wage) > 0 || num(x.wage) > 0 || num(x.dayPay) > 0)) return null;
+    const v = Math.round(shiftPay(x, j));
+    return v > 0 ? fmtYen(v) : null;
+  }
+
+  // the gear: 家計簿のバイト, before ほかのカレンダー
+  function cjBuild() {
+    if (cjBox) return;
+    cjBox = el("div", { class: "cj-box", id: "cjBox" });
+    const parts = [el("h3", { class: "group-head" }, "家計簿のバイト"), cjBox, el("p", { class: "group-foot", id: "cjFoot" })];
+    const head = [...$("labelsGroup").querySelectorAll("h3.group-head")].find((h) => h.textContent === "ほかのカレンダー");
+    if (head) head.before(...parts); else $("labelsGroup").append(...parts);
+  }
+  function cjDraftLink() { return cjDraft ? (cjDraft.by.startsWith("label:") ? { by: "label", label: cjDraft.by.slice(6), job: cjDraft.job } : { by: "word", job: cjDraft.job }) : null; }
+  function cjWordsSaid(j) { return ["バイト", ...(oneLine((j && j.name) || "").length >= 2 ? [oneLine(j.name)] : [])].map((w) => `「${w}」`).join("か"); }
+  function cjByOptions(j) {
+    return [...labels.items.filter((x) => x && oneLine(x.name || "")).map((x) => [`label:${x.id}`, `ラベル「${oneLine(x.name)}」の予定`]), ["word", `名前が${cjWordsSaid(j)}で始まる予定`]];
+  }
+  // a label named バイト (シフト, the job's name) to begin with, else the name
+  function cjGuess(j) {
+    const name = foldText(oneLine((j && j.name) || "")), hit = labels.items.find((x) => { const n = foldText(oneLine((x && x.name) || "")); return !!n && (n.includes("バイト") || n.includes("シフト") || (name.length >= 2 && n.includes(name))); });
+    return hit ? `label:${hit.id}` : "word";
+  }
+  function cjSetJob(id, patch) { act(() => settings.set("jobs", { ...jobSet(), items: (Array.isArray(jobSet().items) ? jobSet().items : []).map((j) => (j && j.id === id ? { ...j, ...patch } : j)), updatedAt: Date.now() })); }
+  function cjWageRow(j, id) {
+    const n = el("input", { type: "number", id, inputmode: "numeric", min: 1, max: 100000, step: 1 });
+    n.addEventListener("change", () => { const w = Math.round(num(n.value)); if (!(w > 0)) return; cjSetJob(j.id, { wage: Math.min(100000, w) }); flash(`時給を ${fmtN(Math.min(100000, w))} 円にしました`); });
+    return [el("label", { class: "flabel", for: id }, "時給"), el("div", { class: "ffield" }, n, el("span", { class: "unit" }, "円"))];
+  }
+  function renderCjBox(force) {
+    cjBuild();
+    const a = document.activeElement;
+    if (!force && a && cjBox.contains(a) && /^(INPUT|SELECT)$/.test(a.tagName)) return; // (being typed in or picked: left as it is)
+    const keep = force && a && cjBox.contains(a) ? a.id : "";
+    const l = cjLink(), j = cjJob(l), jobs = jobList();
+    setChildren(cjBox, j ? cjOnView(l, j) : jobs.length ? cjSetupView(jobs) : cjNewJobView());
+    $("cjFoot").replaceChildren(...(j ? ["バイトの予定は、保存すると勤務になります。", "勤務は、日のリストから開いて直せます（休憩や、実際に働いた時刻も）。"]
+      : ["つなぐと、その予定は家計簿のバイトの勤務になり、給料の見込みに入ります。", "くり返しの予定は、2か月先までの回が勤務になります（日がたつと、その先も）。"]).map((w) => el("span", { class: "phrase" }, w)));
+    if (keep && $(keep)) $(keep).focus();
+  }
+  function cjNewJobView() {
+    return el("form", { class: "add cj-form", autocomplete: "off", onsubmit: (ev) => { ev.preventDefault(); cjMakeJob(); } },
+      el("p", { class: "full cj-say" }, el("span", { class: "phrase" }, "家計簿に、バイト先がまだありません。"), el("span", { class: "phrase" }, "時給を入れてつくると、カレンダーのバイトの予定から給料を計算できます。")),
+      el("label", { class: "flabel", for: "cjNewName" }, "バイト先の名前"), el("div", { class: "ffield" }, el("input", { type: "text", id: "cjNewName", maxlength: 20, autocomplete: "off" })),
+      el("label", { class: "flabel", for: "cjNewWage" }, "時給"), el("div", { class: "ffield" }, el("input", { type: "number", id: "cjNewWage", inputmode: "numeric", min: 1, max: 100000, step: 1 }), el("span", { class: "unit" }, "円")),
+      el("div", { class: "actions" }, el("button", { type: "submit", class: "btn", id: "cjNewMake" }, "バイト先をつくる")));
+  }
+  function cjMakeJob() {
+    const w = Math.round(num($("cjNewWage").value)), n = oneLine($("cjNewName").value).slice(0, 20);
+    if (!(w > 0)) { flash("時給を入れてください"); $("cjNewWage").focus(); return; }
+    act(() => settings.set("jobs", { ...jobSet(), items: [...(Array.isArray(jobSet().items) ? jobSet().items : []), { ...newJob(), name: n, wage: Math.min(100000, w) }], updatedAt: Date.now() }));
+    flash(`バイト先「${n || "バイト"}」をつくりました。締め日や給料日は、家計簿のバイトの設定で決められます`);
+    renderCjBox(true);
+    $("cjBy")?.focus();
+  }
+  function cjSetupView(jobs) {
+    const j = jobs.find((x) => x.id === (cjDraft && cjDraft.job)) || jobs[0], opts = cjByOptions(j);
+    if (!cjDraft || !opts.some(([v]) => v === cjDraft.by)) cjDraft = { by: cjGuess(j), job: j.id };
+    cjDraft.job = j.id;
+    const p = cjPlan(cjDraftLink(), j);
+    const rest = el("input", { type: "checkbox", class: "switch", role: "switch", id: "cjRest", checked: bt4Set().autoRest });
+    rest.addEventListener("change", () => act(() => settings.set("bt4", { ...(settings.get("bt4") || {}), autoRest: rest.checked, updatedAt: Date.now() })));
+    return el("form", { class: "add cj-form", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
+      el("label", { class: "flabel", for: "cjBy" }, "どの予定"),
+      el("div", { class: "ffield" }, el("select", { id: "cjBy", onchange: (ev) => { cjDraft.by = ev.target.value; renderCjBox(true); } }, opts.map(([v, t]) => el("option", { value: v, selected: v === cjDraft.by }, t)))),
+      ...(jobs.length > 1 ? [el("label", { class: "flabel", for: "cjJob" }, "バイト先"),
+        el("div", { class: "ffield" }, el("select", { id: "cjJob", onchange: (ev) => { cjDraft.job = ev.target.value; renderCjBox(true); } }, jobs.map((x) => el("option", { value: x.id, selected: x.id === j.id }, oneLine(x.name || "") || "バイト先"))))] : []),
+      ...(num(j.wage) > 0 ? [] : cjWageRow(j, "cjWage")),
+      el("label", { class: "flabel", for: "cjRest" }, "休憩を長さから"), el("div", { class: "ffield" }, rest),
+      el("p", { class: "full cj-note" }, "6時間をこえると45分、8時間45分をこえると60分にします（家計簿のバイトの設定と同じ）。"),
+      cjPreview(p),
+      el("div", { class: "actions" }, el("button", { type: "button", class: "btn", id: "cjOn", onclick: cjTurnOn }, "つなぐ")));
+  }
+  // what つなぐ will do: how many shifts, the plans (the nearest first), the ones that stay plans
+  function cjPreview(p) {
+    const n = p.put.length + p.linked, near = (d) => (d >= todayKey ? `0${d}` : `1${9999 - Number(d.slice(0, 4))}${99 - Number(d.slice(5, 7))}${99 - Number(d.slice(8))}`);
+    const rows = [...p.gone.map((e) => ({ k: near(e.date), w: `${fmtMD(e.date)}（${WD[parseYmd(e.date).getDay()]}） ${e.time}〜${e.endTime} ${oneLine(e.title)}` })),
+      ...p.marks.map(([id, , after]) => { const e = events.get(id); return { k: `0${todayKey}`, w: `${cal10Nths(e) ? cal10RepName(e) : repeatName(e.repeat, e.date, true, false, e.repeatDays)} ${e.time}〜${e.endTime} ${oneLine(e.title)}（${after.length - (e.jobDays || []).length}回）` }; })].sort((a, b) => a.k.localeCompare(b.k));
+    return el("div", { class: "full cj-preview", id: "cjPreview", role: "status" },
+      el("p", { class: "cj-say" }, n ? `いまの予定から、${n}回分が勤務になります。` : "いま当てはまる予定はありません。つなぐと、これから入れる予定が勤務になります。"),
+      rows.length ? el("ul", { class: "cj-list" }, rows.slice(0, 4).map((r) => el("li", {}, r.w)), rows.length > 4 ? el("li", { class: "cj-more" }, `ほか ${rows.length - 4}件`) : null) : null,
+      p.linked ? el("p", { class: "cj-note" }, `うち ${p.linked}回は、家計簿にもう同じ時間の勤務があるので、それとつなぎます。`) : null,
+      p.timeless.length ? el("p", { class: "cj-note" }, `時刻のない ${p.timeless.length}件は、予定のまま残ります。`) : null,
+      // (a plan's 通知アラーム doesn't go with it: バイト has its own, その2 ②)
+      [...p.gone, ...p.marks.map(([id]) => events.get(id))].some((e) => e && Array.isArray(e.alarms) && e.alarms.length) && !(settings.get("bt2Before") || {}).on
+        ? el("p", { class: "cj-note" }, "予定の通知アラームは、勤務にはつきません。勤務のお知らせは、家計簿のバイトの設定の「出勤前のお知らせ」で決められます。") : null);
+  }
+  function cjTurnOn() {
+    const jobs = jobList(), j = jobs.find((x) => x.id === (cjDraft && cjDraft.job)) || jobs[0], l = cjDraftLink();
+    if (!j || !l) return;
+    // the job takes the label's colour when it has none (バイト その11 ⑨), so its shifts look as the plans did
+    const lab = l.by === "label" ? labels.get(l.label) : null, hue = lab && !bt11Key(j) && colorKey(lab.color) !== "gray" ? colorKey(lab.color) : "";
+    if (hue) cjSetJob(j.id, { color: hue });
+    saveCalSet({ jobLink: { ...l, at: Date.now() } });
+    const p = cjPlan(l, j), r = cjApply(p), n = p.put.length + p.linked;
+    flash(n ? `${cjJobName(j)}の勤務にしました（${n}回分）。家計簿の給料の見込みに入ります` : "つなぎました。これから入れるバイトの予定は、保存すると勤務になります",
+      () => { saveCalSet({ jobLink: undefined }); cjUndo(r, false); if (hue) cjSetJob(j.id, { color: undefined }); flash("元に戻しました"); });
+    renderCjBox(true);
+    $("cjOpenJob")?.focus();
+  }
+  function cjTurnOff() {
+    const was = calSet().jobLink;
+    saveCalSet({ jobLink: undefined });
+    flash("つなぐのをやめました。勤務になった分は、家計簿にそのまま残ります", () => { saveCalSet({ jobLink: was }); flash("元に戻しました"); });
+    renderCjBox(true);
+    $("cjBy")?.focus();
+  }
+  function cjOnView(l, j) {
+    const lab = l.by === "label" ? labels.get(l.label) : null, ym = periodMonthOf(j, todayKey), s = paySummary(j, ym);
+    const who = l.by === "word" ? `名前が${cjWordsSaid(j)}で始まる予定` : lab ? `ラベル「${oneLine(lab.name)}」の予定` : "つないだラベルの予定（ラベルがなくなりました）";
+    const kept = events.items.filter((e) => e.jobNo && cjMatch({ ...e, jobNo: false }, l, j)), timeless = events.items.filter((e) => cjMatch(e, l, j) && !cjShiftOf(e, e.date, j));
+    return el("form", { class: "add cj-form", autocomplete: "off", onsubmit: (ev) => ev.preventDefault() },
+      el("p", { class: "full cj-say" }, el("span", { class: "phrase" }, `${who}は、`), el("span", { class: "phrase" }, `${cjJobName(j)}の勤務になります。`)),
+      el("p", { class: "full cj-pay" }, el("span", {}, `${Number(ym.slice(5))}月分（${fmtMD(s.start)}〜${fmtMD(s.end)}）の見込み`), el("b", {}, fmtYen(s.amount)), el("span", {}, `${s.list.length}回・${durText(s.mins)}`)),
+      ...(num(j.wage) > 0 ? [] : [el("p", { class: "full cj-warn" }, "時給が入っていないので、給料が 0 円になっています。"), ...cjWageRow(j, "cjWage")]),
+      kept.length ? el("p", { class: "full cj-line" }, el("span", {}, `予定のまま残したバイト ${kept.length}件`),
+        el("button", { type: "button", class: "link-btn", id: "cjRedo", onclick: () => act(() => events.updateMany(kept.map((e) => [e.id, { jobNo: undefined }]))) }, "勤務にする")) : null,
+      timeless.length ? el("p", { class: "full cj-note" }, `時刻のないバイトの予定 ${timeless.length}件は、勤務になっていません。開いて始まりと終わりの時刻を入れると、勤務になります。`) : null,
+      el("div", { class: "actions" }, el("button", { type: "button", class: "link-btn danger", id: "cjOff", onclick: cjTurnOff }, "つなぐのをやめる"),
+        el("button", { type: "button", class: "btn sm", id: "cjOpenJob", onclick: () => openLink("./#job") }, "家計簿のバイトを開く")));
+  }
+  // the new plan's form: a line under ラベル while what is typed is one of the link's
+  function cjHintSync(f) {
+    if (!cjReady || f !== "plan") return;
+    if (!cjHintEl) { cjHintEl = el("p", { class: "full cj-hint", id: "cjHint", hidden: true }); $("planLabels").after(cjHintEl); }
+    const l = cjLink(), j = cjJob(l), date = $("planDate").value, endDate = $("planEndDate").value;
+    const e = { date: isDay(date) ? date : todayKey, title: $("planTitle").value, labelId: planLabelChoice || undefined, time: $("planTime").value, endTime: $("planEndTime").value, endDate: endDate > date ? endDate : undefined, repeat: $("planRepeat").value || undefined };
+    const on = !!j && cjMatch(e, l, j);
+    cjHintEl.hidden = !on;
+    if (on) cjHintEl.textContent = cjShiftOf(e, e.date, j) ? `保存すると、家計簿のバイト（${cjJobName(j)}）の勤務になります${e.repeat ? "（2か月先までの回）" : ""}` : "始まりと終わりの時刻を入れると、家計簿のバイトの勤務になります";
+  }
+  $("planLabels").addEventListener("click", () => setTimeout(() => cjHintSync("plan"), 0));
+  for (const id of ["planTitle", "planEndTime"]) for (const type of ["input", "change"]) $(id).addEventListener(type, () => cjHintSync("plan"));
+  function renderCalJob() {
+    if (!cjReady) return;
+    renderCjBox();
+    cjHintSync("plan");
+    cjSoon();
+  }
+  CAL18_HELP.find(([place]) => place === "設定・ほか")?.[1].push(["家計簿のバイト", "バイトの予定を家計簿のバイトの勤務にして、給料の見込みに入れます。日のリストの勤務には、その回の給料も出ます。"]);
+  cjReady = true;
 
   // ---------- 目標: 使わないマスを×で埋める (the user's call, 2026-11-11: a chart can't always be filled in whole; its empty
   // squares crossed out so it reads as finished). An empty cell crossed is { t: "", x: true }: still empty to all that
