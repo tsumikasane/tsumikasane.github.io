@@ -38,7 +38,7 @@ async function open(b, when, more = {}, o = {}) {
   ok(!!(await p.$("#wx7Diff")), "⑦ kept as the page is drawn again");
   // ① the chips
   const chips = await p.$$eval('#wx7Jump button:not([data-key="simple"])', (l) => l.map((x) => x.textContent)); // (その10 ① puts かんたん表示 first)
-  ok(chips[0] === "1時間ごと" && chips.includes("1週間") && chips.includes("雨の日の予定") && chips.includes("この場所の1年") && chips.at(-1) === "お知らせ・場所", "① the sections' chips", chips);
+  ok(chips[0] === "1時間ごと" && chips.includes("1週間") && chips.includes("雨の日の予定") && chips.at(-1) === "お知らせ・場所", "① the sections' chips", chips);
   await p.click('#wx7Jump [data-key="week"]'); await p.waitForTimeout(900);
   const y = await p.evaluate(() => { const h = document.getElementById("wx7-week").getBoundingClientRect().top, s = document.getElementById("daySheet").getBoundingClientRect().top; return h - s; });
   ok(y > 0 && y < 140, "① 1週間 pressed: its heading at the top", y);
@@ -46,11 +46,8 @@ async function open(b, when, more = {}, o = {}) {
   ok((await txt(p, "#wx7RainPlans li")) === "11/19（木）雨12〜21時10:00授業、17:00バイト｜11/20（金）雨70%15:00歯医者", "④ 11/19 and 11/20 (not 11/18)", await txt(p, "#wx7RainPlans li"));
   // ⑧ the weather and the runs
   ok((await txt(p, "#wx7Runs .wx-line")) === "晴れ・くもりの日：24日のうち4日走りました合わせて18km（1回平均4.5km）｜雨・雪の日：6日のうち1日走りました合わせて2km（1回平均2km）。エアロバイクは2日", "⑧ dry and wet days", await txt(p, "#wx7Runs .wx-line"));
-  // ⑩ the year
+  // ⑩ the year, still asked for (1週間の雨の量 and 先の日の天気 use it; its own section taken out 2026-11-18)
   ok(p.calls.some((u) => u.includes("archive-api") && u.includes("start_date=2016-01-01") && u.includes("end_date=2025-12-31")), "⑩ the 10 years asked for");
-  ok((await txt(p, ".wx7-ysay")) === flat("11月は、平均 17° / 9°、雨 95 mm。いちばん暑いのは 8月（平均の最高 31°）、寒いのは 1月（平均の最低 2°）。雨が多いのは 9月（210 mm）。"), "⑩ the months", await txt(p, ".wx7-ysay"));
-  await p.locator("#wx7Year").scrollIntoViewIfNeeded();
-  await p.screenshot({ path: out + "/wx7-year.png" });
   // ⑥ the wind's way
   await p.click('#wx3Seg [data-view="wind"]'); await p.waitForTimeout(300);
   const a = await p.$eval(".wx-hours .wx7-arrow path", (x) => x.getAttribute("transform"));

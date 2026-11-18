@@ -59,12 +59,10 @@ async function open(b, when, o = {}) {
   ok(JSON.stringify((await W(p, "parts")).find((x) => x[0] === "wxRain")?.slice(0, 2)) === JSON.stringify(["wxRain", 30]), "① in the push's signature");
   ok(!(await W(p, "alarms", T("15:30"))).some((a) => a.tag.startsWith("wx-rain:2026-11-14")), "① not once it is raining");
 
-  // another day: 11/15's dawn, 11/17's heat, 11/18's snow
+  // another day: 11/15's dawn, 11/18's snow (11/17's heat was in 体調と空気, taken out 2026-11-18)
   const pick = async (d) => { await p.click(`.wx-days li:nth-child(${d}) button`); await p.waitForTimeout(400); };
   await pick(2);
   ok((await txt(p, ".wx3-glow-am")).startsWith("朝焼け：きれいに色づきそう日の出6:18") && (await txt(p, ".wx3-glow-pm")).startsWith("夕焼け：雲が少なく、すっきりした空"), "⑤ 11/15's dawn and dusk", [await txt(p, ".wx3-glow-am"), await txt(p, ".wx3-glow-pm")]);
-  await pick(4);
-  ok((await txt(p, ".wx3-heat")).startsWith("暑さ指数（WBGT）は12時ごろ31（危険）") && !(await p.$(".wx2-muggy")), "⑧ WBGT (and not 不快指数 with it)", await txt(p, ".wx3-heat"));
   ok(Math.round(await W(p, "wbgt", 33, 60, 800, 2)) === 31 && Math.round(await W(p, "wbgt", 25, 50, 300, 2)) === 22, "⑧ the formula");
   await pick(5);
   ok((await txt(p, ".wx3-snow")) === "雪：つもる量は3cmほどいちばん降るのは3時ごろ。足もとと、車の運転に気をつけて", "⑦ snow", await txt(p, ".wx3-snow"));

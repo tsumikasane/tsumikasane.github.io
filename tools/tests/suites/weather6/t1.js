@@ -36,8 +36,6 @@ const pick = async (p, n) => { await p.click(`.wx-days li:nth-child(${n}) button
     "①⑦ the week's story", await txt(p, "#wx6Story"));
   // ② what to wear by the time of day (today: 昼 and 夜, the morning gone by)
   ok((await txt(p, "#wx6Times li")) === "昼12〜15時体感17°薄手の上着｜夜18〜21時体感9°コート", "② 昼 and 夜", await txt(p, "#wx6Times li"));
-  // ③ what to run in
-  ok((await txt(p, ".wx-lines .wx-line")).includes("外を走るのにいい日です（11時〜15時ごろ、体感16°前後）走るときの服装：半袖・短パンで（体感16°に10°足して考えます）"), "③ under the run's line", await txt(p, ".wx-lines .wx-line"));
   // ④ unstable, ⑥ strong wind
   ok((await txt(p, "#wx6Out .wx6-unstable")) === "大気の状態が不安定になりそうです（13時〜17時ごろ）急な強い雨や雷に気をつけて。空が暗くなってきたら、建物の中へ", "④ the air unstable", await txt(p, "#wx6Out .wx6-unstable"));
   ok((await txt(p, "#wx6Out .wx6-wind")) === "風が強い時間：15時〜18時ごろ最大9m/s、突風16m/s。自転車や傘に気をつけて", "⑥ the hours of strong wind", await txt(p, "#wx6Out .wx6-wind"));

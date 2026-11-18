@@ -56,8 +56,6 @@ const rd = [["2026-11-14", ["r1", "r2"]], ["2026-11-09", ["r1"]], ["2026-11-10",
   ok(sun && sun[0] === "東南東 / 西南西" && /^日の出は東南東（11\d度）、日の入りは西南西（24\d度）$/.test(sun[1]), "⑨ 東南東 and 西南西", sun);
   // ① the break 13〜16時
   ok((await txt(p, ".wx13-gap")) === flat("雨の合間：13時〜16時ごろは、雨が弱まりそうです（降水確率 20%）出かけるなら、この時間がおすすめです"), "① 13時〜16時", await txt(p, ".wx13-gap"));
-  // ② tonight down to 8°
-  ok((await txt(p, ".wx13-sleep")) === flat("今夜は少し冷えます（明け方 8°）掛けるものを1枚足しておくと安心です"), "② tonight 8°", await txt(p, ".wx13-sleep"));
   // ⑧ the records against the weather
   ok((await txt(p, "#wx13Records .wx-line")) === flat("出費：晴れ・くもりの日 121 円／雨・雪の日 1,200 円雨の日のほうが多め（約9.9倍）（24日と6日の平均）｜勉強：晴れ・くもりの日 11分／雨・雪の日 8分雨の日のほうが少なめ（26%少ない）（24日と6日の平均）｜ルーティーン：晴れ・くもりの日 10%／雨・雪の日 25%雨の日のほうが多め（約2.4倍）（24日と6日の平均）"),
     "⑧ 出費・勉強・ルーティーン", await txt(p, "#wx13Records .wx-line"));
@@ -68,12 +66,9 @@ const rd = [["2026-11-14", ["r1", "r2"]], ["2026-11-09", ["r1"]], ["2026-11-10",
   ok((await txt(p, "#wx13AheadOut")) === flat("2027年1月1日（金）は、ときどき雨の降る時期ですこの10年で雨（1mm以上）の日は 20%。平均の最高 11°・最低 3°"), "⑩ 2027/1/1", await txt(p, "#wx13AheadOut"));
   await p.locator("#wx13Ahead").scrollIntoViewIfNeeded(); await p.waitForTimeout(200);
   await p.screenshot({ path: out + "/wx13-ahead.png" });
-  // ⑦ hair on 11/17 (80%), static on 11/18 (35%); ② 11/18's night 2°, ③ 放射冷却 on it
-  await day(p, 2);
-  ok((await txt(p, ".wx13-hair")) === flat("湿気で髪が広がりやすい日です（湿度 80%）まとめ髪や、湿気に強いスタイリング剤がおすすめ"), "⑦ hair on 11/17", await txt(p, ".wx13-hair"));
+  // ③ 放射冷却 on 11/18 (⑦ hair and static, ② the night: taken out with 暮らしのひとこと, 2026-11-18)
   await day(p, 3);
-  ok((await txt(p, ".wx13-static")) === flat("静電気が起きやすい日です（湿度 35%）金属にさわる前に、壁や木にふれて逃がして。ハンドクリームや加湿も") && (await txt(p, ".wx13-sleep")) === flat("11/18（水）の夜は冷えこみます（明け方 2°）寝る前に部屋をあたためて、毛布や湯たんぽを。暖房のタイマーも便利です")
-    && (await txt(p, "#wx13Kotoba")).startsWith("放射冷却で、朝は冷えこみそう"), "⑦ static, ② 2°, ③ 放射冷却 on 11/18", [await txt(p, ".wx13-static"), await txt(p, ".wx13-sleep"), await txt(p, "#wx13Kotoba")]);
+  ok((await txt(p, "#wx13Kotoba")).startsWith("放射冷却で、朝は冷えこみそう"), "③ 放射冷却 on 11/18", await txt(p, "#wx13Kotoba"));
   // ③ 木枯らし on 11/21
   await day(p, 6);
   ok((await txt(p, "#wx13Kotoba")) === flat("木枯らしが吹きそう冬の訪れを告げる、北寄りの冷たい強い風（9 m/s）"), "③ 木枯らし on 11/21", await txt(p, "#wx13Kotoba"));

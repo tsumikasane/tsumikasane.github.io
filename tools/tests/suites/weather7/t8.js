@@ -57,9 +57,9 @@ const setting = (p, id) => p.evaluate(({ P, id }) => (JSON.parse(localStorage.ge
   ok((await p.getAttribute("#wx14Long svg", "aria-label")) === "16日間の気温。いちばん暖かいのは11/21（土）（最高18度）、いちばん冷えるのは11/19（木）（最低-1度）", "⑩ the 16 days", await p.getAttribute("#wx14Long svg", "aria-label"));
   await p.locator("#wx14Long").scrollIntoViewIfNeeded(); await p.waitForTimeout(200);
   await p.screenshot({ path: out + "/wx14-long.png" });
-  // ③ the plants on 11/19 (-1°), ① its rain's colour
+  // ① 11/19's rain colour (③ the plants, in 暮らしのひとこと: taken out 2026-11-18)
   await p.click(".wx-days li:nth-child(4) button"); await p.waitForTimeout(400);
-  ok((await txt(p, ".wx14-plant")) === flat("植物：冷えこみます（最低 -1°）。寒さに弱い鉢植えは、夜は室内か軒下へ水やりは、あたたかい午前中に") && (await p.getAttribute(".wx-daycard", "class")).endsWith("wx14-sky rain"), "③ frost on 11/19, ① rain's colour", await txt(p, ".wx14-plant"));
+  ok((await p.getAttribute(".wx-daycard", "class")).endsWith("wx14-sky rain"), "① rain's colour on 11/19", await p.getAttribute(".wx-daycard", "class"));
   await p.click(".wx-days li:nth-child(1) button"); await p.waitForTimeout(400);
   // ① turned off
   await p.locator("#wx14SkyOn").scrollIntoViewIfNeeded();

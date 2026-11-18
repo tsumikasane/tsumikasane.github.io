@@ -48,22 +48,11 @@ const ev = (date, time, title, i) => ({ id: "x" + i, date, time, title, createdA
 
   // ① the outdoor plans in the rain (BBQ, and 部活 added; not 11/18's walk, dry)
   ok((await txt(p, "#wx9OutPlans li")) === "11/19（木）雨80%12:00BBQ｜11/19（木）雨80%18:00部活", "① BBQ and 部活 on 11/19", await txt(p, "#wx9OutPlans li"));
-  // ③ the country
-  ok(p.calls.some((u) => u.includes("latitude=43.06,38.27,37.92,35.68") && u.includes("forecast_days=2")), "③ the ten cities in one request");
-  ok((await p.getAttribute("#wx9Japan li:first-child", "aria-label")) === "札幌、雪、最高3度、最低-3度、降水確率80%" && (await p.$$eval("#wx9Japan li", (l) => l.length)) === 10, "③ 札幌 first, ten cities", await p.getAttribute("#wx9Japan li:first-child", "aria-label"));
-  await p.click('#wx9JapanSeg [data-day="1"]'); await p.waitForTimeout(300);
-  ok((await p.getAttribute("#wx9Japan li:first-child", "aria-label")) === "札幌、雪、最高1度、最低-5度、降水確率90%", "③ tomorrow", await p.getAttribute("#wx9Japan li:first-child", "aria-label"));
   // ④ disasters
   ok((await p.getAttribute(".wx9-kiki", "href")) === "https://www.jma.go.jp/bosai/risk/#zoom:13/lat:35.68/lon:139.77/colordepth:normal/elements:land" && (await p.getAttribute(".wx9-hazard", "href")) === "https://disaportal.gsi.go.jp/maps/?ll=35.68,139.77&z=14&base=pale&vs=c1j0l0u0t0h0z0" && !(await p.$(".wx9-heavy")),
     "④ キキクル and the hazard map, no heavy rain today");
-  // ⑥ the pleasant hours, ⑦ why it feels colder
-  ok((await txt(p, ".wx9-comfy")) === "いちばん過ごしやすいのは12時〜14時ごろ（体感17°、雨の心配なし）", "⑥ 12時〜14時", await txt(p, ".wx9-comfy"));
+  // ⑦ why it feels colder (⑥ the pleasant hours, in 暮らしのひとこと: taken out 2026-11-18)
   ok((await txt(p, "#wx9Feel")) === "18時ごろは、空気が乾いていて、気温より5°寒く感じそうです", "⑦ 18時 feels 5° colder", await txt(p, "#wx9Feel"));
-  // ⑧ headaches against the pressure (3 days kept: 5.2 hPa, the others 0.8)
-  ok((await txt(p, ".wx9-ache-sum")) === "頭が痛かった日（3日）は、気圧が平均5.2hPa下がっていましたほかの日は0.8hPa。気圧が下がる日は気をつけて。「体調のお知らせ」が便利です", "⑧ 5.2 against 0.8", await txt(p, ".wx9-ache-sum"));
-  await p.click("#wx9AcheBtn"); await p.waitForTimeout(400);
-  const ache = await p.evaluate((P) => JSON.parse(localStorage.getItem(P + "settings")).find((x) => x.id === "wxAche").days, P);
-  ok(ache["2026-11-16"] === 1 && (await p.getAttribute("#wx9AcheBtn", "aria-pressed")) === "true" && JSON.parse(await p.evaluate((P) => localStorage.getItem(P + "wxPressLog"), P))["2026-11-16"] === 0, "⑧ today's kept, today's fall logged", ache);
   // ⑨ the weather and the mood
   ok((await txt(p, "#wx9Mood .wx9-mood")) === "晴れ・くもりの日：気分4.3🙂4日の平均（5がいちばんよい）｜雨・雪の日：気分2.3🙁3日の平均（5がいちばんよい）" && (await txt(p, ".wx9-mood-say")).startsWith("雨の日は、気分が下がりやすいようです"), "⑨ 4.3 against 2.3", await txt(p, "#wx9Mood"));
   await p.screenshot({ path: out + "/wx9-top.png" });

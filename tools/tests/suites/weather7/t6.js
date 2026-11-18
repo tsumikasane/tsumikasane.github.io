@@ -72,25 +72,10 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   ok(!(await p.$("#wx12Six .wet")) && (await txt(p, "#wx8Take li")).startsWith("折りたたみ傘"), "③ 70%: 12〜18時 not wet");
   await p.selectOption("#wx12UmbAt", "50"); await p.waitForTimeout(500);
   ok(!(await setting(p, "wxUmbAt")) && !!(await p.$("#wx12Six .wet")), "③ back to 50%: none kept");
-  // ⑥ this year: 1° warmer than the normal; 夏日 122, 真夏日 62, the last 夏日 9/30
-  ok(p.calls.some((u) => u.includes("archive-api") && u.includes("start_date=2026-01-01&end_date=2026-11-09")) && (await txt(p, ".wx12-year-say")) === flat("ことし（1月〜10月）の最高気温は、平年より 1° 高め。雨は平年の 100%。")
-    && (await p.getAttribute("#wx12Year .wx12-ym:nth-child(2)", "aria-label")) === "1月、最高の平均11度、平年よりプラス1度、雨50ミリ、平年の100%" && (await txt(p, ".wx12-year-n")) === flat("夏日 122日・真夏日 62日・猛暑日 0日・冬日 0日。ことし最後の夏日は 9/30（水）。"),
-    "⑥ this year against the normal", [await txt(p, ".wx12-year-say"), await p.getAttribute("#wx12Year .wx12-ym:nth-child(2)", "aria-label"), await txt(p, ".wx12-year-n")]);
-  ok((await p.$$eval("#wx7Jump button", (l) => l.map((x) => x.textContent))).includes("ことし"), "⑥ in the chips");
-  await p.locator("#wx12Year").scrollIntoViewIfNeeded(); await p.waitForTimeout(200);
-  await p.screenshot({ path: out + "/wx12-year.png" });
-  // ⑦ the washing hung out at 10:00: the rain at 15時, told at 14:30; then taken in
-  await p.locator("#wx12Wash").scrollIntoViewIfNeeded();
-  await p.click("#wx12WashBtn"); await p.waitForTimeout(400);
-  let al = (await W(p, "alarms", T("10:00"))).filter((a) => a.tag.startsWith("wx-wash:"));
-  ok((await txt(p, "#wx12Wash")) === flat("洗濯物：10:00に干しました15時ごろの雨の30分前にお知らせします取りこんだ") && al.length === 1 && al[0].at === T("14:30") && al[0].title === "洗濯物を取りこんで" && al[0].body === "15時ごろから雨の予報です（降水確率 60%）", "⑦ told at 14:30", [await txt(p, "#wx12Wash"), al]);
-  await p.screenshot({ path: out + "/wx12-wash.png" });
-  await p.click("#wx12WashBtn"); await p.waitForTimeout(400);
-  ok((await ls(p, "wxWash")) === null && !(await W(p, "alarms", T("10:00"))).some((a) => a.tag.startsWith("wx-wash:")), "⑦ taken in: none");
   // ⑧ snow tomorrow from 4時 (6 cm): told at 20:00 tonight
   await p.locator("#wx10NoteBox").scrollIntoViewIfNeeded();
   await p.click("#wx12SnowOn"); await p.waitForTimeout(300);
-  al = (await W(p, "alarms", T("10:00"))).filter((a) => a.tag.startsWith("wx-snow:"));
+  let al = (await W(p, "alarms", T("10:00"))).filter((a) => a.tag.startsWith("wx-snow:"));
   ok(al.length === 1 && al[0].at === T("20:00") && al[0].title === "あしたは雪の予報です（4時ごろから）" && al[0].body === "1日で6cmほど降りそうです。足もとや路面の凍結、交通の乱れに気をつけて", "⑧ 20:00 tonight", al);
   // ⑨ 大阪 watched over: thunder and 30 mm at 15時 tomorrow
   await p.locator("#wx12WatchBox").scrollIntoViewIfNeeded();

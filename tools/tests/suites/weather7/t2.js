@@ -33,12 +33,8 @@ async function open(b, when, more = {}, o = {}) {
 
   // ① what to take
   ok((await txt(p, "#wx8Take li")) === "日焼け止め｜羽織るもの｜マスク", "① sunscreen (UV 3), a layer (体感 9〜17°), a mask (PM2.5 50)", await txt(p, "#wx8Take li"));
-  // ⑤ ozone, ⑥ to sunburn
+  // ⑤ the air asks for ozone, for 持ち物 and 空気のお知らせ (⑤'s line in 体調と空気 and ⑥ to sunburn in 暮らしのひとこと: taken out 2026-11-18)
   ok(p.calls.some((u) => u.includes("air-quality-api") && u.includes("hourly=pm2_5,dust,ozone")), "⑤ the air asks for ozone");
-  ok((await txt(p, ".wx8-ozone")) === "オゾンが多め。光化学スモッグに注意（200µg/m³）目やのどがチカチカしたら、室内へ。外での激しい運動はひかえめに", "⑤ ozone 200", await txt(p, ".wx8-ozone"));
-  ok((await txt(p, ".wx-lines .wx-line")).includes("日焼け止めなしで日焼けするまで、いちばん強いときで約65分（はだの強さで変わります）"), "⑥ about 65 minutes at UV 3");
-  // ⑦ the bicycle and the car
-  ok((await txt(p, ".wx8-bike")) === "自転車は、風が強めです（15時ごろ9m/s）" && (await txt(p, ".wx8-car")) === "洗車日和です（このあと3日、雨の予報なし）", "⑦ the wind at 15時; no rain 3 days", [await txt(p, ".wx8-bike"), await txt(p, ".wx8-car")]);
   // ⑧ the season
   ok((await txt(p, "#wx8Season")) === flat("季節のめやす：最高気温が15°を下回る日が続きます。そろそろ冬物（コート）を出す時期です。朝晩の暖房が必要な時期です。氷点下の朝があります。水道管や路面の凍結に気をつけて。"), "⑧ winter clothes, heating, a frozen morning", await txt(p, "#wx8Season"));
   // ④ the days' names

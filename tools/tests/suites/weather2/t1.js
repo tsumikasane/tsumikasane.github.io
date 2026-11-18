@@ -32,15 +32,6 @@ const W = (p, f, ...a) => p.evaluate(({ f, a }) => window.__wx2[f](...a), { f, a
   // ③ the amount
   ok((await txt(p, ".wx2-amount")) === "これからの雨の量は8mmいちばん強いのは17時ごろ、1時間に4.5mm（本降りの雨）", "③ how much and how hard", await txt(p, ".wx2-amount"));
   ok((await W(p, "strength", 0.2)) === "ぱらつく程度" && (await W(p, "strength", 25)) === "強い雨" && (await W(p, "strength", 60)) === "非常に激しい雨", "③ JMA's words");
-  // ② the pressure
-  ok((await txt(p, ".wx2-press")) === "気圧が大きく下がります（いまから6時間で6hPa）頭痛やだるさが出やすい日です。無理をしないで" && !!(await p.$(".wx2-press.warn")), "② falling: said, marked", await txt(p, ".wx2-press"));
-  ok((await W(p, "press", "2026-11-15")).level === 0, "② another day: steady");
-  // ⑧ dry
-  ok((await txt(p, ".wx2-dry")).startsWith("空気が乾燥しています（湿度35%まで下がる予報）"), "⑧ dry air", await txt(p, ".wx2-dry"));
-  ok(!(await p.$(".wx2-muggy")), "⑧ not muggy in November");
-  // ⑦ the air
-  ok((await txt(p, ".wx2-pm")) === "PM2.5はやや多め（いちばん多いときで42µg/m³）敏感な人は、マスクがあると安心", "⑦ PM2.5", await txt(p, ".wx2-pm"));
-  ok((await txt(p, ".wx2-dust")).startsWith("黄砂が飛ぶかもしれません（60µg/m³）"), "⑦ 黄砂", await txt(p, ".wx2-dust"));
   // ⑥ the plans
   const plans = await p.$$eval(".wx2-plans li", (l) => l.map((x) => [x.className, x.textContent.replace(/\s+/g, "")]));
   ok(plans.length === 2 && plans[0][1].startsWith("11:00買い物") && !plans[0][0] && plans[1][1].includes("映画") && plans[1][1].endsWith("70%傘を") && plans[1][0] === "wet", "⑥ the plans with their hours' weather", plans);

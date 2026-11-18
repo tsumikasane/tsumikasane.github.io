@@ -78,18 +78,7 @@ const ah = (rh) => { let s = 0, n = 0; for (let h = 7; h <= 21; h++) { const t =
   ok((await txt(p, "#wx8Take li")) === "日焼け止め｜羽織るもの｜水筒" && (await p.getAttribute("#wx8Take li:last-child", "class")) === "wx11-mine", "⑨ 水筒 every day, as the user's", await txt(p, "#wx8Take li"));
   await p.click(".wx-days li:nth-child(4) button"); await p.waitForTimeout(400);
   ok((await txt(p, "#wx8Take li")).endsWith("レインブーツ｜水筒"), "⑨ レインブーツ on a wet day", await txt(p, "#wx8Take li"));
-  // ④ the day's swing on 11/19 (9° / -1°)
-  ok((await txt(p, ".wx11-swing")) === flat("寒暖差が大きい日です（最高と最低の差 10°）脱ぎ着しやすい服で、体を冷やさないように。寒暖差の疲れにも気をつけて"), "④ a swing of 10°", await txt(p, ".wx11-swing"));
-  // ⑤ the window's dew the night of 11/18 (2° at dawn)
-  await p.click(".wx-days li:nth-child(3) button"); await p.waitForTimeout(400);
-  ok((await txt(p, ".wx11-dew")) === flat("11/18（水）の夜は、窓が結露しやすそうです（明け方 2°）朝に窓の水滴をふいて、換気を。カーテンやサッシのカビの予防にも"), "⑤ dew on 11/18's night", await txt(p, ".wx11-dew"));
-  // ④ influenza: tomorrow's air at 45%
-  await p.click(".wx-days li:nth-child(2) button"); await p.waitForTimeout(400);
-  const a = ah(45);
-  ok((await txt(p, ".wx11-flu")) === flat(`${a < 5 ? "空気がとても乾いていて、かぜやインフルエンザがはやりやすい日です" : "かぜやインフルエンザに気をつけたい乾き具合です"}（絶対湿度 ${a.toFixed(1)} g/m³）部屋は加湿を（20°なら湿度50〜60%）。手洗いと、人の多い所ではマスクを`) && !(await p.$(".wx11-dew")),
-    `④ 絶対湿度 ${a.toFixed(1)} tomorrow`, await txt(p, ".wx11-flu"));
   await p.click(".wx-days li:nth-child(1) button"); await p.waitForTimeout(400);
-  ok(!(await p.$(".wx11-flu")) && !(await p.$(".wx11-swing")), "④ none today (65%, 8° apart)");
 
   // ⑥ the order: 1週間 moved up past 朝焼け・夕焼け, then back
   await p.locator("#wx11Order summary").scrollIntoViewIfNeeded();
@@ -141,10 +130,9 @@ const ah = (rh) => { let s = 0, n = 0; for (let h = 7; h <= 21; h++) { const t =
   ok(!p.errs.length, "no page errors", p.errs);
   await p.close();
 
-  // ③ dry days on end, ⑤ mould: a dry, warm and humid week (19:00, the page at tomorrow)
+  // ③ dry days on end: a dry, warm and humid week (19:00, the page at tomorrow) (⑤ mould, in 暮らしのひとこと: taken out 2026-11-18)
   p = await open(b, "2026-11-16T19:00:00+09:00", {}, humid);
   ok((await txt(p, "#wx6Story")).endsWith("雨の降らない日が12日続いていて、この先1週間も雨の予報はありません。乾燥や火の元に気をつけて。"), "③ 12 dry days and none in the week", await txt(p, "#wx6Story"));
-  ok((await txt(p, ".wx11-mold")) === flat("湿気の多い日が続きます。カビに気をつけて（3日の平均の湿度 85%）換気や除湿を。押し入れや靴箱、浴室も") && !(await p.$(".wx11-dew")), "⑤ mould, no dew", await txt(p, ".wx11-mold"));
   ok((await txt(p, "#wx11RestSay")) === "次の休みは11/21（土）から3連休（勤労感謝の日）。11/23（月）は雨の予報です。", "⑧ the same days off in the evening");
   ok(!p.errs.length, "no page errors (evening)", p.errs);
   await b.close();

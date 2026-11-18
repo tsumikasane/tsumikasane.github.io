@@ -31,9 +31,6 @@ async function open(b, when, more = {}, o = {}) {
   await p.click('.wx4-hb[data-t="2026-11-16T15:00"]'); await p.waitForTimeout(300);
   ok((await txt(p, "#wx4HourBox")).endsWith("きのうの同じ時刻19°"), "⑤ an hour pressed: the same hour yesterday", await txt(p, "#wx4HourBox"));
   await p.click('.wx4-hb[data-t="2026-11-16T15:00"]'); await p.waitForTimeout(200);
-  // ④ the washing, ⑦ heating and the futon
-  ok((await txt(p, ".wx-lines .wx-line")).includes("洗濯日和です。よく乾きそう11時に干すと、16時ごろ乾きそう"), "④ hung at 11時, dry by 16時", await txt(p, ".wx-lines .wx-line"));
-  ok((await txt(p, ".wx5-air")) === "暖房がほしい寒さです最高15°・最低7°（体感の最高12°）" && (await txt(p, ".wx5-futon")) === "布団を干すなら10時〜14時ごろ（晴れて、空気が乾いています）", "⑦ heating, and the futon", [await txt(p, ".wx5-air"), await txt(p, ".wx5-futon")]);
   // ⑧ the moon (the reference: 11:45 and 22:11 in 東京), ⑨ the sky's events
   ok((await txt(p, ".wx5-moon")) === "月の出11:45・月の入り22:11", "⑧ the moon's rise and set", await txt(p, ".wx5-moon"));
   ok((await txt(p, "#wx5Events .wx-line")) === "あしたの夜しし座流星群1時間に数個ほど。夜おそくから明け方が見ごろ。雲が少なく、見えやすそう｜11/24（火）の夜満月｜12/9（水）新月月明かりがなく、星を見るのにいい夜です｜12/14（月）の夜ふたご座流星群多い年は1時間に数十個。夜おそくから明け方が見ごろ｜12/24（木）満月",

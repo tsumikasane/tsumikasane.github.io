@@ -40,8 +40,7 @@ const redraw = async (p) => { await W(p, "redraw"); await p.waitForTimeout(200);
   ok((await p.getAttribute(".wx4-warn", "href")) === "https://www.jma.go.jp/bosai/warning/#area_type=class20s&area_code=1310100&lang=ja" && (await txt(p, ".wx4-warn")) === "警報・注意報を見る（気象庁）", "⑨ 千代田区's page", await p.getAttribute(".wx4-warn", "href"));
   const codes = await p.evaluate(() => ["13101", "14118", "14131", "27128", "27141", "27202", "01101", "40131", "23101", "x"].map((m) => window.__wx4.area(m)));
   ok(JSON.stringify(codes) === JSON.stringify(["1310100", "1410000", "1413000", "2710000", "2714000", "2720200", "0110000", "4013000", "2310000", null]), "⑨ a ward of a 政令指定都市 by its city", codes);
-  // ⑥ the strong hours, and UV as the hours' figure
-  ok((await txt(p, ".wx-lines .wx-line")).includes("紫外線は強い（6）。日焼け止めと帽子をとくに強いのは12時〜13時ごろ（6以上）"), "⑥ the hours it is strong", await txt(p, ".wx-lines .wx-line"));
+  // ⑥ UV as the hours' figure (the strong hours were said in 暮らしのひとこと, taken out 2026-11-18)
   await p.click('#wx3Seg [data-view="uv"]'); await p.waitForTimeout(300);
   ok((await txt(p, ".wx-hours .wx-t")).startsWith("3｜5｜6｜5｜3｜1｜0") && (await p.getAttribute('#wx3Seg [data-view="uv"]', "aria-pressed")) === "true", "⑥ 紫外線 by the hour", await txt(p, ".wx-hours .wx-t"));
   ok(await p.evaluate(() => [...document.querySelectorAll("#wx3Seg button")].every((x) => x.scrollWidth <= x.clientWidth + 1)), "⑥ the six buttons fit");
