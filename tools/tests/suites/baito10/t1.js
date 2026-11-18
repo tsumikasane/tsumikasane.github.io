@@ -1,4 +1,4 @@
-// バイト その10 ①②③⑤⑥⑦⑧⑨: what is shown
+// バイト その10 ①②③⑥⑦⑧: what is shown (④⑤⑨ は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8869/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -38,14 +38,6 @@ const block = (p, name) => p.evaluate((name) => [...document.querySelectorAll("#
   await p.click("#bt10AlarmsCard summary"); await p.waitForTimeout(300);
   const ab = await txt(p, "#bt10AlarmsBody");
   ok(ab.includes("11/20（金） 9:00 契約の終わる日が近づいています カフェの契約は 11月27日（金） までです（あと 7 日）") && /^これから届くお知らせ（\d+）$/.test(await txt(p, "#bt10AlarmsHead")), "③ " + ab);
-  // ⑨ 借りているもの: 1 in the head
-  ok((await txt(p, "#bt10LentHead")) === "借りているもの（1）", "⑨ head: " + (await txt(p, "#bt10LentHead")));
-  // ⑤ 就活用のまとめ
-  await p.click("#bt10SkillsCard summary"); await p.waitForTimeout(300);
-  ok((await txt(p, '#bt10SkillsBody [data-job="j1"]')).includes("レジ（6/10）") && (await txt(p, '#bt10SkillsBody [data-job="j2"]')).includes("まだありません"), "④ the list");
-  await p.click("#bt10Resume"); await p.waitForTimeout(300);
-  const cp = await p.evaluate(() => window.__copied);
-  ok(cp === "【カフェ】2026年10月〜現在（1か月）\n・勤務 4 回・のべ 20 時間\n・いつも入っている曜日：月\n・できるようになったこと：レジ（2026年6月）\n・時給：950円 → 1,000円\n\n【配達】2026年11月〜現在（1か月）\n・勤務 2 回・のべ 6 時間", "⑤ " + JSON.stringify(cp));
   // ①⑦⑧ the job's form
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   const f = await p.evaluate(() => { const v = (j, k) => document.querySelector(`#jobForms [data-job="${j}"] [data-f="${k}"]`); return [v("j1", "checksIn").value, v("j1", "checksOut").value, v("j1", "contractEnd").value, v("j1", "contractAlarm").checked, v("j2", "unitPrice").value, v("j2", "contractEnd").value]; });

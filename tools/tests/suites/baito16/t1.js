@@ -1,4 +1,4 @@
-// バイト その16 ①〜⑨: what is shown
+// バイト その16 ①〜⑥⑧⑨: what is shown (⑦ は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8877/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -25,11 +25,6 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   const note = await p.evaluate(() => [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("カフェ")).querySelector(".bt16-notes")?.innerText.replace(/\s+/g, " ").trim());
   ok(note === "去年の11月分より +3 回・+16 時間・+16,000 円", "⑥ " + note);
   ok(!(await p.evaluate(() => [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("塾"))?.querySelector(".bt16-notes"))), "⑥ none for 塾 (no 去年)");
-  // ⑦ 時給の早見表
-  await p.click("#bt16Rates summary"); await p.waitForTimeout(300);
-  const rt = await p.evaluate(() => [...document.querySelectorAll("#bt16RatesBody .bt16-rates")].map((r) => r.innerText.replace(/\s+/g, " ").trim()));
-  ok(rt[0] === "カフェ 平日 5:00〜6:00 1,000 円 6:00〜9:00 1,050 円 9:00〜22:00 1,000 円 22:00〜5:00 1,250 円 土日祝 5:00〜6:00 1,100 円 6:00〜9:00 1,150 円 9:00〜22:00 1,100 円 22:00〜5:00 1,375 円 いちばん高いのは 土日祝の 22:00〜5:00（1,375 円）", "⑦ カフェ: " + rt[0]);
-  ok(rt[1] === "塾 5:00〜22:00 1,500 円 22:00〜5:00 1,875 円 いちばん高いのは 22:00〜5:00（1,875 円）", "⑦ 塾: " + rt[1]);
   // ⑧ バイトの日の支出: 7 日 5,600 円・49 日 5,000 円 (固定費はのぞく)
   ok((await txt(p, "#bt16Spend")) === "バイトの日の支出（この8週間） バイトの日（7 日） 1日 800 円 ほかの日（49 日） 1日 102 円 バイトの日は 1日 698 円 多く使っています 差が大きい費目：食費 +739 円 家計簿の支出（固定費をのぞく）を、勤務のある日とない日に分けて、1日あたりにしています。", "⑧ " + (await txt(p, "#bt16Spend")));
   // ⑨ 最低賃金 1,100 円: カフェ and 11/9's 900 円

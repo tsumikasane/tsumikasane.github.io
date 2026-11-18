@@ -1,4 +1,4 @@
-// バイト その5 ①②③⑤⑥⑦⑧⑨⑩ and ④⑤ in 次のバイト: what is shown
+// バイト その5 ①②③⑤⑥⑦⑧⑩ and ④⑤ in 次のバイト: what is shown (⑨ は使う人が消した: 2026-11-18)
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
 const { DATA, today } = require("./data");
@@ -37,11 +37,6 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ok((await find("11/9")).startsWith("1 件"), "⑧ 11/9");
   ok((await find("10月 17:00")).startsWith("2 件"), "⑧ 10月 17:00: " + (await find("10月 17:00")));
   ok((await find("あいう")) === "見つかりませんでした。", "⑧ none");
-  // ⑨ シフト希望: 12/5 has a plan; × at once
-  await p.click("#bt3Ask summary"); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => document.querySelector('#bt3AskBody button[data-day="2026-12-05"]').classList.contains("plan")), "⑨ 12/5 marked as a day with a plan");
-  await p.click("#bt5AskPlans"); await p.waitForTimeout(300);
-  ok(await p.getAttribute('#bt3AskBody button[data-day="2026-12-05"]', "data-m") === "x" && await p.getAttribute('#bt3AskBody button[data-day="2026-12-06"]', "data-m") === "", "⑨ × on it alone");
   // ⑩ 2026 年: 10月分 10,000 + 11月分 27,500
   const yr = await txt(p, "#bt5Year");
   ok(yr.includes("2026年のバイトのまとめ") && yr.includes("37,500 円") && /30\s時間/.test(yr) && /6\s回/.test(yr), "⑩ " + yr);

@@ -1,4 +1,4 @@
-// バイト その10 ①②④⑦⑧⑨⑩: what is pressed and typed
+// バイト その10 ①②⑦⑧⑩: what is pressed and typed (④⑨ は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8869/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -61,28 +61,12 @@ const shift = async (p, id) => (await ls(p, "shifts")).find((x) => x.id === id);
   ok((await txt(p, "#bt3QuickSay")).includes("・10 件"), "⑦ said: " + (await txt(p, "#bt3QuickSay")));
   await p.press("#bt3QuickText", "Enter"); await p.waitForTimeout(400);
   ok((await ls(p, "shifts")).some((x) => x.date === "2026-11-20" && x.start === "17:00" && x.end === "20:00" && x.jobId === "j2" && x.units === 10), "⑦ put in");
-  // ④ できるようになったこと: one put in, one taken off and back
-  await p.click("#bt10SkillsCard summary"); await p.waitForTimeout(300);
-  await p.fill('#bt10SkillsBody [data-job="j1"] input[type="text"]', "ドリンク"); await p.press('#bt10SkillsBody [data-job="j1"] input[type="text"]', "Enter"); await p.waitForTimeout(400);
-  let sk = (await job(p, "j1")).skills;
-  ok(sk.length === 2 && sk[1].name === "ドリンク" && sk[1].date === today && (await txt(p, '#bt10SkillsBody [data-job="j1"] .bt10-items')).includes("ドリンク（11/16）"), "④ put in: " + JSON.stringify(sk));
-  await p.click('#bt10SkillsBody [data-job="j1"] .bt10-items li:first-child button'); await p.waitForTimeout(400);
-  ok(JSON.stringify((await job(p, "j1")).skills.map((x) => x.name)) === '["ドリンク"]' && !(await txt(p, '#bt10SkillsBody [data-job="j1"]')).includes("レジ"), "④ taken off");
-  await p.click(".toast.show .toast-undo"); await p.waitForTimeout(400);
-  ok(JSON.stringify((await job(p, "j1")).skills.map((x) => x.name)) === '["レジ","ドリンク"]' && (await txt(p, '#bt10SkillsBody [data-job="j1"]')).includes("レジ"), "④ back");
-  // ⑨ 借りているもの: カギ in, 制服 returned
-  await p.click("#bt10LentCard summary"); await p.waitForTimeout(300);
-  ok((await txt(p, '#bt10LentBody [data-job="j1"]')).includes("制服（4/1から）"), "⑨ the list");
-  await p.fill('#bt10LentBody [data-job="j1"] input[type="text"]', "カギ"); await p.click('#bt10LentBody [data-job="j1"] .bt4-adv-form button'); await p.waitForTimeout(400);
-  ok((await txt(p, "#bt10LentHead")) === "借りているもの（2）" && (await job(p, "j1")).lent.length === 2, "⑨ カギ in");
-  await p.click('#bt10LentBody [data-job="j1"] .bt10-items li:first-child button'); await p.waitForTimeout(400);
-  ok((await txt(p, "#bt10LentHead")) === "借りているもの（1）" && JSON.stringify((await job(p, "j1")).lent.map((x) => x.name)) === '["カギ"]', "⑨ 制服 returned");
-  // ⑨ as カフェ is left: said; not left
+  // as カフェ is left: 借りているもの no more said (消した: 2026-11-18); not left
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   await p.click('#jobForms [data-job="j1"] .bt9-end'); await p.waitForTimeout(300);
-  ok((await txt(p, "#confirmMsg")).includes("借りているもの（カギ）を、返すのを忘れずに。"), "⑨ said: " + (await txt(p, "#confirmMsg")));
+  ok((await txt(p, "#confirmMsg")).startsWith("「カフェ」をやめたことにしますか？") && !(await txt(p, "#confirmMsg")).includes("借りているもの"), "no 借りているもの: " + (await txt(p, "#confirmMsg")));
   await p.click("#confirmNo"); await p.waitForTimeout(300);
-  ok(!("ended" in (await job(p, "j1"))), "⑨ not left");
+  ok(!("ended" in (await job(p, "j1"))), "not left");
   // ⑧ its お知らせ off; ① a line more; ⑦ the price changed
   await p.uncheck('#jobForms [data-job="j1"] [data-f="contractAlarm"]'); await p.waitForTimeout(700);
   ok((await job(p, "j1")).contractAlarm === false && !(await p.evaluate(() => window.__bt10.alarms(Date.now()).some((a) => a.tag.startsWith("bt10-contract")))), "⑧ off");

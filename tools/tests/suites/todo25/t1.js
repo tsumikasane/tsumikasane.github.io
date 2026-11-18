@@ -1,4 +1,4 @@
-// ToDo その25 ①〜⑩, through the hook build at 8887 (the insides) and as a user would
+// ToDo その25 ①②③⑤〜⑩ (④ 声のメモ taken off 2026-11-18, the user's call), through the hook build at 8887 (the insides) and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8887/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -60,13 +60,13 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   ok(!(await items(p)).map(flat).some((w) => w.includes("次の期限を聞く")), "③ not for a repeat");
   await p.keyboard.press("Escape"); await p.waitForTimeout(300);
 
-  // ---- ⑨ 終わりの目安
+  // ---- ⑨ 完了基準 (終わりの目安 until 2026-11-18, renamed at the user's call)
   await W(p, "edit", "a"); await p.waitForTimeout(900);
   ok(await p.isVisible("#reFin25"), "⑨ in its sheet");
   await p.fill("#reFin25", "3ページ書けたら終わり"); await saveSheet(p);
   ok((await todo(p, "a")).finish === "3ページ書けたら終わり", "⑨ kept", await todo(p, "a"));
   await W(p, "focus7", "a"); await p.waitForTimeout(800);
-  ok((await txt(p, ".td25-fin")) === "終わりの目安3ページ書けたら終わり", "⑨ in 1件に集中する画面", await txt(p, ".td25-fin"));
+  ok((await txt(p, ".td25-fin")) === "完了基準3ページ書けたら終わり", "⑨ in 1件に集中する画面", await txt(p, ".td25-fin"));
   await closeSheet(p);
   const r1 = await todo(p, "r1");
   await check(p, "r1");
@@ -181,24 +181,9 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   ok((await txt(p, "#tdPanelBody")).includes("来週やるを選ぶ4件を選んでいます"), "⑧ a step of 週のふりかえり", await txt(p, "#tdPanelBody"));
   await closeSheet(p);
 
-  // ---- ④ 声のメモ
-  await W(p, "edit", "b"); await p.waitForTimeout(900);
-  ok(await p.isVisible(".td25-rec") && (await txt(p, ".td25-rec")) === "🎙声で残す", "④ 声で残す by its files", await txt(p, ".td25-rec"));
-  await p.click(".td25-rec"); await p.waitForTimeout(1800);
-  ok((await txt(p, ".td25-rec")).startsWith("■止める"), "④ recording", await txt(p, ".td25-rec"));
-  await p.click(".td25-rec"); await p.waitForTimeout(1200);
-  const fs = await W(p, "files", "b");
-  ok(fs.length === 1 && fs[0].voice && fs[0].size > 0 && fs[0].dur >= 1 && /^声のメモ 2026-11-11 \d{4}\.(webm|ogg|m4a)$/.test(fs[0].name), "④ kept as one of its files", fs);
-  ok((await p.locator("#reFiles li.td25-voice-li audio").count()) === 1 && (await status(p)).includes("声のメモを残しました"), "④ played there", await status(p));
-  await closeSheet(p);
-  ok((await row(p, "b")).includes("🎙"), "④ 🎙 on its row", await row(p, "b"));
-  await W(p, "focus7", "b"); await p.waitForTimeout(800);
-  ok((await p.locator(".td25-voices audio").count()) === 1, "④ in 1件に集中する画面");
-  await closeSheet(p);
-
   // ---- the guide, その23's row picker
   const g = await W(p, "guide");
-  ok(["自動で続ける", "かかった時間を聞く", "終えたら次を決める", "声のメモ", "休憩のすごし方", "集中をあと5分", "サブタスクのかかる時間", "来週やる", "終わりの目安", "ToDoなしの集中をToDoに"].every((w) => g.includes(w)), "the guide");
+  ok(["自動で続ける", "かかった時間を聞く", "終えたら次を決める", "休憩のすごし方", "集中をあと5分", "サブタスクのかかる時間", "来週やる", "完了基準", "ToDoなしの集中をToDoに"].every((w) => g.includes(w)) && !g.includes("声のメモ"), "the guide");
   const rowsOf = JSON.parse(await W(p, "rows"));
   ok(["そのつどの繰り返し", "来週やる", "声のメモ"].every((w) => rowsOf.some(([, x]) => x === w)), "その23 ① 行に出すもの", rowsOf);
 

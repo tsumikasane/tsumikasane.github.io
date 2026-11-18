@@ -1,4 +1,4 @@
-// ToDo その17 ①〜⑩, through the hook build at 8825 (the insides) and as a user would
+// ToDo その17 ①〜⑦⑨⑩ (⑧ なぜやる taken off 2026-11-18, the user's call), through the hook build at 8825 (the insides) and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8825/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -110,16 +110,6 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
   await press(p, "きょうやってみる");
   const pk = (await ls(p, "todos")).find((t) => t.text === pickedName);
   ok(pk && !pk.someday && pk.due === "2026-11-11" && pk.today === "2026-11-11", "⑦ back for today, in きょうやる", pk);
-
-  // ---- ⑧ なぜやる
-  await p.click('#todoList [data-edit="a"]'); await p.waitForTimeout(800);
-  await p.fill("#reWhy17", "単位を落とさないため");
-  await p.click("#recSave"); await p.waitForTimeout(700);
-  ok((await todo(p, "a")).why === "単位を落とさないため", "⑧ kept");
-  await hold(p, "a"); await press(p, "このToDoに集中する"); await p.waitForTimeout(500);
-  ok((await txt(p, ".td17-why")) === "なぜやる単位を落とさないため", "⑧ in 1件に集中する画面", await txt(p, ".td17-why"));
-  await p.evaluate(() => document.getElementById("focusStop")?.click()); await p.waitForTimeout(300);
-  await closeSheet(p);
 
   // ---- ⑨ 期限なしを整理する
   await W(p, "add", { id: "nd1", text: "本棚を買う", createdAt: Date.parse("2026-10-01T09:00:00+09:00") }); await p.waitForTimeout(300);

@@ -1,4 +1,4 @@
-// ToDo その7: the edges (other days and clocks, odd cases, what else counts them)
+// ToDo その7: the edges (other days and clocks, odd cases, what else counts them; ⑩ ファイル taken off 2026-11-18, the user's call)
 process.env.URL0 = process.env.URL0 || "http://localhost:8782/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -149,25 +149,6 @@ async function open(b, when, more = {}, hash = "todo") {
     await p.locator(".td7-move-day", { hasText: "11月13日" }).locator(".td7-here").click(); await p.waitForTimeout(500);
     const r1 = await todo(p, "r1");
     ok(r1.due === "2026-11-13" && r1.repeatFrom === "2026-11-12" && r1.repeat === "weekly", "⑨ a repeat moved: its turns still count from 11/12", r1);
-    errs.push(...p.errs);
-    await p.context().close();
-  }
-
-  // ---- ⑩ too big; a repeat's next turn takes them on
-  {
-    const p = await open(b, "2026-11-11T08:30:00+09:00");
-    await p.click('#todoList [data-edit="r1"]'); await p.waitForTimeout(800);
-    await p.setInputFiles("#reFiles input[type=file]", { name: "big.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(21 * 1048576, 1) });
-    await p.waitForTimeout(800);
-    ok(!(await p.$("#reFiles .td7-file-name")) && (await status(p)).includes("20MBより大きいファイルは付けられません"), "⑩ over 20 MB: not kept, said");
-    await p.setInputFiles("#reFiles input[type=file]", { name: "分別表.png", mimeType: "image/png", buffer: Buffer.from("png".repeat(400)) });
-    await p.waitForTimeout(800);
-    await p.click("#sheetCancel"); await p.waitForTimeout(500);
-    await p.click('#todoList [data-check="r1"]'); await p.waitForTimeout(2200);
-    const next = (await ls(p, "todos")).find((t) => t.text === "ゴミ出し" && !t.done);
-    ok(next && next.id !== "r1" && (await W(p, "files", next.id)).length === 1 && (await W(p, "files", "r1")).length === 0, "⑩ done: its file goes on with the next turn", next);
-    await p.click('#todoList [data-check="r1"]'); await p.waitForTimeout(2200);
-    ok((await W(p, "files", "r1")).length === 1, "⑩ checked back on: the file comes back with it");
     errs.push(...p.errs);
     await p.context().close();
   }

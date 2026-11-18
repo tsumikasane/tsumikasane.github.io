@@ -1,4 +1,4 @@
-// ToDo その7 ①〜⑩, through the hook build at 8782 (the insides) and as a user would
+// ToDo その7 ①〜⑨ (⑩ ファイル taken off 2026-11-18, the user's call), through the hook build at 8782 (the insides) and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8782/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -160,27 +160,6 @@ async function open(b, when) {
   ok(!!(await p.$("#tdPanelBody .td7-week-move")) && !(await p.$(".td7-piece")), "⑨ 終わる: 見通し as it was");
   await p.click("#sheetDone"); await p.waitForTimeout(500);
 
-  // ---- ⑩ ファイル: attached in its sheet, on its row, opened, taken off, kept after a reload
-  await p.click('#todoList [data-edit="g"]'); await p.waitForTimeout(800);
-  ok(!!(await p.$("#reFiles .td7-file-add")) && (await txt(p, "#reFiles .td-note")) === "この端末だけに残ります（同期やバックアップには入りません）。", "⑩ in its sheet");
-  await p.setInputFiles("#reFiles input[type=file]", { name: "発表資料.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n" + "x".repeat(3000)) });
-  await p.waitForTimeout(800);
-  ok((await txt(p, "#reFiles .td7-file-name")) === "発表資料.pdf" && (await txt(p, "#reFiles .td7-file-size")) === "3KB" && (await status(p)).includes("ファイルを1個付けました"), "⑩ attached, its name and size", await txt(p, "#reFiles"));
-  await p.evaluate(() => { window.__dlName = null; const c = HTMLAnchorElement.prototype.click; HTMLAnchorElement.prototype.click = function () { if (this.download) window.__dlName = this.download; return c.call(this); }; });
-  const [dl] = await Promise.all([p.waitForEvent("download", { timeout: 5000 }).catch(() => null), p.click("#reFiles .td7-file-open")]);
-  const dlSize = dl ? require("fs").statSync(await dl.path()).size : -1;
-  // (this test browser names any download with letters past ASCII "download"; the link's own name is what a phone uses)
-  ok(dl && dlSize === 3009 && (await p.evaluate(() => window.__dlName)) === "発表資料.pdf", "⑩ opened: the file itself, by its name", [dl && dl.suggestedFilename(), dlSize]);
-  await p.click("#sheetCancel"); await p.waitForTimeout(500);
-  ok((await txt(p, '#todoList li:has([data-check="g"]) .td7-files')) === "ファイル1", "⑩ counted on its row");
-  await p.reload(); await p.waitForTimeout(1500);
-  ok(JSON.stringify(await W(p, "files", "g")) === JSON.stringify([{ name: "発表資料.pdf", size: 3009, type: "application/pdf" }]) && (await txt(p, '#todoList li:has([data-check="g"]) .td7-files')) === "ファイル1", "⑩ kept on this device (after a reload)");
-  await p.click('#todoList [data-edit="g"]'); await p.waitForTimeout(800);
-  await p.click("#reFiles .td7-file-del"); await p.waitForTimeout(500);
-  ok(!(await p.$("#reFiles .td7-file-name")) && (await W(p, "files", "g")).length === 0, "⑩ taken off");
-  await undo(p); await p.waitForTimeout(300);
-  ok((await W(p, "files", "g")).length === 1 && (await txt(p, "#reFiles .td7-file-name")) === "発表資料.pdf", "⑩ 元に戻す");
-  await p.click("#sheetCancel"); await p.waitForTimeout(500);
   const errs = [...p.errs];
   await p.context().close();
 

@@ -1,4 +1,4 @@
-// バイト その8 ④⑨⑩: what is pressed and typed
+// バイト その8 ⑨⑩: what is pressed and typed (④ は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8868/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -13,12 +13,6 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   await p.addInitScript(() => { Object.defineProperty(navigator, "share", { value: undefined, configurable: true }); window.__copied = ""; Object.defineProperty(navigator, "clipboard", { value: { writeText: async (t) => { window.__copied = t; } }, configurable: true }); });
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
-  // ④ シフト希望: 月・木 ○ in December
-  await p.click("#bt3Ask summary"); await p.waitForTimeout(300);
-  ok((await txt(p, "#bt3AskBody")).includes("いつも入っている曜日：月・木"), "④ the usual days");
-  await p.click("#bt8AskUsual"); await p.waitForTimeout(300);
-  const marks = await p.evaluate(() => [...document.querySelectorAll('#bt3AskBody button[data-m="o"]')].map((b) => b.dataset.day));
-  ok(JSON.stringify(marks) === JSON.stringify(["2026-12-03", "2026-12-07", "2026-12-10", "2026-12-14", "2026-12-17", "2026-12-21", "2026-12-24", "2026-12-28", "2026-12-31"]), "④ ○: " + JSON.stringify(marks));
   // ⑨ 代わりのお願い from the sheet
   await p.click('#shiftList [data-edit="t27"]'); await p.waitForTimeout(500);
   await p.click("#bt8SwapSend"); await p.waitForTimeout(400);

@@ -1,4 +1,4 @@
-// バイト その17 ①②③④⑤⑥⑦⑧⑨: what is shown
+// バイト その17 ①〜⑧: what is shown (⑨ は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8879/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -33,9 +33,6 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ok((await txt(p, "#jobYear .bt17-year")) === "11/20までに入った給料：去年 15,000 円 → 今年 37,500 円（+22,500 円）", "⑦ " + (await txt(p, "#jobYear .bt17-year")));
   // ⑧ 立ち仕事 2.5 × 50 kg × 5 時間 × 1.05 × 3 回 (11/23 はまだ)
   ok((await p.evaluate(() => [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("カフェ")).querySelector(".bt17-notes p")?.innerText.replace(/\s+/g, " ").trim())) === "消費の目安：ここまで 約 1,970 kcal（1回 約 660 kcal）", "⑧");
-  // ⑨ 定期と1回ごと: nothing typed yet
-  await p.click("#bt17Pass summary"); await p.waitForTimeout(300);
-  ok((await txt(p, "#bt17PassOut")) === "1回（往復）と定期（1か月）の金額を入れると、どちらが得かが出ます。", "⑨ " + (await txt(p, "#bt17PassOut")));
   // ①②③④⑤⑥⑧ the settings
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   const f = await p.evaluate(() => { const g = (k) => document.querySelector(`#jobForms [data-job="j1"] [data-f="${k}"]`); const v = (id) => document.getElementById(id); return [g("app").value, g("roles").value, g("raiseH").value, g("raisePlus").value, g("move").value, v("bt17MonthMax").value, v("bt17WeekDays").value, v("bt17S0n").value, v("bt17S0p").value, v("bt17S1n").value, v("bt17S2n").value, v("bt17AnnivChk").checked]; });

@@ -33,7 +33,7 @@ const PIC = fs.readFileSync(__dirname + "/pic.png");
   ok(neko.includes("「TOEIC 800点」、あと 10% で半分だよ") && neko.includes("「TOEIC 800点」、3日連続だね！") && neko[neko.length - 1] === "ゴロゴロ…", "⑨ つみねこ speaks of the goal put first", neko);
 
   // ⑤ 取り組む時間のお知らせ: 月・水・金 21:00, today (水) first, with the next step and why
-  let al = (await W(p, "alarms", Date.now())).filter((a) => a.tag.startsWith("goal-time:g1:"));
+  let al = (await W(p, "alarms", await p.evaluate(() => Date.now()))).filter((a) => a.tag.startsWith("goal-time:g1:")); // (the page's clock, not this computer's)
   ok(al[0]?.tag === "goal-time:g1:2026-11-11" && new Date(al[0].at).toISOString() === "2026-11-11T12:00:00.000Z" && al[1]?.tag === "goal-time:g1:2026-11-13", "⑤ 21:00 today, then Friday", al.slice(0, 2).map((a) => a.tag));
   ok(al[0].body.startsWith("取り組む時間です。次の一歩は「") && al[0].body.endsWith("（英語で仕事をしたいから）") && al[0].url === "./#goal:g1", "⑤ its words: the next step and why", al[0].body);
 

@@ -1,4 +1,4 @@
-// 家計簿 ③⑦⑨: 月ごとの推移, 支出のカレンダー, 貯金の目標 (まとめ)
+// 家計簿 ③⑦⑨: 月ごとの推移, 収入と支出のカレンダー, 貯金の目標 (まとめ)
 const { chromium } = require("playwright");
 const { URL0, P, at, phone, seed, T0 } = require("./lib");
 const out = process.argv[2] || __dirname + "/shots";
@@ -79,15 +79,15 @@ const DATA = {
   await p.locator("#monthNav .chip-btn").click(); await p.waitForTimeout(300);
   const labels4 = await p.evaluate(() => [...document.querySelectorAll("#trendChart text")].map((t) => t.textContent).filter((t) => /^\d+月$/.test(t)));
   ok(labels4.join(",") === "6月,7月,8月,9月,10月,11月", "③ 今月へ: " + labels4.join(","));
-  // ⑦ the calendar: 30 days, the steps from 1日の予算 1,000 円 (500, 1,000, 2,000), 家賃 left out
-  const cells = await p.evaluate(() => [...document.querySelectorAll("#exCal .excal-d")].map((c) => [c.dataset.day.slice(8), [...c.classList].find((k) => /^lv/.test(k)), c.querySelector(".da")?.textContent || ""]));
+  // ⑦ 収入と支出のカレンダー (the 支出のカレンダー until 2026-11-18, the user's call): 30 days, each with its 収入 (+) over its 支出, 固定費 too
+  const cells = await p.evaluate(() => [...document.querySelectorAll("#exCal .excal-d")].map((c) => [c.dataset.day.slice(8), c.querySelector(".da.in")?.textContent || "", c.querySelector(".da.out")?.textContent || ""]));
   ok(cells.length === 30, "⑦ 30 days: " + cells.length);
-  const lv = Object.fromEntries(cells.map(([d, l, a]) => [d, l + ":" + a]));
-  ok(lv["01"] === "lv0:" && lv["02"] === "lv1:400" && lv["03"] === "lv2:600" && lv["05"] === "lv3:1,500" && lv["07"] === "lv4:3,000" && lv["08"] === "lv4:4,300" && lv["10"] === "lv0:", "⑦ steps: " + JSON.stringify(lv));
+  const lv = Object.fromEntries(cells.map(([d, a, o]) => [d, a + "|" + o]));
+  ok(lv["01"] === "+80,000|50,000" && lv["02"] === "|400" && lv["03"] === "|600" && lv["04"] === "|" && lv["05"] === "|1,500" && lv["07"] === "|3,000" && lv["08"] === "|4,300" && lv["10"] === "|", "⑦ the days: " + JSON.stringify(lv));
   const pads = await p.locator("#exCal .excal-pad").count(), wds = await p.evaluate(() => [...document.querySelectorAll("#exCal .excal-wd")].map((w) => w.textContent).join(""));
   ok(pads === 0 && wds === "日月火水木金土", "⑦ 2026-11-01 is a Sunday, the week from 日: " + pads + " " + wds);
   const key = await txt(p, "#exCalKey");
-  ok(key.includes("〜500 〜1,000 〜2,000 それ以上") && key.includes("1日の予算 1,000 円 を目安に塗っています。") && key.includes("固定費はのぞいています。") && key.includes("使わなかった日は 4 日。"), "⑦ key: " + key);
+  ok(key === "収入 +80,000 円・支出 64,800 円・収支 +15,200 円 ＋がついているのは収入、ついていないのは支出です。使わなかった日は 3 日。", "⑦ key: " + key);
   ok(await p.getAttribute('#exCal [data-day="2026-11-10"]', "class").then((c) => c.includes("today")) && (await p.getAttribute('#exCal [data-day="2026-11-11"]', "class")).includes("future"), "⑦ today ringed, tomorrow bare");
   ok((await p.getAttribute('#exCal [data-day="2026-11-08"]', "aria-label")) === "11月8日（日） 支出 4,300 円", "⑦ a day's name for VoiceOver: " + await p.getAttribute('#exCal [data-day="2026-11-08"]', "aria-label"));
   // ⑦ a day pressed: its 明細 under it

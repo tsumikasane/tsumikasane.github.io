@@ -1,4 +1,4 @@
-// バイト その17 ②④⑤⑨⑩: what is pressed and typed
+// バイト その17 ②④⑤⑩: what is pressed and typed (⑨ は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8879/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -32,11 +32,6 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   ok((await p.inputValue("#reShiftRole")) === "キッチン", "② in the sheet");
   await p.selectOption("#reShiftRole", "レジ"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   ok((await ls(p, "shifts")).find((x) => x.id === "n2").role === "レジ", "② changed");
-  // ⑨ 1回 300 円・定期 4,500 円 (月 平均 8÷3 回: 11/19 も)
-  await p.click("#bt17Pass summary"); await p.waitForTimeout(300);
-  await p.fill("#bt17PassEach", "300"); await p.fill("#bt17PassMonth", "4500"); await p.dispatchEvent("#bt17PassMonth", "change"); await p.waitForTimeout(500);
-  ok((await txt(p, "#bt17PassOut")) === "この3か月は 月 平均 2.7 回。1回ごとだと 月 約 800 円・定期は 4,500 円 1回ごとのほうが 3,700 円 安い 月 15 回より多く入るなら、定期のほうが得です。", "⑨ " + (await txt(p, "#bt17PassOut")));
-  ok((await job(p, "j1")).passCost === 4500, "⑨ the 定期代 kept");
   // ⑩ the シフト表's photo kept in sight
   await p.click("#bt7Photos summary"); await p.waitForTimeout(300);
   await p.setInputFiles("#bt7PhotoFile", { name: "shift.png", mimeType: "image/png", buffer: PNG }); await p.waitForTimeout(1200);

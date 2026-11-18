@@ -1,4 +1,4 @@
-// ToDo その4 ①〜⑩, through the hook build at 8776 (the insides) and as a user would
+// ToDo その4 ①②③⑥〜⑩ (④ 時間帯 and ⑤ 天気 taken off 2026-11-18, the user's call), through the hook build at 8776 (the insides) and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8776/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -24,17 +24,12 @@ const base = () => ({ todos: D.todos(), todoLists: D.lists(), events: D.events()
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
   await seed(p, base(), "todo"); await p.waitForTimeout(1000);
 
-  // ④ 朝・昼・夜: their small headings under 期限切れ and きょう, in that order; on a row
-  const h0 = await heads(p);
-  ok(h0.slice(0, 6).join("|") === "期限切れ|昼|きょう|朝|夜|いつでも", "④ the small headings, 朝 → 夜 → いつでも", h0);
-  ok((await txt(p, '#todoList li:has([data-check="b"]) .due')).includes("朝 晴れの日"), "④⑤ on its row: 朝・晴れの日 (the ・ drawn)", await txt(p, '#todoList li:has([data-check="b"]) .due'));
-
   // ① 絞り込み: 重要だけ, then かかる時間が短い順; the line over the list; each taken off there
   await p.click("#td4View"); await p.waitForTimeout(600);
   ok((await txt(p, "#sheetTitle")) === "絞り込みと並べ方", "① its sheet");
   await p.locator("#tdPanelBody .td4-opt", { hasText: "重要だけ" }).click(); await p.waitForTimeout(400);
   ok((await rows(p)).join(",") === "f,a", "① 重要だけ: 銀行で振込, レポートを書く", await rows(p));
-  ok(await p.evaluate(() => document.getElementById("td4WxCard").hidden && document.getElementById("td4RepCard").hidden), "① narrowed: the weather's and the repeat's cards put away");
+  ok(await p.evaluate(() => document.getElementById("td4RepCard").hidden), "① narrowed: the repeat's card put away");
   await p.locator("#tdPanelBody .td4-opt", { hasText: "かかる時間が短い順" }).click(); await p.waitForTimeout(400);
   ok((await rows(p)).join(",") === "a,f" && (await heads(p))[0] === "かかる時間が短い順", "① in the order picked, under its name (none set last)", [await rows(p), await heads(p)]);
   await done(p);
@@ -84,47 +79,23 @@ const base = () => ({ todos: D.todos(), todoLists: D.lists(), events: D.events()
   ok((await todo(p, "a")).done === false, "③ a part taken back: the whole one back too");
   await p.evaluate(() => document.querySelector("#tdFocusCard .td-fc-back").click()); await p.waitForTimeout(400);
 
-  // ⑤ 天気: the card; きょうやるに入れる; tomorrow's rain; the morning's notification
-  let wx = await txt(p, "#td4WxCard");
-  ok(wx.includes("きょうは晴れ（降水確率 10%）") && wx.includes("「洗濯」「布団を干す」") && wx.includes("あしたは雨の予報です（降水確率 80%）") && wx.includes("「部屋の片づけ」"), "⑤ the card: today's sun, tomorrow's rain", wx);
-  await p.locator("#td4WxCard button", { hasText: "きょうやるに入れる" }).click(); await p.waitForTimeout(500);
-  ok((await todo(p, "b")).today === "2026-11-11" && (await todo(p, "c")).today === "2026-11-11" && (await txt(p, "#td4WxCard")).includes("きょうやるに入っています"), "⑤ both put in きょうやる");
-  await p.click("#todoSettings"); await p.waitForTimeout(600);
-  await p.evaluate(() => document.getElementById("tdMorningOn").scrollIntoView({ block: "center" }));
-  await p.click("#tdMorningOn"); await p.waitForTimeout(400);
-  let mo = (await W(p, "morning", WHEN.getTime())).filter((a) => /td-morning:2026-11-1[24]/.test(a.tag));
-  ok(mo[0]?.body.endsWith("\n雨の日にやる：部屋の片づけ") && mo[1]?.body.endsWith("\n晴れの日にやる：布団を干す"), "⑤ the morning's: 雨の日 tomorrow, 晴れの日 on 11/14", mo.map((a) => a.body));
-
-  // ④ お知らせ for 朝・昼・夜 (in the same 編集): on, then today's 昼 and 夜, tomorrow's 朝
-  await p.evaluate(() => document.getElementById("td4SlotOn").scrollIntoView({ block: "center" }));
-  ok((await txt(p, "#td4SlotFoot")).startsWith("ToDoに「朝・昼・夜」を付けると"), "④ its words in 編集");
-  await p.click("#td4SlotOn"); await p.waitForTimeout(400);
-  const sl = await W(p, "slot", WHEN.getTime());
-  ok(sl.some((a) => a.tag === "td-slot:2026-11-11:noon" && a.title === "昼にやること 1件" && a.body === "図書館の本を返す") && sl.some((a) => a.tag === "td-slot:2026-11-11:pm" && a.body === "英単語 50語") && sl.some((a) => a.tag === "td-slot:2026-11-12:am" && a.body === "洗濯") && !sl.some((a) => a.tag === "td-slot:2026-11-11:am"), "④ 昼 and 夜 today, 朝 tomorrow (today's 朝 gone by)", sl.slice(0, 4).map((a) => a.tag));
-  const sig0 = await W(p, "sig");
-  await done(p);
-
-  // ⑨ やったこととして記録, and ④ a 時間帯 from the new ToDo's form
+  // ⑨ やったこととして記録
   await p.click("#todoAdd"); await p.waitForTimeout(700);
   ok(await p.evaluate(() => document.getElementById("todoDoneRow").hidden), "⑨ nothing typed: no やったこと");
   await p.fill("#todoText", "部屋の掃除"); await p.waitForTimeout(200);
   await p.click("#todoDoneNow"); await p.waitForTimeout(700);
   let x = (await byText(p, "部屋の掃除"))[0];
   ok(x?.done === true && x.doneAt > 0 && !x.repeat && (await status(p)).includes("「部屋の掃除」を、やったこととして記録しました"), "⑨ put in as done, said so", [x, await status(p)]);
-  await p.fill("#todoText", "シーツを洗う"); await p.selectOption("#todoSlot", "pm"); await p.click("#todoSave"); await p.waitForTimeout(600);
-  x = (await byText(p, "シーツを洗う"))[0];
-  ok(x?.slot === "pm" && !x.done, "④ 夜 from the form", x);
-  ok((await W(p, "sig")) !== sig0, "④ its notifications made again");
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
 
-  // ⑦ 入力の候補: ゼミ → ゼミの発表スライド; 英単語 50語 (the same) carries 夜, 15分, 学校
+  // ⑦ 入力の候補: ゼミ → ゼミの発表スライド; 英単語 50語 (the same) carries 15分, 学校
   await p.click("#todoAdd"); await p.waitForTimeout(700);
   await p.fill("#todoText", "ゼミ"); await p.waitForTimeout(300);
   ok((await txt(p, "#todoSuggest")).includes("ゼミの発表スライド"), "⑦ offered as it is typed", await txt(p, "#todoSuggest"));
   await p.fill("#todoText", "英単語 50語"); await p.waitForTimeout(300);
   await p.locator("#todoSuggest button").first().click(); await p.waitForTimeout(400);
-  ok((await p.inputValue("#todoSlot")) === "pm" && (await p.inputValue("#todoMins")) === "15" && (await p.evaluate(() => document.querySelector('#todoListPick input:checked')?.closest("label")?.textContent || "")).includes("学校") && await p.evaluate(() => document.getElementById("todoSuggest").hidden),
-    "⑦ picked: 夜, 15分, 学校 as before; offered no more", [await p.inputValue("#todoSlot"), await p.inputValue("#todoMins")]);
+  ok((await p.inputValue("#todoMins")) === "15" && (await p.evaluate(() => document.querySelector('#todoListPick input:checked')?.closest("label")?.textContent || "")).includes("学校") && await p.evaluate(() => document.getElementById("todoSuggest").hidden),
+    "⑦ picked: 15分, 学校 as before; offered no more", await p.inputValue("#todoMins"));
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
   ok((await W(p, "sugs", "バナ")).join(",") === "バナナ", "⑦ from a 買い物リスト too", await W(p, "sugs", "バナ"));
 

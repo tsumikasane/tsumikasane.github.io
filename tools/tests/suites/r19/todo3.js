@@ -1,4 +1,4 @@
-// ToDo ⑧⑨⑩ and the focus timer, and a repeat carrying the new fields on
+// ToDo ⑧⑨ (⑩ 写真 taken off 2026-11-18, the user's call) and the focus timer, and a repeat carrying the new fields on
 process.env.URL0 = process.env.URL0 || "http://localhost:8768/";
 const { chromium } = require("playwright");
 const fs = require("fs");
@@ -65,44 +65,13 @@ const jpeg = async (p) => Buffer.from(await p.evaluate(() => { const c = documen
   const d = (await ls(p, "todos")).find((t) => t.id === "d");
   ok(d.due === addDays(today, 5) && d.moved === 1 && d.start === addDays(today, 5), "⑧ the form: 期限 later is put off (none to a day isn't); ⑨ 開始日 after it comes back", d);
 
-  // ⑩ a photo in its sheet, on its row, large at a press, deleted with 元に戻す
-  const img = await jpeg(p);
-  await editRow(p, "ゴミ出し");
-  await p.setInputFiles("#rePhotos input[type=file]", { name: "a.jpg", mimeType: "image/jpeg", buffer: img }); await p.waitForTimeout(800);
-  ok(await p.locator("#rePhotos .td-thumb").count() === 1 && (await toast(p)).includes("写真を追加しました"), "⑩ added in its sheet");
-  await p.keyboard.press("Escape"); await p.waitForTimeout(600);
-  ok(await p.locator("#todoList li", { hasText: "ゴミ出し" }).locator(".td-thumb").count() === 1, "⑩ small on its row");
-  await p.locator("#todoList li", { hasText: "ゴミ出し" }).locator(".td-thumb").click(); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => document.getElementById("tdPhotoView").open && document.getElementById("tdPhotoImg").naturalWidth > 0), "⑩ large at a press");
-  await p.click("#tdPhotoDel"); await p.click("#tdPhotoDel"); await p.waitForTimeout(500);
-  ok(await p.locator("#todoList li", { hasText: "ゴミ出し" }).locator(".td-thumb").count() === 0 && (await toast(p)).includes("写真を削除しました"), "⑩ deleted (a second press)");
-  await p.click(".toast.show .toast-undo"); await p.waitForTimeout(600);
-  ok(await p.locator("#todoList li", { hasText: "ゴミ出し" }).locator(".td-thumb").count() === 1, "⑩ 元に戻す: back");
-  // a repeat checked off: the next turn has its time, お知らせ, how long, its steps all to do, its 開始日 as far before, its photo
+  // a repeat checked off: the next turn has its time, お知らせ, how long, its steps all to do, its 開始日 as far before
   await p.locator("#todoList li", { hasText: "ゴミ出し" }).locator(".check").click(); await p.waitForTimeout(2200);
   const td = await ls(p, "todos"), was = td.find((t) => t.id === "c"), next = td.find((t) => t.id === was.next);
   ok(was.done && next && next.due === "2026-11-13" && next.time === "07:30" && next.remind === true && next.mins === 10 && next.steps.every((s) => !s.done) && next.steps.length === 2 && next.start === "2026-11-12", "repeat: the next turn carries them on", next);
-  ok(await p.locator("#todoList li", { hasText: "ゴミ出し" }).locator(".td-thumb").count() === 1 && await p.evaluate(async ({ id }) => {
-    const db = await new Promise((r) => { const q = indexedDB.open("tsumikasane-photos", 1); q.onsuccess = () => r(q.result); });
-    const all = await new Promise((r) => { const q = db.transaction("photos").objectStore("photos").getAll(); q.onsuccess = () => r(q.result); });
-    return all.length === 1 && all[0].todoId === id;
-  }, { id: next.id }), "⑩ its photo goes on with the next turn");
-  // taken back: the photo back with it
+  // taken back: the fields back on it
   await p.locator("#todoList li.done", { hasText: "ゴミ出し" }).locator(".check").click(); await p.waitForTimeout(600);
-  ok(await p.evaluate(async () => {
-    const db = await new Promise((r) => { const q = indexedDB.open("tsumikasane-photos", 1); q.onsuccess = () => r(q.result); });
-    const all = await new Promise((r) => { const q = db.transaction("photos").objectStore("photos").getAll(); q.onsuccess = () => r(q.result); });
-    return all.length === 1 && all[0].todoId === "c";
-  }) && (await ls(p, "todos")).find((t) => t.id === "c").time === "07:30", "repeat taken back: the photo and the fields back on it");
-  // ⑩ a new ToDo with a photo
-  await p.click("#todoAdd"); await p.waitForTimeout(500);
-  await p.fill("#todoText", "プリント");
-  await p.setInputFiles("#todoPhotos input[type=file]", { name: "b.jpg", mimeType: "image/jpeg", buffer: img }); await p.waitForTimeout(800);
-  ok(await p.locator("#todoPhotos .td-thumb").count() === 1, "⑩ in the new ToDo's form");
-  await p.click("#todoSave"); await p.waitForTimeout(800);
-  ok(await p.locator("#todoPhotos .td-thumb").count() === 0, "⑩ the form cleared");
-  await p.keyboard.press("Escape"); await p.waitForTimeout(700);
-  ok(await p.locator("#todoList li", { hasText: "プリント" }).locator(".td-thumb").count() === 1, "⑩ the new ToDo has it");
+  ok((await ls(p, "todos")).find((t) => t.id === "c").time === "07:30", "repeat taken back: the fields back on it");
 
   // the timer: from a row's menu, counting down over every page
   await p.locator("#todoList li", { hasText: "ゴミ出し" }).dispatchEvent("contextmenu"); await p.waitForTimeout(300);

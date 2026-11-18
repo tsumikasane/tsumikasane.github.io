@@ -1,4 +1,4 @@
-// バイト その12 ①②③⑤⑥⑦⑧⑨⑩: what is pressed and typed
+// バイト その12 ①②③⑤⑥⑦⑧⑨: what is pressed and typed (⑩ と ⑦ のシフト希望は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8863/";
 const fs = require("fs");
 const { chromium } = require("playwright");
@@ -69,15 +69,6 @@ const shift = async (p, id) => (await ls(p, "shifts")).find((x) => x.id === id);
   await p.fill("#shiftDate", "2026-12-02"); await p.fill("#shiftStart", "17:00"); await p.fill("#shiftEnd", "22:00"); await p.fill("#shiftRest", "0");
   await p.locator('#shiftForm button[type="submit"]').click(); await p.waitForTimeout(500);
   ok((await txt(p, "#status")).includes("カフェの定休日（水曜）の勤務です。日付をたしかめてください"), "⑦ said: " + (await txt(p, "#status")));
-  // ⑦ シフト希望: the 定休日 made ×
-  await p.click("#bt3Ask summary"); await p.waitForTimeout(300);
-  await p.click("#bt12AskClosed"); await p.waitForTimeout(300);
-  const ask = await p.evaluate((P) => JSON.parse(localStorage.getItem(P + "bt3Ask")), P);
-  ok(ask.month === "2026-12" && JSON.stringify(Object.keys(ask.marks).filter((k) => ask.marks[k] === "x").sort()) === JSON.stringify(["2026-12-02", "2026-12-09", "2026-12-16", "2026-12-23", "2026-12-30"]), "⑦ × made: " + JSON.stringify(ask));
-  // ⑩ one more ticked
-  await p.click("#bt12Terms summary"); await p.waitForTimeout(300);
-  await p.click('#bt12TermsBody [data-job="j1"] input[data-term="rest"]'); await p.waitForTimeout(400);
-  ok(JSON.stringify((await job(p, "j1")).terms) === '["paper","pay","rest"]' && (await txt(p, "#bt12TermsHead")) === "働く前のチェック（あと 15）", "⑩ ticked: " + JSON.stringify((await job(p, "j1")).terms));
   // ⑦ the 定休日 changed in the job's form; ① off
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   await p.uncheck('#jobForms [data-job="j1"] [data-f="closed"][value="3"]'); await p.check('#jobForms [data-job="j1"] [data-f="closed"][value="1"]'); await p.waitForTimeout(700);

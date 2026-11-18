@@ -1,4 +1,4 @@
-// ToDo その4: the edges — its own sheet's rows, no weather place yet, きょうやるだけ, a split with nothing set, 分けるのをやめる,
+// ToDo その4: the edges — its own sheet's rows, きょうやるだけ, a split with nothing set, 分けるのをやめる,
 // 記録しないで終える, a filter kept, and older data with none of these
 process.env.URL0 = process.env.URL0 || "http://localhost:8776/";
 const { chromium } = require("playwright");
@@ -18,17 +18,12 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
   const b = await chromium.launch();
   const p = await phone(b, WHEN, { deviceScaleFactor: 1 });
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
-  // no weather place yet: the card asks for it
   await seed(p, { todos: D.todos(), todoLists: D.lists(), events: D.events() }, "todo"); await p.waitForTimeout(900);
-  ok((await txt(p, "#td4WxCard")).startsWith("天気で出すToDoがあります。") && (await txt(p, "#td4WxCard button")) === "天気を出す", "⑤ no place yet: 天気を出す", await txt(p, "#td4WxCard"));
 
-  // its own sheet: 時間帯, 天気 (a 買い物 one: 数量, 値段), read back
+  // its own sheet: no 数量 off a 買い物リスト (its 時間帯 and 天気 taken off 2026-11-18); a 買い物 one: 数量, 値段, read back
   await p.click('#todoList [data-edit="g"]'); await p.waitForTimeout(700);
-  ok(!!(await p.$("#reSlot")) && !!(await p.$("#reWx")) && !(await p.$("#reQty")), "④⑤ in its sheet; no 数量 off a 買い物リスト");
-  await p.selectOption("#reSlot", "noon"); await p.selectOption("#reWx", "rain");
+  ok(!(await p.$("#reQty")), "no 数量 off a 買い物リスト");
   await p.click("#recSave"); await p.waitForTimeout(600);
-  let g = await todo(p, "g");
-  ok(g.slot === "noon" && g.wx === "rain", "④⑤ saved from its sheet", g);
   await p.locator("#todoTabs button", { hasText: "買い物" }).click(); await p.waitForTimeout(300);
   await p.click('#todoList [data-edit="s3"]'); await p.waitForTimeout(700);
   ok(!!(await p.$("#reQty")) && !!(await p.$("#rePrice")), "⑥ a 買い物 one's sheet: 数量, 値段");
@@ -79,7 +74,7 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
   // older data, none of these: as before, no cards, no errors
   const q = await phone(b, WHEN, { deviceScaleFactor: 1 });
   await seed(q, { todos: [{ id: "x", text: "ふつうのToDo", done: false, due: "2026-11-11", createdAt: Date.parse("2026-11-01T09:00:00+09:00") }] }, "todo"); await q.waitForTimeout(900);
-  ok(await q.evaluate(() => ["td4ViewBar", "td4ShopCard", "td4WxCard", "td4RepCard"].every((id) => document.getElementById(id).hidden)) && (await rows(q)).join(",") === "x", "older data: as before");
+  ok(await q.evaluate(() => ["td4ViewBar", "td4ShopCard", "td4RepCard"].every((id) => document.getElementById(id).hidden)) && (await rows(q)).join(",") === "x", "older data: as before");
   ok(p.errs.length === 0 && q.errs.length === 0, "no errors on the page", [...p.errs, ...q.errs]);
   await b.close();
   console.log(fails ? `${fails} FAILED` : "ALL OK");

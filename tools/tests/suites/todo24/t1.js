@@ -1,4 +1,4 @@
-// ToDo その24 ①〜⑩, through the hook build at 8883 (the insides) and as a user would
+// ToDo その24 ①〜⑦⑨⑩ (⑧ やる日 taken off 2026-11-18, the user's call), through the hook build at 8883 (the insides) and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8883/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -62,16 +62,6 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   await p.locator("#td24ContCard .td24-cont-x").click(); await p.waitForTimeout(300);
   ok(await p.isHidden("#td24ContCard"), "⑨ × : not today");
 
-  // ---- ⑧ 休みの日にやる・平日にやる (a Wednesday)
-  ok(await p.isVisible("#td24DayCard") && (await txt(p, "#td24DayCard")).includes("きょうは平日") && (await txt(p, "#td24DayCard")).includes("「銀行で記帳」") && !(await txt(p, "#td24DayCard")).includes("洗車"), "⑧ a weekday: 平日にやる on the card", await txt(p, "#td24DayCard"));
-  ok((await row(p, "dt1")).includes("休みの日") && (await row(p, "dt2")).includes("平日"), "⑧ on their rows");
-  await p.locator("#td24DayCard button", { hasText: "きょうやるに入れる" }).click(); await p.waitForTimeout(500);
-  ok((await todo(p, "dt2")).today === "2026-11-11", "⑧ きょうやるに入れる", await todo(p, "dt2"));
-  await W(p, "edit", "dt1"); await p.waitForTimeout(900);
-  ok((await p.inputValue("#reDay24")) === "off", "⑧ in its sheet");
-  await p.selectOption("#reDay24", "work"); await saveSheet(p);
-  ok((await todo(p, "dt1")).dayType === "work", "⑧ changed there", await todo(p, "dt1"));
-
   // ---- ① かかる時間を名前から, ⑩ よく使う時刻
   await p.click("#todoAdd"); await p.waitForTimeout(700);
   ok(await p.isVisible("#td24Times") && (await txt(p, "#td24Times")) === "よく使う時刻20:00", "⑩ the times used often, under 時刻", await txt(p, "#td24Times"));
@@ -92,8 +82,6 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   await p.click("#todoSave"); await p.waitForTimeout(800);
   const e2 = (await byText(p, "発表練習"))[0];
   ok(e2?.mins === 90 && e2.due === "2026-11-12" && !e2.time, "① added with the day and its time", e2);
-  await p.fill("#todoText", "部屋の掃除"); await p.dispatchEvent("#todoText", "input"); await p.selectOption("#td24Day", "off"); await p.click("#todoSave"); await p.waitForTimeout(800);
-  ok((await byText(p, "部屋の掃除"))[0]?.dayType === "off", "⑧ やる日 in the new ToDo's form");
   await closeSheet(p);
 
   // ---- ② サブタスクで集中
@@ -155,7 +143,7 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
 
   // ---- the guide
   const gd = await W(p, "guide");
-  ok(["かかる時間を名前から", "サブタスクで集中", "連続を守るお知らせ", "やりたい度", "ToDoの絵文字", "つながりで見る", "使っていないリスト・ラベル", "休みの日にやる・平日にやる", "きのうのつづき", "よく使う時刻"].every((w) => gd.includes(w)), "the guide has them");
+  ok(["かかる時間を名前から", "サブタスクで集中", "連続を守るお知らせ", "やりたい度", "ToDoの絵文字", "つながりで見る", "使っていないリスト・ラベル", "きのうのつづき", "よく使う時刻"].every((w) => gd.includes(w)) && !gd.includes("休みの日にやる・平日にやる"), "the guide has them");
 
   ok(!p.errs.length, "no errors", p.errs);
   await b.close();

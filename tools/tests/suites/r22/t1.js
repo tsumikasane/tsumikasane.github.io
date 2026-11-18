@@ -34,7 +34,7 @@ async function addMeal(p, text = "おにぎり") {
   // ⑧ the cat: in sight at the summit, pressed → its words, the next at the next press
   await p.click("#tsumiToTop").catch(() => {}); await p.waitForTimeout(300);
   let xy = await nekoXY(p), lines = await p.evaluate(() => window.__ts.lines());
-  ok(!!xy && lines[0] === "きょうは 5 こ積んだね。えらい！" && lines.some((l) => l.startsWith("436 日つづけて")) && lines.some((l) => l === "あと 47 こで 67 段目ができるよ") && lines.some((l) => l === "あと 269 こで「ケーキを食べる」だよ") && lines.some((l) => l.startsWith("いまの高さは 223.1 m。あべのハルカスまで、あと 769 こ")), "⑧ what it may say", lines);
+  ok(!!xy && lines[0] === "家計簿をつけてほしいな" && lines[1] === "きょうは 5 こ積んだね。えらい！" && lines.some((l) => l.startsWith("436 日つづけて")) && lines.some((l) => l === "あと 47 こで 67 段目ができるよ") && lines.some((l) => l === "あと 269 こで「ケーキを食べる」だよ") && lines.some((l) => l.startsWith("いまの高さは 223.1 m。あべのハルカスまで、あと 769 こ")), "⑧ what it may say", lines);
   await p.mouse.click(xy.x, xy.y); await p.waitForTimeout(250);
   ok(await p.isVisible("#nekoSay") && (await txt(p, "#nekoSay")) === lines[0].replace(/\s+/g, " ") && (await txt(p, "#nekoSaySr")) === lines[0], "⑧ pressed: its first word, in a bubble and read out", await txt(p, "#nekoSay"));
   ok(await p.evaluate(() => { const g = window.__ts.geo(); return !!g; }), "⑧ (stairs drawn)");
@@ -157,6 +157,8 @@ async function addMeal(p, text = "おにぎり") {
   ok(await p.evaluate(() => window.__ts.shown().length) === 149, "149 blocks");
   await p.click("#tsumiToTop").catch(() => {}); await p.waitForTimeout(200);
   xy = await nekoXY(p);
+  if (xy) { await p.mouse.click(xy.x, xy.y); await p.waitForTimeout(250); }
+  ok((await txt(p, "#nekoSaySr")) === "ごはんを記録してほしいな", "⑧ in the evening: つみねこのおねがい first (つみかさね その4 1)", await txt(p, "#nekoSaySr"));
   if (xy) { await p.mouse.click(xy.x, xy.y); await p.waitForTimeout(250); }
   ok((await txt(p, "#nekoSaySr")) === "きょうはまだ積んでないよ。1こだけでも積もう", "⑧ nothing today, in the evening", await txt(p, "#nekoSaySr"));
   ok(await p.evaluate(() => window.__ts.look(149)) === "1" && await p.evaluate(() => [...document.querySelectorAll("#nekoCloset [data-item]")].length) === 0, "⑨ 100 and more: the scarf only, no season now");

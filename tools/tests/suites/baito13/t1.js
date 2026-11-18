@@ -1,4 +1,4 @@
-// バイト その13 ①②③④⑥⑦⑧⑨: what is shown
+// バイト その13 ①②④⑥⑦⑧⑨: what is shown (③ は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8864/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -38,9 +38,6 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   const tags = al.map((a) => a[0]);
   ok(!tags.includes("bt13-next:2026-11-22") && !tags.includes("bt7-eve:2026-11-20"), "④ held: " + JSON.stringify(al));
   ok(JSON.stringify(al.find((a) => a[0] === "bt13-next:2026-12-06")) === JSON.stringify(["bt13-next:2026-12-06", "2026-12-04T11:00:00.000Z"]) && !tags.includes("bt13-next:2026-11-29"), "① the weeks without a shift: " + JSON.stringify(tags));
-  // ③ シフト希望: 12月 ○ 2 日 × 5,300, △ 1 日
-  await p.click("#bt3Ask summary"); await p.waitForTimeout(300);
-  ok((await txt(p, "#bt3AskBody .bt13-askpay")) === "○ の 2 日ぜんぶ入ると 約 10,600 円・△ もふくめると 約 15,900 円（いつもの 10:00〜15:00 で）", "③ " + (await txt(p, "#bt3AskBody .bt13-askpay")));
   // ①④ the settings
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   const f = await p.evaluate(() => ({ on: document.getElementById("bt13NextOn").checked, wd: document.getElementById("bt13NextWd").value, at: document.getElementById("bt13NextAt").value,

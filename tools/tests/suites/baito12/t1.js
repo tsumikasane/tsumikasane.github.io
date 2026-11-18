@@ -1,4 +1,4 @@
-// バイト その12 ①③④⑤⑥⑦⑧⑩: what is shown
+// バイト その12 ①③④⑤⑥⑦⑧: what is shown (⑩ と ⑦ のシフト希望は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8863/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -30,11 +30,6 @@ const row = (p, id) => txt(p, `#shiftList li[data-shift="${id}"]`);
   const c = al.find((a) => a.tag === "bt12-cut:j1:2026-11-30"), j = al.find((a) => a.tag === "bt12-cut:j2:2026-12-15");
   ok(al.length === 2 && c && c.at === "2026-11-30T12:00:00.000Z" && c.title === "きょうはカフェの締め日です" && c.body === "11月分（11/1〜11/30）は 7 回・33 時間・見込み 約 35,300円。入れ忘れた勤務はありませんか？", "① カフェ: " + JSON.stringify(al));
   ok(j && j.at === "2026-12-15T12:00:00.000Z" && j.body.startsWith("12月分（11/16〜12/15）は 1 回・3 時間・見込み 約 4,500円"), "① 塾: " + JSON.stringify(j));
-  // ⑩ 働く前のチェック: 7 + 9 left
-  ok((await txt(p, "#bt12TermsHead")) === "働く前のチェック（あと 16）", "⑩ " + (await txt(p, "#bt12TermsHead")));
-  // ⑦ シフト希望: 12月の水曜 5 日
-  await p.click("#bt3Ask summary"); await p.waitForTimeout(300);
-  ok((await txt(p, "#bt3AskBody")).includes("カフェの定休日 5 日 定休日を × にする"), "⑦ the request");
   // ①⑦ the settings
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   const f = await p.evaluate(() => ({ on: document.getElementById("bt12CutOn").checked, at: document.getElementById("bt12CutAt").value,

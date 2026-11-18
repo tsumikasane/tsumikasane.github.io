@@ -26,16 +26,16 @@ const T = (d, h = 9) => Date.parse(`${d}T${String(h).padStart(2, "0")}:00:00+09:
       { id: "2026-11-06", date: "2026-11-06", done: ["r1"], at: { r1: T("2026-11-06") }, counts: { r2: 3 }, updatedAt: T("2026-11-06") }],
   }, "records");
   await p.locator('.sum-card:has-text("ルーティーン") .sum-head button').first().click(); await p.waitForTimeout(500);
-  await p.locator('[data-edit="2026-11-05"]').click(); await p.waitForTimeout(500);
+  await p.locator('.rec-what[data-edit="2026-11-05"]').click(); await p.waitForTimeout(500);
   ok((await txt(p, "#sheetTitle")) === "ルーティーンを編集", "記録 opens the day: " + await txt(p, "#sheetTitle"));
   await p.locator('#recForm .rt-row[data-item="r1"]').click(); await p.locator("#recSave").click(); await p.waitForTimeout(500);
   let d5 = (await ls(p, "routineDays")).find((d) => d.id === "2026-11-05");
   ok(d5 && d5.rest === true && !d5.done.length, "⑧ its check taken off, お休み kept: " + JSON.stringify(d5));
-  await p.locator('[data-edit="2026-11-06"]').click(); await p.waitForTimeout(500);
+  await p.locator('.rec-what[data-edit="2026-11-06"]').click(); await p.waitForTimeout(500);
   await p.locator('#recForm .rt-row[data-item="r2"]').click(); await p.locator("#recSave").click(); await p.waitForTimeout(500);
   let d6 = (await ls(p, "routineDays")).find((d) => d.id === "2026-11-06");
   ok(d6.done.includes("r2") && d6.counts.r2 === 8, "⑤ 水 checked from 記録: at its number: " + JSON.stringify(d6));
-  await p.locator('[data-edit="2026-11-06"]').click(); await p.waitForTimeout(500);
+  await p.locator('.rec-what[data-edit="2026-11-06"]').click(); await p.waitForTimeout(500);
   await p.locator('#recForm .rt-row[data-item="r2"]').click(); await p.locator("#recSave").click(); await p.waitForTimeout(500);
   d6 = (await ls(p, "routineDays")).find((d) => d.id === "2026-11-06");
   ok(!d6.done.includes("r2") && !(d6.counts && d6.counts.r2), "⑤ and unchecked: back to none: " + JSON.stringify(d6));

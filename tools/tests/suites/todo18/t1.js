@@ -1,4 +1,4 @@
-// ToDo その18 ①〜⑩, through the hook build at 8826 (the insides) and as a user would
+// ToDo その18 ①〜⑤⑦〜⑩ (⑥ 写真のあるToDo taken off 2026-11-18, the user's call), through the hook build at 8826 (the insides) and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8826/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -126,16 +126,6 @@ const find = async (p, q) => { await p.fill("#todoSearch", q); await p.waitForTi
   ok((await p.$("#rePrev18")) === null, "⑤ not on one with no turn before");
   await closeSheet(p);
 
-  // ---- ⑥ 写真のあるToDo
-  ok(!(await moreItems(p)).includes("写真のあるToDo"), "⑥ not offered with no photos");
-  await W(p, "photo", "f"); await p.waitForTimeout(900);
-  await menu(p, "写真のあるToDo");
-  body = await txt(p, "#tdPanelBody");
-  ok((await sheetTitle(p)) === "写真のあるToDo" && body.includes("銀行で振り込み") && (await p.locator(".td18-photos .td-thumb").count()) === 1, "⑥ its panel, with the photo", body);
-  await p.locator(".td18-photo-name", { hasText: "銀行で振り込み" }).click(); await p.waitForTimeout(900);
-  ok((await p.inputValue("#reText")) === "銀行で振り込み", "⑥ its name opens it");
-  await closeSheet(p);
-
   // ---- ⑦ 探す条件
   ok((await find(p, "!")) === "a,b,e,g", "⑦ ! for 重要", await shown(p));
   ok((await txt(p, "#td18OpsLine")) === "条件：重要", "⑦ said under the field", await txt(p, "#td18OpsLine"));
@@ -198,7 +188,7 @@ const find = async (p, q) => { await p.fill("#todoSearch", q); await p.waitForTi
 
   // ---- the guide
   const g = await W(p, "guide");
-  ok(["はかる", "次にやるサブタスク", "探す条件", "チェックリストを毎朝リセット", "人ごとのToDo", "コンパクトに表示する", "きょうやるの上限", "完了カレンダー", "前回のこと", "写真のあるToDo"].every((w) => g.includes(`"${w}"`)), "the guide has them");
+  ok(["はかる", "次にやるサブタスク", "探す条件", "チェックリストを毎朝リセット", "人ごとのToDo", "コンパクトに表示する", "きょうやるの上限", "完了カレンダー", "前回のこと"].every((w) => g.includes(`"${w}"`)) && !g.includes("写真のあるToDo"), "the guide has them");
 
   ok(!p.errs.length, "no errors", p.errs);
   await b.close();
