@@ -114,7 +114,8 @@ const DATA = {
   const m13 = await head();
   ok(!m13.includes("これまで"), "③ 11/13, the least: nothing", m13);
   await p.click("#backBtn"); await wait(p, 700); await p.click("#backBtn"); await wait(p, 900);
-  ok(JSON.stringify((await rows(p, '#sumCards [data-card="seen"] .rec-row-btn')).map((r) => r.split(" ")[0])) === JSON.stringify(["11月13日（金）", "11月14日（土）", "きのう・11月15日（日）", "きょう・11月16日（月）"]), "⑩ the days looked at lately, the latest first", await rows(p, '#sumCards [data-card="seen"] .rec-row-btn'));
+  // ⑩ 最近見た日, a card: taken out at the user's call (2026-11-18, tools/REMOVED.md); the days looked at are no more kept
+  ok(!(await p.$('#sumCards [data-card="seen"]')) && await p.evaluate((P) => localStorage.getItem(P + "recSeen") === null, P), "⑩ no 最近見た日, nothing kept for it");
 
   // ④ a copy kept: made now, opened, 完全に削除 out of it too, let go of (元に戻す)
   await p.click("#recSettings"); await wait(p, 800);

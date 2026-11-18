@@ -47,24 +47,17 @@ const download = async (p, click) => { const [d] = await Promise.all([p.waitForE
   const miss = await card(p, "missed");
   ok(miss.includes("日記 4 日") && miss.includes("11/7（土）") && miss.includes("10/17（土）") && !miss.includes("10/10"), "⑦ 日記's 4 days left out (from 30 days back)", miss);
   ok(miss.includes("体重 15 日") && miss.includes("きのう") && miss.includes("ほか 9 日") && !miss.includes("食事 ") && !miss.includes("ルーティーン"), "⑦ 体重's, not 食事 (every day) nor ルーティーン (none)", miss);
-  // ⑤ milestones: 勉強 50 時間 on the day it was passed
-  const ev = study.map((x) => [x.date, x.minutes]).sort((a, b) => a[0].localeCompare(b[0]));
-  let got = 0, day50 = null;
-  for (const [d, m] of ev) { got += m; if (!day50 && got >= 3000) day50 = d; }
-  const ms = await card(p, "milestone");
-  const md = (d) => `${Number(d.slice(5, 7))}/${Number(d.slice(8))}`;
-  ok(ms.includes(`${md(day50)}`) && ms.includes("勉強 50 時間") && ms.includes("記録した日 30 日") && /記録した日 50 日まで このペースで \d+\/\d+ごろ あと 9 日/.test(ms), "⑤ reached (勉強 50 時間 on its day) and next (記録した日 50 日まで あと 9 日, with its pace: 記録 その6 ⑦)", { day50, ms });
-  await p.locator('[data-card="milestone"] .link-btn.more').click(); await p.waitForTimeout(200);
-  ok((await p.locator('[data-card="milestone"] .rec-rows').first().locator("li").count()) === 6 && (await card(p, "milestone")).includes("しまう"), "⑤ all of them at a press");
-  // ⑥ the bests
-  const best = await card(p, "best");
-  ok(best.includes("いちばん勉強した日 10月2日（金） 1 時間 39 分") && best.includes("いちばん軽かった体重 10月3日（土） 58.1 kg") && best.includes("いちばん走った日 11月9日（月） 5.2 km") && best.includes("いちばん支出が多かった日 11月8日（日） 2,400 円"), "⑥ the bests, each with its day", best);
-  // ⑥ → ① that day whole
-  await p.locator('[data-card="best"] .rec-row-btn', { hasText: "いちばん勉強した日" }).click(); await p.waitForTimeout(700);
+  // ⑤ 節目 and ⑥ これまでのいちばん: taken out at the user's call (2026-11-18, tools/REMOVED.md)
+  ok(!(await p.$('#sumCards [data-card="milestone"]')) && !(await p.$('#sumCards [data-card="best"]')), "⑤⑥ no 節目, no これまでのいちばん");
+  // ① that day whole, from 勉強's list (the day studied the most)
+  await p.locator('#sumCards .sum-open[data-kind="study"]').click(); await p.waitForTimeout(700);
+  await p.locator("#recList .rec-day-open", { hasText: "10月2日（金）" }).first().click(); await p.waitForTimeout(700);
   let day = await txt(p, "#sec-recday");
   ok(await p.evaluate(() => document.documentElement.dataset.tab) === "recday" && day.startsWith("10月2日（金） 39 日前") && day.includes("日記 13 字 22:00 日記 2026-10-02") && day.includes("勉強 合計 1 時間 39 分") && day.includes("食事 合計 700 kcal"), "① the day whole", day);
   await p.click("#recDayNext"); await p.waitForTimeout(200);
   ok((await txt(p, "#recDayTitle")) === "10月3日（土）" && (await txt(p, "#sec-recday")).includes("からだ"), "① the next day");
+  await p.click("#backBtn"); await p.waitForTimeout(700);
+  ok(await p.evaluate(() => document.documentElement.dataset.tab) === "reclist", "① back to 勉強's list it came from");
   await p.click("#backBtn"); await p.waitForTimeout(700);
   ok(await p.evaluate(() => document.documentElement.dataset.tab) === "tsumi", "① back to 記録 (on つみかさね's page since 2026-11-11)");
   // ① from a kind's list: its date, and back there
@@ -101,15 +94,15 @@ const download = async (p, click) => { const [d] = await Promise.all([p.waitForE
   // ⑨ the cards: hidden and moved, kept
   await p.click("#recSettings"); await p.waitForTimeout(500);
   const names = await p.evaluate(() => [...document.querySelectorAll("#recCardList .tname")].map((x) => x.textContent));
-  ok(names.join(",") === "続けた日,1か月前・1年前のきょう,書き忘れた日,日記,食事,運動,からだ,勉強,ルーティーン,家計簿,節目,これまでのいちばん,はじめた日,よく記録するもの,最近の記録,ふりかえる日,しおりの日,タグ,最近のはじめて,最近見た日", "⑨ the cards in 設定", names);
+  ok(names.join(",") === "続けた日,1か月前・1年前のきょう,書き忘れた日,日記,食事,運動,からだ,勉強,ルーティーン,家計簿,はじめた日,よく記録するもの,最近の記録,ふりかえる日,しおりの日,タグ", "⑨ the cards in 設定", names);
   await p.locator("#recCardList li", { hasText: "書き忘れた日" }).locator(".tile-pick").click(); await p.waitForTimeout(300);
-  await p.locator("#recCardList li", { hasText: "これまでのいちばん" }).locator(".grip").focus();
+  await p.locator("#recCardList li", { hasText: "はじめた日" }).locator(".grip").focus();
   for (let i = 0; i < 11; i++) { await p.keyboard.press("ArrowUp"); await p.waitForTimeout(80); }
   await p.keyboard.press("Escape"); await p.waitForTimeout(600);
   const shown = await p.evaluate(() => [...document.querySelectorAll("#sumCards > .card")].map((c) => c.dataset.card || c.querySelector(".sum-open")?.dataset.kind || "days"));
-  ok(shown[0] === "best" && !shown.includes("missed") && shown.length === 17, "⑨ これまでのいちばん first, 書き忘れた日 hidden", shown); // (17: 最近のはじめて and 最近見た日, 記録 その9 ⑧ and その10 ⑩)
+  ok(shown[0] === "first" && !shown.includes("missed") && shown.length === 13, "⑨ はじめた日 first, 書き忘れた日 hidden", shown); // (13: 節目, これまでのいちばん, 最近のはじめて and 最近見た日 taken out, 2026-11-18)
   const pref = (await ls(p, "settings")).find((x) => x.id === "recordCards");
-  ok(pref && pref.hidden.includes("missed") && pref.order[0] === "best", "⑨ kept with the account", pref);
+  ok(pref && pref.hidden.includes("missed") && pref.order[0] === "first", "⑨ kept with the account", pref);
   // ⑧ a kind as a table
   await p.click("#recSettings"); await p.waitForTimeout(500);
   ok((await txt(p, "#csvList")).includes("家計簿 2 件") && (await txt(p, "#csvList")).includes("日記 35 件"), "⑧ each kind with how many", await txt(p, "#csvList"));

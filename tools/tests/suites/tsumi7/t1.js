@@ -74,12 +74,8 @@ const sumDays = (from, to) => [...per].filter(([d]) => d >= from && d <= to).red
   ok(words.join(",") === "パン 30,ラーメン 30,ランニング 20", "7 the words, numbers and 朝食 left out", words);
   await p.locator("#ts7Words .chip-btn", { hasText: "ラーメン" }).click(); await wait(p, 500);
   ok(await p.inputValue("#tsumiFind") === "ラーメン" && await p.isVisible("#tsumiFound"), "7 pressed: looked for");
-  // 9 ひとことのタグ
-  const tags = await p.evaluate(() => [...document.querySelectorAll("#ts7Tags .chip-btn")].map((x) => x.textContent));
-  ok(tags.join(",") === "#旅行 2,#ラーメン部 1" && await p.isHidden("#ts7TagList"), "9 the tags", tags);
-  await p.locator("#ts7Tags .chip-btn", { hasText: "#旅行" }).click(); await wait(p);
-  const tagRows = await p.evaluate(() => [...document.querySelectorAll("#ts7TagList li")].map((li) => li.innerText.replace(/\s+/g, " ").trim()));
-  ok(tagRows.length === 2 && tagRows[0].startsWith("食事 11月12日（木） #旅行 おいしかった") && tagRows[1].startsWith("食事 11月10日（火） #旅行"), "9 a tag pressed: its blocks, the latest first", tagRows);
+  // 9 ひとことのタグ: taken out with ブロックにひとこと (the user's call, 2026-11-18, tools/REMOVED.md)
+  ok(!(await p.$("#ts7Tags")) && !(await p.$("#ts7TagList")) && !(await txt(p, "#tsumiGroup")).includes("ひとことのタグ"), "9 no ひとことのタグ");
   // 5 目標のおすすめ
   const avg = sumDays(addDays(today, -28), addDays(today, -1)) / 28;
   const sugDay = Math.max(1, Math.ceil(avg * 1.1)), sugMonth = Math.max(10, Math.ceil((avg * 1.1 * 30) / 10) * 10), yc = [...per.values()].reduce((a, b) => a + b, 0);

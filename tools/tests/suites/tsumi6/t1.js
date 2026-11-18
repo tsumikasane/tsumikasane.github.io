@@ -35,13 +35,8 @@ const inMonth = (m, to = "9999") => [...perDay].filter(([d]) => d.startsWith(m) 
   const diff = inMonth("2026-11") - inMonth("2026-10", "2026-10-14");
   const last = await txt(p, "#ts6LastBtn");
   ok(await p.isVisible("#ts6LastLine") && last === (diff > 0 ? `先月の同じころより ${diff} こ多いペースです` : diff < 0 ? `先月の同じころより ${-diff} こ少ないペースです` : "先月の同じころと同じペースです"), "3 先月の同じころと", { last, diff });
-  // 8 つみねこおみくじ
-  ok((await txt(p, "#ts6LuckBtn")) === "きょうのつみねこおみくじを引く", "8 to draw");
-  await p.click("#ts6LuckBtn"); await wait(p);
-  const luck = await txt(p, "#ts6LuckBtn"), said = await toast(p);
-  ok(/^おみくじは(大吉|中吉|小吉|吉|末吉)・ラッキーな記録は(食事|日記|運動|勉強)/.test(luck) && /ラッキーな時刻は \d+ 時/.test(said), "8 drawn: the line and the words", { luck, said });
-  await p.reload(); await wait(p, 1500);
-  ok((await txt(p, "#ts6LuckBtn")) === luck, "8 the same all day, drawn once", await txt(p, "#ts6LuckBtn"));
+  // 8 つみねこおみくじ: taken out at the user's call (2026-11-18, tools/REMOVED.md)
+  ok(!(await p.$("#ts6LuckBtn")) && !(await txt(p, "#sec-tsumi")).includes("おみくじ"), "8 no つみねこおみくじ");
   ok(await p.isHidden("#ts6YearLine"), "4 no line with no goal");
 
   // the gear

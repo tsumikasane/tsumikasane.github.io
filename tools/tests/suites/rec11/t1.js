@@ -49,7 +49,8 @@ const DATA = {
   await wait(p, 600);
 
   // ⑩ the share of days recorded since the first; ⑨ those going soon, on 記録
-  ok((await txt(p, "#sumCards > .card")).endsWith("いちばん長い連続 4 日 はじめてから 16 日のうち 31%"), "⑩ 続けた日: the share since the first (5 of 16 days)", await txt(p, "#sumCards > .card"));
+  // (the 続けた日 card's いまの連続・いちばん長い連続: taken out at the user's call, 2026-11-18)
+  ok((await txt(p, "#sumCards > .card")).endsWith("はじめてから 16 日のうち 31%") && !(await txt(p, "#sumCards > .card")).includes("連続"), "⑩ 続けた日: the share since the first (5 of 16 days)", await txt(p, "#sumCards > .card"));
   ok((await txt(p, "#trashBtn .rec11-soon")) === "まもなく消える 1" && (await p.getAttribute("#trashBtn", "aria-label")).includes("3日以内に消える 1 件"), "⑨ the one going soon, told of", await txt(p, "#trashBtn"));
   // ⑦ the ways to look, while the field is chosen and empty
   ok(await p.isHidden("#rec11Tips"), "⑦ none at first");

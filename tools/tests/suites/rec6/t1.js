@@ -69,10 +69,8 @@ const DATA = {
   await p.click("#recAllClear"); await wait(p, 300);
   ok(await p.isHidden("#rec6Saved"), "③ none kept: none shown");
 
-  // ⑦ the next milestone at this pace (勉強 6 時間 in 30 days: 10 時間 in 20 days)
-  const ms = await rows(p, '#sumCards [data-card="milestone"] .rec-row-plain');
-  const st = ms.find((r) => r.startsWith("勉強 10 時間まで"));
-  ok(!!st && st.includes("このペースで 12/5ごろ") && st.endsWith("あと 4 時間"), "⑦ 勉強 10 時間: about 12/5", ms);
+  // ⑦ the next milestone at this pace: taken out with 記録's 節目 (the user's call, 2026-11-18)
+  ok(!(await p.$('#sumCards [data-card="milestone"]')) && !(await p.$("#sumCards .rec6-pace")), "⑦ no 節目's card, no pace");
 
   // ① ② 食事's list by kcal, the kinds over it
   await p.locator('#sumCards .sum-open[data-kind="meal"]').click(); await wait(p, 800);

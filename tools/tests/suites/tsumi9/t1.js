@@ -70,12 +70,9 @@ const count = (from, to) => blocks.filter((b) => b.d >= from && b.d <= to).lengt
   const lr = await rows(p, "#ts9Last"), now = count("2026-01-01", today), then = count("2025-01-01", "2025-11-14");
   ok(lr[0] === `ことし（1/1〜11/14） 去年より +${now - then}（去年の同じころまでは ${then} こ） ${now} こ` && lr.includes("3月 去年 1 こ・去年より −1 0 こ")
     && lr.includes(`9月 去年 0 こ・去年より +${count("2026-09-01", "2026-09-30")} ${count("2026-09-01", "2026-09-30")} こ`) && lr.includes(`11月 去年 1 こ・去年より +${count("2026-11-01", today) - 1} ${count("2026-11-01", today)} こ`) && lr.length === 5, "8 the year to today and each month, against last year", lr);
-  // 10 お気に入りの一覧
-  const fav = await rows(p, "#ts9Fav");
-  ok(fav.length === 2 && fav[0].startsWith("勉強 11月11日（水）") && fav[1].startsWith("食事 11月8日（日） 朝食・パン"), "10 the お気に入り, the latest first", fav);
-  await p.click("#ts9FavSend"); await wait(p, 400);
-  let words = await p.evaluate(() => navigator.clipboard.readText());
-  ok(words === "お気に入りのブロック（2 こ）\n\n2026/11/8 食事：朝食・パン・500 kcal\n2026/11/11 勉強：科目なし 30 分", "10 sent as words, oldest first", words);
+  // 10 お気に入りの一覧: taken out with お気に入り (the user's call, 2026-11-18, tools/REMOVED.md); the hearts stay kept
+  ok(!(await p.$("#ts9Fav")) && !(await p.$("#ts9FavSend")) && !(await txt(p, "#tsumiGroup")).includes("お気に入り"), "10 no お気に入りの一覧");
+  let words;
   // 7 今月・ことしを文字で送る
   await p.click("#ts9SendMonth"); await wait(p, 400);
   words = await p.evaluate(() => navigator.clipboard.readText());

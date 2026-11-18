@@ -64,8 +64,8 @@ const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwA
   }, { PNG, today });
   await p.reload(); await wait(p, 1200);
 
-  // ⑧ 最近のはじめて, as a card
-  ok(JSON.stringify(await rows(p, '#sumCards [data-card="news"] .rec-row-btn')) === JSON.stringify(["きょう・11月16日（月） 食費（家計簿）", "11月12日（木） ランニング（運動）"]), "⑧ the latest firsts, the newest first", await rows(p, '#sumCards [data-card="news"] .rec-row-btn'));
+  // ⑧ 最近のはじめて, a card: taken out at the user's call (2026-11-18, tools/REMOVED.md)
+  ok(!(await p.$('#sumCards [data-card="news"]')), "⑧ no 最近のはじめて");
   // ① 予定 in the search: by its name, by its ふりかえり; one ahead of today, not yet
   await p.fill("#recAll", "歯医者"); await wait(p, 400);
   ok((await txt(p, "#recFound .rec-found-say")) === "「歯医者」の記録 1 件" && JSON.stringify(await rows(p, "#recFound .rec9-plans > li")).includes("歯医者") && (await rows(p, "#recFound .rec-found-head")).join() === "予定1 件", "① 予定 found by its name", await rows(p, "#recFound .rec9-plans > li"));
@@ -104,8 +104,9 @@ const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwA
   const wo = await p.evaluate(() => document.querySelector('#recDayBody ul[data-kind="workout"]').previousElementSibling.querySelector(".rec-total").innerText.replace(/\s+/g, " "));
   ok(meal.includes("合計 1,100 kcal") && meal.includes("ふだん 600 kcal") && wo.includes("ふだん 30 分"), "⑥ the usual beside the day's totals", [meal, wo]);
   ok(await p.evaluate(() => !document.querySelector('#recDayBody ul[data-kind="money"]').previousElementSibling.querySelector(".rec9-usual")), "⑥ none with fewer than three other days");
-  const notes = await rows(p, "#recDayBody .rec9-notes li");
-  ok(notes.length === 2 && notes.some((r) => r === "おいしかった 食事「昼食・カレー・800 kcal」のブロック") && notes.some((r) => r === "いい日 日記のブロック"), "⑤ the ひとこと on its blocks", notes);
+  // ⑤ the ひとこと on its blocks: taken out with つみかさね's ブロックにひとこと (2026-11-18); the words stay kept, unshown
+  ok(!(await p.$("#recDayBody .rec9-notes")) && !(await txt(p, "#recDayBody")).includes("ブロックのひとこと"), "⑤ no ブロックのひとこと");
+  ok(await p.evaluate((P) => JSON.parse(localStorage.getItem(P + "settings") || "[]").find((x) => x.id === "tsumiNotes")?.words?.["meal:m1"] === "おいしかった", P), "⑤ the words kept");
   ok((await txt(p, "#recDayBody .rec9-media .rec-day-head")) === "食事・ToDo・予定の写真 3 枚" && (await p.locator("#recDayBody .rec9-media .td-thumb").count()) === 3, "② the other photos: a meal's, a ToDo's, a plan's", await txt(p, "#recDayBody .rec9-media"));
   ok((await p.locator("#recDayBody .rec9-voices audio").count()) === 1 && (await txt(p, "#recDayBody .rec9-voices li")) === "20:05", "② 日記's voice, to play", await txt(p, "#recDayBody .rec9-voices"));
   await p.locator("#recDayBody .rec9-media .td-thumb").first().click(); await wait(p, 500);
