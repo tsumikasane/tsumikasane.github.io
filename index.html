@@ -25700,7 +25700,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月18日 15:20"; // 783810c3 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月18日 15:23"; // fe496db6 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -61102,20 +61102,21 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return tile("h3line", String(l.length), "件", null, h3Rows("h3-line", rows));
   }
 
-  // ⑦ what can be spent today: the month's budget less what was spent before today, shared by the days left (today
-  // with them), less today's
+  // ⑦ what can still be spent: the budget less what was spent in its time, as 家計簿's 予算 bar has it (the month's, or
+  // from the last 給料日 to the next when the budget is set so). Today's share of it before; the rest since the user's
+  // call (2026-11-18). 家計簿's monthlyBudget, paydays and monthSummary only called
   function h3Spend() {
     const budget = monthlyBudget();
     if (!(budget > 0)) return null;
-    const m0 = monthOf(todayKey) + "-01", outs = expenses.items.filter((e) => e.kind !== "in" && e.date >= m0 && e.date <= monthOf(todayKey) + "-31");
-    const before = sum(outs.filter((e) => e.date < todayKey), (e) => num(e.amount)), today = sum(outs.filter((e) => e.date === todayKey), (e) => num(e.amount));
-    const daysLeft = daysInMonth(monthOf(todayKey)) - parseYmd(todayKey).getDate() + 1, share = Math.max(0, Math.floor((budget - before) / daysLeft));
-    return { budget, share, today, left: share - today, over: budget - before - today < 0 };
+    const ym = monthOf(todayKey), pd = paydays(), byPay = (settings.get("budget") || {}).start === "pay" && !!pd.next;
+    const spent = byPay ? sum(expenses.items.filter((e) => e.kind !== "in" && e.date >= (pd.last || ym + "-01") && e.date < pd.next), (e) => num(e.amount)) : num(monthSummary(ym).out);
+    return { budget, spent, left: budget - spent, next: byPay ? pd.next : null };
   }
   function h3SpendTile() {
     const s = h3Spend();
-    if (!s) return tile("h3spend", "まだ", null, "家計簿で毎月の予算を決めると、きょう使える目安が出ます");
-    return tile("h3spend", s.left < 0 ? "−" + fmtN(-s.left) : fmtN(s.left), "円", s.over ? "今月の予算をこえています" : s.left < 0 ? `きょうの目安 ${fmtYen(s.share)} をこえました` : `きょうの目安 ${fmtYen(s.share)}・使った ${fmtYen(s.today)}`);
+    if (!s) return tile("h3spend", "まだ", null, "家計簿で毎月の予算を決めると、今月あといくら使えるかが出ます");
+    const when = s.next ? `給料日（${fmtMD(s.next)}）まで` : "今月";
+    return tile("h3spend", s.left < 0 ? "−" + fmtN(-s.left) : fmtN(s.left), "円", s.left < 0 ? `${s.next ? "給料日までの" : "今月の"}予算をこえています` : `${when}あと使える`);
   }
 
   // ⑧ the one thing to do now: a plan going on or within the hour, else a ToDo late or due today (its time, 重要, then the
@@ -61920,7 +61921,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     h3now: "1時間以内の予定、期限のToDo、ルーティーンの残りから、いまする1つ",
     h3line: "予定・バイト・時刻のあるToDoを時間の順に、いまの線つき", h3recs: "ふだんつけている記録が、きょう済んだか。まだのものは押して記録",
     h3theme: "1日のテーマを決めて、夜に「できた・まだ」", h3water: "からだの水分。「1杯」でコップ1杯（200 ml）を足す",
-    h3spend: "今月の予算から出した、きょう使える目安", h3time: "きょう・今週・今月・今年が何%過ぎたか",
+    h3spend: "家計簿の予算の残り。今月あといくら使えるか（給料日からの予算なら、次の給料日まで）", h3time: "きょう・今週・今月・今年が何%過ぎたか",
     h3streak: "記録が何日続いているか", h3week: "勉強・運動・ToDo・支出を、先週の同じ曜日までとくらべる",
     h4week: "7日分の予定・ToDo・バイト・天気。日を押すとカレンダーのその日", h4mood: "5つの顔から、きょうの気分。この7日の気分も",
     h4sleep: "夜は「おやすみ」、朝は「おはよう」で、からだの睡眠に記録", h4watch: "はかった時間を、勉強か運動に記録",

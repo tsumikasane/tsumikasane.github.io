@@ -47,10 +47,10 @@ const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(
   const ln = await tileTxt(p, "h3line");
   ok(ln.startsWith("きょうのタイムライン3件10:00歯医者予定13:30いま15:00洗濯ToDo18:30友だちとごはん予定"), "⑥ in order, いま among them", ln);
   ok(await p.$eval('.tile[data-tile="h3line"] li', (x) => x.className === "past"), "⑥ the one over faded");
-  // ⑦ spend: (60000 − 20000) / 17 days = 2352, less 800 today
+  // ⑦ spend: what is left of the month's budget (the user's call, 2026-11-18): 60000 − 20000 − 800 today = 39200
   const sp = await H(p, "spend");
-  ok(sp.share === 2352 && sp.left === 1552, "⑦ today's share and what's left", sp);
-  ok((await tileTxt(p, "h3spend")).startsWith("使えるお金1,552円"), "⑦ its tile", await tileTxt(p, "h3spend"));
+  ok(sp.budget === 60000 && sp.spent === 20800 && sp.left === 39200 && sp.next === null, "⑦ the month's rest", sp);
+  ok((await tileTxt(p, "h3spend")).startsWith("使えるお金39,200円今月あと使える"), "⑦ its tile", await tileTxt(p, "h3spend"));
   // ⑧ now: the late ToDo first
   ok((await tileTxt(p, "h3now")).includes("請求書を送る期限が過ぎています"), "⑧ the late ToDo", await tileTxt(p, "h3now"));
   // ⑩ records: 日記 not yet, 体重 done, 勉強 done, 運動 not today, 食事 none kept
