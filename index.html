@@ -9703,10 +9703,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <!-- その5 2 種類ごとの週の目標 (the user's call, 2026-11-13) -->
           <p class="tsumi-past" id="tsumiKindGoalLine" hidden><button type="button" class="link-btn" id="tsumiKindGoalBtn"></button></p>
           <p class="tsumi-past" id="tsumiChalLine" hidden><button type="button" class="link-btn" id="tsumiChalBtn"></button></p>
-          <!-- その6 4 ことしの目標, 3 先月の自分とくらべる, 8 つみねこおみくじ (the user's calls, 2026-11-14) -->
+          <!-- その6 4 ことしの目標, 3 先月の自分とくらべる (the user's calls, 2026-11-14; 8 つみねこおみくじ taken out at the user's call, 2026-11-18) -->
           <p class="tsumi-past" id="ts6YearLine" hidden><button type="button" class="link-btn" id="ts6YearBtn"></button></p>
           <p class="tsumi-past" id="ts6LastLine" hidden><button type="button" class="link-btn" id="ts6LastBtn"></button></p>
-          <p class="tsumi-past" id="ts6LuckLine" hidden><button type="button" class="link-btn" id="ts6LuckBtn"></button></p>
           <!-- その7 1 新記録のお祝い, 2 今週の皆勤, 3 連続のピンチ, 4 この時間によく積む記録 (the user's calls, 2026-11-14) -->
           <p class="tsumi-past" id="ts7RecordLine" hidden><button type="button" class="link-btn" id="ts7RecordBtn"></button></p>
           <p class="tsumi-past" id="ts7WeekLine" hidden><button type="button" class="link-btn" id="ts7WeekBtn"></button></p>
@@ -23142,8 +23141,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const recs = new Set(ts.filter((t) => t.store === "todos" || t.store === "goals").map((t) => `${t.store === "goals" ? "goal" : "todo"}:${t.rid}`));
     return recs.size ? tsumiBlocks(false).filter((b) => b.gone && recs.has(`${b.kind}:${b.rid}`)) : [];
   }
-  // what taking blocks off takes with them: a day left with none stops counting (the days on end, the most of them, as
-  // 記録's 続けた日), and a step when the count goes under it (the user's call: 4 days on end became 1, unsaid)
+  // what taking blocks off takes with them: a day left with none stops counting (the days on end, the most of them),
+  // and a step when the count goes under it (the user's call: 4 days on end became 1, unsaid)
   function dropCost(bs, all = tsumiShown) {
     const keys = new Set(bs.map((b) => b.key)), left = all.filter((b) => !keys.has(b.key)), said = [];
     const days = new Set(all.map((b) => b.day)), days2 = new Set(left.map((b) => b.day)), lost = [...days].filter((d) => !days2.has(d)).sort();
@@ -24981,12 +24980,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       return;
     }
 
-    // 続けた日: every day with a record, the streak running now and the longest one
-    let streak = 0, longest = 0, run = 0, prev = null;
-    const recSet = new Set(rec);
-    for (let d = recSet.has(todayKey) ? todayKey : addDays(todayKey, -1); recSet.has(d); d = addDays(d, -1)) streak++;
-    for (const d of rec) { run = prev && addDays(prev, 1) === d ? run + 1 : 1; longest = Math.max(longest, run); prev = d; }
-
     const js = journal.items.filter((j) => (j.date || j.id) <= todayKey && j.text?.trim());
 
     const ms = meals.items.filter((m) => m.date <= todayKey);
@@ -25020,7 +25013,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
     // ⑨ in the order chosen, those hidden left out; ④ each kind's with its days on end; ③⑤⑥⑦ their own cards
     const cards = {
-      days: () => sumCard("var(--accent)", "records", "続けた日", String(rec.length), "日 記録した日", `いまの連続 ${streak} 日・いちばん長い連続 ${longest} 日${rec11Share(rec)}`, "wide"), // (rec11Share: その11 ⑩)
+      // 続けた日: every day with a record (the user's call, 2026-11-18: no いまの連続・いちばん長い連続 under it, no 記録した日
+      // beside the number); rec11Share (その11 ⑩) under it from a week on
+      days: () => sumCard("var(--accent)", "records", "続けた日", String(rec.length), "日", rec11Share(rec).replace(/^・/, "") || null, "wide"),
       journal: () => withStreak(sumCard("var(--c-journal)", "journal", "日記", String(js.length), "日 書いた日", js.length ? null : "まだ書いていません", null, null, "journal"), "journal"),
       meal: () => withStreak(sumCard("var(--c-meal)", "meal", "食事", fmtN(ms.length), "回",
         `${new Set(ms.map((m) => m.date)).size} 日記録` + (kcalDays.size ? `・1日平均 ${fmtN(Math.round(avgKcal))} kcal` : ""), null, null, "meal"), "meal"),
@@ -25705,7 +25700,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月18日 15:12"; // 36db1c69 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月18日 15:20"; // 783810c3 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -32302,7 +32297,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ---------- つみかさね その6 (the user's calls, 2026-11-14): 1 文字で送る, 2 1日のタイムライン, 3 先月の自分とくらべる,
-  // 4 ことしの目標, 5 朝のつみかさね, 6 しばらく積んでいない種類, 7 いっしょに積んでいる種類, 8 つみねこおみくじ,
+  // 4 ことしの目標, 5 朝のつみかさね, 6 しばらく積んでいない種類, 7 いっしょに積んでいる種類, 8 つみねこおみくじ (taken out, 2026-11-18),
   // 9 ブロックを表にして書き出す, 10 月のランキング. (var, not const: the gear and the card's foot, above, may be drawn
   // before this runs) ----------
   var ts6Pad = (n) => String(n).padStart(2, "0");
@@ -32492,35 +32487,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("span", { class: "ts6-val" }, `${Math.round(x.share * 100)}%`))));
   }
 
-  // 8 つみねこおみくじ: once a day, a 吉 and a lucky kind (of those stacked in the last 60 days) and hour, the same all
-  // day; drawn, the line says it, and that the lucky kind went on today once it has
-  var TS6_LUCK = ["大吉", "中吉", "小吉", "吉", "末吉"];
-  var TS6_LUCK_WORDS = { 大吉: "なにを積んでもうまくいく日！", 中吉: "こつこつ積むと、いいことがあるよ", 小吉: "ひとつ積めば、きっと気分がいいよ", 吉: "いつもどおりがいちばん", 末吉: "あとからぐんと伸びる日だよ" };
-  function ts6Luck() {
-    let h = 7;
-    for (const c of todayKey) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-    const from = addDays(todayKey, -60), kinds = [...new Set(tsumiList().filter((b) => b.day >= from).map((b) => b.kind))].sort();
-    const ks = kinds.length ? kinds : Object.keys(TSUMI_KINDS).filter((k) => k !== "goal");
-    const kind = ks[(h >>> 3) % ks.length], luck = TS6_LUCK[h % TS6_LUCK.length], hour = 7 + ((h >>> 7) % 16);
-    const done = tsumiList().some((b) => b.day === todayKey && b.kind === kind);
-    return { luck, kind, hour, done, words: TS6_LUCK_WORDS[luck] };
-  }
-  var ts6LuckDrawn = () => lsGet(LS_PREFIX + "tsumiLuck") === todayKey;
-  function renderTs6Luck() {
-    const has = tsumiList().length > 0;
-    $("ts6LuckLine").hidden = !has;
-    if (!has) return;
-    const x = ts6Luck(), label = TSUMI_KINDS[x.kind].label;
-    $("ts6LuckBtn").textContent = !ts6LuckDrawn() ? "きょうのつみねこおみくじを引く"
-      : `おみくじは${x.luck}・ラッキーな記録は${label}${x.done ? "（積みました！）" : ""}`;
-    $("ts6LuckBtn").onclick = () => {
-      const first = !ts6LuckDrawn();
-      lsPut(LS_PREFIX + "tsumiLuck", todayKey);
-      renderTs6Luck();
-      if (tsumiGeo?.nekoAt) petNeko();
-      flash(`${first ? "つみねこおみくじ…" : ""}${x.luck}！${x.words}${/[！。]$/.test(x.words) ? "" : "。"}ラッキーな記録は${label}、ラッキーな時刻は ${x.hour} 時${x.done ? "。きょうはもう積みました" : ""}`);
-    };
-  }
+  // 8 つみねこおみくじ: taken out at the user's call (2026-11-18, tools/REMOVED.md); the day it was drawn (tsumiLuck) is
+  // left in this browser's storage, read by nothing
 
   // 9 ブロックを表にして書き出す: every block, oldest first: its day, time (none where none was kept), kind, words, and
   // 削除済み for one whose record was deleted
@@ -32553,7 +32521,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   function renderTsumiGear6() { renderTs6Day(); renderTs6Rank(); renderTs6Morn(); renderTs6Idle(); renderTs6Pair(); renderTs6Year(); $("ts6CsvCount").textContent = `${fmtN(tsumiList().length)} こ`; }
-  function renderTsumiFoot6() { renderTs6YearLine(); renderTs6Last(); renderTs6Luck(); }
+  function renderTsumiFoot6() { renderTs6YearLine(); renderTs6Last(); }
 
   // ---------- つみかさね その7 (the user's calls, 2026-11-14): 1 新記録のお祝い, 2 今週の皆勤, 3 連続のピンチ, 4 この時間に
   // よく積む記録, 5 目標のおすすめ, 6 今週のふりかえり, 7 よく積んでいることば, 8 思い出クイズ, 9 ひとことのタグ,
