@@ -22,7 +22,7 @@ async function open(b, when) {
   const b = await chromium.launch();
   let p = await open(b, "2026-11-14T07:30:00+09:00");
   const keys = await shown(p);
-  ok(["h5yday", "h5mood", "h5since", "h5links", "h5year"].every((k) => keys.includes(k)), "the new tiles on きょう (きのうのまとめ in the morning)", keys);
+  ok(["h5yday", "h5since", "h5links", "h5year"].every((k) => keys.includes(k)) && !keys.includes("h5mood"), "the new tiles on きょう (きのうのまとめ in the morning; 気分と睡眠 taken out)", keys);
 
   // ⑨ birthdays and anniversaries under the date
   const an = await p.$$eval("#h5Head .h5-anniv", (l) => l.map((x) => x.textContent.replace(/\s+/g, "")));
@@ -30,12 +30,10 @@ async function open(b, when) {
 
   // ⑥ yesterday
   const yd = await tileTxt(p, "h5yday");
-  ok(["ToDo1件完了", "勉強45分", "運動ラン3km", "支出1,200円", "体重60.0kg", "気分😄とてもよい", "テーマ「早く寝る」できた"].every((w) => yd.includes(w)), "⑥ yesterday's", yd);
+  ok(["ToDo1件完了", "勉強45分", "運動ラン3km", "支出1,200円", "体重60.0kg", "テーマ「早く寝る」できた"].every((w) => yd.includes(w)) && !yd.includes("気分"), "⑥ yesterday's (no mood: taken out)", yd);
 
-  // ⑦ mood and sleep
-  const msd = await p.$$eval(".h5-msd", (l) => l.length);
-  const mt = await tileTxt(p, "h5mood");
-  ok(msd === 14 && mt.includes("よく眠れた日（7時間以上）の気分は平均4.5、短い日（6時間未満）は1.7"), "⑦ two weeks, the mood by the night's sleep", [msd, mt]);
+  // ⑦ 気分と睡眠 went with きょうの気分 (taken out, the user's call 2026-11-19)
+  ok(!(await p.$(".h5-msd")), "⑦ no 気分と睡眠 (taken out)");
 
   // ⑩ the year
   const yr = await tileTxt(p, "h5year"), x = await H(p, "year");

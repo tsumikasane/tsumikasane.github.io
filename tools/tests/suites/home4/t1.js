@@ -27,7 +27,7 @@ async function open(b, when) {
   const b = await chromium.launch();
   let p = await open(b, "2026-11-14T07:30:00+09:00");
   const keys = await p.$$eval("#homeTiles > .tile", (l) => l.map((t) => t.dataset.tile));
-  ok(["h4week", "h4mood", "h4sleep", "h4watch", "h4breath", "h4memo"].every((k) => keys.includes(k)), "the new tiles on きょう", keys);
+  ok(["h4week", "h4sleep", "h4memo"].every((k) => keys.includes(k)) && !["h4mood", "h4watch", "h4breath"].some((k) => keys.includes(k)), "the tiles on きょう (気分・時間をはかる・ひと息 taken out)", keys);
 
   // ①② すぐに記録 (its line and its buttons) was taken out (the user's call, 2026-11-19): no tile, nothing for it in the gear's sheet
   ok(!keys.includes("quick") && !(await p.$("#h4LineIn")), "①② no すぐに記録 (taken out)", keys);
@@ -38,12 +38,8 @@ async function open(b, when) {
   await p.screenshot({ path: out + "/h4-settings.png" });
   await p.click("#sheetCancel").catch(() => {}); await p.keyboard.press("Escape"); await p.waitForTimeout(600);
 
-  // ③ mood
-  await p.click('.h4-face[data-mood="4"]'); await p.waitForTimeout(300);
-  ok((await setOf(p, "h4mood"))?.days?.[D.DAY] === 4 && (await p.getAttribute('.h4-face[data-mood="4"]', "aria-pressed")) === "true" && !!(await p.$('.tile[data-tile="h4mood"].h2-done')), "③ picked, kept, the tile done");
-  await p.click('.h4-face[data-mood="4"]'); await p.waitForTimeout(300);
-  ok(!(await setOf(p, "h4mood"))?.days?.[D.DAY], "③ pressed again: none");
-  await p.click('.h4-face[data-mood="5"]'); await p.waitForTimeout(300);
+  // ③ the mood was taken out (the user's call, 2026-11-19)
+  ok(!(await p.$(".h4-face")), "③ no きょうの気分 (taken out)");
 
   // ④ memo
   await p.click(".h4-memo-write"); await p.waitForTimeout(300);
@@ -58,32 +54,12 @@ async function open(b, when) {
   // ⑤ the season was taken out (the user's call, 2026-11-16): nothing of it under the date
   ok(!(await p.$("#h4Koyomi")) && !(await p.evaluate(() => document.getElementById("sec-home").innerText.includes("二十四節気"))), "⑤ no 暦 under the date (taken out)");
 
-  // ⑥ stopwatch: はかる, 25 minutes on, 止める, to 勉強's form
-  await p.click(".h4-start"); await p.waitForTimeout(300);
-  ok((await tileTxt(p, "h4watch")).startsWith("時間をはかる0:00") && (await lsOf(p, "h4watch")).start > 0, "⑥ started (this device)", await tileTxt(p, "h4watch"));
-  await p.clock.setFixedTime(new Date("2026-11-14T07:55:10+09:00")); await p.waitForTimeout(1300);
-  ok((await tileTxt(p, "h4watch")).startsWith("時間をはかる25:10"), "⑥ the time going", await tileTxt(p, "h4watch"));
-  await p.click(".h4-stop"); await p.waitForTimeout(300);
-  ok((await tileTxt(p, "h4watch")).startsWith("時間をはかる25分"), "⑥ stopped: 25 minutes", await tileTxt(p, "h4watch"));
-  await p.click(".h4-to-study"); await p.waitForTimeout(800);
-  ok((await p.textContent("#sheetTitle")) === "勉強を記録" && (await p.inputValue("#reMin")) === "25", "⑥ 勉強's form with its minutes");
-  await p.click("#sheetCancel"); await p.waitForTimeout(600);
-  ok((await tileTxt(p, "h4watch")).startsWith("時間をはかる0:00"), "⑥ ready again");
-  // too short
-  await p.click(".h4-start"); await p.waitForTimeout(200); await p.click(".h4-stop"); await p.waitForTimeout(300);
-  ok((await tileTxt(p, "h4watch")).startsWith("時間をはかる0:00") && !(await p.evaluate((P) => localStorage.getItem(P + "h4watch"), P)), "⑥ under 30 seconds: nothing kept");
+  // ⑥ 時間をはかる was taken out (the user's call, 2026-11-19; ToDo's はかる stays)
+  ok(!(await p.$(".h4-start")), "⑥ no 時間をはかる (taken out)");
 
-  // ⑦ a minute's breathing
-  await p.clock.setFixedTime(new Date("2026-11-14T08:00:00+09:00"));
-  await p.click(".h4-breathe"); await p.waitForTimeout(400);
-  ok(await p.evaluate(() => document.getElementById("h4Breath")?.open) && flat(await p.textContent("#h4BreathSay")) === "ゆっくりすって…", "⑦ open: breathe in");
-  await p.clock.setFixedTime(new Date("2026-11-14T08:00:05+09:00")); await p.waitForTimeout(400);
-  ok(flat(await p.textContent("#h4BreathSay")) === "ゆっくりはいて…" && flat(await p.textContent("#h4BreathLeft")) === "あと55秒", "⑦ then out");
-  await p.screenshot({ path: out + "/h4-breath.png" });
+  // ⑦ ひと息 was taken out (the user's call, 2026-11-19); the clock where the steps after it had it
+  ok(!(await p.$(".h4-breathe")) && !(await p.$("#h4Breath")), "⑦ no ひと息 (taken out)");
   await p.clock.setFixedTime(new Date("2026-11-14T08:01:01+09:00")); await p.waitForTimeout(500);
-  ok(!(await p.evaluate(() => document.getElementById("h4Breath").open)) && (await setOf(p, "h4breath"))?.days?.[D.DAY] === 1 && (await tileTxt(p, "h4breath")).startsWith("ひと息1回"), "⑦ a minute on: closed, counted", await tileTxt(p, "h4breath"));
-  await p.click(".h4-breathe"); await p.waitForTimeout(300); await p.click("#h4BreathStop"); await p.waitForTimeout(300);
-  ok(!(await p.evaluate(() => document.getElementById("h4Breath").open)) && (await setOf(p, "h4breath"))?.days?.[D.DAY] === 1, "⑦ やめる: not counted");
 
   // ⑧ the week ahead
   const days = await p.$$eval(".h4-day", (l) => l.map((x) => [x.querySelector(".h4-dl").textContent, x.querySelector(".h4-date").textContent, x.querySelector(".h4-n").textContent, x.querySelectorAll(".h4-s")[0].textContent].join("|")));

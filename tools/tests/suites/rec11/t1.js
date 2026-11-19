@@ -91,7 +91,7 @@ const DATA = {
 
   // ⑤ ⑥ ④ today's page
   await p.locator("#recList .rec-day-open").first().click(); await wait(p, 900);
-  ok((await txt(p, "#recDayNote")) === "きょう・気分 🙂 よい・テーマ「早起き」できた", "⑤ きょう's mood and theme", await txt(p, "#recDayNote"));
+  ok((await txt(p, "#recDayNote")) === "きょう・テーマ「早起き」できた", "⑤ きょう's theme (the mood went with きょうの気分, taken out 2026-11-19)", await txt(p, "#recDayNote"));
   ok((await rows(p, "#recDayBody .rec-day-go .chip-btn")).includes("予定"), "⑥ 予定 among この日に書く");
   await p.evaluate(() => { Object.defineProperty(window, "speechSynthesis", { value: { speak(u) { window.__said = u.text; }, cancel() { window.__cancelled = (window.__cancelled || 0) + 1; } }, configurable: true }); });
   await p.click("#rec11Speak"); await wait(p, 300);

@@ -53,8 +53,8 @@ const ev = (date, time, title, i) => ({ id: "x" + i, date, time, title, createdA
     "④ キキクル and the hazard map, no heavy rain today");
   // ⑦ why it feels colder (⑥ the pleasant hours, in 暮らしのひとこと: taken out 2026-11-18)
   ok((await txt(p, "#wx9Feel")) === "18時ごろは、空気が乾いていて、気温より5°寒く感じそうです", "⑦ 18時 feels 5° colder", await txt(p, "#wx9Feel"));
-  // ⑨ the weather and the mood
-  ok((await txt(p, "#wx9Mood .wx9-mood")) === "晴れ・くもりの日：気分4.3🙂4日の平均（5がいちばんよい）｜雨・雪の日：気分2.3🙁3日の平均（5がいちばんよい）" && (await txt(p, ".wx9-mood-say")).startsWith("雨の日は、気分が下がりやすいようです"), "⑨ 4.3 against 2.3", await txt(p, "#wx9Mood"));
+  // ⑨ 天気と気分 went with きょうの気分 (taken out, the user's call 2026-11-19)
+  ok(!(await p.$("#wx9Mood")), "⑨ no 天気と気分 (taken out)");
   await p.screenshot({ path: out + "/wx9-top.png" });
 
   // ⑤ 11/17 cooling, ④ 11/19 heavy rain

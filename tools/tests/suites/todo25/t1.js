@@ -110,9 +110,7 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   await p.locator("#td25RestCard button", { hasText: "ほかのを見る" }).click(); await p.waitForTimeout(300);
   const tip2 = await p.evaluate(() => document.querySelector("#td25RestCard .td25-rest-tip")?.textContent);
   ok(TIPS.includes(tip2) && tip2 !== tip1, "⑤ ほかのを見る", [tip1, tip2]);
-  await p.locator("#td25RestCard button", { hasText: "1分 深呼吸" }).click(); await p.waitForTimeout(500);
-  ok(await p.evaluate(() => !!document.getElementById("h4Breath")?.open), "⑤ 1分 深呼吸 (きょう's)");
-  await p.click("#h4BreathStop"); await p.waitForTimeout(300);
+  ok(!(await p.$("#td25RestCard .td25-breathe")) && (await p.locator("#td25RestCard .td25-rest-acts button").count()) === 1, "⑤ no 1分 深呼吸 (きょう's ひと息 taken out, 2026-11-19): ほかのを見る alone");
   await W(p, "focus7", "a"); await p.waitForTimeout(800);
   ok(await p.isVisible(".td25-rest-focus") && TIPS.includes(await p.evaluate(() => document.querySelector(".td25-rest-focus .td25-rest-tip")?.textContent)), "⑤ in 1件に集中する画面 too");
   await closeSheet(p);

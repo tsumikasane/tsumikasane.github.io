@@ -85,7 +85,7 @@ async function open(b, when) {
   // ⑧ what the page can do, and a tile's own
   await more(p, "h6-guide-btn");
   const dts = await p.$$eval("#h6GuideBody dt[data-about]", (l) => l.map((x) => x.dataset.about));
-  ok(await p.evaluate(() => document.getElementById("h6Guide").open) && dts.length >= 37 && dts.includes("h5year") && !dts.includes("quick"), "⑧ every tile's word", dts.length);
+  ok(await p.evaluate(() => document.getElementById("h6Guide").open) && dts.length >= 33 && dts.includes("h5year") && !["quick", "h4mood", "h4watch", "h4breath", "h5mood"].some((k) => dts.includes(k)), "⑧ every tile's word", dts.length);
   await p.keyboard.press("Escape"); await p.waitForTimeout(300);
   await hold(p, "calendar"); await p.waitForTimeout(300);
   await p.locator("#h2TileGroup button", { hasText: "このタイルについて" }).click(); await p.waitForTimeout(500);
@@ -94,18 +94,18 @@ async function open(b, when) {
 
   // ⑩ the day as a picture
   const rows = await H(p, "rows");
-  ok(JSON.stringify(rows.map(([k]) => k)) === JSON.stringify(["つみかさね", "ToDo", "勉強", "睡眠", "水分", "気分", "テーマ"]) && !rows.some(([k]) => /支出|体重/.test(k)), "⑩ what goes in (no money, no weight)", rows);
+  ok(JSON.stringify(rows.map(([k]) => k)) === JSON.stringify(["つみかさね", "ToDo", "勉強", "睡眠", "水分", "テーマ"]) && !rows.some(([k]) => /支出|体重/.test(k)), "⑩ what goes in (no money, no weight)", rows);
   await more(p, "h6-pic-btn"); await p.waitForTimeout(600);
   const sh = await p.evaluate(() => window.__shared);
   ok(sh && sh.files.length === 1 && sh.files[0][0] === "tsumikasane-2026-11-14.png" && sh.files[0][1] === "image/png" && sh.files[0][2] > 20000, "⑩ a picture to the share sheet", sh);
 
   // ② the order of use
-  for (let i = 0; i < 3; i++) { await p.click('.h4-face[data-mood="3"]'); await p.waitForTimeout(200); }
-  ok((await H(p, "uses")).h4mood >= 3, "② presses counted", await H(p, "uses"));
+  for (let i = 0; i < 3; i++) { await p.click('.tile[data-tile="h3water"] .h3-plus'); await p.waitForTimeout(200); } // (水分: きょうの気分, pressed before, was taken out 2026-11-19)
+  ok((await H(p, "uses")).h3water >= 3, "② presses counted", await H(p, "uses"));
   await p.click("#homeSettings"); await p.waitForTimeout(600);
-  ok(flat(await p.textContent("#h6UseNote")).startsWith("この端末でよく押すタイル：きょうの気分（"), "② the counts said", await p.textContent("#h6UseNote"));
+  ok(flat(await p.textContent("#h6UseNote")).startsWith("この端末でよく押すタイル：水分（"), "② the counts said", await p.textContent("#h6UseNote"));
   await p.click("#h6SortUse"); await p.waitForTimeout(400);
-  ok((await H(p, "prefs")).order?.[0] === "h4mood", "② きょうの気分 first", (await H(p, "prefs")).order?.slice(0, 3));
+  ok((await H(p, "prefs")).order?.[0] === "h3water", "② 水分 first", (await H(p, "prefs")).order?.slice(0, 3));
   await p.locator("#sheetStatus button:visible").first().click(); await p.waitForTimeout(400);
   ok(!(await H(p, "prefs")).order, "② 元に戻す");
   await closeSheet(p);
