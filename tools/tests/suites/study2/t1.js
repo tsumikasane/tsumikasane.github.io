@@ -73,13 +73,11 @@ async function open(b, when) {
   const clip = await p.evaluate(() => navigator.clipboard.readText().catch(() => ""));
   ok(clip.startsWith("11/8〜11/14の勉強\n合計") && flat(clip).includes("・数学2時間45分") && clip.includes("試験：期末まであと26日"), "⑩ the week in words", clip);
 
-  // ⑨ the お知らせ under the gear
+  // ⑨ お知らせ: 復習's, then まだの日 too, taken out at the user's call (2026-11-19, tools/REMOVED.md): 勉強 has no お知らせ
+  // under the gear now (科目・教材・試験 only)
   await p.click("#studySettings"); await p.waitForTimeout(800);
   ok(!(await p.$("#st2RevOn")) && !(await p.$("#st2RevAt")), "⑨ 復習's お知らせ: gone");
-  await p.click("#st2RemOn"); await p.waitForTimeout(200);
-  const r = await setting(p, "studyRemind");
-  ok(r && r.on === true && r.at === "20:00", "⑨ kept", r);
-  ok((await txt(p, "#st2RemFoot")).length > 5, "⑨ its foot", await txt(p, "#st2RemFoot"));
+  ok(!(await p.$("#st2RemOn")) && !(await p.$("#st2RemAt")) && !(await p.$("#st2RemFoot")), "⑨ まだの日's お知らせ: gone");
   await p.click("#sheetDone"); await p.waitForTimeout(600);
   await p.screenshot({ path: "study2-cards.png", fullPage: true });
 

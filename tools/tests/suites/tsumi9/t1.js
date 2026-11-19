@@ -62,8 +62,8 @@ const count = (from, to) => blocks.filter((b) => b.d >= from && b.d <= to).lengt
   await p.locator("#ts9BestToday .ts9-pick", { hasText: "カレー" }).click(); await wait(p, 300);
   best = (await ls(p, "settings")).find((x) => x.id === "tsumiDayBest");
   ok(!(today in best.days), "3 pressed again: put back", best.days);
-  // 4 天気とつみかさね
-  ok(JSON.stringify(await rows(p, "#ts9Wx")) === JSON.stringify(["晴れ 6 日 1日 4.0 こ", "くもり 7 日 1日 3.0 こ", "雨 7 日 1日 3.0 こ"]), "4 each weather's blocks a day", await rows(p, "#ts9Wx"));
+  // 4 天気とつみかさね: taken out (the user's call, 2026-11-19, tools/REMOVED.md), as 日記's weather is
+  ok(!(await p.$("#ts9Wx")) && !(await p.$("#ts9WxHead")), "4 (taken out) no 天気とつみかさね");
   // 5 体調・睡眠とつみかさね
   ok(JSON.stringify(await rows(p, "#ts9Body")) === JSON.stringify(["体調がよい日 10 日 1日 3.3 こ", "体調がわるい日 10 日 1日 3.3 こ", "7時間以上寝た日 10 日 1日 3.3 こ", "6時間より短い日 10 日 1日 3.3 こ"]), "5 体調 and 睡眠", await rows(p, "#ts9Body"));
   // 8 去年とくらべる

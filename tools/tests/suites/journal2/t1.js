@@ -11,8 +11,20 @@ const shown = (p, sel) => p.evaluate((sel) => { const e = document.querySelector
 const H = (p, f, ...a) => p.evaluate(({ f, a }) => window.__jn2[f](...a), { f, a });
 const val = (p) => p.inputValue("#journalText");
 const undo = async (p) => { await p.locator("#status button:visible, #sheetStatus button:visible").first().click(); await p.waitForTimeout(500); };
-const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
-const pick = (p) => p.setInputFiles("#jn2PhotoFile", { name: "a.png", mimeType: "image/png", buffer: PNG });
+const PNG64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+// photos already on this device (写真を付ける taken out, 2026-11-19), put in as the app kept them: { id, jnDay, blob, w, h,
+// createdAt }; the page is opened again after, as it reads them once
+const putPhotos = (p, days) => p.evaluate(({ days, b64 }) => new Promise((res, rej) => {
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)), r = indexedDB.open("tsumikasane-photos", 1);
+  r.onupgradeneeded = () => r.result.createObjectStore("photos", { keyPath: "id" });
+  r.onerror = () => rej(r.error);
+  r.onsuccess = () => {
+    const tx = r.result.transaction("photos", "readwrite");
+    days.forEach((d, i) => tx.objectStore("photos").put({ id: "t" + i + Math.random().toString(36).slice(2, 8), jnDay: d, blob: new Blob([bytes], { type: "image/png" }), w: 1, h: 1, createdAt: Date.now() + i }));
+    tx.oncomplete = () => { r.result.close(); res(); };
+    tx.onerror = () => rej(tx.error);
+  };
+}), { days, b64: PNG64 });
 async function open(b, when) {
   const p = await phone(b, new Date(when), { deviceScaleFactor: 1 });
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
@@ -23,8 +35,8 @@ async function open(b, when) {
   const b = await chromium.launch();
   const p = await open(b, "2026-11-14T21:00:00+09:00");
 
-  // ③ the day's weather: shown before anything is written, kept with it once it is
-  ok((await txt(p, "#jn2Wx")) === "晴れ18°/9°（書くと日記に残ります）", "③ today's weather, to be kept", await txt(p, "#jn2Wx"));
+  // ③ the day's weather: taken out (the user's call, 2026-11-19, tools/REMOVED.md): not shown, not kept
+  ok(!(await p.$("#jn2Wx")), "③ (taken out) no weather");
   ok(!(await shown(p, "#jn2Fav")), "② no ★ before anything is written");
 
   // (a newline typed stays through the save after a pause: it was taken off as the field was saved)
@@ -45,11 +57,8 @@ async function open(b, when) {
   await p.keyboard.type("-5度だった"); await p.keyboard.press("Enter");
   ok((await val(p)).endsWith("-5度だった\n"), "⑤ -5度 is no list", await val(p));
   await p.keyboard.type("メモ");
-  await p.click("#jn2Bullet"); await p.waitForTimeout(150);
-  ok((await val(p)).endsWith("\n・メモ") && (await p.evaluate(() => document.activeElement.id)) === "journalText", "⑤ the button: ・ at the head of the line, the field kept", await val(p));
-  await p.click("#jn2Bullet"); await p.waitForTimeout(150);
-  ok((await val(p)).endsWith("\nメモ"), "⑤ pressed again: taken off", await val(p));
-  ok(await p.evaluate(() => { const t = document.getElementById("journalText"); return t.selectionStart === t.value.length; }), "⑤ the caret where it was");
+  // ⑤'s ・ 箇条書き button: taken out (the user's call, 2026-11-19); ・ and 1. going on as 改行 is typed stay (above)
+  ok(!(await p.$("#jn2Bullet")) && (await val(p)).endsWith("\nメモ"), "⑤ (taken out) no ・ 箇条書き button", await val(p));
 
   // ⑥ タグの候補: # and a letter offer the tags of before
   await p.keyboard.type(" #カ"); await p.waitForTimeout(200);
@@ -62,10 +71,9 @@ async function open(b, when) {
   ok(sug2.join() === "#旅行2,#カフェ1,#学校1,#友だち1", "⑥ # alone: all, the most used first", sug2);
   await p.keyboard.press("Backspace"); await p.waitForTimeout(1800);
 
-  // ③ kept as it is saved; ② ★ for today
+  // ③ (taken out) saved without the weather; ② ★ for today
   const e = await H(p, "entry", D.DAY);
-  ok(e.wx && e.wx.word === "晴れ" && e.wx.hi === 18 && e.wx.lo === 9 && e.text.startsWith("きょうのこと"), "③ kept with the 日記", e);
-  ok((await txt(p, "#jn2Wx")) === "晴れ18°/9°", "③ shown as kept", await txt(p, "#jn2Wx"));
+  ok(!("wx" in e) && e.text.startsWith("きょうのこと"), "③ (taken out) saved without the weather", e);
   ok(await shown(p, "#jn2Fav") && (await txt(p, "#jn2Fav")) === "☆お気に入り", "② ☆ once written", await txt(p, "#jn2Fav"));
   await p.click("#jn2Fav"); await p.waitForTimeout(500);
   ok((await H(p, "entry", D.DAY)).fav === true && (await txt(p, "#jn2Fav")) === "★お気に入り", "② ★", await H(p, "entry", D.DAY));
@@ -74,8 +82,10 @@ async function open(b, when) {
   await undo(p);
   ok((await H(p, "entry", D.DAY)).fav === false, "② 元に戻す", await H(p, "entry", D.DAY));
 
-  // ① 写真: one put in, large at a press, deleted (twice) and back; three at most
-  await pick(p); await p.waitForTimeout(800);
+  // ① 写真: 写真を付ける (its button and file field) taken out (the user's call, 2026-11-19). One already on this device
+  // still shows under the field, large at a press, deleted (twice) and back
+  ok(!(await p.$("#jn2PhotoPick")) && !(await p.$("#jn2PhotoFile")), "① (taken out) no 写真を付ける");
+  await putPhotos(p, [D.DAY]); await p.reload(); await p.waitForTimeout(1200);
   ok((await p.locator("#jn2Photos .td-thumb").count()) === 1, "① one under the field");
   const ph = await H(p, "photos");
   ok(ph.length === 1 && ph[0].jnDay === D.DAY && !ph[0].date && !ph[0].mealId, "① kept under the day (not as 体型 nor 食事)", ph);
@@ -86,22 +96,17 @@ async function open(b, when) {
   ok((await p.locator("#jn2Photos .td-thumb").count()) === 0 && (await H(p, "photos")).length === 0, "① deleted");
   await undo(p);
   ok((await p.locator("#jn2Photos .td-thumb").count()) === 1, "① 元に戻す");
-  await pick(p); await p.waitForTimeout(600); await pick(p); await p.waitForTimeout(600);
-  ok((await p.locator("#jn2Photos .td-thumb").count()) === 3 && !(await shown(p, "#jn2PhotoPick")), "① three, then no more");
+  await putPhotos(p, [D.DAY, D.DAY]); await p.reload(); await p.waitForTimeout(1200);
+  ok((await p.locator("#jn2Photos .td-thumb").count()) === 3, "① three of them");
 
-  // ④ 広げて書く
-  await p.click("#jn2Wide"); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => getComputedStyle(document.getElementById("jnCard")).position === "fixed" && document.activeElement.id === "journalText"), "④ over the screen, the field in use");
-  ok(await shown(p, "#jn2FullDone"), "④ 完了 shows");
-  await p.screenshot({ path: "journal2-full.png" });
-  await p.click("#jn2FullDone"); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => getComputedStyle(document.getElementById("jnCard")).position !== "fixed"), "④ 完了: back");
+  // ④ 広げて書く: taken out (the user's call, 2026-11-19)
+  ok(!(await p.$("#jn2Wide")) && !(await p.$("#jn2FullDone")), "④ (taken out) no 広げて書く");
 
   // ⑦ 月の日記を読む
   ok((await txt(p, "#jn2Read")).startsWith("5日"), "⑦ the month's days", await txt(p, "#jn2Read"));
   await p.locator("#jn2Read button", { hasText: "続けて読む" }).click(); await p.waitForTimeout(300);
   const arts = await p.evaluate(() => [...document.querySelectorAll("#jn2Read .jn2-day")].map((a) => a.querySelector(".jn2-day-date").textContent + (a.querySelector(".jn2-star") ? "★" : "") + (a.querySelector(".jn2-wx-in") ? "晴" : "") + a.querySelectorAll(".td-thumb").length));
-  ok(arts.join() === "11月1日（日）0,11月10日（火）0,11月12日（木）0,11月13日（金）★0,11月14日（土）晴3", "⑦ the first day first, ★, weather, photos", arts);
+  ok(arts.join() === "11月1日（日）0,11月10日（火）0,11月12日（木）0,11月13日（金）★0,11月14日（土）3", "⑦ the first day first, ★, photos (no weather: taken out)", arts);
   await p.locator("#jn2Read .jn2-day-date", { hasText: "11月12日" }).click(); await p.waitForTimeout(600);
   ok((await val(p)).startsWith("カフェで友だち"), "⑦ a date opens it", await val(p));
   await p.click("#jn2ReadNav [aria-label=前の月]"); await p.waitForTimeout(200);
@@ -114,23 +119,17 @@ async function open(b, when) {
   const wl = await p.evaluate(() => [...document.querySelectorAll("#jn2WordList .jn-snip")].map((x) => x.textContent));
   ok(wl.length === 2 && wl[0].includes("発表の練習") && wl[1].includes("発表の準備"), "⑧ the days with it", wl);
 
-  // ⑨ 思い出のお知らせ and ⑩ のぞき見防止, under the gear
+  // ⑨ 思い出のお知らせ and ⑩ のぞき見防止: taken out (the user's call, 2026-11-19). Even left on from before (the setting
+  // jnMemory and this device's jnBlur, kept), no notification for the 日記 a year before today, nothing blurred, and
+  // neither under the gear
+  await p.evaluate((P) => { const s = JSON.parse(localStorage.getItem(P + "settings") || "[]"); s.push({ id: "jnMemory", on: true, at: "08:00", updatedAt: 1 }); localStorage.setItem(P + "settings", JSON.stringify(s)); localStorage.setItem(P + "jnBlur", "1"); }, P);
+  await p.reload(); await p.waitForTimeout(1200);
+  ok((await H(p, "alarms", Date.parse("2026-11-14T06:00:00+09:00"))).length === 0, "⑨ (taken out) no 1年前のきょう notification, though left on", await H(p, "alarms", Date.parse("2026-11-14T06:00:00+09:00")));
+  ok(!(await p.evaluate(() => document.getElementById("sec-journal").classList.contains("jn2-blur"))) && !(await p.$("#jn2Veil"))
+    && !(await p.evaluate(() => [...document.querySelectorAll("#jnBack .jn-snip, #jn2FavList .jn-snip")].some((x) => getComputedStyle(x).filter.includes("blur")))), "⑩ (taken out) nothing blurred, though left on");
   await p.click("#jnSettings"); await p.waitForTimeout(800);
-  await p.click("#jn2MemOn"); await p.waitForTimeout(300);
-  const st = await p.evaluate((P) => JSON.parse(localStorage.getItem(P + "settings")).find((s) => s.id === "jnMemory"), P);
-  ok(st && st.on === true && st.at === "08:00", "⑨ on", st);
-  const al = await H(p, "alarms", Date.parse("2026-11-14T21:00:00+09:00"));
-  ok(al.length === 0, "⑨ none tomorrow on (no 日記 a year before 11/15)", al);
-  const al2 = await H(p, "alarms", Date.parse("2026-11-14T06:00:00+09:00"));
-  ok(al2.length === 1 && al2[0].title === "1年前のきょう" && al2[0].body.startsWith("1年前のきょう。紅葉") && al2[0].url === "./#journal", "⑨ today's at 8:00 (asked at 6:00)", al2);
-  await p.click("#jn2BlurOn"); await p.waitForTimeout(300);
-  const al3 = await H(p, "alarms", Date.parse("2026-11-14T06:00:00+09:00"));
-  ok(al3[0]?.body === "1年前のきょうの日記があります", "⑩ with のぞき見防止: no words in it", al3);
+  ok(!(await p.$("#jn2MemOn")) && !(await p.$("#jn2MemAt")) && !(await p.$("#jn2BlurOn")), "⑨⑩ (taken out) not under the gear");
   await p.click("#sheetDone"); await p.waitForTimeout(700);
-  ok(await p.evaluate(() => document.getElementById("sec-journal").classList.contains("jn2-blur")) && (await txt(p, "#jn2Veil")).includes("見る"), "⑩ blurred, 見る");
-  ok(await p.evaluate(() => getComputedStyle(document.querySelector("#jnBack .jn-snip, #jn2FavList .jn-snip")).filter.includes("blur")), "⑩ the readbacks blurred");
-  await p.locator("#jn2Veil button", { hasText: "見る" }).click(); await p.waitForTimeout(200);
-  ok(!(await p.evaluate(() => document.getElementById("sec-journal").classList.contains("jn2-blur"))), "⑩ 見る: shown");
   await p.screenshot({ path: "journal2-cards.png", fullPage: true });
 
   ok(!p.errs.length, "no errors", p.errs);

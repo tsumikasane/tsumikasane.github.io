@@ -14,6 +14,23 @@ const val = (p) => p.inputValue("#journalText");
 const undo = async (p) => { await p.locator("#status button:visible, #sheetStatus button:visible").first().click(); await p.waitForTimeout(500); };
 const go = async (p, d) => { await p.fill("#sec-journal .datenav input[type=date]", d); await p.dispatchEvent("#sec-journal .datenav input[type=date]", "change"); await p.waitForTimeout(500); };
 const photos = (p) => p.evaluate(() => new Promise((res) => { const r = indexedDB.open("tsumikasane-photos", 1); r.onsuccess = () => { const q = r.result.transaction("photos").objectStore("photos").getAll(); q.onsuccess = () => res(q.result.map((x) => ({ jnDay: x.jnDay, draw: !!x.draw, type: x.blob?.type }))); }; r.onerror = () => res([]); }));
+// a picture already on this device (絵を描く taken out, 2026-11-19), put in as the app kept one: { id, jnDay, blob (PNG), w,
+// h, draw: true, createdAt }; the page is opened again after, as it reads them once
+const putPicture = (p, day) => p.evaluate((day) => new Promise((res, rej) => {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, 64, 64); g.strokeStyle = "#000"; g.lineWidth = 4; g.beginPath(); g.moveTo(8, 8); g.lineTo(56, 40); g.stroke();
+  c.toBlob((blob) => {
+    const r = indexedDB.open("tsumikasane-photos", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("photos", { keyPath: "id" });
+    r.onerror = () => rej(r.error);
+    r.onsuccess = () => {
+      const tx = r.result.transaction("photos", "readwrite");
+      tx.objectStore("photos").put({ id: "t-draw-" + day, jnDay: day, blob, w: 64, h: 64, draw: true, createdAt: Date.now() });
+      tx.oncomplete = () => { r.result.close(); res(); };
+      tx.onerror = () => rej(tx.error);
+    };
+  }, "image/png");
+}), day);
 async function open(b, when) {
   const p = await phone(b, new Date(when), { deviceScaleFactor: 1, acceptDownloads: true });
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
@@ -84,19 +101,15 @@ async function open(b, when) {
   const clip = await p.evaluate(() => navigator.clipboard.readText().catch(() => ""));
   ok(clip === "2026年11月13日（金）の日記\n\nあしたは雨。追記", "④ the day as words", clip);
 
-  // ② 絵を描く: a line drawn, やめる asks twice, then 日記に付ける
-  await go(p, D.DAY);
-  await p.click("#jn3Draw"); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => document.getElementById("jn3DrawView").open), "② the page to draw on");
-  const box = await p.locator("#jn3Canvas").boundingBox();
-  await p.mouse.move(box.x + 40, box.y + 40); await p.mouse.down(); await p.mouse.move(box.x + 160, box.y + 120, { steps: 8 }); await p.mouse.up();
-  const ink = await p.evaluate(() => { const c = document.getElementById("jn3Canvas").getContext("2d"), d = c.getImageData(0, 0, 900, 900).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 128) n++; return n; });
-  ok(ink > 200, "② the line on it", ink);
-  await p.click("#jn3DrawQuit"); await p.waitForTimeout(100);
-  ok(await p.evaluate(() => document.getElementById("jn3DrawView").open) && (await txt(p, "#jn3DrawQuit")) === "もう一度押すとやめます", "② やめる asks first");
-  await p.click("#jn3DrawSave"); await p.waitForTimeout(800);
+  // ② 絵を描く: taken out (the user's call, 2026-11-19, tools/REMOVED.md): no button, no page to draw on. A picture drawn
+  // before stays with the day's photos and under the field
+  ok(!(await p.$("#jn3Draw")) && !(await p.$("#jn3DrawView")), "② (taken out) no 絵を描く");
+  await putPicture(p, D.DAY); await p.reload(); await p.waitForTimeout(1200);
+  // (right after the page opens, 写真と絵 and 写真カレンダー wait for its next drawing, as they did before 2026-11-19: a day
+  // moved to draws them. Told to the user 2026-11-20)
+  await go(p, "2026-11-13"); await go(p, D.DAY);
   const ph = await photos(p);
-  ok(ph.length === 1 && ph[0].jnDay === D.DAY && ph[0].draw && ph[0].type === "image/png", "② kept with the day's photos", ph);
+  ok(ph.length === 1 && ph[0].jnDay === D.DAY && ph[0].draw && ph[0].type === "image/png", "② (a picture drawn before) with the day's photos", ph);
   ok((await p.locator("#jn2Photos .td-thumb").count()) === 1, "② under the field");
 
   // ③ 写真と絵

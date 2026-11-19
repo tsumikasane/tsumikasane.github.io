@@ -1,4 +1,4 @@
-// 日記 その4 ①〜⑩, as a user would (no hook build; a fake microphone for ③)
+// 日記 その4 ①〜⑩, as a user would (no hook build; ①'s 天気を選ぶ and ③'s 声で残す taken out, 2026-11-19)
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
 const D = require("./data");
@@ -13,12 +13,33 @@ const val = (p) => p.inputValue("#journalText");
 const undo = async (p) => { await p.locator("#status button:visible, #sheetStatus button:visible").first().click(); await p.waitForTimeout(500); };
 const go = async (p, d) => { await p.fill("#sec-journal .datenav input[type=date]", d); await p.dispatchEvent("#sec-journal .datenav input[type=date]", "change"); await p.waitForTimeout(500); };
 const store = (p) => p.evaluate(() => new Promise((res) => { const r = indexedDB.open("tsumikasane-photos", 1); r.onsuccess = () => { const q = r.result.transaction("photos").objectStore("photos").getAll(); q.onsuccess = () => res(q.result.map((x) => ({ jnDay: x.jnDay, jnVoiceDay: x.jnVoiceDay, cap: x.cap, type: x.blob?.type, size: x.blob?.size }))); }; r.onerror = () => res([]); }));
-const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
+const PNG64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+// photos and voices already on this device (写真を付ける and 声で残す taken out, 2026-11-19), put in as the app kept them:
+// a photo { id, jnDay, blob, w, h, createdAt }, a voice { id, jnVoiceDay, blob (a short WAV here), dur, createdAt }; the
+// page is opened again after, as it reads them once
+const putMedia = (p, list) => p.evaluate(({ list, b64 }) => new Promise((res, rej) => {
+  const png = () => new Blob([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], { type: "image/png" });
+  const wav = () => {
+    const n = 800, buf = new ArrayBuffer(44 + n), v = new DataView(buf), s = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+    s(0, "RIFF"); v.setUint32(4, 36 + n, true); s(8, "WAVE"); s(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); s(36, "data"); v.setUint32(40, n, true);
+    for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+    return new Blob([buf], { type: "audio/wav" });
+  };
+  const r = indexedDB.open("tsumikasane-photos", 1);
+  r.onupgradeneeded = () => r.result.createObjectStore("photos", { keyPath: "id" });
+  r.onerror = () => rej(r.error);
+  r.onsuccess = () => {
+    const tx = r.result.transaction("photos", "readwrite");
+    list.forEach((x, i) => tx.objectStore("photos").put({ id: "t" + i + Math.random().toString(36).slice(2, 8), createdAt: Date.now() + i, ...(x.jnVoiceDay ? { blob: wav(), dur: 1 } : { blob: png(), w: 1, h: 1 }), ...x }));
+    tx.oncomplete = () => { r.result.close(); res(); };
+    tx.onerror = () => rej(tx.error);
+  };
+}), { list, b64: PNG64 });
 (async () => {
-  const b = await chromium.launch({ args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] });
+  const b = await chromium.launch();
   const p = await phone(b, new Date("2026-11-14T21:00:00+09:00"), { deviceScaleFactor: 1 });
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
-  await p.context().grantPermissions(["microphone"]);
   await seed(p, D.all(), "journal"); await p.waitForTimeout(1000);
 
   // ⑦ 季節の言葉: none today; 立冬 on 11/7, 文化の日 on 11/3
@@ -34,18 +55,9 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   await go(p, "2026-11-03");
   ok((await txt(p, "#jn4Season")) === flat("11/3は 文化の日"), "⑦ 文化の日", await txt(p, "#jn4Season"));
 
-  // ① 天気を選ぶ (11/13), 外す, 元に戻す
+  // ① 天気を選ぶ: taken out (the user's call, 2026-11-19, tools/REMOVED.md), with the weather in 日記
   await go(p, "2026-11-13");
-  await p.locator("#jn4Wx button", { hasText: "天気を選ぶ" }).click(); await p.waitForTimeout(200);
-  await p.locator("#jn4Wx .jn4-wx-pick button", { hasText: "雨" }).click(); await p.waitForTimeout(500);
-  let e = await entry(p, "2026-11-13");
-  ok(e.wx && e.wx.word === "雨" && e.wx.icon === "rain" && e.wx.hand === true, "① 雨 kept", e.wx);
-  ok((await txt(p, "#jn2Wx")) === "雨", "① shown (no 気温)", await txt(p, "#jn2Wx"));
-  await p.locator("#jn4Wx button", { hasText: "天気を変える" }).click(); await p.waitForTimeout(200);
-  await p.locator("#jn4Wx button", { hasText: "外す" }).click(); await p.waitForTimeout(500);
-  ok((await entry(p, "2026-11-13")).wx?.none === true && !(await shown(p, "#jn2Wx")), "① 外す", (await entry(p, "2026-11-13")).wx);
-  await undo(p);
-  ok((await entry(p, "2026-11-13")).wx?.word === "雨", "① 元に戻す");
+  ok(!(await p.$("#jn4Wx")) && !(await p.$("#jn2Wx")) && !("wx" in (await entry(p, "2026-11-13"))), "① (taken out) no 天気を選ぶ, no weather");
 
   // ② 見出しごと
   const heads = await p.evaluate(() => [...document.querySelectorAll("#jn4Heads .jn-tag")].map((x) => x.innerText.replace(/\s+/g, "")));
@@ -102,19 +114,16 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   const wk = (await ls(p, "settings")).find((s) => s.id === "jnWeek:2026-11-08");
   ok(wk && wk.text === "いい週だった", "⑧ kept with the account", wk);
 
-  // ③ 声で残す (a fake microphone)
-  ok(await shown(p, "#jn4Rec"), "③ the button");
-  await p.click("#jn4Rec"); await p.waitForTimeout(1500);
-  ok((await p.getAttribute("#jn4Rec", "aria-pressed")) === "true" && (await txt(p, "#jn4Rec")).startsWith("■止める"), "③ recording", await txt(p, "#jn4Rec"));
-  await p.click("#jn4Rec"); await p.waitForTimeout(1500);
+  // ③ 声で残す: taken out (the user's call, 2026-11-19): no button. A voice kept before still has its player under the
+  // field (put in with the photos for ⑤ ④ below: their 写真を付ける taken out too)
+  ok(!(await p.$("#jn4Rec")), "③ (taken out) no 声で残す");
+  await putMedia(p, [{ jnVoiceDay: D.DAY }, { jnDay: D.DAY }, { jnDay: "2026-11-13" }]); await p.reload(); await p.waitForTimeout(1200);
   const vs = (await store(p)).filter((x) => x.jnVoiceDay);
-  ok(vs.length === 1 && vs[0].jnVoiceDay === D.DAY && vs[0].size > 0 && /^audio\//.test(vs[0].type), "③ kept on this device", vs);
-  ok((await p.locator("#jn4Voices audio").count()) === 1 && (await txt(p, "#jn4Rec")) === "声で残す", "③ a player under the field");
+  ok(vs.length === 1 && vs[0].jnVoiceDay === D.DAY && /^audio\//.test(vs[0].type), "③ (a voice kept before) on this device", vs);
+  ok((await p.locator("#jn4Voices audio").count()) === 1, "③ its player under the field");
 
-  // ⑤ 写真にひとこと, ④ スライドショー
-  await p.setInputFiles("#jn2PhotoFile", { name: "a.png", mimeType: "image/png", buffer: PNG }); await p.waitForTimeout(700);
+  // ⑤ 写真にひとこと, ④ スライドショー, on the photos already on this device
   await go(p, "2026-11-13");
-  await p.setInputFiles("#jn2PhotoFile", { name: "b.png", mimeType: "image/png", buffer: PNG }); await p.waitForTimeout(700);
   await p.click("#jn2Photos .td-thumb"); await p.waitForTimeout(300);
   await p.fill("#jn4Cap", "映画のあと"); await p.press("#jn4Cap", "Enter"); await p.waitForTimeout(500);
   ok((await store(p)).some((x) => x.jnDay === "2026-11-13" && x.cap === "映画のあと"), "⑤ kept with the photo", await store(p));

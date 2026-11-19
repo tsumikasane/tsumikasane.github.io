@@ -14,7 +14,20 @@ const val = (p) => p.inputValue("#journalText");
 const undo = async (p) => { await p.locator("#status button:visible, #sheetStatus button:visible").first().click(); await p.waitForTimeout(600); };
 const go = async (p, d) => { await p.fill("#sec-journal .datenav input[type=date]", d); await p.dispatchEvent("#sec-journal .datenav input[type=date]", "change"); await p.waitForTimeout(500); };
 const pick = (p, a, b) => p.evaluate(({ a, b }) => { const t = document.getElementById("journalText"); t.focus(); t.setSelectionRange(a, b); t.dispatchEvent(new Event("select")); }, { a, b });
-const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
+const PNG64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+// photos already on this device (写真を付ける taken out, 2026-11-19), put in as the app kept them: { id, jnDay, blob, w, h,
+// createdAt }; the page is opened again after, as it reads them once
+const putPhotos = (p, days) => p.evaluate(({ days, b64 }) => new Promise((res, rej) => {
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)), r = indexedDB.open("tsumikasane-photos", 1);
+  r.onupgradeneeded = () => r.result.createObjectStore("photos", { keyPath: "id" });
+  r.onerror = () => rej(r.error);
+  r.onsuccess = () => {
+    const tx = r.result.transaction("photos", "readwrite");
+    days.forEach((d, i) => tx.objectStore("photos").put({ id: "t" + i + Math.random().toString(36).slice(2, 8), jnDay: d, blob: new Blob([bytes], { type: "image/png" }), w: 1, h: 1, createdAt: Date.now() + i }));
+    tx.oncomplete = () => { r.result.close(); res(); };
+    tx.onerror = () => rej(tx.error);
+  };
+}), { days, b64: PNG64 });
 (async () => {
   const b = await chromium.launch();
   const p = await phone(b, new Date("2026-11-14T21:00:00+09:00"), { deviceScaleFactor: 1, acceptDownloads: true });
@@ -22,12 +35,10 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   await p.context().addInitScript(() => { window.__said = []; const ss = window.speechSynthesis; if (ss) { ss.speak = (u) => { window.__said.push(u.text); setTimeout(() => u.onend && u.onend(), 50); }; ss.cancel = () => {}; } });
   await seed(p, D.all(), "journal"); await p.waitForTimeout(1000);
 
-  // ⑩ あとで書く: 11/10 listed; today marked; 11/10 taken off
-  ok((await txt(p, "#jn5LaterList")) === "11月10日（火）まだ書いていません書く外す", "⑩ the day marked", await txt(p, "#jn5LaterList"));
-  await p.click("#jn5Later"); await p.waitForTimeout(400);
-  ok(JSON.stringify((await ls(p, "settings")).find((s) => s.id === "jnLater").days) === '["2026-11-10","2026-11-14"]' && (await txt(p, "#jn5Later")) === "あとで書く✓", "⑩ today marked", await txt(p, "#jn5Later"));
-  await p.locator("#jn5LaterList li", { hasText: "11月10日" }).locator("button", { hasText: "外す" }).click(); await p.waitForTimeout(400);
-  ok(JSON.stringify((await ls(p, "settings")).find((s) => s.id === "jnLater").days) === '["2026-11-14"]', "⑩ 外す");
+  // ⑩ あとで書く: taken out (the user's call, 2026-11-19, tools/REMOVED.md): no button, no list of the days. The days marked
+  // before (the setting jnLater) are kept, read by nothing
+  ok(!(await p.$("#jn5Later")) && !(await p.$("#jn5LaterList")) && !(await p.$("#jn5LaterCard")), "⑩ (taken out) no あとで書く");
+  ok(JSON.stringify((await ls(p, "settings")).find((s) => s.id === "jnLater")?.days) === '["2026-11-10"]', "⑩ (the days marked before: kept)", await ls(p, "settings"));
 
   // ⑨ この1年: a square a day, the days written coloured
   const heat = await p.evaluate(() => ({ all: document.querySelectorAll("#jn5Heat .jn5-c").length, wrote: [...document.querySelectorAll("#jn5Heat button.jn5-c")].filter((x) => !x.classList.contains("lv0")).length }));
@@ -84,10 +95,9 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   await p.click("#jn5RdClose"); await p.waitForTimeout(400);
   ok((await val(p)).startsWith("文化の日"), "① closed on the day read last", await val(p));
 
-  // ⑤ コラージュ
-  await p.setInputFiles("#jn2PhotoFile", { name: "a.png", mimeType: "image/png", buffer: PNG }); await p.waitForTimeout(700);
-  await go(p, "2026-11-13");
-  await p.setInputFiles("#jn2PhotoFile", { name: "b.png", mimeType: "image/png", buffer: PNG }); await p.waitForTimeout(700);
+  // ⑤ コラージュ, of photos already on this device (写真を付ける taken out, 2026-11-19)
+  await putPhotos(p, ["2026-11-14", "2026-11-13"]); await p.reload(); await p.waitForTimeout(1200);
+  await go(p, "2026-11-13"); // (写真と絵 is drawn once a day is moved to, right after the page opens: as before 2026-11-19, told to the user 2026-11-20)
   await p.locator("#jn3Album .jn5-collage-btn").first().click(); await p.waitForTimeout(900);
   ok(await p.evaluate(() => document.getElementById("jn5PicView").open && document.getElementById("jn5PicImg").naturalWidth === 1080) && (await txt(p, "#jn5PicTitle")) === "2026年11月のコラージュ", "⑤ the collage");
   const [dl2] = await Promise.all([p.waitForEvent("download", { timeout: 15000 }), p.click("#jn5PicSave")]);

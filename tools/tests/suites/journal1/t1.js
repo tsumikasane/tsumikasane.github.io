@@ -21,22 +21,14 @@ async function open(b, when) {
   const p = await open(b, "2026-11-13T20:00:00+09:00");
   await p.screenshot({ path: "journal1-top.png" });
 
-  // ① きょうの問いかけ: shown, ほかの問い changes it, 書く puts it in
-  ok(await shown(p, "#jnAsk"), "① the day's question shows");
-  const q1 = await txt(p, "#jnAsk .jn-ask-q");
-  ok(q1.startsWith("きょうの問いかけ") && q1.length > 10, "① it says きょうの問いかけ", q1);
-  await chip(p, "#jnAsk", "ほかの問い").click(); await p.waitForTimeout(200);
-  const q2 = await txt(p, "#jnAsk .jn-ask-q");
-  ok(q2 !== q1, "① ほかの問い: another", [q1, q2]);
-  await chip(p, "#jnAsk", "書く").click(); await p.waitForTimeout(1600);
-  const v1 = await p.inputValue("#journalText");
-  ok(/^【.+？】\n?$/.test(v1), "① 書く: the question in the field", v1);
-  ok((await jn(p, D.DAY))?.text?.startsWith("【"), "① saved as typed", await jn(p, D.DAY));
+  // ① きょうの問いかけ: taken out (the user's call, 2026-11-19, tools/REMOVED.md): no card, no ほかの問い nor 書く. Today
+  // written by hand instead, to go on with
+  ok(!(await p.$("#jnAsk")) && !(await p.locator("#sec-journal button", { hasText: "ほかの問い" }).count()), "① (taken out) no きょうの問いかけ");
+  await p.click("#journalText"); await p.keyboard.type("カフェで"); await p.waitForTimeout(1600);
+  ok((await jn(p, D.DAY))?.text === "カフェで", "(today written by hand: saved as typed)", await jn(p, D.DAY));
 
-  // ② いまの時刻: at the caret
-  await p.click("#journalText"); await p.keyboard.press("End"); await p.keyboard.type("カフェで");
-  await chip(p, "#jnTools", "いまの時刻").click(); await p.waitForTimeout(200);
-  ok((await p.inputValue("#journalText")).endsWith("カフェで20:00 "), "② the time at the caret", await p.inputValue("#journalText"));
+  // ② いまの時刻: taken out (the user's call, 2026-11-19)
+  ok(!(await chip(p, "#jnTools", "いまの時刻").count()), "② (taken out) no いまの時刻");
 
   // ⑤ the letters, written as typed
   const n = [...(await p.inputValue("#journalText")).trim()].length;
@@ -57,30 +49,25 @@ async function open(b, when) {
   const hits = await p.evaluate(() => [...document.querySelectorAll("#jnTagList .jn-snip")].map((x) => x.textContent));
   ok(hits.length === 2 && hits[0].startsWith("1か月前") && hits[1].startsWith("1年前"), "⑥ #旅行's days, the latest first", hits);
 
-  // ④ その日の記録を入れる, with 元に戻す
-  const before = await p.inputValue("#journalText");
-  await chip(p, "#jnTools", "その日の記録").click(); await p.waitForTimeout(300);
-  const v4 = await p.inputValue("#journalText");
-  for (const w of ["― この日の記録 ―", "予定：10:00 ゼミ", "勉強：1時間 30分（英語）", "運動：", "食事：トースト、カレーライス（1,050 kcal）", "体重：60.2 kg", "ルーティーン：ストレッチ", "家計簿：支出 1,200 円"])
-    ok(flat(v4).includes(flat(w)), "④ " + w, v4);
-  await p.locator("#status button:visible").first().click(); await p.waitForTimeout(300);
-  ok((await p.inputValue("#journalText")) === before, "④ 元に戻す");
+  // ④ その日の記録を入れる: taken out (the user's call, 2026-11-19)
+  ok(!(await chip(p, "#jnTools", "その日の記録").count()), "④ (taken out) no その日の記録を入れる");
 
-  // ③ テンプレート: none yet opens the gear at it; 例を入れる, then it goes in
+  // ③ テンプレート: none yet opens the gear at it; put in there by hand (its 例を入れる taken out, 2026-11-19: no example
+  // in a field), then it goes in
   await chip(p, "#jnTools", "テンプレートを作る").click(); await p.waitForTimeout(800);
   ok(await shown(p, "#jnSetGroup") && (await p.evaluate(() => document.activeElement?.id)) === "jnTpl", "③ the gear opens at テンプレート");
-  await p.click("#jnTplSample"); await p.waitForTimeout(300);
-  ok((await ls(p, "settings")).find((s) => s.id === "jnTemplate")?.text.startsWith("よかったこと："), "③ 例を入れる: kept", await ls(p, "settings"));
+  ok(!(await p.$("#jnTplSample")), "③ (taken out) no 例を入れる");
+  await p.fill("#jnTpl", "よかったこと：\nがんばったこと：\nあしたやりたいこと：\n"); await p.dispatchEvent("#jnTpl", "change"); await p.waitForTimeout(300);
+  ok((await ls(p, "settings")).find((s) => s.id === "jnTemplate")?.text.startsWith("よかったこと："), "③ kept", await ls(p, "settings"));
   // ⑨ the reminder: on, its time
   await p.click("#jnRemindOn"); await p.waitForTimeout(300);
   await p.fill("#jnRemindAt", "22:15"); await p.dispatchEvent("#jnRemindAt", "change"); await p.waitForTimeout(300);
   const rm = (await ls(p, "settings")).find((s) => s.id === "jnRemind");
   ok(rm?.on === true && rm.at === "22:15", "⑨ on at 22:15", rm);
   ok((await txt(p, "#jnRemindFoot")).length > 5, "⑨ its foot says", await txt(p, "#jnRemindFoot"));
-  // ① the questions off
-  await p.click("#jnAskOn"); await p.waitForTimeout(300);
+  // ①'s switch: taken out with it
+  ok(!(await p.$("#jnAskOn")), "① (taken out) no switch for the questions");
   await p.click("#sheetDone"); await p.waitForTimeout(800);
-  ok(!(await shown(p, "#jnAsk")), "① turned off: gone");
   await chip(p, "#jnTools", "テンプレート").click(); await p.waitForTimeout(300);
   ok((await p.inputValue("#journalText")).includes("よかったこと：\nがんばったこと：\nあしたやりたいこと：\n"), "③ テンプレート put in", await p.inputValue("#journalText"));
 
@@ -94,10 +81,11 @@ async function open(b, when) {
   await p.locator("#jnBack li").filter({ has: p.locator("strong", { hasText: /^1年前$/ }) }).locator("button", { hasText: "この日を開く" }).click(); await p.waitForTimeout(800);
   ok((await p.inputValue("#sec-journal .datenav input[type=date]")) === "2025-11-13" && (await p.inputValue("#journalText")).startsWith("1年前の日記"), "⑦ この日を開く: that day");
 
-  // ⑧ 日記カレンダー: back to today, the month's days by letters; pressed, that day
+  // ⑧ 日記カレンダー: back to today, the days written all in one colour (the user's call, 2026-11-19: no steps by
+  // letters any more); pressed, that day
   await p.locator("#sec-journal .datenav .chip-btn", { hasText: "きょうへ" }).click(); await p.waitForTimeout(800);
-  const cal = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll("#jnCal button.jnc-d")].map((b) => [b.querySelector(".dn").textContent, b.className.match(/lv\d/)[0]])));
-  ok(cal["12"] === "lv4" && cal["11"] === "lv1" && cal["2"] === "lv0" && cal["13"] !== "lv0", "⑧ the days by how much was written", cal);
+  const cal = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll("#jnCal button.jnc-d")].map((b) => [b.querySelector(".dn").textContent, (b.classList.contains("wrote") ? "wrote" : "-") + (/\blv\d/.test(b.className) ? "+lv" : "")])));
+  ok(cal["12"] === "wrote" && cal["11"] === "wrote" && cal["2"] === "-" && cal["13"] === "wrote", "⑧ the days written, in one colour (no steps)", cal);
   ok((await txt(p, "#jnCalKey")).includes("書いた日6日"), "⑧ the month's days", await txt(p, "#jnCalKey"));
   await p.locator("#jnCal button.jnc-d", { hasText: /^\s*10/ }).first().click(); await p.waitForTimeout(800);
   ok((await p.inputValue("#journalText")).startsWith("友だちとカフェへ"), "⑧ pressed: that day", await p.inputValue("#journalText"));

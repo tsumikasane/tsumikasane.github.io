@@ -76,13 +76,10 @@ const DATA = {
   ok(await p.isHidden("#rec7Break"), "④ whole: none");
   await p.fill("#recSearch", "旅行"); await wait(p, 400);
   ok((await txt(p, "#rec7Break")) === "内訳：交通費 3,000 円・食費 2,000 円", "④ by 費目", await txt(p, "#rec7Break"));
-  // ⑤ 日記 by its weather
+  // ⑤ 日記 by its weather: taken out (the user's call, 2026-11-19, tools/REMOVED.md), as 日記's weather is: no 晴れ・雨
+  // to pick in 日記's list, every 日記 listed
   await p.locator("#rec6Kinds .chip-btn", { hasText: "日記" }).click(); await wait(p, 600);
-  ok(JSON.stringify(await rows(p, "#rec7Wx .chip-btn")) === JSON.stringify(["晴れ 1", "雨 3"]), "⑤ the weathers it has", await rows(p, "#rec7Wx .chip-btn"));
-  await p.locator("#rec7Wx .chip-btn", { hasText: "雨" }).click(); await wait(p, 400);
-  ok((await txt(p, "#recListNote")).startsWith("雨の日の記録 3 件・3 日分") && (await p.getAttribute('#rec7Wx .chip-btn[aria-pressed="true"]', "aria-pressed")) === "true", "⑤ 雨 only", await txt(p, "#recListNote"));
-  await p.locator("#rec7Wx .chip-btn", { hasText: "雨" }).click(); await wait(p, 300);
-  ok((await txt(p, "#recListNote")) === "5 日分・新しい順", "⑤ pressed again: all", await txt(p, "#recListNote"));
+  ok(!(await p.$("#rec7Wx")) && (await txt(p, "#recListNote")) === "5 日分・新しい順", "⑤ (taken out) no weather to pick, all listed", await txt(p, "#recListNote"));
   // (その6 ② the kinds' row: the last one in reach on a phone, the row scrolling, not running past the screen)
   ok(await p.evaluate(() => { const r = document.getElementById("rec6Kinds"); return r.clientWidth <= innerWidth && r.scrollWidth > r.clientWidth; }), "the kinds' row fits the screen and scrolls");
   await p.locator("#rec6Kinds .chip-btn", { hasText: "家計簿" }).click(); await wait(p, 600);
@@ -113,7 +110,7 @@ const DATA = {
   await p.click("#recSettings"); await wait(p, 700);
   const [dl] = await Promise.all([p.waitForEvent("download"), p.click("#rec7Book")]);
   const html = fs.readFileSync(await dl.path(), "utf8");
-  ok(dl.suggestedFilename() === "tsumikasane-nikki-2026-11-15.html" && (html.match(/<section>/g) || []).length === 5 && html.includes("きょうの日記<br>2行目") && html.includes('<img src="data:image/png;base64,') && html.includes("（5 日・写真 1 枚）") && html.includes("晴れ 18° / 9°"), "⑧ a page: 5 days, the photo in it", { name: dl.suggestedFilename(), len: html.length });
+  ok(dl.suggestedFilename() === "tsumikasane-nikki-2026-11-15.html" && (html.match(/<section>/g) || []).length === 5 && html.includes("きょうの日記<br>2行目") && html.includes('<img src="data:image/png;base64,') && html.includes("（5 日・写真 1 枚）") && !html.includes("晴れ 18°"), "⑧ a page: 5 days, the photo in it (no weather: taken out, 2026-11-19)", { name: dl.suggestedFilename(), len: html.length });
   const file = { app: "tsumikasane", version: 1, exportedAt: new Date(T("2026-11-01", "10:00")).toISOString(), data: { journal: [{ id: today, date: today, text: "ファイルの日記", createdAt: 1 }], meals: [{ id: "f1", date: "2026-11-01", slot: "夕食", text: "ファイルのごはん", kcal: 500, createdAt: 2 }] } };
   await p.setInputFiles("#importFile", { name: "old.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(file)) }); await wait(p, 800);
   ok(await p.isVisible("#importAsk") && await p.isVisible("#rec7File") && (await txt(p, "#rec7FileHead")) === "1件ずつ戻す（2 件）", "⑨ the file's records one by one", await txt(p, "#rec7FileHead"));

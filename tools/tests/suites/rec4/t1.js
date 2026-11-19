@@ -98,7 +98,9 @@ const DATA = {
   // ⑤ ⑥ ⑦ ⑧ ⑨ today's page
   await p.locator("#recList .rec-day-open").first().click(); await wait(p, 1200);
   const note = await p.evaluate(() => document.getElementById("recDayNote").textContent);
-  ok((await txt(p, "#recDayTitle")) === "11月14日（土）" && note === "きょう・晴れ 18° / 9°" && (await p.locator("#recDayNote .rec4-wx .wx-icon.sun").count()) === 1, "⑥ the weather its 日記 kept, with its mark", note);
+  // ⑥ the weather its 日記 kept: taken out (the user's call, 2026-11-19, tools/REMOVED.md), as 日記's weather is; the 日記's
+  // wx stays, read by nothing
+  ok((await txt(p, "#recDayTitle")) === "11月14日（土）" && note === "きょう" && !(await p.$("#recDayNote .rec4-wx")), "⑥ (taken out) no weather on the day's page", note);
   ok((await txt(p, ".rec4-photos .rec-day-head")) === "写真 2 枚" && (await p.locator(".rec4-photos .td-thumb").count()) === 2 && await p.evaluate(() => document.getElementById("recDayBody").firstElementChild.classList.contains("rec4-photos")), "⑤ the day's photos, over its records", await txt(p, ".rec4-photos .rec-day-head"));
   await p.locator(".rec4-photos .td-thumb").nth(1).click(); await wait(p, 400);
   ok(await isOpen(p, "tsumiPhotoView"), "⑤ 体型の写真, large");
