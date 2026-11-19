@@ -22,28 +22,17 @@ async function open(b, when) {
   const p = await open(b, "2026-11-14T21:00:00+09:00");
   await p.screenshot({ path: "study2-top.png" });
 
-  // ② きょうの復習: 11/13's (1日後) and 11/7's (7日後), the oldest first
-  const rv = await p.evaluate(() => [...document.querySelectorAll("#st2RevList li .sub")].map((x) => x.innerText.replace(/\s+/g, "")));
-  ok(rv.length === 2 && rv[0].includes("11/7の勉強の7日後") && rv[1].includes("11/13の勉強の1日後") && rv[1].includes("次は3日後"), "② the day's 復習", rv);
-  await p.locator("#st2RevList li", { hasText: "二次関数" }).locator("button", { hasText: "やった" }).click(); await p.waitForTimeout(500);
-  ok(JSON.stringify((await rec(p, "r2")).revDone) === "[1,3,7]", "② やった: 7日後 done", await rec(p, "r2"));
-  await undo(p);
-  ok(JSON.stringify((await rec(p, "r2")).revDone) === "[1,3]", "② 元に戻す", await rec(p, "r2"));
-  await p.locator("#st2RevList li", { hasText: "関係代名詞" }).locator("button", { hasText: "やめる" }).click(); await p.waitForTimeout(500);
-  ok((await rec(p, "r1")).rev === false && (await p.locator("#st2RevList li").count()) === 1, "② やめる", await rec(p, "r1"));
+  // ② 復習 (きょうの復習): taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#st2RevCard")) && !(await p.$("#st2RevList")), "② 復習: gone");
 
-  // ① 始めと終わりの時刻 → 時間; ② 復習する; kept on the record
-  await p.click("#st2TimeOpen"); await p.waitForTimeout(200);
-  ok(await shown(p, "#st2TimeField") && (await p.inputValue("#st2To")) === "21:00", "① opens, 終わり now");
-  await p.fill("#st2From", "19:15"); await p.dispatchEvent("#st2From", "input"); await p.waitForTimeout(100);
-  ok((await p.inputValue("#stMin")) === "105", "① 105 分 worked out", await p.inputValue("#stMin"));
+  // ① 始めと終わりの時刻で入れる, ② 復習する, 勉強 ① +15分 +30分 +1時間: taken out at the user's call (2026-11-19, tools/REMOVED.md); 105 分 of 数学 put in from 時間
+  ok(!(await p.$("#st2TimeOpen")) && !(await p.$("#st2TimeField")) && !(await p.$("#st2Rev")) && !(await p.$("#stQuick")), "①② and the +15分 buttons: gone");
+  await p.fill("#stMin", "105"); await p.dispatchEvent("#stMin", "input");
   await p.locator("#stSubjects label, #stSubjects button", { hasText: "数学" }).first().click();
-  await p.check("#st2Rev");
   await p.click("#studyForm button[type=submit]"); await p.waitForTimeout(600);
   const nw = (await ls(p, "study")).find((x) => x.date === D.DAY);
-  ok(nw && nw.minutes === 105 && nw.from === "19:15" && nw.to === "21:00" && nw.rev === true, "① ② kept on the record", nw);
-  ok((await txt(p, "#studyList")).includes("19:15〜21:00・復習0/4"), "① ② on its row", await txt(p, "#studyList"));
-  ok(!(await shown(p, "#st2TimeField")), "① closed after");
+  ok(nw && nw.minutes === 105 && !("from" in nw) && !("rev" in nw), "put in, no 時刻 and no 復習", nw);
+  ok(!(await txt(p, "#studyList")).includes("復習"), "no 復習 on its row", await txt(p, "#studyList"));
 
   // ③ a day with nothing: the last day studied before it, copied
   await p.locator("#sec-study .datenav button", { hasText: "前日" }).click(); await p.waitForTimeout(500); // 11/13 has r1
@@ -86,11 +75,10 @@ async function open(b, when) {
 
   // ⑨ the お知らせ under the gear
   await p.click("#studySettings"); await p.waitForTimeout(800);
-  await p.click("#st2RevOn"); await p.waitForTimeout(200);
-  await p.fill("#st2RevAt", "08:00"); await p.dispatchEvent("#st2RevAt", "change"); await p.waitForTimeout(200);
+  ok(!(await p.$("#st2RevOn")) && !(await p.$("#st2RevAt")), "⑨ 復習's お知らせ: gone");
   await p.click("#st2RemOn"); await p.waitForTimeout(200);
   const r = await setting(p, "studyRemind");
-  ok(r && r.on === true && r.rev === true && r.revAt === "08:00" && r.at === "20:00", "⑨ kept", r);
+  ok(r && r.on === true && r.at === "20:00", "⑨ kept", r);
   ok((await txt(p, "#st2RemFoot")).length > 5, "⑨ its foot", await txt(p, "#st2RemFoot"));
   await p.click("#sheetDone"); await p.waitForTimeout(600);
   await p.screenshot({ path: "study2-cards.png", fullPage: true });
