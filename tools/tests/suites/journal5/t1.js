@@ -97,7 +97,7 @@ const putPhotos = (p, days) => p.evaluate(({ days, b64 }) => new Promise((res, r
 
   // ⑤ コラージュ, of photos already on this device (写真を付ける taken out, 2026-11-19)
   await putPhotos(p, ["2026-11-14", "2026-11-13"]); await p.reload(); await p.waitForTimeout(1200);
-  await go(p, "2026-11-13"); // (写真と絵 is drawn once a day is moved to, right after the page opens: as before 2026-11-19, told to the user 2026-11-20)
+  // (写真と絵 as the page opened: drawn once the photos are read, fixed 2026-11-20)
   await p.locator("#jn3Album .jn5-collage-btn").first().click(); await p.waitForTimeout(900);
   ok(await p.evaluate(() => document.getElementById("jn5PicView").open && document.getElementById("jn5PicImg").naturalWidth === 1080) && (await txt(p, "#jn5PicTitle")) === "2026年11月のコラージュ", "⑤ the collage");
   const [dl2] = await Promise.all([p.waitForEvent("download", { timeout: 15000 }), p.click("#jn5PicSave")]);

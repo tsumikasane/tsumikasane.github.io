@@ -70,7 +70,8 @@ const putPhotos = (p, days) => p.evaluate(({ days, b64 }) => new Promise((res, r
   // ⑤ 撮った日にまとめて付ける: taken out (the user's call, 2026-11-19). ④ 写真カレンダー, on photos already on this device
   ok(!(await p.$("#jn6Bulk")) && !(await p.$("#jn6BulkFile")), "⑤ (taken out) no 撮った日にまとめて付ける");
   await putPhotos(p, ["2026-11-03", D.DAY, D.DAY]); await p.reload(); await p.waitForTimeout(1200);
-  await go(p, "2026-11-13"); await go(p, D.DAY); // (写真カレンダー is drawn once a day is moved to, right after the page opens: as before 2026-11-19, told to the user 2026-11-20)
+  // (写真カレンダー as the page opened, no day moved to: drawn once the photos are read. It stayed hidden until the page was
+  // drawn again before, fixed 2026-11-20)
   ok(JSON.stringify(await store(p)) === '["2026-11-03","2026-11-14","2026-11-14"]', "(the photos on this device)", await store(p));
   const pc = await p.evaluate(() => [...document.querySelectorAll("#jn6PhotoCal .jn6-pc.has .dn")].map((x) => x.textContent).join());
   ok(pc === "3,14", "④ 写真カレンダー: the days with one", pc);

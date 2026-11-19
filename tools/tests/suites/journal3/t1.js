@@ -105,9 +105,7 @@ async function open(b, when) {
   // before stays with the day's photos and under the field
   ok(!(await p.$("#jn3Draw")) && !(await p.$("#jn3DrawView")), "② (taken out) no 絵を描く");
   await putPicture(p, D.DAY); await p.reload(); await p.waitForTimeout(1200);
-  // (right after the page opens, 写真と絵 and 写真カレンダー wait for its next drawing, as they did before 2026-11-19: a day
-  // moved to draws them. Told to the user 2026-11-20)
-  await go(p, "2026-11-13"); await go(p, D.DAY);
+  await go(p, D.DAY); // (the day shown already: 写真と絵 below is as the page opened, drawn once the photos are read, fixed 2026-11-20)
   const ph = await photos(p);
   ok(ph.length === 1 && ph[0].jnDay === D.DAY && ph[0].draw && ph[0].type === "image/png", "② (a picture drawn before) with the day's photos", ph);
   ok((await p.locator("#jn2Photos .td-thumb").count()) === 1, "② under the field");
