@@ -9386,11 +9386,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
               <div class="tsumi-acts"><button type="button" class="link-btn tsumi-open" id="tsumiGhostDo" hidden>完了にする</button><button type="button" class="link-btn tsumi-open" id="tsumiOpen" hidden>この記録を開く</button><button type="button" class="link-btn tsumi-open tsumi-photo-btn" id="tsumiPhoto" aria-haspopup="dialog" hidden></button><button type="button" class="link-btn tsumi-open" id="tsumiDayAll" hidden>その日をまとめて見る</button><button type="button" class="link-btn tsumi-open" id="tsumiAgain" hidden></button><button type="button" class="link-btn danger tsumi-open" id="tsumiDrop" hidden>このブロックを削除</button><p class="tsumi-drop-warn" id="tsumiDropWarn" role="status" hidden></p></div>
             </div>
           </div>
-          <!-- 記念日, つみねこのおねがい, きょうの目標, 30日チャレンジ (the user's calls), a line each while there is one -->
+          <!-- 記念日, きょうの目標, 30日チャレンジ (the user's calls), a line each while there is one (つみねこのおねがい taken out at the user's call, 2026-11-19) -->
           <p class="tsumi-past" id="tsumiAnnivLine" hidden><button type="button" class="link-btn" id="tsumiAnnivBtn"></button></p>
           <!-- その5 7 はじめてからの記念日 (the user's call, 2026-11-13) -->
           <p class="tsumi-past" id="tsumiStartLine" hidden><button type="button" class="link-btn" id="tsumiStartBtn"></button></p>
-          <p class="tsumi-past" id="tsumiWishLine" hidden><button type="button" class="link-btn" id="tsumiWishBtn"></button></p>
           <p class="tsumi-past" id="tsumiDayGoalLine" hidden><button type="button" class="link-btn" id="tsumiDayGoalBtn"></button></p>
           <!-- その5 2 種類ごとの週の目標 (the user's call, 2026-11-13) -->
           <p class="tsumi-past" id="tsumiKindGoalLine" hidden><button type="button" class="link-btn" id="tsumiKindGoalBtn"></button></p>
@@ -25391,7 +25390,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月19日 22:58"; // bf36e126 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月19日 23:00"; // 994e7d75 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -30104,7 +30103,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (tsPending && tab === "tsumi") { const go = tsPending; tsPending = null; go(); }
     setTimeout(tsLetterCheck, 600); // (未来の自分への手紙 whose time has come, once the page is in)
     setTimeout(tsMonthGoalCheck, 700); // (今月の目標, reached)
-    setTimeout(tsDailyChecks, 900); // (おねがい, きょうの目標, チャレンジ, バッジ, 記念日: said once)
+    setTimeout(tsDailyChecks, 900); // (きょうの目標, チャレンジ, バッジ, 記念日: said once)
   }
   // the page as it is, kept to come back to from a page opened from it (その日をまとめて見る, a year's page)
   function tsKeepBack() { if (tab === "tsumi") tsumiBack = { pick: tsumiShown[shownIndex()]?.key ?? null, only: tsumiOnly, goneOnly: tsumiGoneOnly, anchor: tsumiAnchor, y: scrollY }; }
@@ -30528,11 +30527,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const b of all) if (b.t < d0) { const d = ymd(new Date(b.t)); per.set(d, (per.get(d) || 0) + 1); }
     const most = Math.max(0, ...per.values()), h = new Date().getHours(), k = tsumiCol(n), left = k + 1 - (n - (k * (k + 1)) / 2);
     const lines = [];
-    const ann = annivToday(), wish = nekoWish(); // (記念日, つみねこのおねがい)
+    const ann = annivToday(); // (記念日)
     if (ann) lines.push(`きょうは${ann.name}！おめでとう！`);
     const five = nekoLines5(); // (その5 7 はじめてからの記念日, 2 種類ごとの週の目標)
     if (five[0]?.startsWith("きょうは")) lines.push(five.shift());
-    if (wish) lines.push(wish.done ? "おねがいをかなえてくれて、うれしい！" : wish.words);
     if (!today && rtRest(todayKey)) lines.push("きょうはお休みの日。ゆっくりしてね"); // (お休みの日)
     else if (!today) lines.push(h < 5 ? "…むにゃ。もうおやすみの時間だよ" : h < 11 ? "おはよう。きょうも1こずつ積もうね" : h < 19 ? "きょうはまだ 0 こ。1こ積んでみよう" : "きょうはまだ積んでないよ。1こだけでも積もう");
     else lines.push(today > most && today >= 5 ? `きょうは ${today} こ。1日でいちばん多いよ！` : today >= 10 ? `きょうは ${today} こ！ たくさん積んだね` : `きょうは ${today} こ積んだね。えらい！`);
@@ -31165,16 +31163,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- つみかさね, a fourth ten (the user's calls, 2026-11-10) ----------
   const lsGet = (key) => { try { return localStorage.getItem(key) || ""; } catch { return ""; } };
   const realT = (b) => b.t !== noonOf(b.day) && b.t !== Date.parse(b.day + "T00:00:00"); // (a time the block was made, not one set for it)
-  // the card's foot: 記念日, つみねこのおねがい, きょうの目標, 30日チャレンジ, a line each while there is one
+  // the card's foot: 記念日, きょうの目標, 30日チャレンジ, a line each while there is one (つみねこのおねがい taken out, 2026-11-19)
   function renderTsumiFoot() {
-    const ann = annivToday(), wish = nekoWish(), dg = tsDayGoal(), today = tsumiBlocks(false, "tally").today, ch = tsChalState();
+    const ann = annivToday(), dg = tsDayGoal(), today = tsumiBlocks(false, "tally").today, ch = tsChalState();
     $("tsumiAnnivLine").hidden = !ann;
     if (ann) { $("tsumiAnnivBtn").textContent = `きょうは${ann.name}。おめでとう！`; $("tsumiAnnivBtn").onclick = () => { celebrate(); if (tsumiGeo?.nekoAt) petNeko(); }; }
-    $("tsumiWishLine").hidden = !wish;
-    if (wish) {
-      $("tsumiWishBtn").textContent = wish.done ? "つみねこのおねがいを、かなえてくれてありがとう！" : `つみねこのおねがい：${wish.words}`;
-      $("tsumiWishBtn").onclick = () => { if (wish.done) { if (tsumiGeo?.nekoAt) petNeko(); return; } TS_ADD.find(([k]) => k === wish.kind)?.[2](false); };
-    }
     $("tsumiDayGoalLine").hidden = !dg;
     if (dg) { $("tsumiDayGoalBtn").textContent = today >= dg ? `きょうの目標の ${fmtN(dg)} こに届きました` : `きょうの目標 ${fmtN(today)} / ${fmtN(dg)} こ`; $("tsumiDayGoalBtn").onclick = (ev) => tsGearAt(ev, "tsumiDayGoalHead"); }
     $("tsumiChalLine").hidden = !ch || ch.over;
@@ -31189,14 +31182,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   sheetEl.addEventListener("close", () => { if (tab === "tsumi") setTimeout(() => { tsLetterCheck(); tsMonthGoalCheck(); tsDailyChecks(); }, 700); });
   function tsGearAt(ev, head) { openSettings(ev.detail === 0, "tsumi"); requestAnimationFrame(() => tsSheetTo(head)); }
-  // once each, as つみかさね is drawn: the wish granted, today's goal reached, a challenge done, new badges, a 記念日
+  // once each, as つみかさね is drawn: today's goal reached, a challenge done, new badges, a 記念日
   function tsDailyChecks() {
     if (tab !== "tsumi" || sheetEl.open || document.querySelector("dialog[open]")) return;
     const said = [], mark = (key) => { if (lsGet(key) === todayKey) return false; lsPut(key, todayKey); return true; };
     const ann = annivToday();
     if (ann && mark(LS_PREFIX + "tsumiAnnivSeen")) { celebrate(); said.push(`きょうは${ann.name}。おめでとう！`); }
-    const wish = nekoWish();
-    if (wish?.done && mark(LS_PREFIX + "tsumiWishSeen")) { said.push("つみねこのおねがいを、かなえました"); if (tsumiGeo?.nekoAt) petNeko(); }
     const dg = tsDayGoal();
     if (dg && tsumiBlocks(false, "tally").today >= dg && mark(LS_PREFIX + "tsumiDayGoalSeen")) said.push(`きょうの目標の ${fmtN(dg)} こに届きました`);
     const ch = tsChalState();
@@ -31209,23 +31200,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (fresh.length) said.push(`バッジ「${fresh.map((b) => b.label).join("」「")}」をもらいました`);
     if (said.length) flash(said.map((w, i) => (i < said.length - 1 && !/[！。]$/.test(w) ? w + "。" : w)).join("")); // (no 「！。」)
   }
-  // 1 つみねこのおねがい: of the kinds stacked in the 60 days before today, the one least stacked in the 14 before it (a
-  // tie picked by the day), the same all day; granted once a block of it went on today
-  const WISH_WORDS = { journal: "きょうは日記を書いてほしいな", meal: "ごはんを記録してほしいな", workout: "すこし体を動かしてほしいな", study: "ちょっとだけ勉強してほしいな",
-    routine: "ルーティーンをひとつやってほしいな", weight: "体重をはかってほしいな", money: "家計簿をつけてほしいな", todo: "ToDoをひとつ終わらせてほしいな" };
-  function nekoWish() {
-    const all = tsumiList(), d14 = addDays(todayKey, -14), d60 = addDays(todayKey, -60), used = new Set(), recent = new Map();
-    for (const b of all) {
-      if (b.gone || !WISH_WORDS[b.kind] || b.day >= todayKey || b.day < d60) continue;
-      used.add(b.kind);
-      if (b.day >= d14) recent.set(b.kind, (recent.get(b.kind) || 0) + 1);
-    }
-    if (!used.size) return null;
-    let seed = 0;
-    for (const ch of todayKey) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-    const kinds = [...used].sort(), least = Math.min(...kinds.map((k) => recent.get(k) || 0)), pool = kinds.filter((k) => (recent.get(k) || 0) === least), kind = pool[seed % pool.length];
-    return { kind, words: WISH_WORDS[kind], done: all.some((b) => !b.gone && b.kind === kind && b.day === todayKey) };
-  }
+  // 1 つみねこのおねがい: taken out at the user's call (2026-11-19, tools/REMOVED.md); the day it was granted
+  // (tsumiWishSeen) is left in this browser's storage, read by nothing
   // 2 きょうの目標: a count for every day (settings tsumiDayGoal), set in the gear
   const DGOAL_ID = "tsumiDayGoal";
   const tsDayGoal = () => { const n = num(settings.get(DGOAL_ID)?.n); return n > 0 ? n : 0; };

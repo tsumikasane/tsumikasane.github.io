@@ -158,9 +158,7 @@ async function addMeal(p, text = "おにぎり") {
   await p.click("#tsumiToTop").catch(() => {}); await p.waitForTimeout(200);
   xy = await nekoXY(p);
   if (xy) { await p.mouse.click(xy.x, xy.y); await p.waitForTimeout(250); }
-  ok((await txt(p, "#nekoSaySr")) === "ごはんを記録してほしいな", "⑧ in the evening: つみねこのおねがい first (つみかさね その4 1)", await txt(p, "#nekoSaySr"));
-  if (xy) { await p.mouse.click(xy.x, xy.y); await p.waitForTimeout(250); }
-  ok((await txt(p, "#nekoSaySr")) === "きょうはまだ積んでないよ。1こだけでも積もう", "⑧ nothing today, in the evening", await txt(p, "#nekoSaySr"));
+  ok((await txt(p, "#nekoSaySr")) === "きょうはまだ積んでないよ。1こだけでも積もう", "⑧ nothing today, in the evening (first: つみねこのおねがい was taken out, 2026-11-19)", await txt(p, "#nekoSaySr"));
   ok(await p.evaluate(() => window.__ts.look(149)) === "1" && await p.evaluate(() => [...document.querySelectorAll("#nekoCloset [data-item]")].length) === 0, "⑨ 100 and more: the scarf only, no season now");
   // ① ② the calendar: a day with none, pressed, its records to write in
   await p.click('#tsumiViews button[data-view="cal"]'); await p.waitForTimeout(300);
