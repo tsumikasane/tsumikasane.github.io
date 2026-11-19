@@ -54,15 +54,8 @@ const job = async (p, id) => (await setting(p, "jobs")).items.find((j) => j.id =
   ok((await p.inputValue("#shiftRest")) === "45", "⑤ 7 時間: 45");
   await p.fill("#shiftRest", "30"); await p.fill("#shiftEnd", "18:00"); await p.dispatchEvent("#shiftEnd", "change");
   ok((await p.inputValue("#shiftRest")) === "30", "⑤ typed: kept");
-  // ⑤④ ひとことで: the rest by its length, the words left as メモ
-  await p.fill("#bt3QuickText", "あした 10-18 研修"); await p.waitForTimeout(200);
-  ok((await txt(p, "#bt3QuickSay")).includes("11/27（金） 10:00〜18:00・休憩 45分（目安）・カフェ「研修」"), "⑤④ said: " + (await txt(p, "#bt3QuickSay")));
-  await p.press("#bt3QuickText", "Enter"); await p.waitForTimeout(400);
-  sh = (await ls(p, "shifts")).find((x) => x.date === "2026-11-27");
-  ok(sh && sh.rest === 45 && sh.memo === "研修", "⑤④ put in: " + JSON.stringify(sh));
-  await p.fill("#bt3QuickText", "土曜 9-13 休憩なし"); await p.waitForTimeout(200);
-  ok((await txt(p, "#bt3QuickSay")).includes("11/28（土） 09:00〜13:00") && !(await txt(p, "#bt3QuickSay")).includes("休憩"), "⑤ 休憩なし: " + (await txt(p, "#bt3QuickSay")));
-  await p.fill("#bt3QuickText", "");
+  // ⑤④ ひとことで: taken out with ひとことでシフト (2026-11-18, the user's call); the form's 休憩 and メモ are checked above
+  ok(!(await p.$("#bt3QuickText")), "⑤④ (taken out) ひとことでシフト: gone");
   // ⑦ 前払い: 5,000 from November's; what is left for 給料日; 収入に入れる puts in that; deleted with its 収入
   const blk = '#jobSum .job-block';
   const before = await txt(p, blk);

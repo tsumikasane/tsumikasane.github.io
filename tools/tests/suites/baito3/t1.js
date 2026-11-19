@@ -26,17 +26,12 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   ok(sum.includes("6 連勤があります（11/2〜11/7）"), "③ 6 in a row: " + sum);
   const row = await txt(p, '#shiftList li:has([data-edit="n9"])');
   ok(row.includes("休憩が足りないかも（6時間をこえたら45分）"), "③ rest: " + row);
-  // ② a shift in a few words
-  await p.fill("#bt3QuickText", "土 9-13 休憩30"); await p.waitForTimeout(200);
-  ok((await txt(p, "#bt3QuickSay")).includes("11/14（土） 09:00〜13:00・休憩 30分"), "② said: " + (await txt(p, "#bt3QuickSay")));
-  await p.fill("#bt3QuickText", "あした 9時から17時 休憩1時間"); await p.waitForTimeout(200);
-  ok((await txt(p, "#bt3QuickSay")).includes("あした 11/13（金） 09:00〜17:00・休憩 60分"), "② another: " + (await txt(p, "#bt3QuickSay")));
-  await p.fill("#bt3QuickText", "11/21 22-5"); await p.press("#bt3QuickText", "Enter"); await p.waitForTimeout(400);
-  ok((await ls(p, "shifts")).some((x) => x.date === "2026-11-21" && x.start === "22:00" && x.end === "05:00" && x.jobId === "j1"), "② 11/21 22-5 put in");
-  await p.fill("#bt3QuickText", "ランチ"); await p.press("#bt3QuickText", "Enter"); await p.waitForTimeout(200);
-  ok((await txt(p, "#bt3QuickSay")).includes("時間も書いてください"), "② no times");
-  // ④ a shift past the week's limit: said
-  await p.fill("#bt3QuickText", "土 9-19 休憩60"); await p.press("#bt3QuickText", "Enter"); await p.waitForTimeout(400);
+  // ② ひとことでシフト: taken out at the user's call (2026-11-18, tools/REMOVED.md)
+  ok(!(await p.$("#bt3QuickText")) && !(await p.$("#bt3QuickSay")), "② (taken out) ひとことでシフト: gone");
+  // ④ a shift past the week's limit, put in from the form (11/14 is this week's 土): said
+  await p.fill("#shiftDate", "2026-11-14"); await p.fill("#shiftStart", "09:00"); await p.fill("#shiftEnd", "19:00"); await p.fill("#shiftRest", "60");
+  await p.locator('#shiftForm button[type="submit"]').click(); await p.waitForTimeout(500);
+  ok((await ls(p, "shifts")).some((x) => x.date === "2026-11-14" && x.start === "09:00" && x.end === "19:00" && x.rest === 60 && x.jobId === "j1"), "④ 11/14 9-19 put in");
   ok(/上限の 20\s時間を超えています/.test(await p.evaluate(() => document.body.innerText)), "④ over the limit said");
   // ⑥ the pay as it came
   await p.evaluate((P) => { const e = JSON.parse(localStorage.getItem(P + "expenses") || "[]"); e.push({ id: "pay1", date: "2026-11-25", kind: "in", category: "給与", amount: 70000, pay: "j1|2026-11", createdAt: 1 }); localStorage.setItem(P + "expenses", JSON.stringify(e)); }, P);

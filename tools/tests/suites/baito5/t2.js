@@ -29,11 +29,8 @@ const setting = async (p, id) => (await ls(p, "settings")).find((s) => s.id === 
   await p.click('#shiftList [data-edit="n1"]'); await p.waitForTimeout(500);
   await p.fill("#reShiftWage", ""); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   ok(!("wage" in (await ls(p, "shifts")).find((x) => x.id === "n1")), "① taken off");
-  // ひとことでシフト
-  await p.fill("#bt3QuickText", "11/30 9-13 時給1200"); await p.waitForTimeout(200);
-  ok((await txt(p, "#bt3QuickSay")).includes("11/30（月） 09:00〜13:00・時給 1,200円"), "① said: " + (await txt(p, "#bt3QuickSay")));
-  await p.press("#bt3QuickText", "Enter"); await p.waitForTimeout(400);
-  ok((await ls(p, "shifts")).some((x) => x.date === "2026-11-30" && x.wage === 1200 && x.start === "09:00"), "① put in from words");
+  // ひとことでシフト: taken out (2026-11-18, the user's call); a shift's own 時給 is the form's, above
+  ok(!(await p.$("#bt3QuickText")), "① (taken out) ひとことでシフト: gone");
   // ⑥ 行かなかった: from its sheet, out of the pay; もどす puts it back
   const before = await est();
   await p.click('#shiftList [data-edit="n3"]'); await p.waitForTimeout(500);
