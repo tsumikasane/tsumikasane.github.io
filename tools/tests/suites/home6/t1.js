@@ -70,8 +70,8 @@ async function open(b, when) {
   await p.click("#h6ShowBtn"); await p.waitForTimeout(400);
   ok(!(await p.$eval("#homeTiles", (g) => g.classList.contains("h6-hide"))) && !(await p.$("#h6ShowBtn")), "④ 数字を出す");
 
-  // ⑤ by voice was taken out (the user's call, 2026-11-16): no マイク by すぐに記録's field
-  ok(!(await p.$(".h6-mic")) && !!(await p.$("#h4LineIn")), "⑤ no voice button (taken out), the field as it was");
+  // ⑤ by voice was taken out (the user's call, 2026-11-16), and すぐに記録 with its field (2026-11-19)
+  ok(!(await p.$(".h6-mic")) && !(await p.$("#h4LineIn")), "⑤ no voice button, no すぐに記録 (both taken out)");
 
   // ⑥ the clock
   await more(p, "h6-clock-btn");
@@ -85,7 +85,7 @@ async function open(b, when) {
   // ⑧ what the page can do, and a tile's own
   await more(p, "h6-guide-btn");
   const dts = await p.$$eval("#h6GuideBody dt[data-about]", (l) => l.map((x) => x.dataset.about));
-  ok(await p.evaluate(() => document.getElementById("h6Guide").open) && dts.length >= 38 && dts.includes("h5year") && dts.includes("quick"), "⑧ every tile's word", dts.length);
+  ok(await p.evaluate(() => document.getElementById("h6Guide").open) && dts.length >= 37 && dts.includes("h5year") && !dts.includes("quick"), "⑧ every tile's word", dts.length);
   await p.keyboard.press("Escape"); await p.waitForTimeout(300);
   await hold(p, "calendar"); await p.waitForTimeout(300);
   await p.locator("#h2TileGroup button", { hasText: "このタイルについて" }).click(); await p.waitForTimeout(500);

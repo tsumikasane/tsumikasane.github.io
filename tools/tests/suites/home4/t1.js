@@ -11,7 +11,6 @@ const tileTxt = (p, k) => p.evaluate((k) => document.querySelector(`.tile[data-t
 const H = (p, f, ...a) => p.evaluate(({ f, a }) => window.__h4[f](...a), { f, a });
 const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P + k) || "[]"), { P, k });
 const setOf = async (p, id) => (await lsOf(p, "settings")).find((x) => x.id === id);
-const kinds = (p) => p.evaluate(() => [...document.querySelectorAll('.tile[data-tile="quick"] .qk')].map((b) => b.dataset.kind).join(","));
 const undo = async (p) => { await p.locator("#status button:visible, #sheetStatus button:visible").first().click(); await p.waitForTimeout(500); };
 async function open(b, when) {
   const p = await phone(b, new Date(when), { deviceScaleFactor: 1 });
@@ -30,46 +29,14 @@ async function open(b, when) {
   const keys = await p.$$eval("#homeTiles > .tile", (l) => l.map((t) => t.dataset.tile));
   ok(["h4week", "h4mood", "h4sleep", "h4watch", "h4breath", "h4memo"].every((k) => keys.includes(k)), "the new tiles on きょう", keys);
 
-  // ① ひとことで記録: what a line says
-  const cats = await H(p, "cats"), food = cats.includes("食費") ? "食費" : cats[0];
-  let r = await H(p, "parse", "体重60.5 勉強30分 ランチ900円");
-  ok(r.items.length === 3 && r.items[0].kind === "weight" && r.items[0].kg === 60.5 && r.items[1].kind === "study" && r.items[1].minutes === 30 && !r.items[1].note
-    && r.items[2].kind === "money" && r.items[2].amount === 900 && r.items[2].category === food && r.items[2].memo === "ランチ", "① three in a line", r);
-  r = await H(p, "parse", "英語 1時間半、ラン5km 30分、ラン 3キロ、水2杯、お茶 500ml");
-  ok(r.items.length === 5 && r.items[0].subjectId === "sb1" && r.items[0].minutes === 90 && r.items[1].type === "ランニング" && r.items[1].km === 5 && r.items[1].minutes === 30
-    && r.items[2].km === 3 && r.items[2].minutes == null && r.items[3].ml === 400 && r.items[4].ml === 500, "① 英語 by its subject, a run with its time, one without, water by 杯 and ml", r);
-  r = await H(p, "parse", "６０．５ｋｇ");
-  ok(r.items.length === 1 && r.items[0].kg === 60.5, "① full-width figures", r);
-  r = await H(p, "parse", "あした 9時");
-  ok(!r.items.length, "① nothing it can't read", r);
-  // typed, shown, recorded, taken back
-  await p.fill("#h4LineIn", "体重60.5 勉強30分 ランチ900円"); await p.waitForTimeout(200);
-  ok(flat(await p.textContent("#h4LineSay")) === flat(`記録するもの：体重 60.5 kg、勉強 30分、支出 900 円（${food}・ランチ）`), "① what it will record", await p.textContent("#h4LineSay"));
-  await p.click(".h4-line-go"); await p.waitForTimeout(800);
-  const w0 = (await lsOf(p, "weights")).find((x) => x.id === D.DAY), s0 = (await lsOf(p, "study")).filter((x) => x.date === D.DAY), x0 = (await lsOf(p, "expenses")).filter((x) => x.date === D.DAY);
-  ok(w0 && w0.kg === 60.5 && s0.length === 1 && s0[0].minutes === 30 && x0.length === 1 && x0[0].amount === 900 && x0[0].kind === "out" && x0[0].memo === "ランチ", "① recorded: 体重, 勉強, 支出", [w0, s0, x0]);
-  ok((await p.inputValue("#h4LineIn")) === "", "① the field emptied");
-  await undo(p);
-  ok(!(await lsOf(p, "weights")).some((x) => x.id === D.DAY) && !(await lsOf(p, "study")).some((x) => x.date === D.DAY) && !(await lsOf(p, "expenses")).some((x) => x.date === D.DAY), "① 元に戻す takes all three back");
-  // a run with no time: 運動's form, filled
-  await p.fill("#h4LineIn", "ラン 3キロ"); await p.waitForTimeout(150); await p.press("#h4LineIn", "Enter"); await p.waitForTimeout(900);
-  ok((await p.textContent("#sheetTitle")) === "運動を記録" && (await p.inputValue("#reType")) === "ランニング" && (await p.inputValue("#reDist")) === "3", "① a run without its time opens 運動's form, filled", [await p.textContent("#sheetTitle")]);
-  await p.click("#sheetCancel"); await p.waitForTimeout(600);
-
-  // ② すぐに記録's buttons: the six at first, then picked in the gear's sheet
-  ok((await kinds(p)) === "weight,meal,workout,study,money,todo", "② the six at first", await kinds(p));
+  // ①② すぐに記録 (its line and its buttons) was taken out (the user's call, 2026-11-19): no tile, nothing for it in the gear's sheet
+  ok(!keys.includes("quick") && !(await p.$("#h4LineIn")), "①② no すぐに記録 (taken out)", keys);
   await p.click("#homeSettings"); await p.waitForTimeout(700);
-  await p.click('#h4QkPick [data-qk="meal"]'); await p.waitForTimeout(200);
-  await p.click('#h4QkPick [data-qk="journal"]'); await p.waitForTimeout(200);
-  await p.click('#h4QkPick [data-qk="water"]'); await p.waitForTimeout(200);
-  ok((await p.getAttribute('#h4QkPick [data-qk="meal"]', "aria-pressed")) === "false" && (await p.getAttribute('#h4QkPick [data-qk="water"]', "aria-pressed")) === "true", "② picked in the sheet");
+  ok(!(await p.$("#h4QkPick")) && !!(await p.$("#h4Set")) && !!(await p.$("#h5Set")), "② no すぐに記録のボタン (taken out), その5's part still after its place");
   // ⑤ the season was taken out (the user's call, 2026-11-16): no switch for it
   ok(!(await p.$("#h4KoyomiOn")) && !(await p.textContent("#h4Set")).includes("暦"), "⑤ no 暦 switch (taken out)");
   await p.screenshot({ path: out + "/h4-settings.png" });
   await p.click("#sheetCancel").catch(() => {}); await p.keyboard.press("Escape"); await p.waitForTimeout(600);
-  ok((await kinds(p)) === "weight,workout,study,money,todo,journal,water", "② as picked, in their order", await kinds(p));
-  await p.click('.qk[data-kind="water"]'); await p.waitForTimeout(500);
-  ok(((await lsOf(p, "bodyDays")).find((x) => x.id === D.DAY) || {}).water === 200, "② 水分: a cup into からだ's");
 
   // ③ mood
   await p.click('.h4-face[data-mood="4"]'); await p.waitForTimeout(300);

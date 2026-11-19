@@ -61,18 +61,8 @@ async function open(b, when) {
   const ln = await p.$$eval(".h5-link", (l) => l.map((a) => [a.textContent, a.getAttribute("href"), a.target, a.rel]));
   ok(JSON.stringify(ln) === JSON.stringify([["大学", "https://example.ac.jp/portal", "_blank", "noopener noreferrer"]]), "⑤ one link, the bad one refused", ln);
 
-  // ⑧ a line with no figures: 日記, ToDo, メモ
-  await p.fill("#h4LineIn", "牛乳を買う"); await p.waitForTimeout(200);
-  ok(flat(await p.textContent("#h4LineSay")).startsWith("記録する数字がありません") && !!(await p.$(".h5-to-diary")), "⑧ said, and where it can go");
-  await p.click(".h5-to-diary"); await p.waitForTimeout(500);
-  ok(((await lsOf(p, "journal")).find((x) => x.id === D.DAY) || {}).text === "牛乳を買う" && (await p.inputValue("#h4LineIn")) === "", "⑧ 日記: today's, the field emptied");
-  await undo(p);
-  ok(!(await lsOf(p, "journal")).some((x) => x.id === D.DAY), "⑧ 元に戻す");
-  await p.fill("#h4LineIn", "電話する"); await p.waitForTimeout(150); await p.click(".h5-to-memo"); await p.waitForTimeout(400);
-  ok((await H(p, "setting", "h4memo"))?.text === "電話する", "⑧ メモ");
-  await p.fill("#h4LineIn", "レポートを書く"); await p.waitForTimeout(150); await p.click(".h5-to-todo"); await p.waitForTimeout(800);
-  ok((await p.textContent("#sheetTitle")) === "新しいToDo" && (await p.inputValue("#todoText")) === "レポートを書く", "⑧ ToDo: its sheet, the words in", await p.textContent("#sheetTitle"));
-  await p.click("#sheetCancel"); await p.waitForTimeout(600);
+  // ⑧ went with すぐに記録 (taken out, the user's call 2026-11-19)
+  ok(!(await p.$("#h4LineIn")) && !(await p.$(".h5-to-diary")), "⑧ no line to type in (taken out)");
   await p.screenshot({ path: out + "/h5-top.png" });
 
   // ① a tile folded from its menu, and opened again
@@ -107,7 +97,7 @@ async function open(b, when) {
   ok((await H(p, "prefs")).noAnniv === true, "⑨ off in the gear's sheet");
   await p.click("#sheetCancel").catch(() => {}); await p.keyboard.press("Escape"); await p.waitForTimeout(600);
   const simple = await shown(p);
-  ok(JSON.stringify(simple.filter((k) => !["review", "tomorrow", "prep", "missed"].includes(k)).sort()) === JSON.stringify(["calendar", "h3now", "h5yday", "quick", "todo", "weather"]), "② シンプル: those alone", simple);
+  ok(JSON.stringify(simple.filter((k) => !["review", "tomorrow", "prep", "missed"].includes(k)).sort()) === JSON.stringify(["calendar", "h3now", "h5yday", "todo", "weather"]), "② シンプル: those alone", simple);
   ok(!(await p.$("#h5Head .h5-anniv")), "⑨ none when off");
   await p.click("#homeSettings"); await p.waitForTimeout(700);
   await p.click('#h5Set [data-set="all"]'); await p.waitForTimeout(400);

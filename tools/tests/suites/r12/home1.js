@@ -60,34 +60,8 @@ const tileText = (p, key) => p.evaluate((key) => { const t = document.querySelec
   await p.keyboard.type("28"); await p.locator("#recSave").click(); await p.waitForTimeout(700);
   mv = await tileText(p, "move");
   ok(mv.includes("2/4"), "③ ラン recorded: " + mv.slice(0, 24));
-  // ④ すぐに記録
-  const tryQuick = async (kind, fill, check, label) => {
-    await p.locator(`.qk[data-kind="${kind}"]`).click(); await p.waitForTimeout(500);
-    const title = await p.evaluate(() => sheetTitle.textContent);
-    await fill(); await p.locator(kind === "todo" ? "#todoSave" : "#recSave").click(); await p.waitForTimeout(700);
-    const got = await check();
-    ok(got.ok, `④ ${label}: ${title} → ${got.say}`);
-    if (await p.evaluate(() => document.getElementById("daySheet").open)) { await p.locator("#sheetCancel").click(); await p.waitForTimeout(400); }
-  };
-  const ls = (k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P + k) || "[]"), { P, k });
-  await tryQuick("weight", () => p.locator("#reKg").fill("65.2"), async () => { const x = (await ls("weights")).find((r) => r.id === today); return { ok: !!x && x.kg === 65.2 && x.date === today, say: JSON.stringify(x) }; }, "体重");
-  await p.locator('.qk[data-kind="weight"]').click(); await p.waitForTimeout(500);
-  ok(await p.evaluate(() => sheetTitle.textContent) === "からだの記録を編集" && await p.inputValue("#reKg") === "65.2", "④ 体重 again: today's opened to change");
-  await p.locator("#sheetCancel").click(); await p.waitForTimeout(400);
-  await tryQuick("meal", () => p.locator("#reText").fill("おにぎり"), async () => { const x = (await ls("meals")).find((r) => r.text === "おにぎり"); return { ok: !!x && x.date === today && x.slot === "昼食", say: JSON.stringify(x) }; }, "食事");
-  await tryQuick("workout", async () => { await p.locator("#reExercise").fill("スクワット"); await p.locator("#reReps").fill("10"); }, async () => { const x = (await ls("workouts")).find((r) => r.exercise === "スクワット"); return { ok: !!x && x.sets === 3 && x.reps === 10, say: JSON.stringify(x) }; }, "運動");
-  await tryQuick("study", () => p.locator("#reMin").fill("30"), async () => { const x = (await ls("study"))[0]; return { ok: !!x && x.minutes === 30 && x.date === today, say: JSON.stringify(x) }; }, "勉強");
-  await tryQuick("money", () => p.locator("#reAmount").fill("500"), async () => { const x = (await ls("expenses"))[0]; return { ok: !!x && x.amount === 500 && x.kind === "out" && x.date === today, say: JSON.stringify(x) }; }, "支出");
-  await tryQuick("todo", () => p.locator("#todoText").fill("牛乳を買う"), async () => { const x = (await ls("todos")).find((t) => t.text === "牛乳を買う"); return { ok: !!x, say: JSON.stringify(x) }; }, "ToDo");
-  // 元に戻す takes a new one out
-  await p.locator('.qk[data-kind="meal"]').click(); await p.waitForTimeout(400);
-  await p.locator("#reText").fill("ケーキ"); await p.locator("#recSave").click(); await p.waitForTimeout(500);
-  await p.evaluate(() => document.querySelector("#status.show .undo, #status.show button")?.click()); await p.waitForTimeout(600);
-  ok(!(await ls("meals")).some((m) => m.text === "ケーキ"), "④ 元に戻す: the new one taken out");
-  // the head of すぐに記録 opens nothing
-  const tab0 = await p.evaluate(() => document.documentElement.dataset.tab);
-  await p.locator('.tile[data-tile="quick"] .tile-head').click({ position: { x: 10, y: 10 } }); await p.waitForTimeout(400);
-  ok(await p.evaluate(() => document.documentElement.dataset.tab) === tab0 && !(await p.evaluate(() => document.getElementById("daySheet").open)), "④ its head opens nothing");
+  // ④ すぐに記録 was taken out (the user's call, 2026-11-19)
+  ok(!(await p.$('.tile[data-tile="quick"]')) && !(await p.$(".qk")), "④ no すぐに記録 (taken out)");
   // the バイト tile's head opens 家計簿 at バイト
   await p.locator('.tile[data-tile="job"] .tile-head').click(); await p.waitForTimeout(600);
   ok(await p.evaluate(() => document.documentElement.dataset.tab === "money" && !document.getElementById("moneyJob").hidden), "② its head opens 家計簿's バイト");
