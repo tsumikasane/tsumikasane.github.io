@@ -1,4 +1,5 @@
-// バイト その6 ③④⑤⑥⑦⑧: what is typed in (② 文字からまとめて入れる と ⑨ ふりかえり は使う人が消した: 2026-11-18)
+// バイト その6 ③④⑤⑧: what is typed in (② 文字からまとめて入れる と ⑨ ふりかえり は使う人が消した: 2026-11-18; ⑦ 退勤のつけ忘れ は出勤・退勤と
+// いっしょに: 2026-11-18; ⑥ シフトのパターン: 2026-11-19)
 process.env.URL0 = process.env.URL0 || "http://localhost:8866/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -13,17 +14,9 @@ const setting = async (p, id) => (await ls(p, "settings")).find((s) => s.id === 
   const p = await phone(b, at("12:00", today));
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(800);
-  // ⑥ a pattern's button fills in the form; ひとことで, by its name
-  ok((await txt(p, "#bt6Pats")) === "早番 9:00〜14:00", "⑥ the buttons: " + (await txt(p, "#bt6Pats")));
-  await p.click('#bt6Pats [data-pat="p1"]'); await p.waitForTimeout(200);
-  ok((await p.inputValue("#shiftStart")) === "09:00" && (await p.inputValue("#shiftEnd")) === "14:00" && (await p.inputValue("#shiftRest")) === "30", "⑥ filled in");
-  await p.fill("#bt3QuickText", "あした 早番"); await p.waitForTimeout(200);
-  ok((await txt(p, "#bt3QuickSay")).includes("11/27（金） 09:00〜14:00・休憩 30分"), "⑥ ひとことで: " + (await txt(p, "#bt3QuickSay")));
-  // ⑧ 仮 from the words and from the form
-  await p.fill("#bt3QuickText", "11/28 17-22 仮"); await p.waitForTimeout(200);
-  ok((await txt(p, "#bt3QuickSay")).includes("17:00〜22:00・仮"), "⑧ ひとことで 仮: " + (await txt(p, "#bt3QuickSay")));
-  await p.press("#bt3QuickText", "Enter"); await p.waitForTimeout(400);
-  ok((await ls(p, "shifts")).some((x) => x.date === "2026-11-28" && x.tentative === true), "⑧ put in as 仮");
+  // ⑥ シフトのパターン: taken out at the user's call (2026-11-19, tools/REMOVED.md); ひとことでシフト too (2026-11-19)
+  ok(!(await p.$("#bt6Pats")) && !(await p.$("#bt3QuickText")), "⑥ the patterns' buttons: gone");
+  // ⑧ 仮 from the form
   await p.fill("#shiftDate", "2026-11-29"); await p.fill("#shiftStart", "10:00"); await p.fill("#shiftEnd", "14:00"); await p.evaluate(() => { document.getElementById("shiftTent").checked = true; }); // (the toast may lie over it)
   await p.locator('#shiftForm button[type="submit"]').click(); await p.waitForTimeout(500);
   ok((await ls(p, "shifts")).some((x) => x.date === "2026-11-29" && x.tentative === true), "⑧ the form's 仮");
@@ -37,13 +30,9 @@ const setting = async (p, id) => (await ls(p, "settings")).find((s) => s.id === 
   await p.evaluate(() => { document.getElementById("reShiftTent").checked = false; }); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   n1 = (await ls(p, "shifts")).find((x) => x.id === "n1");
   ok(!("tentative" in n1), "⑧ taken off");
-  // ⑦ 退勤のつけ忘れ: 出勤 at 11:00 with no shift today → 20:00
+  // ⑦ 退勤のつけ忘れ (went with 出勤・退勤, 2026-11-18) and ⑥ the patterns in the settings (2026-11-19): gone
   await p.click("#moneySettings"); await p.waitForTimeout(500);
-  await p.evaluate(() => { const c = document.getElementById("bt6OutOn"); c.checked = true; c.dispatchEvent(new Event("change")); }); await p.waitForTimeout(300);
-  ok((await setting(p, "bt6")).outOn === true, "⑦ on");
-  // ⑥ a pattern added in the settings
-  await p.fill("#bt6PatName", "遅番"); await p.fill("#bt6PatStart", "17:00"); await p.fill("#bt6PatEnd", "22:00"); await p.click('#bt6PatForm button[type="submit"]'); await p.waitForTimeout(400);
-  ok((await setting(p, "bt6")).pats.map((x) => x.name).join(",") === "早番,遅番", "⑥ added");
+  ok(!(await p.$("#bt6OutOn")) && !(await p.$("#bt6PatForm")) && !(await txt(p, "dialog[open]")).includes("シフトのパターン"), "⑥⑦ gone from the settings");
   // ③ 交通費の数え方, ④ 期間の時給アップ, ⑤ もう1つの目安
   const f = '#jobForms [data-job="j1"]';
   ok((await p.inputValue(`${f} [data-f="fareMode"]`)) === "month" && (await txt(p, `${f} .bt6-periods`)).includes("12/29〜1/3 ＋200円"), "③④ the job's form");
@@ -58,11 +47,12 @@ const setting = async (p, id) => (await ls(p, "settings")).find((s) => s.id === 
   const js = await setting(p, "jobs");
   ok(js.wall2 === 1500000 && js.wall2Name === "150万" && js.wall === 1030000, "⑤ saved: " + JSON.stringify([js.wall, js.wall2, js.wall2Name]));
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
-  // ⑦ the お知らせ
+  // ⑦ no お知らせ (出勤中 kept from before is not read)
   await p.evaluate(({ P, at }) => { const s = JSON.parse(localStorage.getItem(P + "settings")); s.push({ id: "bt2Clock", jobId: "j1", date: "2026-11-26", start: "11:00", at, updatedAt: at }); localStorage.setItem(P + "settings", JSON.stringify(s)); }, { P, at: Date.parse("2026-11-26T11:00:00+09:00") });
   await p.reload(); await p.waitForTimeout(800);
   const al = await p.evaluate(() => window.__bt6.alarms(Date.now()).filter((a) => String(a.tag).startsWith("bt6-out:")));
-  ok(al.length === 1 && al[0].at === Date.parse("2026-11-26T20:00:00+09:00") && al[0].title === "退勤のつけ忘れはありませんか？" && al[0].body === "きょう 11:00 からカフェで出勤中になっています", "⑦ " + JSON.stringify(al));
+  ok(al.length === 0, "⑦ no 退勤のつけ忘れ: " + JSON.stringify(al));
+  ok((await setting(p, "bt6")).pats.length === 1, "⑥ the patterns kept in the settings");
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

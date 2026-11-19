@@ -19,20 +19,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   const sw = await txt(p, "#bt13Swap");
   ok(sw.startsWith("代わりの貸し借り（この1年） 田中 代わりに入った 1 回・代わってもらった 1 回 おあいこ 佐藤 代わりに入った 1 回・代わってもらった 0 回 入ったほうが 1 回多い"), "⑥ " + sw);
   ok((await txt(p, '#shiftList li[data-shift="r1"]')).includes("代わり：田中さん"), "⑥ the row");
-  // ⑦⑧ がんばりの記録
-  const m = await txt(p, "#bt13Miles");
-  ok(m === "がんばりの記録 通算 32 回・158 時間・約 168,800 円 おめでとうございます！ 通算 30 回をこえました 休まず続けて 8 回出勤しています（いちばん長いのは 24 回） 次は 通算 50 回（あと 18 回）・通算 200 時間（あと 42 時間）・合計 30万円（あと 131,200 円）", "⑦⑧ " + m);
-  // ⑨ the week: 11/15〜11/21
-  const wk = await p.evaluate(() => {
-    const box = document.getElementById("bt13Week"), day = (d) => [...box.querySelectorAll(".bt13-day")][d];
-    const bars = (d) => [...day(d).querySelectorAll(".bt13-track i")].map((i) => [i.className, i.style.left, i.style.width, /--lc-(\w+)/.exec(i.getAttribute("style") || "")?.[1] || ""]);
-    return { head: box.querySelector(".bt13-week-head strong").textContent, mon: bars(1), tue: bars(2), wed: bars(3), thu: bars(4), fri: bars(5), sat: bars(6), today: day(3).classList.contains("today"),
-      label: day(2).getAttribute("aria-label"), legend: box.querySelector(".bt13-legend").innerText.replace(/\s+/g, " ").trim(), sum: box.querySelector("p.sub").textContent.replace(/\s+/g, " ") };
-  });
-  ok(wk.head === "11/15〜11/21の勤務" && wk.mon.length === 0 && wk.today, "⑨ the head: " + JSON.stringify(wk));
-  ok(JSON.stringify(wk.tue) === JSON.stringify([["bt13-shift", "75%", "12.5%", "green"]]) && JSON.stringify(wk.wed) === JSON.stringify([["bt13-shift", "70.83%", "20.83%", "blue"]]), "⑨ 塾 and カフェ: " + JSON.stringify([wk.tue, wk.wed]));
-  ok(JSON.stringify(wk.thu) === JSON.stringify([["bt13-plan", "54.17%", "8.33%", ""]]) && JSON.stringify(wk.fri) === JSON.stringify([["bt13-shift", "91.67%", "8.33%", "blue"]]) && JSON.stringify(wk.sat) === JSON.stringify([["bt13-shift", "0%", "8.33%", "blue"]]), "⑨ ゼミ, and past midnight: " + JSON.stringify([wk.thu, wk.fri, wk.sat]));
-  ok(wk.label === "11/17（火）：塾 18:00〜21:00" && wk.legend === "カフェ 塾 カレンダーの予定" && wk.sum === "この週 3 回・12 時間・約 15,100 円", "⑨ words: " + JSON.stringify([wk.label, wk.legend, wk.sum]));
+  // ⑦⑧ がんばりの記録 and ⑨ 1週間の勤務: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt13Miles")) && !(await p.$("#bt13Week")), "⑦⑧⑨ がんばりの記録・1週間の勤務: gone");
   // ①④ お知らせ: 来週のぶん (金曜 20:00), 11/19〜11/21 は休む
   const al = await p.evaluate(() => window.__bt13.alarms(Date.now()).filter((a) => a.url === "./#job").map((a) => [a.tag, new Date(a.at).toISOString()]));
   const tags = al.map((a) => a[0]);

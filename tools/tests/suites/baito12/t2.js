@@ -1,4 +1,5 @@
-// バイト その12 ①②⑤⑥⑦⑧⑨: what is pressed and typed (⑩ と ⑦ のシフト希望、③ ふりかえり は使う人が消した: 2026-11-18)
+// バイト その12 ①⑤⑥⑦⑧: what is pressed and typed (⑩ と ⑦ のシフト希望、③ ふりかえり は使う人が消した: 2026-11-18; ② 退勤のまとめ と
+// ⑨ 予定の終わりで退勤 は出勤・退勤といっしょに)
 process.env.URL0 = process.env.URL0 || "http://localhost:8863/";
 const fs = require("fs");
 const { chromium } = require("playwright");
@@ -21,7 +22,7 @@ const shift = async (p, id) => (await ls(p, "shifts")).find((x) => x.id === id);
   await p.click('#bt3Next [data-msg="late"]'); await p.waitForTimeout(200);
   ok((await p.inputValue('#bt3Next .bt12-msg [data-m="at"]')) === "17:15" && (await p.inputValue('#bt3Next .bt12-msg [data-m="why"]')) === "train", "⑤ late's panel");
   await p.fill('#bt3Next .bt12-msg [data-m="at"]', "17:30");
-  await p.click("#bt9Pick"); await p.click("#bt9Pick"); await p.waitForTimeout(300);
+  await p.click("#monthNav .navbtn >> nth=1"); await p.waitForTimeout(300); await p.click("#monthNav .navbtn >> nth=0"); await p.waitForTimeout(300); // (drawn again: その9 ⑩ 選ぶ taken out 2026-11-19)
   ok((await p.inputValue('#bt3Next .bt12-msg [data-m="at"]')) === "17:30", "⑤ kept as typed");
   await p.click('#bt3Next .bt12-msg [data-m="send"]'); await p.waitForTimeout(300);
   ok((await p.evaluate(() => window.__copied)) === "おつかれさまです。きょう 17:00〜22:00のシフトですが、電車が遅れていて、17:30ごろの到着になりそうです。ご迷惑をおかけして、すみません。", "⑤ late: " + (await p.evaluate(() => window.__copied)));
@@ -32,19 +33,8 @@ const shift = async (p, id) => (await ls(p, "shifts")).find((x) => x.id === id);
   const [dl] = await Promise.all([p.waitForEvent("download"), p.click("#bt11Ics")]);
   const ev = fs.readFileSync(await dl.path(), "utf8").split("BEGIN:VEVENT").find((e) => e.includes("UID:p1@")) || "";
   ok(ev.includes("LOCATION:新宿店（ヘルプ）"), "⑧ .ics: " + JSON.stringify(ev));
-  // ⑨② 出勤 at 17:00, forgotten till 22:30: 退勤 at 22:00 in one press, then what it came to
-  await p.clock.setFixedTime(at("17:00", today)); await p.reload(); await p.waitForTimeout(900);
-  await p.click('#bt2Clock .bt2-clock-row .btn'); await p.waitForTimeout(400);
-  ok(!(await p.$("#bt12PlanOut")), "⑨ not before the end");
-  await p.clock.setFixedTime(at("22:30", today)); await p.reload(); await p.waitForTimeout(900);
-  ok((await txt(p, "#bt12PlanOut")) === "予定の終わり（22:00）で退勤", "⑨ the button");
-  await p.click("#bt12PlanOut"); await p.waitForTimeout(500);
-  const n1 = await shift(p, "n1");
-  ok(n1.start === "17:00" && n1.end === "22:00" && n1.clocked === true && !(await setting(p, "bt2Clock")), "⑨ 退勤: " + JSON.stringify(n1));
-  const dn = await txt(p, "#bt2Clock .bt12-done");
-  ok(dn === "おつかれさまでした この勤務 5 時間・約 5,300 円 11月分は ここまで 3 回・約 13,900 円（あと 4 回の予定をふくめると 約 35,300 円） 帰る連絡を送る", "② " + dn); // (その13 ⑤ 帰る連絡 too)
-  await p.click('#bt2Clock .bt12-done button[aria-label="まとめを閉じる"]'); await p.waitForTimeout(300);
-  ok(!(await p.$("#bt2Clock .bt12-done")), "② closed");
+  // ⑨② 予定の終わりで退勤 and 退勤のまとめ: gone with 出勤・退勤 (2026-11-19)
+  ok(!(await p.$("#bt2Clock")) && !(await p.$("#bt12PlanOut")) && !(await p.$(".bt12-done")), "⑨② gone");
   // ③ ふりかえり, no more in the sheet; one kept on a shift stays as the shift is changed there
   await p.click('#shiftList [data-edit="f6"]'); await p.waitForTimeout(500);
   ok(!(await p.$("#reShiftFeel")), "③ none in the sheet");

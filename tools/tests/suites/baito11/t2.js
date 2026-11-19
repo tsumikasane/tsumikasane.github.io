@@ -1,4 +1,4 @@
-// バイト その11 ①④⑥⑦⑧⑨⑩: what is pressed and typed
+// バイト その11 ①④⑦⑧⑨⑩: what is pressed and typed (⑥ 時刻を変える went with その9 ⑩ 選ぶ: 2026-11-19, the user's call)
 process.env.URL0 = process.env.URL0 || "http://localhost:8862/";
 const fs = require("fs");
 const { chromium } = require("playwright");
@@ -17,29 +17,16 @@ const pick = (p, id) => p.click(`#shiftList li[data-shift="${id}"] .body`);
   await p.addInitScript(() => { Object.defineProperty(navigator, "canShare", { value: undefined, configurable: true }); });
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
-  // ⑥ g1 and x1 picked: 18:00 and 30 分 at once, kept as typed while another is picked and let go; then back
-  await p.click("#bt9Pick"); await p.waitForTimeout(200);
-  await pick(p, "g1"); await pick(p, "x1"); await p.waitForTimeout(200);
-  await p.click("#bt11TimeBtn"); await p.waitForTimeout(200);
-  ok(await p.isVisible("#bt11Time") && (await p.getAttribute("#bt11TimeBtn", "aria-expanded")) === "true", "⑥ open");
-  await p.fill("#bt11TStart", "18:00");
-  await pick(p, "s1"); await pick(p, "s1"); await p.waitForTimeout(200);
-  ok((await p.inputValue("#bt11TStart")) === "18:00", "⑥ kept as typed");
-  await p.fill("#bt11TRest", "30"); await p.click("#bt11TGo"); await p.waitForTimeout(400);
-  const g1 = await shift(p, "g1"), x1 = await shift(p, "x1"), s1 = await shift(p, "s1");
-  ok(g1.start === "18:00" && g1.end === "23:00" && g1.rest === 30 && x1.start === "18:00" && x1.end === "22:00" && x1.rest === 30 && s1.start === "18:00" && s1.rest === 0, "⑥ changed: " + JSON.stringify([g1, x1]));
-  ok(await p.isHidden("#bt11Time"), "⑥ closed");
-  await p.click(".toast.show .toast-undo"); await p.waitForTimeout(400);
-  const g1b = await shift(p, "g1");
-  ok(g1b.start === "17:00" && g1b.rest === 0 && (await shift(p, "x1")).start === "17:00", "⑥ back: " + JSON.stringify(g1b));
-  await p.click("#bt9Pick"); await p.waitForTimeout(200);
+  // ⑥ 時刻を変える: gone with その9 ⑩ 選ぶ (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt9Pick")) && !(await p.$("#bt11TimeBtn")) && !(await p.$("#bt11Time")), "⑥ gone");
   // ⑦ 勤務表を印刷
   await p.evaluate(() => { window.__printed = null; window.print = () => { const b = document.getElementById("bt11Print"); window.__printed = b ? [b.querySelector("h1").textContent, ...[...b.querySelectorAll("tr")].map((tr) => [...tr.children].map((c) => c.textContent).filter(Boolean).join(" "))].join(" / ") : null; }; });
   await p.click("#bt11PrintBtn"); await p.waitForTimeout(300);
   const pr = (await p.evaluate(() => window.__printed)) || "";
   ok(pr.startsWith("2026年11月の勤務表 / 日付 曜日 バイト先 始まり 終わり 休憩(分) 時間 見込み(円) メモ / 11/16 月 カフェ 17:00 23:00 6 6,550 / ") && pr.includes(" / 11/17 火 塾 18:00 21:00 3 4,500 / ") && pr.endsWith(" / 6 回 27 31,450"), "⑦ " + pr);
   // ⑧ .ics: an overnight one too
-  await p.fill("#bt3QuickText", "11/29 22-5"); await p.press("#bt3QuickText", "Enter"); await p.waitForTimeout(400);
+  await p.fill("#shiftDate", "2026-11-29"); await p.fill("#shiftStart", "22:00"); await p.fill("#shiftEnd", "05:00"); // (from the form: ひとことでシフト taken out 2026-11-19)
+  await p.locator('#shiftForm button[type="submit"]').click(); await p.waitForTimeout(500);
   const [dl] = await Promise.all([p.waitForEvent("download"), p.click("#bt11Ics")]);
   const ics = fs.readFileSync(await dl.path(), "utf8");
   const ev = ics.split("BEGIN:VEVENT").slice(1);

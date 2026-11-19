@@ -29,10 +29,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   // ⑦ 週ごとの働いた時間: taken out at the user's call (2026-11-19, tools/REMOVED.md)
   ok(!(await p.$("#bt5Weeks")), "⑦ 週ごとの働いた時間: gone");
   ok(!(await p.$("#bt5Find")), "⑧ 勤務を探す: gone");
-  // ⑩ 2026 年: 10月分 10,000 + 11月分 27,500
-  const yr = await txt(p, "#bt5Year");
-  ok(yr.includes("2026年のバイトのまとめ") && yr.includes("37,500 円") && /30\s時間/.test(yr) && /6\s回/.test(yr), "⑩ " + yr);
-  ok(/1時間あたり 平均 1,083\s円/.test(yr) && /有給を使った日 1\s日/.test(yr) && /いちばん働いたのは 11月分（20\s時間）/.test(yr) && /給料明細 1 か月分：総支給 10,000\s円・所得税 0\s円・手取り 9,940\s円/.test(yr), "⑩ notes: " + yr);
+  // ⑩ 1年のまとめ: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt5Year")), "⑩ 1年のまとめ: gone");
   // ③ October's slip
   await p.click("#monthNav .navbtn"); await p.waitForTimeout(400);
   const oct = await txt(p, "#jobSum");

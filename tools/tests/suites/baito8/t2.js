@@ -25,16 +25,12 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   await p.evaluate(() => { const c = document.getElementById("reShiftSeek"); c.checked = false; c.dispatchEvent(new Event("change")); }); await p.waitForTimeout(300);
   await p.locator("#recSave").click(); await p.waitForTimeout(500);
   ok(!("seeking" in (await ls(p, "shifts")).find((x) => x.id === "t27")), "⑨ taken off");
-  // ⑩ in the job's form: changed, then taken off
+  // ⑩ これから時給が変わる日: taken out at the user's call (2026-11-19, tools/REMOVED.md); wageNext stays on the job
   await p.click("#moneySettings"); await p.waitForTimeout(500);
-  const f = '#jobForms [data-job="j1"] .bt8-next';
-  ok((await txt(p, f)).includes("12月1日（火）から 1,100円"), "⑩ shown: " + (await txt(p, f)));
-  await p.fill(`${f} input[type="date"]`, "2027-01-01"); await p.fill(`${f} input[type="number"]`, "1150"); await p.click(`${f} .btn`); await p.waitForTimeout(500);
-  let j = (await ls(p, "settings")).find((s) => s.id === "jobs").items[0];
-  ok(j.wageNext.from === "2027-01-01" && j.wageNext.wage === 1150 && j.wage === 1000, "⑩ changed: " + JSON.stringify(j.wageNext));
-  await p.click(`${f} .link-btn.danger`); await p.waitForTimeout(500);
-  j = (await ls(p, "settings")).find((s) => s.id === "jobs").items[0];
-  ok(!("wageNext" in j), "⑩ taken off");
+  ok(!(await p.$('#jobForms [data-job="j1"] .bt8-next')) && !(await txt(p, "#jobForms")).includes("これから時給が変わる日"), "⑩ gone from the job's form");
+  ok(!(await txt(p, "#jobForms")).includes("時給が変わったとき"), "その2 ④ 時給が変わったとき: gone from the job's form");
+  const j = (await ls(p, "settings")).find((s) => s.id === "jobs").items[0];
+  ok(j.wageNext && j.wageNext.from === "2026-12-01" && j.wageNext.wage === 1100, "⑩ wageNext kept: " + JSON.stringify(j.wageNext));
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

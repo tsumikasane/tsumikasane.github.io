@@ -12,26 +12,12 @@ const setting = async (p, id) => (await ls(p, "settings")).find((s) => s.id === 
   const p = await phone(b, at("12:00", today));
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
-  // ⑩ 選ぶ: two picked, 仮, 確定, deleted
-  await p.click("#bt9Pick"); await p.waitForTimeout(300);
-  ok((await txt(p, "#bt9Sel")).includes("勤務を押して選びます"), "⑩ the bar");
-  await p.click('#shiftList li[data-shift="a1"] .body'); await p.waitForTimeout(200);
-  ok(!(await p.evaluate(() => document.querySelectorAll("dialog[open]").length)), "⑩ a row pressed is not opened");
-  await p.click('#shiftList input.bt9-box[data-shift="a2"]'); await p.waitForTimeout(300);
-  ok(/2\s件・10\s時間・10,600\s円/.test(await txt(p, "#bt9Sel")), "⑩ two: " + (await txt(p, "#bt9Sel")));
-  await p.click("#bt9Tent"); await p.waitForTimeout(400);
-  let sh = await ls(p, "shifts");
-  ok(sh.find((x) => x.id === "a1").tentative === true && sh.find((x) => x.id === "a2").tentative === true, "⑩ 仮にする");
-  ok(/2\s件/.test(await txt(p, "#bt9Sel")), "⑩ still picked after 仮にする");
-  await p.click("#bt9Settle"); await p.waitForTimeout(400);
-  sh = await ls(p, "shifts");
-  ok(!("tentative" in sh.find((x) => x.id === "a1")) && !("tentative" in sh.find((x) => x.id === "a2")), "⑩ 確定にする");
-  await p.click('#shiftList li[data-shift="a1"] .body'); await p.click('#shiftList li[data-shift="a2"] .body'); await p.click('#shiftList li[data-shift="o2"] .body'); await p.waitForTimeout(200);
-  ok(/^1\s件/.test(await txt(p, "#bt9Sel")), "⑩ o2 alone: " + (await txt(p, "#bt9Sel")));
-  await p.click("#bt9Del"); await p.waitForTimeout(400);
-  ok(!(await ls(p, "shifts")).some((x) => x.id === "o2") && (await ls(p, "shifts")).some((x) => x.id === "a1"), "⑩ deleted");
-  await p.click("#bt9Pick"); await p.waitForTimeout(300);
-  ok(await p.isHidden("#bt9Sel") && !!(await p.$('#shiftList li[data-shift="a1"] .del, #shiftList li[data-shift="a1"] button[aria-label*="削除"]')), "⑩ done");
+  // ⑩ 選ぶ (and その11 ⑥ 時刻を変える in it): taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt9Pick")) && !(await p.$("#bt9Sel")) && !(await p.$("#bt11Time")) && !(await p.$("#shiftList input[type=checkbox]")), "⑩ 選ぶ: gone");
+  await p.click('#shiftList [data-edit="a1"]'); await p.waitForTimeout(500);
+  ok((await p.evaluate(() => document.querySelectorAll("dialog[open]").length)) === 1 && !(await p.$("#bt7CopyDay")), "a row opens its sheet (その7 ⑨ ほかの日にもコピー: gone)");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(400);
+  ok(!!(await p.$('#shiftList li[data-shift="a1"] .del, #shiftList li[data-shift="a1"] button[aria-label*="削除"]')), "a row's 削除 there");
   ok(!(await p.$("#bt9GensenCard")), "② 源泉徴収票: gone");
   // ⑦ やめた: undone for 塾; カフェ asked first
   await p.click("#moneySettings"); await p.waitForTimeout(500);

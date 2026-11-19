@@ -28,18 +28,18 @@ const shown = (p, id) => p.evaluate((id) => getComputedStyle(document.getElement
   ok((await setting(p, "bt16")).asked["2026-12"] === "2026-11-20" && !(await tags(p)).includes("bt2-ask:2026-11-25") && (await txt(p, "#bt16Asked")) === "12月のシフト希望：出しました（11/20） 取り消す", "④ given: " + (await txt(p, "#bt16Asked")));
   await p.click("#bt16AskBtn"); await p.waitForTimeout(400);
   ok(!("2026-12" in (await setting(p, "bt16")).asked) && (await tags(p)).includes("bt2-ask:2026-11-25"), "④ taken back");
-  // ① from the page's foot: 1週間の勤務 put away, 何時間分？ back (バイトの日の支出 taken out 2026-11-19)
+  // ① from the page's foot: 勤務カレンダー put away, 何時間分？ back (バイトの日の支出 and 1週間の勤務 taken out 2026-11-19)
   await p.click("#bt16CardsLink"); await p.waitForTimeout(600);
   ok(await p.evaluate(() => document.getElementById("bt16CardsBox").open), "① the cards opened");
-  await p.click('#bt16Cards [data-card="bt13Week"]'); await p.click('#bt16Cards [data-card="bt2Calc"]'); await p.waitForTimeout(400);
-  ok(JSON.stringify((await setting(p, "bt16")).hide) === JSON.stringify(["bt13Week"]) && (await txt(p, "#bt16CardsHead")) === "カードを選ぶ（1 こ しまっています）", "① kept: " + JSON.stringify((await setting(p, "bt16")).hide));
+  await p.click('#bt16Cards [data-card="bt6Cal"]'); await p.click('#bt16Cards [data-card="bt2Calc"]'); await p.waitForTimeout(400);
+  ok(JSON.stringify((await setting(p, "bt16")).hide) === JSON.stringify(["bt6Cal"]) && (await txt(p, "#bt16CardsHead")) === "カードを選ぶ（1 こ しまっています）", "① kept: " + JSON.stringify((await setting(p, "bt16")).hide));
   // ⑤ 早めに着く 0, ③ 定期券 12/31, ⑨ 最低賃金 900
   await p.fill('#jobForms [data-job="j1"] [data-f="early"]', ""); await p.fill('#jobForms [data-job="j1"] [data-f="pass"]', "2026-12-31"); await p.waitForTimeout(900);
   await p.fill("#bt16MinWage", "900"); await p.dispatchEvent("#bt16MinWage", "change"); await p.waitForTimeout(300);
   const j1 = await job(p, "j1");
   ok(!("early" in j1) && j1.pass === "2026-12-31" && (await setting(p, "bt16")).minWage === 900, "③⑤⑨ kept: " + JSON.stringify(j1));
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
-  ok(!(await shown(p, "bt13Week")) && (await shown(p, "bt2Calc")), "① on the page");
+  ok(!(await shown(p, "bt6Cal")) && (await shown(p, "bt2Calc")), "① on the page");
   ok((await txt(p, "#bt3Next")).includes("16:30 に出ると間に合います（通勤 30 分）"), "⑤ no minutes early: " + (await txt(p, "#bt3Next")));
   ok((await p.isHidden("#bt16Pass")) && JSON.stringify((await tags(p)).filter((t) => t.startsWith("bt16-pass"))) === JSON.stringify(["bt16-pass:j1:2026-12-31:3"]), "③ 12/31: " + JSON.stringify(await tags(p)));
   ok(await p.isHidden("#bt16Min"), "⑨ 900 円: none below");

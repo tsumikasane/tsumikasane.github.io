@@ -1,4 +1,4 @@
-// バイト その7 ③④⑥⑦⑧⑨⑩: what is typed in (⑤ シフト表の写真 は使う人が消した: 2026-11-18)
+// バイト その7 ③④⑥⑦⑧⑩: what is typed in (⑤ シフト表の写真 は使う人が消した: 2026-11-18; ⑨ ほかの日にもコピー: 2026-11-19)
 process.env.URL0 = process.env.URL0 || "http://localhost:8867/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -27,21 +27,14 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   let sh = (await ls(p, "shifts")).find((x) => x.date === "2026-11-28");
   ok(sh && sh.dayPay === 9000 && !("wage" in sh), "③ put in: " + JSON.stringify(sh));
   await p.click("#bt7PayKind"); // (back to 時給)
-  // ④③ ひとことで
-  await p.fill("#bt3QuickText", "11/29 10-14"); await p.waitForTimeout(200);
-  ok((await txt(p, "#bt3QuickSay")).endsWith("（約 4,000 円）"), "④ ひとことで: " + (await txt(p, "#bt3QuickSay")));
-  await p.fill("#bt3QuickText", "11/29 9-18 日給1.2万"); await p.waitForTimeout(200);
-  ok((await txt(p, "#bt3QuickSay")).includes("日給 12,000円") && (await txt(p, "#bt3QuickSay")).endsWith("（約 12,000 円）"), "③ 日給1.2万: " + (await txt(p, "#bt3QuickSay")));
-  // ⑩ one put in 1 day before 試験
-  await p.fill("#bt3QuickText", "12/11 17-22"); await p.press("#bt3QuickText", "Enter"); await p.waitForTimeout(400);
+  // ⑩ one put in 1 day before 試験 (from the form; ひとことでシフト taken out 2026-11-19)
+  await p.fill("#shiftDate", "2026-12-11"); await p.fill("#shiftStart", "17:00"); await p.fill("#shiftEnd", "22:00");
+  await p.locator('#shiftForm button[type="submit"]').click(); await p.waitForTimeout(500);
   ok((await p.evaluate(() => document.body.innerText)).includes("試験「数学」の1日前です"), "⑩ said as it goes in");
-  await p.click("#monthNav .navbtn"); await p.waitForTimeout(300); // (back to 11月)
-  // ⑨ n1 copied to 11/30
+  if ((await txt(p, "#monthNav")).includes("12月")) { await p.click("#monthNav .navbtn"); await p.waitForTimeout(300); } // (back to 11月)
+  // ⑨ この勤務をほかの日にもコピー: taken out at the user's call (2026-11-19, tools/REMOVED.md)
   await p.click('#shiftList [data-edit="n1"]'); await p.waitForTimeout(500);
-  await p.fill("#bt7CopyDay", "2026-11-30"); await p.click("#bt7CopyGo"); await p.waitForTimeout(400);
-  ok((await ls(p, "shifts")).some((x) => x.date === "2026-11-30" && x.start === "17:00" && x.end === "22:00" && x.id !== "n1") && (await p.inputValue("#bt7CopyDay")) === "", "⑨ copied, the sheet still open");
-  await p.fill("#bt7CopyDay", "2026-11-30"); await p.click("#bt7CopyGo"); await p.waitForTimeout(300);
-  ok((await ls(p, "shifts")).filter((x) => x.date === "2026-11-30" && x.start === "17:00").length === 1, "⑨ not twice");
+  ok((await p.evaluate(() => document.querySelectorAll("dialog[open]").length)) === 1 && !(await p.$("#bt7CopyDay")) && !(await txt(p, "dialog[open]")).includes("ほかの日にもコピー"), "⑨ gone from the sheet");
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   if (await p.evaluate(() => !!document.querySelector("dialog[open]"))) { await p.click("#discardGo").catch(() => {}); await p.waitForTimeout(400); }
   // ⑥ その月だけの手当

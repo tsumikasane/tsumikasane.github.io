@@ -1,4 +1,5 @@
-// バイト その13 ①②④⑤⑥⑨⑩: what is pressed and typed
+// バイト その13 ①②④⑥: what is pressed and typed (⑨ 1週間の勤務: taken out 2026-11-19, the user's call; ⑤ 帰る連絡 and ⑩ 休憩の終わり
+// went with 出勤・退勤)
 process.env.URL0 = process.env.URL0 || "http://localhost:8864/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -16,11 +17,8 @@ const tags = (p) => p.evaluate(() => window.__bt13.alarms(Date.now()).filter((a)
   await p.addInitScript(() => { Object.defineProperty(navigator, "share", { value: undefined, configurable: true }); window.__copied = ""; Object.defineProperty(navigator, "clipboard", { value: { writeText: async (t) => { window.__copied = t; } }, configurable: true }); });
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
-  // ⑨ the week before, and back
-  await p.click('#bt13Week [aria-label="前の週"]'); await p.waitForTimeout(300);
-  ok((await txt(p, "#bt13Week .bt13-week-head strong")) === "11/8〜11/14の勤務" && (await txt(p, "#bt13Week p.sub")) === "この週 2 回・10 時間・約 10,600 円", "⑨ the week before: " + (await txt(p, "#bt13Week")));
-  await p.click("#bt13Week .bt13-navs .link-btn"); await p.waitForTimeout(300);
-  ok((await txt(p, "#bt13Week .bt13-week-head strong")) === "11/15〜11/21の勤務", "⑨ 今週");
+  // ⑨ 1週間の勤務: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt13Week")), "⑨ gone");
   // ② a goal put in, one taken off and back
   await p.click("#bt13GoalAdd"); await p.waitForTimeout(200);
   await p.fill('#bt13Goal [data-g="name"]', "12月"); await p.fill('#bt13Goal [data-g="from"]', "2026-12-01"); await p.fill('#bt13Goal [data-g="to"]', "2026-12-31"); await p.fill('#bt13Goal [data-g="amount"]', "30000");
@@ -51,26 +49,8 @@ const tags = (p) => p.evaluate(() => window.__bt13.alarms(Date.now()).filter((a)
   const s2 = await setting(p, "bt13");
   ok(s2.muteFrom === "2026-11-19" && s2.muteTo === "2026-11-21" && !(await tags(p)).includes("bt7-eve:2026-11-20"), "④ held again (the days put in order): " + JSON.stringify(s2));
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
-  // ⑩ 出勤 17:00, 休憩 30 分 at 18:00: its お知らせ at 18:30, past it at 18:40; ⑤ 退勤 at 22:05, home at 22:35
-  await p.clock.setFixedTime(at("17:00", today)); await p.reload(); await p.waitForTimeout(900);
-  await p.click('#bt2Clock .bt2-clock-row .btn'); await p.waitForTimeout(400);
-  await p.clock.setFixedTime(at("18:00", today)); await p.reload(); await p.waitForTimeout(900);
-  ok((await p.inputValue("#bt13BreakFor")) === "45", "⑩ 45 分 to begin with");
-  await p.selectOption("#bt13BreakFor", "30"); await p.click("#bt10Break"); await p.waitForTimeout(400);
-  const c = await setting(p, "bt2Clock");
-  ok(c.breakFor === 30 && c.breakAt === at("18:00", today).getTime(), "⑩ kept: " + JSON.stringify(c));
-  const br = await p.evaluate(() => window.__bt13.alarms(Date.now()).find((a) => a.tag.startsWith("bt13-break")));
-  ok(br && new Date(br.at).toISOString() === "2026-11-18T09:30:00.000Z" && br.title === "休憩の終わりの時刻です", "⑩ its お知らせ: " + JSON.stringify(br));
-  ok((await txt(p, "#bt2Clock .bt10-break")).includes("あと 30 分（18:30まで）"), "⑩ " + (await txt(p, "#bt2Clock .bt10-break")));
-  await p.clock.setFixedTime(at("18:40", today)); await p.reload(); await p.waitForTimeout(900);
-  ok((await txt(p, "#bt2Clock .bt10-break")).includes("18:30をすぎています"), "⑩ past it: " + (await txt(p, "#bt2Clock .bt10-break")));
-  await p.click("#bt10Break"); await p.waitForTimeout(400);
-  const c2 = await setting(p, "bt2Clock");
-  ok(!("breakFor" in c2) && c2.rest === 40, "⑩ back: " + JSON.stringify(c2));
-  await p.clock.setFixedTime(at("22:05", today)); await p.reload(); await p.waitForTimeout(900);
-  await p.click('#bt2Clock .bt2-clock-row .btn'); await p.waitForTimeout(500);
-  await p.click("#bt13Home"); await p.waitForTimeout(300);
-  ok((await p.evaluate(() => window.__copied)) === "いまバイトが終わりました。22:35 ごろ家に着きます。", "⑤ " + (await p.evaluate(() => window.__copied)));
+  // ⑤⑩ 帰る連絡 and 休憩の終わり: gone with 出勤・退勤 (2026-11-19)
+  ok(!(await p.$("#bt2Clock")) && !(await p.$("#bt13BreakFor")) && !(await p.$("#bt13Home")) && !(await tags(p)).some((t) => t.startsWith("bt13-break")), "⑤⑩ gone");
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

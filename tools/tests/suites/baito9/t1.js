@@ -1,4 +1,4 @@
-// バイト その9 ①③④⑤⑥⑦⑧⑨: what is shown
+// バイト その9 ①③⑤⑥⑦⑨: what is shown (④ went with 出勤・退勤; ⑧ taken out 2026-11-19)
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
 const { DATA, today } = require("./data");
@@ -10,9 +10,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   const p = await phone(b, at("12:00", today));
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
-  // ④ at work since 10:00: 2 時間 × 1,000 so far, 3 時間 to 15:00
-  const ck = await txt(p, "#bt2Clock");
-  ok(/ここまで 約 2,000\s円・予定の終わり（15:00）まで あと 3\s時間/.test(ck), "④ " + ck);
+  // ④ ここまでの給料 (at work): gone with 出勤・退勤
+  ok(!(await p.$("#bt2Clock")), "④ gone");
   // ⑥ 祝日, ⑤ 重なり
   ok((await txt(p, '#shiftList li:has([data-edit="h23"])')).includes("祝日（勤労感謝の日）"), "⑥");
   ok((await txt(p, '#shiftList li:has([data-edit="o1"])')).includes("ほかの勤務（14:00〜16:00）と重なっています") && (await txt(p, '#shiftList li:has([data-edit="o2"])')).includes("ほかの勤務（10:00〜15:00）と重なっています"), "⑤");
