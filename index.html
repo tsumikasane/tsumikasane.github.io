@@ -8226,9 +8226,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
              user's call: each label made a tab): すべて, then each list with how many are still to do there, the one pressed
              showing only its own; ＋ makes a new list (renderTodoTabs) -->
         <div class="td-tabs" role="group" aria-label="リストで分ける" id="todoTabs"></div>
-        <!-- 編集: the lists' and labels' settings (the gear that was by ＋); その他: 最近削除したToDo, and deleting the done ones -->
+        <!-- 編集: the lists' and labels' settings (the gear that was by ＋); その他: 最近削除したToDo, and deleting the done ones;
+             集中: the focus timer with no ToDo (the user's call, 2026-11-20), put away while it counts down -->
         <div class="td-tools">
           <button type="button" class="td-tool" id="todoWeek" aria-haspopup="dialog" aria-label="これから1週間のToDoを見る"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-cal-week"/></svg>見通し</button><button type="button" class="td-tool" id="todoSettings" aria-haspopup="dialog" aria-label="リストとラベルを編集"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>編集</button>
+          <button type="button" class="td-tool" id="todoFocusGo" aria-label="ToDoを選ばずに集中タイマーを始める"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-timer"/></svg>集中</button>
           <button type="button" class="td-tool" id="todoMore" aria-haspopup="dialog"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-more"/></svg>その他</button>
         </div>
         <!-- ⑤ while ToDos are being picked to change at once: how many, all of them, and done (the user's call, 2026-11-10) -->
@@ -9698,7 +9700,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <label class="flabel" for="focusRest">休憩</label>
           <div class="ffield"><select id="focusRest"></select></div>
         </form>
-        <p class="group-foot"><span class="phrase">ToDoを長押しするか、ToDoを開いて「集中タイマーを始める」で使えます。</span><span class="phrase">集中した時間はそのToDoに残ります。</span></p>
+        <p class="group-foot"><span class="phrase">ToDoを長押しするか、ToDoを開いて「集中タイマーを始める」で使えます。</span><span class="phrase">ToDoを選ばずに始めるときは、ToDoのページの「集中」から。</span><span class="phrase">集中した時間はそのToDoに残ります。</span></p>
       </div>
       <!-- 記録's: バックアップ, from its gear (the user's call: it was at the foot of 記録); 同期 and 端末の中のコピー open their
            pages under 記録 -->
@@ -25261,7 +25263,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月20日 0:35"; // a2dcb4df (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月20日 0:42"; // 48609d32 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -26587,18 +26589,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function focusPut(v) { try { if (v) localStorage.setItem(FOCUS_KEY, JSON.stringify(v)); else localStorage.removeItem(FOCUS_KEY); } catch {} focusTick(); pushSoon(); }
   const focusLeftMs = (v) => (v.end ? v.end - Date.now() : num(v.left));
   const focusDone = (v) => Math.max(0, Math.floor((v.len * 60e3 - Math.max(0, focusLeftMs(v))) / 60e3)); // whole minutes so far
-  function focusStart(todoId = null, cell = null) { // (目標 その4 ② cell: { g, p }, a goal's cell)
+  // (勉強's study, 2026-11-20: its own small object, kept as it is and handed back to it: stFocusCredit, stFocusName)
+  function focusStart(todoId = null, cell = null, study = null) { // (目標 その4 ② cell: { g, p }, a goal's cell)
     const cur = focusNow();
     if (cur?.kind === "work") focusCredit(cur, focusDone(cur));
     const { work } = focusSet(), now = Date.now(), t = todoId && todos.get(todoId);
     unlockBeep();
-    focusPut({ kind: "work", todoId: t ? t.id : null, ...(goalFour && cell ? { cell } : {}), len: work, end: now + work * 60e3, left: null, at: now });
-    flash(`集中タイマーを始めました（${work}分）` + (t ? `：「${clip(oneLine(t.text), 20)}」` : goalFour && cell ? `：「${clip(focusCellName(cell), 20)}」` : ""));
+    focusPut({ kind: "work", todoId: t ? t.id : null, ...(goalFour && cell ? { cell } : {}), ...(study ? { study } : {}), len: work, end: now + work * 60e3, left: null, at: now });
+    flash(`集中タイマーを始めました（${work}分）` + (t ? `：「${clip(oneLine(t.text), 20)}」` : goalFour && cell ? `：「${clip(focusCellName(cell), 20)}」` : study && typeof stFocusName === "function" ? `：「${clip(stFocusName(study), 20)}」` : ""));
   }
   // the minutes focused: on the day, and on its ToDo while it is there
   function focusCredit(v, mins, day = todayKey) {
     if (!(mins >= 1)) return;
     if (goalFour && v.cell) addCellTime(v.cell.g, v.cell.p, mins, day, true); // (目標 その4 ② on its cell)
+    if (v.study && typeof stFocusCredit === "function") stFocusCredit(v.study, mins, day); // (勉強's, by 勉強's own code)
     const t = v.todoId && todos.get(v.todoId), log = settings.get(FOCUS_LOG_ID) || {}, days = { ...(log.days || {}) };
     days[day] = num(days[day]) + mins;
     act(async () => {
@@ -26611,23 +26615,23 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     let v = focusNow();
     // over (now, or while the app was away): 集中 goes on to 休憩, and 休憩 ends it
     while (v?.end && v.end <= Date.now()) {
-      const away = Date.now() - v.end > 60e3, id = v.todoId, cell = v.cell || null; // (目標 その4 ②)
+      const away = Date.now() - v.end > 60e3, id = v.todoId, cell = v.cell || null, study = v.study || null; // (目標 その4 ②; 勉強's)
       if (v.kind === "work" && todoEight && v.five) v = td8FiveOver(v, away); // (その8 ⑤ 5分だけ: over, no 休憩)
       else if (v.kind === "work") {
         focusCredit(v, v.len, ymd(new Date(v.end)));
         const r22 = todoTwentyTwo ? td22Rest(v) : null, rest = r22 ? r22.rest : focusSet().rest; // (その22 ① 長い休憩, every few sets)
-        const nv = { kind: "rest", todoId: id, ...(cell ? { cell } : {}), len: rest, end: v.end + rest * 60e3, left: null, at: v.end, worked: v.len, ...(r22?.long ? { long: true } : {}) };
+        const nv = { kind: "rest", todoId: id, ...(cell ? { cell } : {}), ...(study ? { study } : {}), len: rest, end: v.end + rest * 60e3, left: null, at: v.end, worked: v.len, ...(r22?.long ? { long: true } : {}) };
         try { localStorage.setItem(FOCUS_KEY, JSON.stringify(nv)); } catch {}
         if (nv.end > Date.now()) { // (その22 ② 経過メモを書く with it, ③ the day's goal met said in it)
           if (!away) { beep(); navigator.vibrate?.([200, 100, 200]); }
           flash((r22?.long ? `${r22.n}回目の集中、おつかれさまでした。${rest}分、長めに休憩しましょう` : `${v.len}分の集中、おつかれさまでした。${rest}分休憩しましょう`) + (todoTwentyFour ? td24StepSay(v) : "") + (todoTwentyThree ? td23AwaySay(v) : "") + (todoTwentyTwo ? td22GoalSay() : ""), ...((todoTwentyFour && td24StepAct(id, v.step)) || (todoTwentyFive && !id && !cell && td25PickAct(v)) || (todoTwentyTwo ? td22LogAct(id) : []))); // (その23 ⑩ 離れた回数, その24 ② サブタスクを完了, その25 ⑩ ToDoにつける)
         }
-        else flash(`集中タイマーが終わっていました（${v.len}分を記録）`, () => focusStart(id, cell), 10000, "もう1回");
+        else flash(`集中タイマーが終わっていました（${v.len}分を記録）` + (todoTwentyThree ? td23AwaySay(v) : ""), () => focusStart(id, cell, study), 10000, "もう1回"); // (その23 ⑩ with it)
         v = nv;
       } else {
         try { localStorage.removeItem(FOCUS_KEY); } catch {}
         if (!away && todoTwentyFive && td25AutoGo(v, id, cell)) { beep(); navigator.vibrate?.([200, 100, 200]); } // (その25 ① 自動で続ける)
-        else if (!away) { beep(); navigator.vibrate?.([200, 100, 200]); flash("休憩おわり。次の集中をはじめましょう", () => focusStart(id, cell), 10000, "もう1回"); }
+        else if (!away) { beep(); navigator.vibrate?.([200, 100, 200]); flash("休憩おわり。次の集中をはじめましょう", () => focusStart(id, cell, study), 10000, "もう1回"); }
         v = null;
       }
       pushSoon();
@@ -26639,7 +26643,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const left = Math.max(0, Math.ceil(focusLeftMs(v) / 1000)), t = v.todoId && todos.get(v.todoId);
     $("focusKind").textContent = v.kind === "work" ? (v.end ? (todoEight && v.five ? "5分だけ" : "集中") : "一時停止中") : "休憩"; // (その8 ⑤)
     $("focusLeft").textContent = `${Math.floor(left / 60)}:${pad(left % 60)}`;
-    $("focusName").textContent = t ? oneLine(t.text) : goalFour && v.cell ? focusCellName(v.cell) : "";
+    $("focusName").textContent = t ? oneLine(t.text) : goalFour && v.cell ? focusCellName(v.cell) : v.study && typeof stFocusName === "function" ? stFocusName(v.study) : "";
     $("focusPause").textContent = v.kind === "rest" ? "集中する" : v.end ? "一時停止" : "再開";
     bar.setAttribute("aria-label", (v.kind === "work" ? "集中" : "休憩") + "の残り時間");
     // (over the place messages come up, and over 休憩 between sets when it shows)
@@ -26649,7 +26653,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("focusPause").addEventListener("click", () => {
     const v = focusNow();
     if (!v) return;
-    if (v.kind === "rest") { focusStart(v.todoId, v.cell || null); return; } // 休憩 cut short: the next 集中
+    if (v.kind === "rest") { focusStart(v.todoId, v.cell || null, v.study || null); return; } // 休憩 cut short: the next 集中
     focusPut(v.end ? { ...v, left: Math.max(1000, v.end - Date.now()), end: null } : { ...v, end: Date.now() + num(v.left), left: null });
   });
   $("focusStop").addEventListener("click", () => {
@@ -26658,17 +26662,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const mins = v.kind === "work" ? focusDone(v) : 0;
     if (mins) focusCredit(v, mins);
     focusPut(null);
-    flash(mins ? `集中した ${mins} 分を記録しました` : "集中タイマーを終えました");
+    flash(mins ? `集中した ${mins} 分を記録しました` + (todoTwentyThree ? td23AwaySay(v) : "") : "集中タイマーを終えました"); // (その23 ⑩ with it)
   });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") focusTick(); });
   // its end, to this device only (pushSend): 集中 over, then 休憩 over
   function focusAlarms(now) {
     const v = focusNow();
     if (!v?.end || v.end <= now + 5000) return [];
-    const t = v.todoId && todos.get(v.todoId), name = t ? `（${clip(oneLine(t.text), 30)}）` : "", { rest } = focusSet();
-    const restOver = (at) => ({ at, title: "集中タイマー", body: "休憩おわり。次の集中はアプリから始められます", tag: "focus-rest", url: "./#todo" });
+    const t = v.todoId && todos.get(v.todoId), st = !t && v.study && typeof stFocusName === "function" ? stFocusName(v.study) : "", { rest } = focusSet();
+    const name = t ? `（${clip(oneLine(t.text), 30)}）` : st ? `（${clip(st, 30)}）` : "", url = v.study ? "./#study" : "./#todo"; // (勉強's opens 勉強)
+    const restOver = (at) => ({ at, title: "集中タイマー", body: "休憩おわり。次の集中はアプリから始められます", tag: "focus-rest", url });
     if (todoEight && v.kind === "work" && v.five) return [td8FiveAlarm(v)]; // (その8 ⑤)
-    return v.kind === "work" ? [{ at: v.end, title: "集中タイマー", body: `${v.len}分たちました${name}。${rest}分休憩しましょう`, tag: "focus", url: "./#todo" }, restOver(v.end + rest * 60e3)] : [restOver(v.end)];
+    return v.kind === "work" ? [{ at: v.end, title: "集中タイマー", body: `${v.len}分たちました${name}。${rest}分休憩しましょう`, tag: "focus", url }, restOver(v.end + rest * 60e3)] : [restOver(v.end)];
   }
 
   // ToDo's 編集: いつものセット, 時刻のないToDo's お知らせ, the timer's lengths
@@ -55114,7 +55119,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const r = td23CreditBase(v, mins, day);
     if (todoTwentyThree && v && mins >= 1) {
       const end = Math.min(Date.now(), num(v.end) || Date.now()), m = Math.round(mins), cut = Date.now() - 60 * 864e5;
-      const list = [...td23Sessions().filter((x) => num(x[1]) >= cut), [end - m * 60e3, end, m, v.todoId || null, Math.round(num(v.away))]].slice(-TD23_SESS_MAX);
+      const list = [...td23Sessions().filter((x) => num(x[1]) >= cut), [end - m * 60e3, end, m, v.todoId || null, Math.round(num(v.away)), Math.round(num(v.awayMs)), v.study || null]].slice(-TD23_SESS_MAX); // (awayMs: 集中モード; study: 勉強's, 2026-11-20)
       act(() => settings.set(TD23_SESS_ID, { list, updatedAt: Date.now() }));
     }
     return r;
@@ -55146,8 +55151,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return [el("h3", { class: "group-head" }, "集中した時間帯（この30日）"),
       el("div", { class: "card pad td23-focus" }, total ? el("p", { class: "td15-trend-head" }, el("b", {}, `${top}時台`), el("span", { class: "sub" }, keepUnits(`いちばん集中している時間帯です（この30日で ${durText(hours[top])}）`))) : null,
         total ? svg : el("p", { class: "sub" }, "集中タイマーを使うと、いつ集中したかがここにたまります。"),
-        today.length ? [el("p", { class: "td23-today-head" }, keepUnits(`きょうの集中 ${today.length} 回`)), el("ul", { class: "td23-today" }, today.map(([s, e, m, id, a]) => el("li", {},
-          el("span", { class: "td23-today-at" }, `${td23Hm(s)}〜${td23Hm(e)}`), el("span", { class: "td23-today-w" }, [name(id) || "ToDoなし", keepUnits(`${m} 分`), num(a) >= 1 ? `離れた ${a} 回` : ""].filter(Boolean).join("・")))))] : null)];
+        today.length ? [el("p", { class: "td23-today-head" }, keepUnits(`きょうの集中 ${today.length} 回`)), el("ul", { class: "td23-today" }, today.map(([s, e, m, id, a, ams, st]) => el("li", {},
+          el("span", { class: "td23-today-at" }, `${td23Hm(s)}〜${td23Hm(e)}`), el("span", { class: "td23-today-w" }, [name(id) || (st && typeof stFocusName === "function" ? clip(stFocusName(st), 18) : "ToDoなし"), keepUnits(`${m} 分`), num(a) >= 1 ? `離れた ${a} 回` + (num(ams) > 0 ? `（${tdFmDur(ams)}）` : "") : ""].filter(Boolean).join("・")))))] : null)];
   }
   const td23RecBase = renderTd12Rec;
   renderTd12Rec = function () {
@@ -55289,23 +55294,32 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ⑩ 集中中に離れた回数: while 集中 counts down (not paused), the app left (another app, or the screen off) for three
   // seconds and more is counted on the set (away, awayMs); said as it is over, in 1件に集中する画面, and in ④'s times
+  // (集中モード, 2026-11-20: counted while its 離れたら記録する is on; the first time it went is kept, as pagehide may
+  // follow; td23Back gives the time counted, for the line as it comes back)
   const TD23_HIDE_KEY = LS_PREFIX + "td23Hide";
-  addEventListener("visibilitychange", () => { // (on the window, before the timer's own: a set over while away counts it)
-    if (!todoTwentyThree) return;
-    const v = focusNow();
-    if (document.visibilityState === "hidden") { lsJsonPut(TD23_HIDE_KEY, v?.kind === "work" && v.end ? { at: Date.now(), set: num(v.at) } : null); return; }
-    const h = lsJson(TD23_HIDE_KEY);
+  function td23Left() {
+    if (!todoTwentyThree || !tdFmOn()) { lsJsonPut(TD23_HIDE_KEY, null); return; }
+    const v = focusNow(), h = lsJson(TD23_HIDE_KEY);
+    if (h && v && num(h.set) === num(v.at)) return;
+    lsJsonPut(TD23_HIDE_KEY, v?.kind === "work" && v.end ? { at: Date.now(), set: num(v.at) } : null);
+  }
+  function td23Back() {
+    const v = focusNow(), h = lsJson(TD23_HIDE_KEY);
     lsJsonPut(TD23_HIDE_KEY, null);
-    if (!h || !v || v.kind !== "work" || num(v.at) !== num(h.set)) return;
+    if (!todoTwentyThree || !tdFmOn() || !h || !v || v.kind !== "work" || num(v.at) !== num(h.set)) return 0;
     const ms = Math.min(Date.now(), num(v.end) || Date.now()) - num(h.at);
-    if (!(ms >= 3000)) return;
+    if (!(ms >= 3000)) return 0;
     try { localStorage.setItem(FOCUS_KEY, JSON.stringify({ ...v, away: Math.round(num(v.away)) + 1, awayMs: Math.round(num(v.awayMs)) + ms })); } catch {}
+    return ms;
+  }
+  addEventListener("visibilitychange", () => { // (on the window, before the timer's own: a set over while away counts it)
+    if (document.visibilityState === "hidden") td23Left(); else td23Back();
   }, true);
-  function td23AwaySay(v) { const n = Math.round(num(v?.away)); return n >= 1 ? `。とちゅうでアプリを離れたのは ${n} 回（${durText(Math.max(1, Math.round(num(v.awayMs) / 60e3)))}）でした` : ""; }
+  function td23AwaySay(v) { const n = Math.round(num(v?.away)); return n >= 1 ? `。とちゅうでアプリを離れたのは ${n} 回（${tdFmDur(v.awayMs)}）でした` : ""; }
   const td23FocusBase = renderTd7Focus;
   renderTd7Focus = function () {
     const r = td23FocusBase(), v = focusNow(), card = $("tdPanelBody")?.querySelector(".td7-focus-timer");
-    if (todoTwentyThree && card && v?.kind === "work" && v.todoId === td7FocusId && num(v.away) >= 1) card.querySelector(".td7-focus-acts")?.after(el("p", { class: "td23-away" }, `アプリを離れた：${Math.round(num(v.away))} 回`));
+    if (todoTwentyThree && card && v?.kind === "work" && v.todoId === td7FocusId && num(v.away) >= 1) card.querySelector(".td7-focus-acts")?.after(el("p", { class: "td23-away" }, `アプリを離れた：${Math.round(num(v.away))} 回（${tdFmDur(v.awayMs)}）`));
     return r;
   };
 
@@ -55404,7 +55418,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!todoTwentyThree) return g;
     const add = (head, rows) => { const x = g.find(([h]) => h === head); if (x) x[1].push(...rows); else g.push([head, rows]); };
     add("追加する", [["@リスト名", "新しいToDoの名前に「@大学」のように書くと、そのリストに"], ["片手で追加", "スマホでは右下の＋。「編集」で出さないようにも"]]);
-    add("集中する", [["集中中に離れた回数", "集中タイマーの終わりのお知らせと、1件に集中する画面に"], ["集中した時間帯", "「その他」の「ToDoの記録」。いつ集中しているか"]]);
+    add("集中する", [["集中中に離れた回数", "もどったとき、終わったときと止めたときのお知らせ、1件に集中する画面に。「編集」の「離れたら記録する」で止められます"], ["集中した時間帯", "「その他」の「ToDoの記録」。いつ集中しているか"]]);
     add("整理する", [["行に出すもの", "「その他」。一覧の行に出す情報を選べます"], ["リストの見出し", "リストのToDoの長押し。見出しごとにまとまります"], ["サブタスクをぜんぶ終えたら完了", "「編集」"]]);
     add("きょうの計画", [["期間で見る", "「その他」。開始日から期限までを、4週間の帯で"]]);
     add("ほかとつなぐ", [["運動とつなぐ", "ToDoの画面の「運動に記録」。終えたら運動に"], ["きょうのToDoを画像で送る", "「その他」"]]);
@@ -55815,7 +55829,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (id && (!t || t.done)) return false;
     setTimeout(() => { // (after focusTick's own loop is through)
       if (focusNow()) return;
-      focusStart(id, cell);
+      focusStart(id, cell, v.study || null);
       const w = focusNow();
       flash(`休憩おわり。次の集中を自動で始めました（${w ? w.len : focusSet().work}分）`, () => { if (focusNow()?.kind === "work") { focusPut(null); flash("集中タイマーを止めました"); } }, 10000, "止める");
     }, 0);
@@ -55924,7 +55938,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     if (todoTwentyTwo) { const r = td22Run(); if (r) lsJsonPut(TD22_RUN_KEY, r.n > 1 ? { at: r.at, n: r.n - 1 } : null); } // (its number again as it ends)
     const now = Date.now();
-    focusPut({ kind: "work", todoId: v.todoId || null, ...(v.cell ? { cell: v.cell } : {}), len: 5, end: now + 5 * 60e3, left: null, at: now, more: true });
+    focusPut({ kind: "work", todoId: v.todoId || null, ...(v.cell ? { cell: v.cell } : {}), ...(v.study ? { study: v.study } : {}), len: 5, end: now + 5 * 60e3, left: null, at: now, more: true });
     flash("あと5分、集中します");
   }
   function td25BarSync() {
@@ -56054,7 +56068,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       .sort((a, b) => Number(tdToday(b)) - Number(tdToday(a)) || todoOrder(a, b)).slice(0, 8);
   }
   function td25PickAct(v) {
-    if (v.cell || sheetEl.open || !td25PickList().length) return null;
+    if (v.cell || v.study || sheetEl.open || !td25PickList().length) return null; // (勉強's: its minutes are 勉強's)
     const mins = Math.round(num(v.len)), end = num(v.end);
     return [() => td25PickAsk(mins, end), 10000, "ToDoにつける"];
   }
@@ -56073,14 +56087,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     act(async () => {
       if (sub) sid = await study.add({ date: todayKey, minutes: mins, subjectId: sub.id, note: clip(oneLine(t.text), 60), createdAt: Date.now() }); // (その2 ④ in 勉強 too)
       await todos.update(id, { focus: Math.round(num(t.focus)) + mins, ...(sub ? { studied: num(t.studied) + mins } : {}) });
-      if (i >= 0) await settings.set(TD23_SESS_ID, { list: list.map((x, j) => (j === i ? [x[0], x[1], x[2], id, x[4]] : x)), updatedAt: Date.now() });
+      if (i >= 0) await settings.set(TD23_SESS_ID, { list: list.map((x, j) => (j === i ? [x[0], x[1], x[2], id, ...x.slice(4)] : x)), updatedAt: Date.now() });
     });
     const v = focusNow();
     if (v?.kind === "rest" && !v.todoId && !v.cell) { try { localStorage.setItem(FOCUS_KEY, JSON.stringify({ ...v, todoId: id })); } catch {} focusTick(); }
     flash(keepUnits(`集中した ${durText(mins)}を「${clip(td14Name(t), 24)}」につけました`), () => act(async () => {
       await todos.update(id, was);
       if (sid) takeBack(study, [sid]);
-      if (i >= 0) { const now = td23Sessions(); await settings.set(TD23_SESS_ID, { list: now.map((x) => (x[3] === id && Math.abs(num(x[1]) - num(end)) < 5000 ? [x[0], x[1], x[2], null, x[4]] : x)), updatedAt: Date.now() }); }
+      if (i >= 0) { const now = td23Sessions(); await settings.set(TD23_SESS_ID, { list: now.map((x) => (x[3] === id && Math.abs(num(x[1]) - num(end)) < 5000 ? [x[0], x[1], x[2], null, ...x.slice(4)] : x)), updatedAt: Date.now() }); }
       flash("元に戻しました");
     }));
   }
@@ -56088,9 +56102,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   document.addEventListener("click", (ev) => {
     if (!todoTwentyFive || !ev.target?.closest?.("#focusStop")) return;
     const v = focusNow();
-    if (!v || v.kind !== "work" || v.todoId || v.cell || (todoEight && v.five)) return;
+    if (!v || v.kind !== "work" || v.todoId || v.cell || v.study || (todoEight && v.five)) return; // (勉強's: none)
     const mins = focusDone(v), end = Date.now();
-    if (mins >= 1 && !sheetEl.open && td25PickList().length) setTimeout(() => flash(`集中した ${mins} 分を記録しました`, () => td25PickAsk(mins, end), 10000, "ToDoにつける"), 0);
+    if (mins >= 1 && !sheetEl.open && td25PickList().length) setTimeout(() => flash(`集中した ${mins} 分を記録しました` + (todoTwentyThree ? td23AwaySay(v) : ""), () => td25PickAsk(mins, end), 10000, "ToDoにつける"), 0); // (その23 ⑩ with it)
   }, true);
 
   // its sheet: ⑦⑨; read as it is saved
@@ -56234,6 +56248,66 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   td25InitForms();
   td25InitSettings();
   todoTwentyFive = true;
+
+  // ---------- 集中モード (the user's call, 2026-11-20, sent through the coordinator; asked to lock the phone's other apps,
+  // which only an App Store app may do, and iPhone's アクセスガイド does). While 集中 counts down, the app left for three
+  // seconds and more (another app, or the screen put off) is counted: その23 ⑩'s count, from 離れたら記録する (this
+  // device's, on at first, in 編集's 集中しているあいだ by その21 ①'s 画面を消さない), with a line as it comes back
+  // (3分20秒 離れていました), the time to the second, the count in what is said as a set is stopped or found over (the
+  // focus timer's own), the time in ToDoの記録's times (その23 ④), pagehide, and the time counted on opening again after
+  // the app was closed while away. 集中 on ToDo's page starts it with no ToDo. Function declarations and var, as the
+  // page may draw before this runs ----------
+  var todoFocusMode = false;
+  function tdFmOn() { return lsJson(LS_PREFIX + "tdFmAway") !== false; }
+  // ○秒, ○分○秒, ○時間○分
+  function tdFmDur(ms) {
+    const sec = Math.max(1, Math.round(num(ms) / 1000));
+    if (sec < 60) return `${sec}秒`;
+    if (sec < 3600) return `${Math.floor(sec / 60)}分` + (sec % 60 ? `${sec % 60}秒` : "");
+    const m = Math.round(sec / 60);
+    return `${Math.floor(m / 60)}時間` + (m % 60 ? `${m % 60}分` : "");
+  }
+  // the line as it comes back, while the set goes on (one over while away is said by the timer as it is found over)
+  function tdFmSay(ms) {
+    const v = focusNow();
+    if (todoFocusMode && ms >= 3000 && v?.kind === "work" && num(v.end) > Date.now()) flash(`${tdFmDur(ms)} 離れていました`);
+  }
+  const tdFmBackBase = td23Back;
+  td23Back = function () { const ms = tdFmBackBase(); tdFmSay(ms); return ms; };
+  addEventListener("pagehide", () => td23Left()); // (where it goes without visibilitychange)
+
+  // 編集's 集中しているあいだ: 離れたら記録する under 画面を消さない
+  function tdFmInitSettings() {
+    const form = $("td21WakeOn")?.closest("form"), foot = form?.nextElementSibling;
+    if (!form || !foot) return;
+    form.append(el("label", { class: "flabel", for: "tdFmAwayOn" }, "離れたら記録する"),
+      el("div", { class: "ffield" }, switchEl({ id: "tdFmAwayOn", checked: tdFmOn(), onchange: (ev) => { lsJsonPut(LS_PREFIX + "tdFmAway", ev.target.checked ? null : false); if (!ev.target.checked) lsJsonPut(TD23_HIDE_KEY, null); } })));
+    foot.after(el("p", { class: "group-foot", id: "tdFmFoot" },
+      el("span", { class: "phrase" }, "集中のあいだに、ほかのアプリを開くなどして3秒より長く離れると、もどったときに離れていた時間を出して、回数と時間を記録します（この端末だけ）。"),
+      el("span", { class: "phrase" }, "画面を消しても、離れた1回に数えます。"),
+      el("span", { class: "phrase" }, "ほかのアプリを開けないようにするには、iPhoneのアクセスガイドを使います。")));
+  }
+  const tdFmRenderBase = renderTd21Settings;
+  renderTd21Settings = function () { tdFmRenderBase(); const a = $("tdFmAwayOn"); if (a && document.activeElement !== a) a.checked = tdFmOn(); };
+
+  // ToDo's page: 集中 starts the timer with no ToDo; put away while it counts down (its bar is there then)
+  $("todoFocusGo")?.addEventListener("click", () => focusStart());
+  const tdFmTickBase = focusTick;
+  focusTick = function () { const r = tdFmTickBase(); const b = $("todoFocusGo"); if (b) b.hidden = !!focusNow(); return r; };
+
+  const tdFmGuideBase = td9Guide;
+  td9Guide = function () {
+    const g = tdFmGuideBase();
+    if (!todoFocusMode) return g;
+    const add = (head, rows) => { const x = g.find(([h]) => h === head); if (x) x[1].push(...rows); else g.push([head, rows]); };
+    add("集中する", [["ToDoを選ばずに集中", "ToDoのページの「集中」。ToDoなしで集中タイマーを始めます"]]);
+    return g;
+  };
+
+  tdFmInitSettings();
+  todoFocusMode = true;
+  // (closed while away, opened again: that time counted before the timer draws, said once the page is up)
+  if (document.visibilityState === "visible") { const ms = tdFmBackBase(); if (ms) setTimeout(() => tdFmSay(ms), 1500); }
 
   // ---------- 天気 その1 ①〜⑩ (the user's calls, 2026-11-13): the tile opens 天気's own page (①) with the hours (②), the
   // day in detail (③), what to wear (④), when rain comes and the rain clouds (⑤), sunrise and sunset (⑥), UV (⑦), a word
