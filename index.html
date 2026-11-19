@@ -10984,9 +10984,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <p class="full td-note td-after-note" id="todoAfterNote" hidden><span id="todoAfterText"></span><button type="button" class="link-btn" id="todoAfterClear">はずす</button></p>
         <label class="flabel" for="todoDue">期限 <span class="opt">任意</span></label>
         <div class="ffield below"><input type="date" id="todoDue"><span class="quick-days" id="todoQuick" role="group" aria-label="期限をすぐ選ぶ"></span><button type="button" class="link-btn" id="todoDueClear" hidden>期限なしにする</button></div>
-        <!-- ① its time on the 期限 (the user's call, 2026-11-10) -->
+        <!-- ① its time on the 期限 (the user's call, 2026-11-10). Since 2026-11-19 out of sight (the user's call: 時刻, かかる時間,
+             数える, 勉強の科目, 金額, きょうやる and 場所 off the new ToDo's form, a ToDo's own sheet keeping them): kept, hidden, as
+             what fills them still does (a time written in the name, 授業・予定, a copy, 前に使った, きょうやるだけ) -->
+        <div class="td-gone" hidden>
         <label class="flabel" for="todoTime">時刻 <span class="opt">任意</span></label>
         <div class="ffield below"><input type="time" id="todoTime"><button type="button" class="link-btn" id="todoTimeClear" hidden>時刻なしにする</button></div>
+        </div>
         <!-- (その5 ②) the 期限 from a class of the timetable or a plan soon (the script draws it) -->
         <span class="flabel" id="todoByLabel">授業・予定 <span class="opt">任意</span></span>
         <div class="ffield below td5-by" id="todoByBox" role="group" aria-labelledby="todoByLabel"></div>
@@ -11016,6 +11020,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- ⑨ the day it starts: out of the list (under あとで) until then -->
         <label class="flabel" for="todoStart">開始日 <span class="opt">任意</span></label>
         <div class="ffield below"><input type="date" id="todoStart"><button type="button" class="link-btn" id="todoStartClear" hidden>開始日なしにする</button></div>
+        <!-- (out of sight since 2026-11-19, as 時刻 above: かかる時間 to 費目) -->
+        <div class="td-gone" hidden>
         <!-- ④ how long it takes -->
         <label class="flabel" for="todoMins">かかる時間 <span class="opt">任意</span></label>
         <div class="ffield"><select id="todoMins"></select></div>
@@ -11032,14 +11038,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <label class="flabel" for="todoCat">費目</label>
           <div class="ffield"><select id="todoCat"></select></div>
         </div>
+        </div>
         <label class="flabel" for="todoFlag">重要</label>
         <div class="ffield"><input type="checkbox" id="todoFlag" class="switch" role="switch"></div>
+        <!-- (out of sight since 2026-11-19, as 時刻 above: きょうやる and 場所) -->
+        <div class="td-gone" hidden>
         <!-- (その3 ① きょうやる) -->
         <label class="flabel" for="todoToday">きょうやる</label>
         <div class="ffield"><input type="checkbox" id="todoToday" class="switch" role="switch"></div>
         <!-- (その5 ④) where it is done: 📍 on its row opens the map -->
         <label class="flabel" for="todoPlace">場所 <span class="opt">任意</span></label>
         <div class="ffield"><input type="text" id="todoPlace" maxlength="60"></div>
+        </div>
         <span class="flabel" id="todoListLabel">リスト</span>
         <div class="ffield" id="todoListPick"></div>
         <span class="flabel" id="todoLabelLabel">ラベル</span>
@@ -12619,6 +12629,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // the label and the list picked in the new ToDo's form: kept for the next one added from it, as its 期限 is, and gone as
   // it is cleared. A fresh form starts in the list whose tab is showing (openNewTodo)
   let todoLabelChoice = "", todoListChoice = "", tdAfterChoice = ""; // (その3 ⑦ the one it comes after)
+  var tdNewToday = false; // (opened under きょうやるだけ: the new ones go in it, as its switch is off the form: see openNewTodo)
   function clearTodoForm() { $("todoForm").reset(); todoLabelChoice = ""; todoListChoice = ""; tdAfterChoice = ""; renderTodoLabels(); syncTodoDue(); syncTodoSave(); tdClearNew(); growField($("todoText")); growField($("todoMemo")); }
   $("todoAdd").addEventListener("click", (ev) => openNewTodo(ev.detail === 0));
   $("navAdd").addEventListener("click", (ev) => openNewTodo(ev.detail === 0, "todonav")); // the same, in the top bar
@@ -12660,6 +12671,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // given it again), or begun from a day with none, that day, and its label; its repeat, 重要 and memo are its own, so
     // they go
     clearTodoForm();
+    if (tdNewToday) $("todoToday").checked = true; // (the next one into きょうやる too)
     const next = due || (todoFromDay ? calDay : "");
     if (next) { $("todoDue").value = next; syncTodoDue(); }
     todoAdded = true; syncSheetHead();
@@ -19179,7 +19191,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function openNewTodoFromDay() {
     if (!$("todoText").value.trim()) clearTodoForm();
     $("todoDue").value = calDay; syncTodoDue();
-    todoNew = true; todoFromDay = true; todoAdded = false; renderTodoLabels(); syncSheetHead(); syncTodoSave(); tdSyncNew(); renderTodoParse(); renderTodoSetPick(); tdFillNewMore();
+    todoNew = true; todoFromDay = true; todoAdded = false; tdNewToday = false; renderTodoLabels(); syncSheetHead(); syncTodoSave(); tdSyncNew(); renderTodoParse(); renderTodoSetPick(); tdFillNewMore();
     sheetEl.scrollTop = 0;
     $("todoText").focus();
     growField($("todoText")); growField($("todoMemo"));
@@ -19217,7 +19229,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const fromDay = recFromDay;
     fillTodoCopy(t);
     recEdit = null; recFromDay = false; disarmRecDelete();
-    todoNew = true; todoFromDay = fromDay; todoAdded = false; syncSheetHead(); renderTodoParse(); renderTodoSetPick();
+    todoNew = true; todoFromDay = fromDay; todoAdded = false; tdNewToday = false; syncSheetHead(); renderTodoParse(); renderTodoSetPick();
     sheetEl.scrollTop = 0;
     growField($("todoText")); growField($("todoMemo"));
     $("todoText").focus();
@@ -19491,7 +19503,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (sheetEl.open) return;
     resetSheet();
     if (!$("todoText").value.trim()) todoListChoice = (opener === "todo" || opener === "todonav") && todoTab && todoLists.get(todoTab) ? todoTab : "";
-    if (todayTwo && opener === "todo" && tdFocusOn() && !$("todoText").value.trim()) $("todoToday").checked = true; // (きょうやるだけ: a new one into it)
+    // (きょうやるだけ: a new one into it. With its switch off the form since 2026-11-19, the form says so afresh as it opens
+    // with nothing typed, and again after each one added)
+    tdNewToday = !!(todayTwo && opener === "todo" && tdFocusOn());
+    if (!$("todoText").value.trim()) $("todoToday").checked = tdNewToday;
     todoNew = true; renderTodoLabels(); syncSheetHead(); syncTodoSave(); syncTodoDue(); tdSyncNew(); renderTodoParse(); renderTodoSetPick(); tdFillNewMore();
     if (todoFour) { td4SyncShopRows(); td4RenderSug(); td4SyncDoneRow(); } // (その4 ⑥⑦⑨)
     if (todoSix) td6SyncNewLast(); // (その6 ⑨)
@@ -25365,7 +25380,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月19日 23:05"; // 383a028a (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月19日 23:09"; // 96451110 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -50896,17 +50911,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ③ the fields the forms show (td11.off): one turned off is left out of the new ToDo's form, and of a ToDo's sheet while
   // it holds nothing; ほかの欄も出す shows them all for that time. Each one's rows by their ids, in the new ToDo's form (n)
   // and in a ToDo's sheet (s): "@id" the row id is in (its label and field, or the box of rows), "id" that one
-  const TD11_FIELDS = [["time", "時刻"], ["by", "授業・予定"], ["repeat", "繰り返し"], ["remind", "お知らせ"], ["start", "開始日"], ["after", "前のToDo"],
-    ["mins", "かかる時間"], ["prog", "進み具合"], ["subject", "勉強の科目"], ["amount", "金額"], ["wait", "返事待ち"], ["flag", "重要"], ["today", "きょうやる"],
-    ["place", "場所"], ["list", "リスト"], ["label", "ラベル"], ["steps", "サブタスク"], ["log", "経過メモ"]];
+  // (時刻, かかる時間, 勉強の科目, 金額, きょうやる and 場所 left the choice as they left the new ToDo's form, the user's call
+  // of 2026-11-19: a ToDo's sheet shows them as it shows a field with no switch)
+  const TD11_FIELDS = [["by", "授業・予定"], ["repeat", "繰り返し"], ["remind", "お知らせ"], ["start", "開始日"], ["after", "前のToDo"],
+    ["prog", "進み具合"], ["wait", "返事待ち"], ["flag", "重要"], ["list", "リスト"], ["label", "ラベル"], ["steps", "サブタスク"], ["log", "経過メモ"]];
   const TD11_ROWS = {
-    time: { n: ["@todoTime"], s: ["@reTime"] }, by: { n: ["todoByLabel", "todoByBox", "todoByList"], s: ["reByLabel", "reByBox", "reByList"] },
+    by: { n: ["todoByLabel", "todoByBox", "todoByList"], s: ["reByLabel", "reByBox", "reByList"] },
     repeat: { n: ["@todoRepeat", "todoUntilRow", "td11CountRow"], s: ["@reRepeat", "@reUntil", "reCount11Row"] },
     remind: { n: ["@todoRemind", "todoRemindNote", "todoNagRow", "todoPreRow"], s: ["@reRemind", "reRemindNote", "reNagRow", "rePreRow"] }, start: { n: ["@todoStart"], s: ["@reStart"] },
-    after: { n: [], s: ["@reAfter", "reAfterNote"] }, mins: { n: ["@todoMins", "todoLastFocus"], s: ["@reMins", "reLastFocus"] }, prog: { n: [], s: ["@reProg"] },
-    subject: { n: ["todoSubjectRow"], s: ["@reSubject"] }, amount: { n: ["@todoAmount", "todoCatRow"], s: ["@reAmount", "reCatRow"] }, wait: { n: [], s: ["@reWait", "reWaitRows"] },
-    flag: { n: ["@todoFlag"], s: ["@reFlag"] }, today: { n: ["@todoToday"], s: ["@reToday"] },
-    place: { n: ["@todoPlace"], s: ["@rePlace"] },
+    after: { n: [], s: ["@reAfter", "reAfterNote"] }, prog: { n: [], s: ["@reProg"] }, wait: { n: [], s: ["@reWait", "reWaitRows"] },
+    flag: { n: ["@todoFlag"], s: ["@reFlag"] },
     list: { n: ["todoListLabel", "todoListPick"], s: ["reListLabel", "reLists"] }, label: { n: ["todoLabelLabel", "todoLabels"], s: ["reLabelLabel", "reLabels"] },
     steps: { n: ["todoSteps"], s: ["reSteps"] }, log: { n: [], s: ["reLog"] },
   };
@@ -50926,17 +50940,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // what the new ToDo's form holds now, and what a ToDo holds
   function td11HasNew(k) {
     const v = (id) => String($(id)?.value || "").trim(), on = (id) => !!$(id)?.checked;
-    return k === "time" ? !!v("todoTime") : k === "repeat" ? !!v("todoRepeat") : k === "remind" ? on("todoRemind") : k === "start" ? !!v("todoStart")
-      : k === "mins" ? num(v("todoMins")) > 0 : k === "subject" ? !!v("todoSubject") : k === "amount" ? !!v("todoAmount") : k === "flag" ? on("todoFlag") : k === "today" ? on("todoToday")
-      : k === "place" ? !!v("todoPlace")
+    return k === "repeat" ? !!v("todoRepeat") : k === "remind" ? on("todoRemind") : k === "start" ? !!v("todoStart") : k === "flag" ? on("todoFlag")
       : k === "list" ? !!(todoListChoice && todoLists.get(todoListChoice)) : k === "label" ? !!(todoLabelChoice && todoLabels.get(todoLabelChoice))
       : k === "steps" ? !!$("todoSteps")?.querySelector("li") : false;
   }
   function td11HasSaved(k, t) {
-    return k === "time" ? isHm(t.time) : k === "repeat" ? !!t.repeat : k === "remind" ? !!t.remind || !!tdPreOf(t) || num(t.nag) > 0
-      : k === "start" ? isDay(t.start || "") : k === "after" ? !!t.after : k === "mins" ? num(t.mins) > 0 : k === "prog" ? num(t.pct) > 0 : k === "subject" ? !!t.subject
-      : k === "amount" ? num(t.amount) > 0 : k === "wait" ? tdWaiting(t) : k === "flag" ? !!t.flag : k === "today" ? isDay(t.today || "") && t.today >= todayKey
-      : k === "place" ? !!t.place : k === "list" ? !!todoListOf(t) : k === "label" ? !!todoLabelOf(t)
+    return k === "repeat" ? !!t.repeat : k === "remind" ? !!t.remind || !!tdPreOf(t) || num(t.nag) > 0
+      : k === "start" ? isDay(t.start || "") : k === "after" ? !!t.after : k === "prog" ? num(t.pct) > 0 : k === "wait" ? tdWaiting(t) : k === "flag" ? !!t.flag
+      : k === "list" ? !!todoListOf(t) : k === "label" ? !!todoLabelOf(t)
       : k === "steps" ? Array.isArray(t.steps) && t.steps.length > 0
       : k === "log" ? Array.isArray(t.log) && t.log.length > 0 : false;
   }
@@ -51340,7 +51351,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "オフにした欄は、新しいToDoの画面に出ません。"), el("span", { class: "phrase" }, "ToDoの画面では、何か入っているときだけ出ます。"), el("span", { class: "phrase" }, "どちらも「ほかの欄も出す」で出せます。")),
       el("h3", { class: "group-head" }, "期限のボタン"),
       el("ul", { class: "list card td11-switches", id: "td11QuickList" }, TD11_QUICK.map(([k, name]) => td11Switch("td11Quick_" + k, name, s.quick.includes(k), (on) => toggle("quick", k, on)))),
-      el("p", { class: "group-foot" }, "期限の「きょう・あした・来週」のとなりに出すボタンです。"),
+      el("p", { class: "group-foot" }, "期限の「きょう・あした」のとなりに出すボタンです。"),
       el("h3", { class: "group-head" }, "スワイプ"),
       el("ul", { class: "list card td11-switches" }, td11Switch("td11SwipeOn", "右にスワイプで完了", !s.swipeOff, (on) => td11Put({ swipeOff: !on }))),
       el("p", { class: "group-foot" }, "ToDoの行を右にスワイプして離すと、完了にします（元に戻せます）。"));
@@ -51420,8 +51431,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return td12Set().rules.find((r) => r.w.trim() && f.includes(foldText(r.w.trim()))) || null;
   }
   function td12OnAdd(x) {
-    const out = { ...x }, g = td12GoalOf($("td12Goal"));
-    if (g) out.goalN = g; // (④ from the new form)
+    const out = { ...x }; // (④ 数える came from the new form too, till 2026-11-19)
     const r = typeof x.text === "string" ? td12Rule(x.text) : null;
     if (!r) return out;
     const said = [];
@@ -51471,7 +51481,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ④ 数える: one done after so many times (goalN, 2〜999; cnt the times so far): on its row 3/8 回 and ＋1, the last
-  // one doing it (元に戻す takes both back). In the forms, under かかる時間
+  // one doing it (元に戻す takes both back). In a ToDo's sheet, under かかる時間 (in the new ToDo's form too, till 2026-11-19)
   const td12Goal = (t) => { const n = Math.round(num(t?.goalN)); return n >= 2 ? Math.min(999, n) : 0; };
   const td12Cnt = (t) => Math.max(0, Math.min(td12Goal(t), Math.round(num(t?.cnt))));
   function td12GoalOf(input) { const n = Math.round(num(input?.value)); return input && !input.closest(".td12-off") && n >= 2 ? Math.min(999, n) : 0; }
@@ -51719,11 +51729,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return g;
   };
 
-  // the forms: ④ 数える in the new ToDo's form; ④ and ⑧ in a ToDo's sheet, and ⑥ the sheet noted as opened
+  // the forms: ④ 数える and ⑧ in a ToDo's sheet (④ was in the new ToDo's form too, till the user's call of 2026-11-19), and
+  // ⑥ the sheet noted as opened
   function td12InitForms() {
-    const anchor = $("todoLastFocus") || $("todoMins")?.closest(".ffield");
-    anchor?.after(td12GoalRows("td12Goal", null, {}));
-    $("todoForm").addEventListener("reset", () => setTimeout(() => { if ($("td12Goal")) $("td12Goal").value = ""; }, 0));
     new MutationObserver(() => {
       const text = $("reText");
       if (!todoTwelve || recEdit?.kind !== "todo" || recEdit.fresh || !text || text.dataset.td12) return;
@@ -52963,12 +52971,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const td15RenderBase = renderTodos;
   renderTodos = function () { td15RenderBase(); if (todoFifteen) draw(td15MuteBar); };
 
-  // the forms: ② under 繰り返し, ③ under the time, ⑧ under かかる時間; read as the forms are saved
+  // the forms: ② under 繰り返し, ③ under the time, ⑧ under かかる時間 (③⑧ in a ToDo's sheet alone since 2026-11-19: the new
+  // ToDo's form shows no time nor かかる時間 now); read as the forms are saved
   function td15InitForms() {
     const holN = td15HolRow("td15Hol", false, $("todoRepeat"));
     ($("td11CountRow") || $("todoUntilRow"))?.after(holN);
-    $("todoTime")?.closest(".ffield")?.after(td15ClashNote("td15Clash", $("todoDue"), $("todoTime"), $("todoMins")));
-    ($("todoLastFocus") || $("todoMins")?.closest(".ffield"))?.after(td15HabitNote("td15Habit", $("todoMins")));
     // the new ToDo's form: 祝日はとばす on each added (as その12's rules are put on, while it is sent)
     let adding = false;
     document.addEventListener("submit", (ev) => { if (ev.target?.id === "todoForm") { adding = true; setTimeout(() => { adding = false; }, 0); } }, true);
@@ -55906,7 +55913,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function td23InitForms() {
     const sel = td23MoveSelect("td23Move", "");
     const row = el("div", { class: "form-rows", id: "td23MoveRow", hidden: true }, el("label", { class: "flabel", for: "td23Move" }, "運動に記録 ", el("span", { class: "opt" }, "任意")), el("div", { class: "ffield" }, sel));
-    $("todoCatRow")?.after(row);
+    ($("todoCatRow")?.closest(".td-gone") || $("todoCatRow"))?.after(row); // (where 費目 was: 金額 and 費目 are out of sight since 2026-11-19)
     const syncMove = () => { row.hidden = !(todoTwentyThree && (td23MoveGuess($("todoText").value) || sel.value)); };
     $("todoText").addEventListener("input", () => { syncMove(); td23AtSync(); });
     $("todoForm").addEventListener("reset", () => setTimeout(() => { sel.value = ""; syncMove(); td23AtSync(); }, 0));
@@ -56254,8 +56261,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     box.hidden = false;
   }
 
-  // ⑩ よく使う時刻 (the new ToDo's form): the times given to ToDos three times and more in the last four months, the three
-  // most used, under 時刻 a press away (お知らせ with it, as a time typed does)
+  // ⑩ よく使う時刻 (the new ToDo's form; gone with its 時刻 since 2026-11-19, the box no longer made): the times given to
+  // ToDos three times and more in the last four months, the three most used, under 時刻 a press away (お知らせ with it,
+  // as a time typed does)
   function td24Times() {
     const cut = Date.now() - 120 * 864e5, by = new Map();
     for (const t of todos.items) if (isHm(t.time || "") && num(t.createdAt) >= cut) by.set(t.time, (by.get(t.time) || 0) + 1);
@@ -56270,11 +56278,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const f = $("todoTime"); f.value = hm; f.dispatchEvent(new Event("input", { bubbles: true })); f.dispatchEvent(new Event("change", { bubbles: true })); } }, hm))] : []);
   }
 
-  // the forms: ①'s note, ⑩'s times
+  // the forms: ①'s note (⑩'s times went with 時刻, off the new ToDo's form since 2026-11-19: no box for them, so they do nothing)
   function td24InitForms() {
     $("td23AtNote")?.after(el("p", { class: "full td-note td24-mins-note", id: "td24MinsNote", role: "status", hidden: true }));
     $("todoText").addEventListener("input", td24NoteSync);
-    $("todoTime")?.closest(".ffield")?.after(el("div", { class: "full td24-times", id: "td24Times", hidden: true }));
     $("todoForm").addEventListener("reset", () => setTimeout(() => { td24NoteSync(); td24TimesSync(); }, 0));
     $("todoAdd")?.addEventListener("click", () => setTimeout(td24TimesSync, 0), true);
     let adding = false;
@@ -56342,7 +56349,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const g = td24GuideBase();
     if (!todoTwentyFour) return g;
     const add = (head, rows) => { const x = g.find(([h]) => h === head); if (x) x[1].push(...rows); else g.push([head, rows]); };
-    add("追加する", [["かかる時間を名前から", "新しいToDoの名前の最後に「30分」「1時間半」"], ["よく使う時刻", "新しいToDoの時刻の下"]]);
+    add("追加する", [["かかる時間を名前から", "新しいToDoの名前の最後に「30分」「1時間半」"]]); // (よく使う時刻 went with the new ToDo's 時刻, 2026-11-19)
     add("期限とお知らせ", [["連続を守るお知らせ", "「編集」の1日の目標。続けて達成している日に"]]);
     add("きょうの計画", [["きのうのつづき", "きのう集中したToDoを、朝に一覧の上で"]]);
     add("集中する", [["サブタスクで集中", "長押し、または1件に集中する画面のサブタスクの ▶"]]);
