@@ -34,7 +34,7 @@ const menuOf = (p, k) => p.evaluate((k) => document.querySelector(`.m-cell[data-
   await undo(p);
   ok(!(await goal(p, "g2")).pausedAt, "④ 元に戻す");
 
-  // ① できること, ③ 曜日のマスのお知らせ, ⑤ 上限 in 目標's 設定
+  // ① できること, ⑤ 上限 in 目標's 設定 (③ 曜日のマスのお知らせ was taken out, the user's call, 2026-11-20)
   await p.click("#goalSettings"); await p.waitForTimeout(600);
   await p.click("#goalHelpOpen"); await p.waitForTimeout(300);
   const n = Number((await txt(p, "#goalHelp .help-head strong")).match(/（(\d+)）/)?.[1]);
@@ -44,11 +44,7 @@ const menuOf = (p, k) => p.evaluate((k) => document.querySelector(`.m-cell[data-
   ok(found.startsWith("マスの長押し メモ・経過メモ") && !found.includes("目標のページ"), "① looked for", found);
   await p.click("#goalHelpClose"); await p.waitForTimeout(200);
   ok(!!(await p.$("#goalHelpOpen")), "① closed");
-  await p.click("#goalWdOn"); await p.waitForTimeout(400);
-  ok((await setting(p, "goalWdAlarm"))?.on === true, "③ on");
-  const al = (await W(p, "alarms", await p.evaluate(() => Date.now()))).filter((a) => a.tag.startsWith("goal-wd:"));
-  ok(al[0]?.tag === "goal-wd:2026-11-16" && al[0].title === "きょう（月曜日）のマス 1つ" && al[0].body === "単語帳2周" && new Date(al[0].at).toISOString() === "2026-11-15T22:30:00.000Z"
-    && al.find((a) => a.tag === "goal-wd:2026-11-18")?.body === "単語帳2周・シャドーイング" && !al.some((a) => a.tag === "goal-wd:2026-11-17"), "③ each morning, that day's cells", al.slice(0, 3));
+  ok(!(await p.$("#goalWdOn")) && !(await W(p, "alarms", await p.evaluate(() => Date.now()))).some((a) => a.tag.startsWith("goal-wd:")), "③ (taken out) no switch, no morning notification");
   await p.selectOption("#goalWipMax", "3"); await p.waitForTimeout(400);
   ok((await setting(p, "goalWip"))?.max === 3, "⑤ a limit of three");
   await done(p);

@@ -50,11 +50,9 @@ const tags = async (p) => W(p, "alarms", await p.evaluate(() => Date.now()));
   await p.selectOption("#goalListView", ""); await p.waitForTimeout(400);
   ok(!(await p.$(".g16-mini")), "② back to ブロック");
 
-  // ④ ノルマのお知らせ
+  // ④ ノルマのお知らせ: taken out (the user's call, 2026-11-20)
   await p.click("#goalSettings"); await p.waitForTimeout(600);
-  await p.click("#goalQaOn"); await p.waitForTimeout(400);
-  let al = (await tags(p)).filter((a) => a.tag.startsWith("goal-quota:"));
-  ok((await setting(p, "goalQuotaAlarm"))?.on === true && al[0]?.tag === "goal-quota:2026-11-21" && al[0].body === "TOEIC 800点 あと3マス" && new Date(al[0].at).toISOString() === "2026-11-21T10:00:00.000Z" && al[1]?.body === "TOEIC 800点 3マス", "④ the week's last day, what is left", al.slice(0, 2));
+  ok(!(await p.$("#goalQaOn")) && !(await tags(p)).some((a) => a.tag.startsWith("goal-quota:")), "④ (taken out) no switch, no notification");
   await done(p);
 
   await open(p, "TOEIC 800点");

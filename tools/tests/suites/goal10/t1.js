@@ -25,10 +25,8 @@ const nows = (p) => p.evaluate(() => Date.now());
   const mo = await W(p, "monthSum", "2026-11");
   let t = await txt(p, "#goalMonths");
   ok(t.startsWith("月ごとの進み") && t.includes(`今月 ${mo}マス`) && (await p.$$eval("#goalMonths .mv-bar", (x) => x.length)) === 12, "③ 12 months, this one's", t);
-  // ⑧ 中間目標の前日: 部屋を片づける's 11/20 60% (33% now), the day before at 9:00
-  let al = (await W(p, "alarms", await nows(p))).find((a) => a.tag === "goal-ms:g3:ms2");
-  ok(al && new Date(al.at).toISOString() === "2026-11-19T00:00:00.000Z" && al.body === "あした 11/20 までに 60% の中間目標です（いま 33%、あと 27%）。" && al.url === "./#goal:g3", "⑧ the day before, 9:00", al);
-  ok(!(await W(p, "alarms", await nows(p))).some((a) => a.tag === "goal-ms:g3:ms1"), "⑧ none for one already past");
+  // ⑧ 中間目標の前日のお知らせ: taken out (the user's call, 2026-11-20)
+  ok(!(await W(p, "alarms", await nows(p))).some((a) => a.tag.startsWith("goal-ms:")), "⑧ (taken out) no notification the day before a 中間目標");
   // ② やりたいこと: one added, then made a goal
   await p.fill("#goalWish input", "フルマラソンを走る"); await p.press("#goalWish input", "Enter"); await p.waitForTimeout(500);
   ok((await ls(p, "settings")).find((x) => x.id === "goalWish")?.items?.[0]?.t === "フルマラソンを走る", "② kept");
@@ -42,9 +40,8 @@ const nows = (p) => p.evaluate(() => Date.now());
   await p.click("#goalSettings"); await p.waitForTimeout(600);
   await p.click('#goalFont button[data-font="l"]'); await p.waitForTimeout(300);
   ok(await p.evaluate(() => localStorage.getItem("tsumikasane:goalFont") === "l" && document.querySelector('#goalFont [data-font="l"]').getAttribute("aria-pressed") === "true"), "④ 大きく, on this device");
-  // ⑧ off
-  await p.click("#goalMsOn"); await p.waitForTimeout(400);
-  ok((await ls(p, "settings")).find((x) => x.id === "goalMsRemind")?.on === false && !(await W(p, "alarms", await nows(p))).some((a) => a.tag.startsWith("goal-ms:")), "⑧ turned off");
+  // ⑧'s switch: taken out
+  ok(!(await p.$("#goalMsOn")), "⑧ (taken out) not in 設定");
   await done(p);
 
   // TOEIC

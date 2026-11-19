@@ -66,30 +66,19 @@ const bulk = (p) => p.$$eval("#mDoBulk .g17-batch li", (xs) => xs.map((x) => (x.
   await p.click("#goalSimpleBtn"); await p.waitForTimeout(400);
   ok(JSON.stringify(await simple()) === '[true,true,true,true,true,"シンプル表示"]' && (await p.getAttribute("#goalSimpleBtn", "aria-pressed")) === "false", "② back as it was", await simple());
 
-  // ⑦ 休む曜日: 火 and 木; 部屋を片づける's run goes over them
-  ok((await blockText(p, "部屋を片づける")).includes("2日連続・きょうまだ"), "⑦ before: 2 days (11/13, 11/14)");
+  // ⑦ 休む曜日: taken out (the user's call, 2026-11-20). The run is counted day after day again, 連続を守るお知らせ comes on
+  // every evening, and the check table has no 休
+  ok((await blockText(p, "部屋を片づける")).includes("2日連続・きょうまだ"), "⑦ (taken out) 2 days (11/13, 11/14)");
   await p.click("#goalSettings"); await p.waitForTimeout(600);
-  ok((await txt(p, "#goalRestDays")) === "日 月 火 水 木 金 土" && !(await p.$$('#goalRestDays [aria-pressed="true"]')).length, "⑦ none at first");
-  await p.click('#goalRestDays [data-rest="2"]'); await p.waitForTimeout(300);
-  await p.click('#goalRestDays [data-rest="4"]'); await p.waitForTimeout(300);
-  ok(JSON.stringify(await W(p, "rest")) === "[2,4]" && JSON.stringify(await p.$$eval('#goalRestDays [aria-pressed="true"]', (xs) => xs.map((x) => x.textContent))) === '["火","木"]', "⑦ 火・木", await W(p, "rest"));
+  ok(!(await p.$("#goalRestDays")), "⑦ (taken out) not in 設定");
   let st = await W(p, "streak", "g3");
-  ok(st.cur === 4 && st.best === 4 && !st.today, "⑦ 11/9 to 11/14 over 火・木: 4 days", st);
-  // 連続を守るお知らせ, on: none on a rest day
+  ok(st.cur === 2 && !st.today, "⑦ (taken out) the run: 11/13 and 11/14, not over 火・木", st);
   await p.click("#goalGuardOn"); await p.waitForTimeout(400);
   let al = await guard(p);
-  ok(al.length === 2 && al[0].tag === "goal-guard:2026-11-15", "⑦ a day not rest: as before", al.map((a) => a.tag));
-  await p.click('#goalRestDays [data-rest="0"]'); await p.waitForTimeout(400);
-  al = await guard(p);
-  ok(al.length === 1 && al[0].tag === "goal-guard:2026-11-16", "⑦ 日 a rest day too: none this evening", al.map((a) => a.tag));
-  for (const d of [1, 3, 5]) { await p.click(`#goalRestDays [data-rest="${d}"]`); await p.waitForTimeout(250); }
-  await p.click('#goalRestDays [data-rest="6"]'); await p.waitForTimeout(300);
-  ok((await W(p, "rest")).length === 6 && (await status(p)).includes("休む曜日は6つまでです"), "⑦ 6 at most", await W(p, "rest"));
-  for (const d of [1, 3, 5]) { await p.click(`#goalRestDays [data-rest="${d}"]`); await p.waitForTimeout(250); }
+  ok(al.length === 2 && al[0].tag === "goal-guard:2026-11-15" && al[1].tag === "goal-guard:2026-11-16", "⑦ (taken out) 連続を守るお知らせ: this evening and the next", al.map((a) => a.tag));
   await done(p);
-  ok((await blockText(p, "部屋を片づける")).includes("4日連続・きょうは休み") && JSON.stringify(await W(p, "rest")) === "[0,2,4]", "⑦ today a rest day: 休み, not まだ", await blockText(p, "部屋を片づける"));
   hb = await habit(p);
-  ok(hb[1] === "シャドーイング - 休 ○ 休 - - 休 - 休 ○ 休 - - 休 0", "⑦ ③ 休 on them", hb);
+  ok(hb[1] === "シャドーイング - - ○ - - - - - - ○ - - - - 0", "⑦ (taken out) ③ no 休", hb);
 
   // ⑧ pressed: the cell, in its chart
   await p.locator("#goalQuad .g20-q-cell", { hasText: "本棚" }).click(); await p.waitForTimeout(900);
@@ -110,19 +99,19 @@ const bulk = (p) => p.$$eval("#mDoBulk .g17-batch li", (xs) => xs.map((x) => (x.
   await undo(p);
   g1 = await goal(p, "g1");
   ok(g1.mandala[2].c[1].est === 120 && g1.mandala[3].c[1].est === 20 && !g1.estFixAt && (await shown(p, "mEstFix")), "⑤ 元に戻す");
-  // ① やる日をまとめて決める: 1日に2マス, 火・木 (and 日) left out
+  // ① やる日をまとめて決める: one a day, then two; a day other cells are to be done on counted (模試2回目 today, 本棚 11/17)
   await p.click("#mDoBulkStart"); await p.waitForTimeout(400);
   let bl = await bulk(p);
-  ok(JSON.stringify(bl) === JSON.stringify(["✓毎日15分 あしたやる", "✓単語帳2周 11/18（水）にやる", "✓毎日30語 11/20（金）にやる", "✓模試3回目 11/21（土）にやる", "✓長文 11/23（月）にやる"]) && (await txt(p, "#mDoBulk .six-tags")).includes("（日・火・木曜日は休み）"), "① one a day, the rest days left out", bl);
+  ok(JSON.stringify(bl) === JSON.stringify(["✓毎日15分 あしたやる", "✓単語帳2周 11/18（水）にやる", "✓毎日30語 11/19（木）にやる", "✓模試3回目 11/20（金）にやる", "✓長文 11/21（土）にやる"]) && !(await txt(p, "#mDoBulk .six-tags")).includes("休み"), "① one a day (no rest days since 2026-11-20)", bl);
   await p.click('#mDoBulk [data-per="2"]'); await p.waitForTimeout(300);
   bl = await bulk(p);
-  ok(JSON.stringify(bl) === JSON.stringify(["✓毎日15分 あしたやる", "✓単語帳2周 あしたやる", "✓毎日30語 11/18（水）にやる", "✓模試3回目 11/18（水）にやる", "✓長文 11/20（金）にやる"]), "① two a day", bl);
+  ok(JSON.stringify(bl) === JSON.stringify(["✓毎日15分 きょうやる", "✓単語帳2周 あしたやる", "✓毎日30語 あしたやる", "✓模試3回目 11/17（火）にやる", "✓長文 11/18（水）にやる"]), "① two a day", bl);
   await p.locator("#mDoBulk li", { hasText: "長文" }).locator("input").click(); await p.waitForTimeout(300);
   ok((await txt(p, "#mDoBulkGo")) === "この日で決める（4マス）" && (await p.evaluate(() => document.activeElement?.dataset?.key)) === "4", "① 長文 left out (still in focus)", await txt(p, "#mDoBulkGo"));
   await p.click("#mDoBulkGo"); await p.waitForTimeout(600);
   g1 = await goal(p, "g1");
-  ok(g1.mandala[3].c[0].doOn === "2026-11-16" && g1.mandala[0].c[1].doOn === "2026-11-16" && g1.mandala[0].c[2].doOn === "2026-11-18" && g1.mandala[2].c[2].doOn === "2026-11-18" && !g1.mandala[4].doOn
-    && (await status(p)).includes("4マスのやる日を決めました（11/16〜11/18）") && !(await shown(p, "mDoBulk")), "① put", await status(p));
+  ok(g1.mandala[3].c[0].doOn === "2026-11-15" && g1.mandala[0].c[1].doOn === "2026-11-16" && g1.mandala[0].c[2].doOn === "2026-11-16" && g1.mandala[2].c[2].doOn === "2026-11-17" && !g1.mandala[4].doOn
+    && (await status(p)).includes("4マスのやる日を決めました（11/15〜11/17）") && !(await shown(p, "mDoBulk")), "① put", await status(p));
   await undo(p);
   g1 = await goal(p, "g1");
   ok(!g1.mandala[3].c[0].doOn && !g1.mandala[0].c[1].doOn && g1.mandala[0].c[2].doOn === "2026-11-14", "① 元に戻す (毎日30語 as it was)");

@@ -19,7 +19,6 @@ const sheetOpen = (p) => p.evaluate(() => document.getElementById("daySheet").op
 const undo = async (p) => { await p.locator((await sheetOpen(p)) ? "#sheetStatus button" : "#status button").first().click(); await p.waitForTimeout(600); };
 const menuOf = (p, k) => p.evaluate((k) => document.querySelector(`.m-cell[data-k="${k}"]`).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true })), k);
 const names = (p, sel) => p.$$eval(sel, (xs) => xs.map((x) => x.textContent));
-const after = (p, name) => p.locator("#goalAfter li", { has: p.locator(".g16-all-name", { hasText: `「${name}」` }) });
 const swipe = (p, dx) => p.evaluate((dx) => { // a finger across the chart
   const g = document.getElementById("mGrid"), r = g.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
   const t = (cx) => new Touch({ identifier: 1, target: g, clientX: cx, clientY: y });
@@ -33,29 +32,18 @@ const J = (d, hm) => Date.parse(`${d}T${hm}:00+09:00`);
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
   await seed(p, { goals: all(), settings, todos, events, journal }, "goal"); await p.waitForTimeout(1000);
 
-  // ① 予定のあとで: the three plans whose times are over, the oldest first
-  ok(JSON.stringify(await names(p, "#goalAfter .g16-all-name")) === '["「クローゼット」はできましたか？","「単語帳2周」はできましたか？","「長文」はできましたか？"]'
-    && (await txt(p, "#goalAfter li:nth-child(2) .sub")) === "きのう 19:00〜20:00の予定・TOEIC 800点・いま 120/300ページ", "① the plans over, asked after", await txt(p, "#goalAfter"));
-  // ② できなかった: why
-  await after(p, "クローゼット").locator(".g17-miss-btn").click(); await p.waitForTimeout(300);
-  await after(p, "クローゼット").locator('[data-why="time"]').click(); await p.waitForTimeout(500);
-  let g3 = await goal(p, "g3");
-  ok(g3.after?.length === 1 && g3.after[0].e === "e9" && g3.after[0].d === "2026-11-13" && g3.after[0].a === 0 && g3.after[0].why === "time" && (await status(p)).includes("「クローゼット」は「時間がなかった」と残しました"), "② できなかった, and why, kept", g3.after);
-  // a counted one, by how much on its day
-  await after(p, "単語帳2周").locator(".g17-did").click(); await p.waitForTimeout(300);
-  ok((await p.inputValue("#goalAfter .g17-amt input")) === "34" && (await p.evaluate(() => document.activeElement?.matches("#goalAfter .g17-amt input"))), "① 単語帳2周: how much (its usual offered)");
-  await p.fill("#goalAfter .g17-amt input", "30"); await p.click("#goalAfter .g17-amt button[type=submit]"); await p.waitForTimeout(600);
-  let g1 = await goal(p, "g1"), c01 = g1.mandala[0].c[1];
-  ok(c01.v === 150 && c01.log["2026-11-14"] === 30 && !c01.d && g1.after?.[0]?.e === "e7" && g1.after[0].a === 1 && (await status(p)).includes("「単語帳2周」きのうの分 +30ページ（150/300ページ）"), "① counted on its day", [c01.v, c01.log, g1.after, await status(p)]);
-  // one done, 元に戻す, done again
-  await after(p, "長文").locator(".g17-did").click(); await p.waitForTimeout(600);
-  g1 = await goal(p, "g1");
-  ok(g1.mandala[4].d === true && g1.mandala[4].at === J("2026-11-15", "10:00") && g1.after.length === 2 && (await status(p)).includes("「長文」を達成にしました"), "① 長文 checked, at its plan's end", [g1.mandala[4], await status(p)]);
-  await undo(p);
-  g1 = await goal(p, "g1");
-  ok(!g1.mandala[4].d && g1.after.length === 1 && (await names(p, "#goalAfter .g16-all-name")).includes("「長文」はできましたか？"), "① 元に戻す: asked again", [g1.mandala[4], g1.after]);
-  await after(p, "長文").locator(".g17-did").click(); await p.waitForTimeout(600);
-  ok(!(await shown(p, "goalAfter")), "① every one answered: gone");
+  // ① 予定のあとで and ② できなかった理由: taken out (the user's call, 2026-11-20). What ① put in the cells, put in as it left
+  // them for what comes after: 単語帳2周 +30ページ on 11/14 (its plan's day), 長文 checked at its plan's end
+  ok(!(await p.$("#goalAfter")), "① (taken out) no 予定のあとで card");
+  await p.evaluate(({ P, vt, at }) => {
+    const gs = JSON.parse(localStorage.getItem(P + "goals")), g = gs.find((x) => x.id === "g1"), c = g.mandala[0].c[1];
+    c.v = 150; c.log = { ...(c.log || {}), "2026-11-14": 30 }; c.vt = vt;
+    g.mandala[4].d = true; g.mandala[4].at = at;
+    localStorage.setItem(P + "goals", JSON.stringify(gs));
+  }, { P, vt: J("2026-11-14", "20:00"), at: J("2026-11-15", "10:00") });
+  await p.reload(); await p.waitForTimeout(1000);
+  let g1 = await goal(p, "g1"), g3 = await goal(p, "g3");
+  ok(g1.mandala[0].c[1].v === 150 && g1.mandala[4].d === true, "(the cells as ① left them)", [g1.mandala[0].c[1].v, g1.mandala[4].d]);
 
   // ⑦ きょう進めたマス, into 日記
   ok((await txt(p, "#goalTodayDone")) === "きょう進めたマス 1 マス 長文 達成・TOEIC 800点 きょうの日記に書き足す", "⑦ the cells moved on today", await txt(p, "#goalTodayDone"));
@@ -72,8 +60,7 @@ const J = (d, hm) => Date.parse(`${d}T${hm}:00+09:00`);
   ok(JSON.stringify(await names(p, "#goalGap .g16-all-name")) === '["クローゼット"]', "④ 5分: a 小さな一歩 only");
   await p.locator("#goalGap .g16-all-row").first().click(); await p.waitForTimeout(900);
   ok((await W(p, "open")) === "g3" && (await sheetOpen(p)), "④ pressed: its cell");
-  // ② under the goal: the reasons
-  ok((await shown(p, "mMiss")) && (await txt(p, "#mMiss")) === "予定のあと（この30日）：できた 0回・できなかった 1回 時間がなかった 1回 いちばん多いのは「時間がなかった」。見積もり時間を短くするか、「空き時間に入れる」で先に時間を取っておきましょう。", "② the reasons, and a hint", await txt(p, "#mMiss"));
+  ok(!(await p.$("#mMiss")), "② (taken out with ①) no できなかった理由 under the goal");
   await done(p);
 
   // ⑨ 期限が重なっている日
@@ -140,12 +127,9 @@ const J = (d, hm) => Date.parse(`${d}T${hm}:00+09:00`);
   ok((await txt(p, "#goalNow .g17-step")) === "まずは：イヤホンをつける", "③ under it in いまやる", await txt(p, "#goalNow"));
   ok((await p.getAttribute('#goalGap [data-mins="5"]', "aria-pressed")) === "true" && JSON.stringify(await names(p, "#goalGap .g16-all-name")) === '["毎日15分","クローゼット"]', "③ ④ and so in 5 minutes too", await txt(p, "#goalGap"));
 
-  // ① asked by a notification too, with the setting on
+  // ①'s notification and its switch: taken out (the user's call, 2026-11-20)
   await p.click("#goalSettings"); await p.waitForTimeout(600);
-  await p.click("#goalAfterOn"); await p.waitForTimeout(400);
-  const al = (await W(p, "alarms", await p.evaluate(() => Date.now()))).filter((a) => a.tag.startsWith("goal-after:"));
-  ok((await setting(p, "goalAfterAsk"))?.on === true && al[0]?.tag === "goal-after:e9@2026-11-20" && new Date(al[0].at).toISOString() === "2026-11-20T10:05:00.000Z" && al[0].body === "「クローゼット」はできましたか？（部屋を片づける）"
-    && al[1]?.tag === "goal-after:e1@2026-11-20" && al[1].body === "「シャドーイング」はできましたか？（TOEIC 800点）", "① a notification 5 minutes after", al.slice(0, 2));
+  ok(!(await p.$("#goalAfterOn")) && !(await W(p, "alarms", await p.evaluate(() => Date.now()))).some((a) => a.tag.startsWith("goal-after:")), "① (taken out) no switch, no notification");
   await done(p);
 
   ok(!p.errs.length, "no errors", p.errs);

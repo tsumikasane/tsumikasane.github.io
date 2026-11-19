@@ -19,7 +19,7 @@ const sheetOpen = (p) => p.evaluate(() => document.getElementById("daySheet").op
 const undo = async (p) => { await p.locator((await sheetOpen(p)) ? "#sheetStatus button" : "#status button").first().click(); await p.waitForTimeout(600); };
 const menuOf = (p, k) => p.evaluate((k) => document.querySelector(`.m-cell[data-k="${k}"]`).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true })), k);
 const tops = (p) => p.$$eval(".m-cell[data-k] .m-top", (xs) => xs.map((x) => x.innerText.replace(/\s+/g, " ").trim()));
-const order = (p) => p.evaluate(() => [...document.getElementById("goalFindBox").parentElement.children].map((x) => x.id).filter((id) => ["goalDayPace", "goalAfter", "goalNow", "goalNext", "goalDue"].includes(id)));
+const order = (p) => p.evaluate(() => [...document.getElementById("goalFindBox").parentElement.children].map((x) => x.id).filter((id) => ["goalDayPace", "goalNow", "goalNext", "goalDue"].includes(id)));
 const guard = async (p) => (await W(p, "alarms", await p.evaluate(() => Date.now()))).filter((a) => a.tag.startsWith("goal-guard:"));
 (async () => {
   const b = await chromium.launch();
@@ -50,13 +50,13 @@ const guard = async (p) => (await W(p, "alarms", await p.evaluate(() => Date.now
   let al = await guard(p);
   ok((await setting(p, "goalGuard"))?.on === true && al[0]?.tag === "goal-guard:2026-11-15" && new Date(al[0].at).toISOString() === "2026-11-15T11:00:00.000Z" && al[0].body === "「部屋を片づける」は 2日つづけて進めています。きょうも1マス進めると 3日です"
     && al[1]?.tag === "goal-guard:2026-11-16" && al[1].body === "つづけて進めている目標は、きょうも進められましたか？", "④ that evening, and the next", al);
-  // ② カードの並び順: 次の一歩 to the top, and back
-  ok(JSON.stringify(await order(p)) === '["goalDayPace","goalAfter","goalNow","goalNext","goalDue"]', "② as they were", await order(p));
-  for (let i = 0; i < 4; i++) { await p.locator('#goalOrderList [data-mv="goalNext:-1"]').click(); await p.waitForTimeout(150); }
-  ok(JSON.stringify(await order(p)) === '["goalNext","goalDayPace","goalAfter","goalNow","goalDue"]' && (await ls(p, "goalOrder"))[0] === "goalNext" && (await p.locator("#goalOrderList li").first().textContent()).startsWith("次の一歩")
+  // ② カードの並び順: 次の一歩 to the top, and back (予定のあとで was taken out, the user's call, 2026-11-20)
+  ok(JSON.stringify(await order(p)) === '["goalDayPace","goalNow","goalNext","goalDue"]', "② as they were", await order(p));
+  for (let i = 0; i < 3; i++) { await p.locator('#goalOrderList [data-mv="goalNext:-1"]').click(); await p.waitForTimeout(150); }
+  ok(JSON.stringify(await order(p)) === '["goalNext","goalDayPace","goalNow","goalDue"]' && (await ls(p, "goalOrder"))[0] === "goalNext" && (await p.locator("#goalOrderList li").first().textContent()).startsWith("次の一歩")
     && (await p.evaluate(() => document.activeElement?.dataset?.mv)) === "goalNext:1", "② 次の一歩 moved up to the top", await order(p));
   await p.click("#goalOrderReset"); await p.waitForTimeout(300);
-  ok(JSON.stringify(await order(p)) === '["goalDayPace","goalAfter","goalNow","goalNext","goalDue"]', "② はじめの順にもどす");
+  ok(JSON.stringify(await order(p)) === '["goalDayPace","goalNow","goalNext","goalDue"]', "② はじめの順にもどす");
   await done(p);
 
   // ③ 集中モード: TOEIC put first

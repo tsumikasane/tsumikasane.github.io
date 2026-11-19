@@ -49,19 +49,12 @@ const tags = async (p) => (await W(p, "alarms", await p.evaluate(() => Date.now(
   g8 = await goal(p, "g8"); g3 = await goal(p, "g3");
   ok(g8.deadline === "2026-11-12" && g3.deadline === "2026-12-31" && !g8.dlog && !g3.dlog, "① 元に戻す", [g8.deadline, g3.deadline, g8.dlog]);
 
-  // ⑤ お知らせを休む, ⑨ 時間を聞く on
-  ok((await tags(p)).includes("goal-review:2026-11-15"), "⑤ before: tomorrow's 見直し");
+  // ⑤ お知らせを休む and ⑨ 時間を聞く: taken out (the user's call, 2026-11-20)
+  ok((await tags(p)).includes("goal-review:2026-11-15"), "⑤ tomorrow's 見直し");
   await p.click("#goalSettings"); await p.waitForTimeout(600);
-  await p.locator("#goalQuiet .chip-btn", { hasText: "1週間" }).click(); await p.waitForTimeout(500);
-  let t = await tags(p);
-  ok((await setting(p, "goalQuiet"))?.until === "2026-11-20" && !t.includes("goal-review:2026-11-15") && t.includes("goal-review:2026-11-22") && !t.some((x) => /^goal[:-]/.test(x) && x.includes("2026-11-1")), "⑤ none to 11/20, those after it kept", t.filter((x) => x.startsWith("goal")));
-  ok((await txt(p, "#goalQuietFoot")).startsWith("2026年11月20日") || (await txt(p, "#goalQuietFoot")).includes("11月20日"), "⑤ said under it", await txt(p, "#goalQuietFoot"));
-  await p.click("#goalAskTime"); await p.waitForTimeout(300);
-  ok((await p.evaluate(() => localStorage.getItem("tsumikasane:goalAskTime"))) === "on", "⑨ on, this device's");
+  ok(!(await p.$("#goalQuiet")) && !(await p.$("#goalAskTime")), "⑤ ⑨ (taken out) not in 設定");
   await done(p);
-  ok((await txt(p, "#goalQuietLine")) === "🔕 目標のお知らせを 11/20 まで休んでいます やめる", "⑤ said over the page", await txt(p, "#goalQuietLine"));
-  await p.locator("#goalQuietLine .link-btn").click(); await p.waitForTimeout(500);
-  ok(!(await shown(p, "goalQuietLine")) && (await tags(p)).includes("goal-review:2026-11-15"), "⑤ やめる");
+  ok(!(await p.$("#goalQuietLine")), "⑤ (taken out) nothing said over the page");
   // ③ a new goal's 期限 from the usual spans
   await p.click("#goalAdd"); await p.waitForTimeout(700);
   await p.locator("#goalDeadlinePicks .chip-btn", { hasText: "年度末" }).click(); await p.waitForTimeout(200);
@@ -90,12 +83,9 @@ const tags = async (p) => (await W(p, "alarms", await p.evaluate(() => Date.now(
   g8 = await goal(p, "g8");
   const lt = await txt(p, "#mLetter");
   ok(g8.letter?.text === "ここまで来たね。おめでとう！" && lt.startsWith("✉️ 封をした手紙があります") && !lt.includes("おめでとう"), "⑧ sealed, not shown", lt);
-  // ⑨ 5回目 checked: how long it took
+  // ⑨ 5回目 checked: nothing asked (時間を聞く was taken out, the user's call, 2026-11-20)
   await p.locator('.m-cell[data-k="4"] [data-role="check"]').click(); await p.waitForTimeout(700);
-  ok((await goal(p, "g8")).done === true && (await shown(p, "mAskTime")) && (await txt(p, "#mAskTime .ask-say")) === "「5回目」にかかった時間は？", "⑨ asked as it is checked", await txt(p, "#mAskTime"));
-  await p.click('#mAskTime [data-min="30"]'); await p.waitForTimeout(600);
-  g8 = await goal(p, "g8");
-  ok(g8.mandala[4].tlog?.["2026-11-14"] === 30 && !(await shown(p, "mAskTime")) && (await status(p)).includes("「5回目」に 30 分を記録しました"), "⑨ put in its time", [g8.mandala[4], await status(p)]);
+  ok((await goal(p, "g8")).done === true && !(await p.$("#mAskTime")), "⑨ (taken out) checked, nothing asked");
   // ⑧ achieved: the letter come
   ok((await shown(p, "mLetterRow")) && (await txt(p, "#mLetter")).startsWith("✉️ 未来の自分からの手紙が届いています"), "⑧ come once achieved", await txt(p, "#mLetter"));
   // ④ 印刷: the eight
