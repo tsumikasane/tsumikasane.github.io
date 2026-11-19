@@ -149,17 +149,21 @@ let b;
   ok(!p.errs.length, "no error", p.errs);
   await p.close();
 
-  // ④⑤ the new ToDo's form, a copy, and a repeat's next turn
+  // ④⑤ 科目 and 金額 (out of the new ToDo's form since the user's call of 2026-11-19: put in from its own sheet), a copy, and a
+  // repeat's next turn
   p = await open();
   await p.click("#todoAdd"); await p.waitForTimeout(600);
-  ok(!(await p.isHidden("#todoSubjectRow")) && await p.isHidden("#todoCatRow"), "④ 科目 there (there are 科目), 費目 only once a 金額 is in");
-  await p.fill("#todoText", "参考書を買う"); await p.selectOption("#todoSubject", "sb2"); await p.fill("#todoAmount", "1800"); await p.waitForTimeout(100);
-  ok(!(await p.isHidden("#todoCatRow")), "⑤ 費目 shown");
-  await p.selectOption("#todoCat", "教育費");
-  await p.click("#todoSave"); await p.waitForTimeout(500);
+  ok(await p.isHidden("#todoSubjectRow") && await p.isHidden("#todoAmount") && await p.isHidden("#todoCatRow"), "④⑤ (taken out) not in the new ToDo's form");
+  await p.fill("#todoText", "参考書を買う"); await p.click("#todoSave"); await p.waitForTimeout(500);
+  await closeSheet(p);
+  await p.locator("#todoList .row-link", { hasText: "参考書を買う" }).click(); await p.waitForTimeout(600);
+  ok(await p.isVisible("#reSubject") && await p.isHidden("#reCatRow"), "④ its sheet: 科目 there (there are 科目), 費目 only once a 金額 is in");
+  await p.selectOption("#reSubject", "sb2"); await p.fill("#reAmount", "1800"); await p.waitForTimeout(100);
+  ok(await p.isVisible("#reCatRow"), "⑤ 費目 shown");
+  await p.selectOption("#reCat", "教育費");
+  await p.click("#recSave"); await p.waitForTimeout(500);
   let nt = (await ls(p, "todos")).find((t) => t.text === "参考書を買う");
-  ok(nt && nt.subject === "sb2" && nt.amount === 1800 && nt.cat === "教育費", "④⑤ added with them", nt);
-  ok(await p.inputValue("#todoAmount") === "" && await p.inputValue("#todoSubject") === "" && await p.isHidden("#todoCatRow"), "the form emptied for the next");
+  ok(nt && nt.subject === "sb2" && nt.amount === 1800 && nt.cat === "教育費", "④⑤ kept from its sheet", nt);
   await closeSheet(p);
   await p.locator("#todoList > li", { hasText: "参考書を買う" }).dispatchEvent("contextmenu"); await p.waitForTimeout(250);
   await p.locator("#todoMenuGroup .ask-btn", { hasText: "複製" }).click(); await p.waitForTimeout(700);

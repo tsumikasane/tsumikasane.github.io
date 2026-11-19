@@ -1,4 +1,4 @@
-// ToDo その24 ①〜⑦⑨⑩ (⑧ やる日 taken off 2026-11-18, the user's call), through the hook build at 8883 (the insides) and as a user would
+// ToDo その24 ①〜⑦⑨ (⑧ やる日 taken off 2026-11-18, ⑩ よく使う時刻 with the new form's 時刻 2026-11-19: the user's calls), through the hook build at 8883 (the insides) and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8883/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -62,12 +62,9 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   await p.locator("#td24ContCard .td24-cont-x").click(); await p.waitForTimeout(300);
   ok(await p.isHidden("#td24ContCard"), "⑨ × : not today");
 
-  // ---- ① かかる時間を名前から, ⑩ よく使う時刻
+  // ---- ① かかる時間を名前から (⑩ よく使う時刻 went with the new form's 時刻, the user's call of 2026-11-19)
   await p.click("#todoAdd"); await p.waitForTimeout(700);
-  ok(await p.isVisible("#td24Times") && (await txt(p, "#td24Times")) === "よく使う時刻20:00", "⑩ the times used often, under 時刻", await txt(p, "#td24Times"));
-  await p.locator(".td24-time", { hasText: "20:00" }).click(); await p.waitForTimeout(300);
-  ok((await p.inputValue("#todoTime")) === "20:00" && (await p.isChecked("#todoRemind")), "⑩ pressed: that time, お知らせ on");
-  await p.evaluate(() => { const f = document.getElementById("todoTime"); f.value = ""; f.dispatchEvent(new Event("input", { bubbles: true })); f.dispatchEvent(new Event("change", { bubbles: true })); document.getElementById("todoRemind").checked = false; });
+  ok(!(await p.$("#td24Times")) && await p.isHidden("#todoTime"), "⑩ (taken out) no よく使う時刻: the new form has no 時刻");
   await p.fill("#todoText", "英単語 30分"); await p.dispatchEvent("#todoText", "input"); await p.waitForTimeout(200);
   ok((await txt(p, "#td24MinsNote")) === "かかる時間を30分にします（名前からはずします）", "① said under the name", await txt(p, "#td24MinsNote"));
   await p.click("#todoSave"); await p.waitForTimeout(800);
@@ -143,7 +140,7 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
 
   // ---- the guide
   const gd = await W(p, "guide");
-  ok(["かかる時間を名前から", "サブタスクで集中", "連続を守るお知らせ", "やりたい度", "ToDoの絵文字", "つながりで見る", "使っていないリスト・ラベル", "きのうのつづき", "よく使う時刻"].every((w) => gd.includes(w)) && !gd.includes("休みの日にやる・平日にやる"), "the guide has them");
+  ok(["かかる時間を名前から", "サブタスクで集中", "連続を守るお知らせ", "やりたい度", "ToDoの絵文字", "つながりで見る", "使っていないリスト・ラベル", "きのうのつづき"].every((w) => gd.includes(w)) && !gd.includes("休みの日にやる・平日にやる") && !gd.includes("よく使う時刻"), "the guide has them (not the ones taken out)");
 
   ok(!p.errs.length, "no errors", p.errs);
   await b.close();

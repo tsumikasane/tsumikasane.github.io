@@ -90,15 +90,17 @@ async function open(b, when, o = {}) {
   await press(p, "きょうのToDoを読み上げる");
   ok((await p.evaluate(() => window.__said.length)) === 1 && (await status(p)).includes("読み上げています") && (await status(p)).includes("とめる"), "③ spoken, とめる", await status(p));
 
-  // ---- ④ 数える: in the new form, on the row, ＋1 to the end
+  // ---- ④ 数える: from its sheet (out of the new form since the user's call of 2026-11-19), on the row, ＋1 to the end
   await p.click("#todoAdd"); await p.waitForTimeout(700);
   await p.fill("#todoText", "腕立て10回"); await p.dispatchEvent("#todoText", "input");
-  ok(await p.isVisible("#td12Goal"), "④ 数える in the new form");
-  await p.fill("#td12Goal", "3");
+  ok(!(await p.$("#td12Goal")), "④ (taken out) not in the new form");
   await p.click("#todoSave"); await p.waitForTimeout(700);
   await p.click("#sheetCancel"); await p.waitForTimeout(600);
-  const ct = (await byText(p, "腕立て10回"))[0];
-  ok(ct && ct.goalN === 3 && !ct.cnt, "④ added with 3 回", ct);
+  let ct = (await byText(p, "腕立て10回"))[0];
+  await p.click(`#todoList [data-edit="${ct.id}"]`); await p.waitForTimeout(800);
+  await p.fill("#reGoal12", "3"); await p.click("#recSave"); await p.waitForTimeout(700);
+  ct = await todo(p, ct.id);
+  ok(ct && ct.goalN === 3 && !ct.cnt, "④ 3 回 from its sheet", ct);
   ok((await rowSub(p, ct.id)).includes("0/3回＋1"), "④ on its row", await rowSub(p, ct.id));
   const plus = async () => { await p.locator(`#todoList [data-check="${ct.id}"]`).locator("xpath=..").locator(".td12-plus").click({ timeout: 3000 }); await p.waitForTimeout(400); };
   await plus(); await plus();

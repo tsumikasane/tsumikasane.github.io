@@ -166,20 +166,10 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   await tapTab('バイト'); await p.waitForTimeout(200);
   ok(/「バイト」のToDoは\s*まだありません/.test(await p.evaluate(() => todoList.textContent)), 'an empty list says so', await p.evaluate(() => todoList.textContent));
   await p.screenshot({ path: `${out}/ls_empty.png` });
-  // from きょう's tile, a tab pressed on ToDo's page: no list, and nothing said of tabs
+  // きょう's ToDo tile: no ToDoを追加 under it any more (taken out, the user's call of 2026-11-18)
   await tapTab('買い物'); await p.waitForTimeout(200);
   await p.evaluate(() => document.querySelector('nav button[data-tab="home"], [data-tab="home"]')?.click()); await p.waitForTimeout(700);
-  const tile = await p.evaluate(() => !!document.querySelector('#homeTiles .td-add button'));
-  ok(tile, 'きょう has the ToDo tile\'s ToDoを追加');
-  if (tile) {
-    await p.evaluate(() => document.querySelector('#homeTiles .td-add button').click()); await p.waitForTimeout(600);
-    ok(await p.evaluate(() => todoListPick.querySelector('input:checked')?.value === ''), 'from きょう: no list picked');
-    await p.fill('#todoText', 'タイルから'); await p.tap('#todoSave'); await p.waitForTimeout(500);
-    const st = await status();
-    ok(/「タイルから」を追加しました/.test(st) && !/すべて|「/.test(st.replace('「タイルから」', '')), 'from きょう: said plainly', st);
-    nt = (await store('todos')).find((x) => x.text === 'タイルから');
-    ok(nt && !nt.listId, 'from きょう: in no list', nt);
-  }
+  ok(!(await p.evaluate(() => !!document.querySelector('#homeTiles .td-add'))), 'きょう\'s ToDo tile: no ToDoを追加 (taken out)');
   console.log('errors', JSON.stringify(errors));
   console.log(fails ? fails + ' FAILED' : 'ALL OK');
   await b.close();

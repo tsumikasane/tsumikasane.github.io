@@ -79,11 +79,14 @@ const T = (d, hm) => Date.parse(`${d}T${hm}:00+09:00`);
   await p.fill("#reTime", "22:30"); await p.dispatchEvent("#reTime", "change"); await p.waitForTimeout(200);
   ok(!(await p.isVisible("#reClash15")), "③ a time clear of it: nothing said");
   await closeSheet(p);
+  // (the new form has no 時刻 since the user's call of 2026-11-19: no note there; a class's, in a sheet)
   await p.click("#todoAdd"); await p.waitForTimeout(700);
-  await p.fill("#todoText", "質問をまとめる"); await p.dispatchEvent("#todoText", "input");
-  await p.fill("#todoDue", "2026-11-12"); await p.dispatchEvent("#todoDue", "change");
-  await p.fill("#todoTime", "11:00"); await p.dispatchEvent("#todoTime", "change"); await p.waitForTimeout(200);
-  ok((await txt(p, "#td15Clash")).includes("「英語」（10:40〜12:10）"), "③ the new form: 英語 on Thursday", await txt(p, "#td15Clash"));
+  ok(!(await p.$("#td15Clash")) && await p.isHidden("#todoTime"), "③ (taken out) the new form: no time, so no note");
+  await p.click("#sheetCancel"); await p.waitForTimeout(500);
+  await p.click('#todoList [data-edit="h"]'); await p.waitForTimeout(800);
+  await p.fill("#reDue", "2026-11-12"); await p.dispatchEvent("#reDue", "change");
+  await p.fill("#reTime", "11:00"); await p.dispatchEvent("#reTime", "change"); await p.waitForTimeout(200);
+  ok((await txt(p, "#reClash15")).includes("「英語」（10:40〜12:10）"), "③ a class: 英語 on Thursday", await txt(p, "#reClash15"));
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
   await p.evaluate(() => { if (document.getElementById("discardAsk")?.open) document.getElementById("discardYes").click(); }); await p.waitForTimeout(300);
 
@@ -131,11 +134,12 @@ const T = (d, hm) => Date.parse(`${d}T${hm}:00+09:00`);
   // ---- ⑧ 見積もりのくせ (three done taking 1.5 times as long)
   for (const [i, m, f] of [["x1", 30, 45], ["x2", 60, 90], ["x3", 20, 30]]) await W(p, "add", { id: i, text: `前の${i}`, done: true, doneAt: T("2026-11-09", "20:00"), mins: m, focus: f, createdAt: T("2026-11-08", "09:00") });
   await p.waitForTimeout(300);
-  await p.click("#todoAdd"); await p.waitForTimeout(700);
-  await p.selectOption("#todoMins", "60"); await p.waitForTimeout(200);
-  ok((await txt(p, "#td15Habit")).includes("これまでの4件では、見積もりの1.3倍") && (await txt(p, "#td15Habit")).includes("1時間15分ほど"), "⑧ the hint under かかる時間 (with the one done before)", await txt(p, "#td15Habit"));
-  await p.locator("#td15Habit .link-btn").click(); await p.waitForTimeout(200);
-  ok((await p.inputValue("#todoMins")) === "90", "⑧ a press: 1時間30分", await p.inputValue("#todoMins"));
+  // (in a ToDo's sheet: the new form has no かかる時間 since the user's call of 2026-11-19)
+  await p.click('#todoList [data-edit="c"]'); await p.waitForTimeout(800);
+  await p.selectOption("#reMins", "60"); await p.waitForTimeout(200);
+  ok((await txt(p, "#reHabit15")).includes("これまでの4件では、見積もりの1.3倍") && (await txt(p, "#reHabit15")).includes("1時間15分ほど"), "⑧ the hint under かかる時間 (with the one done before)", await txt(p, "#reHabit15"));
+  await p.locator("#reHabit15 .link-btn").click(); await p.waitForTimeout(200);
+  ok((await p.inputValue("#reMins")) === "90", "⑧ a press: 1時間30分", await p.inputValue("#reMins"));
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
   await p.evaluate(() => { if (document.getElementById("discardAsk")?.open) document.getElementById("discardYes").click(); }); await p.waitForTimeout(300);
 

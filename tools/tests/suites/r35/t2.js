@@ -78,13 +78,17 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
   await p.selectOption("#reNag", "30"); await p.click("#recSave"); await p.waitForTimeout(600);
   const dn = (await W(p, "nag", WHEN.getTime())).filter((a) => a.tag.startsWith("todo-nag:d:")).map((a) => new Date(a.at).toISOString().slice(11, 16));
   ok(JSON.stringify(dn) === '["00:30","01:00","01:30","02:00","02:30"]', "③ no time: after 9:00 (JST 9:30〜11:30)", dn);
-  // ③④ a repeat's next turn takes them on
+  // ③④ a repeat's next turn takes them on (お知らせ by its switch, 場所 from its own sheet: 時刻 and 場所 left the new
+  // form, the user's call of 2026-11-19)
   await p.click("#todoAdd"); await p.waitForTimeout(700);
   await p.fill("#todoText", "植木に水"); await p.fill("#todoDue", "2026-11-11"); await p.dispatchEvent("#todoDue", "change");
-  await p.selectOption("#todoRepeat", "daily"); await p.fill("#todoTime", "19:00"); await p.dispatchEvent("#todoTime", "change"); await p.waitForTimeout(200);
-  await p.selectOption("#todoNag", "10"); await p.fill("#todoPlace", "ベランダ"); await p.click("#todoSave"); await p.waitForTimeout(600);
+  await p.selectOption("#todoRepeat", "daily"); await p.click("#todoRemind"); await p.waitForTimeout(200);
+  await p.selectOption("#todoNag", "10"); await p.click("#todoSave"); await p.waitForTimeout(600);
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
-  const w0 = (await byText(p, "植木に水"))[0];
+  let w0 = (await byText(p, "植木に水"))[0];
+  await p.click(`#todoList [data-edit="${w0.id}"]`); await p.waitForTimeout(700);
+  await p.fill("#rePlace", "ベランダ"); await p.click("#recSave"); await p.waitForTimeout(600);
+  w0 = await todo(p, w0.id);
   await p.click(`#todoList [data-check="${w0.id}"]`); await p.waitForTimeout(1800);
   const w1 = (await byText(p, "植木に水")).find((x) => !x.done);
   ok(w1 && w1.due === "2026-11-12" && w1.nag === 10 && w1.place === "ベランダ", "③④ a repeat's next turn: 再通知 and 場所 go on", w1);

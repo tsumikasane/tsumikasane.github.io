@@ -84,7 +84,7 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
   ok(!(await todo(p, "c")), "④ 削除 from the swipe");
   await undo(p);
   ok(!!(await todo(p, "c")), "④ 元に戻す");
-  await W(p, "setting", "td16", { swipe: ["d0", "d1", "d7"], updatedAt: Date.now() }); await p.waitForTimeout(300);
+  await W(p, "setting", "td16", { swipe: ["d0", "d1", ""], updatedAt: Date.now() }); await p.waitForTimeout(300); // (the first ones again: 来週 taken out, the user's call of 2026-11-18)
 
   // ---- ⑤ 集中した時間（14日）
   await menu(p, "ToDoの記録");

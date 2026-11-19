@@ -229,7 +229,7 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00"), WK = "2026-11-08";
   ok(!quiet.some((a) => a.tag.startsWith("todo-nag:h:") && a.at === at("2026-11-11", "20:30")) && quiet.some((a) => a.tag.startsWith("todo-nag:h:") && a.at === at("2026-11-11", "21:30")), "⑧ no 再通知 in them; after, as before");
   await p.click("#sheetDone"); await p.waitForTimeout(500);
 
-  // ---- ⑨ 前回の実際の時間: 英単語を覚える (52 minutes last time) in its sheet and in the new form
+  // ---- ⑨ 前回の実際の時間: 英単語を覚える (52 minutes last time) in its sheet (in the new form too, till 2026-11-19)
   await p.click('#todoList [data-edit="b"]'); await p.waitForTimeout(700);
   ok((await txt(p, "#reLastFocus")) === "前回は実際に52分かかりました（11/4（水））50分にする", "⑨ in its sheet", await txt(p, "#reLastFocus"));
   await p.locator("#reLastFocus button").click(); await p.waitForTimeout(300);
@@ -238,15 +238,7 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00"), WK = "2026-11-08";
   ok((await todo(p, "b")).mins === 50, "⑨ kept");
   await p.click("#todoAdd"); await p.waitForTimeout(700);
   await p.fill("#todoText", "英単語を覚える"); await p.waitForTimeout(300);
-  ok(await p.isVisible("#todoLastFocus") && (await txt(p, "#todoLastFocus")) === "前回は実際に52分かかりました（11/4（水））50分にする", "⑨ in the new form, as the name is typed", await txt(p, "#todoLastFocus"));
-  await p.locator("#todoLastFocus button").click(); await p.waitForTimeout(300);
-  ok((await p.inputValue("#todoMins")) === "50" && await p.isHidden("#todoLastFocus button"), "⑨ put in");
-  await p.selectOption("#todoMins", "30"); await p.waitForTimeout(200);
-  ok(await p.isVisible("#todoLastFocus button"), "⑨ another time picked: offered again");
-  await p.fill("#todoText", "英単語を覚える\n単語帳を買う"); await p.dispatchEvent("#todoText", "input"); await p.waitForTimeout(300);
-  ok(await p.isHidden("#todoLastFocus"), "⑨ not for two");
-  await p.fill("#todoText", "部屋の片付け"); await p.dispatchEvent("#todoText", "input"); await p.waitForTimeout(300);
-  ok(await p.isHidden("#todoLastFocus"), "⑨ none for a name with no time focused");
+  ok(await p.isHidden("#todoLastFocus") && await p.isHidden("#todoMins"), "⑨ (taken out of the new form with かかる時間, the user's call of 2026-11-19) in its sheet alone");
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
   if (await p.isVisible("#todoMenuGroup")) { await p.locator("#todoMenuGroup button", { hasText: "破棄" }).first().click().catch(() => {}); await p.waitForTimeout(400); }
 
