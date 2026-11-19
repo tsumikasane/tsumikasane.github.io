@@ -48,9 +48,9 @@ const pick = (p, id) => p.click(`#shiftList li[data-shift="${id}"] .body`);
   await p.selectOption('#jobForms [data-job="j2"] [data-f="color"]', "pink"); await p.waitForTimeout(600);
   ok((await setting(p, "jobs")).items.find((j) => j.id === "j2").color === "pink" && /--lc-pink/.test(await p.getAttribute('#jobForms [data-job="j2"] .bt11-swatch', "style")), "⑨ pink");
   // ④⑩ off
-  await p.click("#bt11WeekOn"); await p.click("#bt11LeaveOn"); await p.waitForTimeout(300);
+  await p.click("#bt11WeekOn"); await p.waitForTimeout(300); // (⑩ went with 有給休暇のめやす, 2026-11-19)
   const s = await setting(p, "bt11");
-  ok(s.weekOn === false && s.leaveOn === false && !(await p.evaluate(() => window.__bt11.alarms(Date.now()).some((a) => /^bt11-(week|leave)/.test(a.tag)))), "④⑩ off");
+  ok(s.weekOn === false && !(await p.evaluate(() => window.__bt11.alarms(Date.now()).some((a) => /^bt11-(week|leave)/.test(a.tag)))), "④⑩ off");
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   ok(!(await txt(p, `#shiftList li[data-shift="${nw.id}"]`)).includes("前の勤務から") && (await txt(p, '#shiftList li[data-shift="g2"]')).includes("前の勤務から 8 時間（短め）"), "① at 9 時間");
   ok(/--lc-pink/.test(await p.getAttribute('#shiftList li[data-shift="s1"]', "style")), "⑨ the row in pink");

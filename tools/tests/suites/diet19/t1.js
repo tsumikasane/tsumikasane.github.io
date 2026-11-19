@@ -54,15 +54,9 @@ const avg7 = (d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.addDays
   ok(bk && bk.n === 3 && bk.mid === 2 && bk.in3 === 2 && bk.up === 0.8 && bk.xs.map((x) => [x.d, x.back, x.peak].join()).join("|") === "2026-11-13,,1|2026-11-08,2,0.5|2026-11-02,3,0.8", "② the days", bk);
   ok(/^食べすぎたあとの戻り ふだん 2 日 次の3日でふえた分（平均） \+0\.8 kg 3日以内に戻った 2 \/ 3 回 この120日、目安より 600 kcal 以上多かった日は 3 日。体重は、ふつう 2 日で、その朝の体重に戻っています。/.test(r) && r.endsWith("11/13（金）（3,200 kcal）：3 日たって、いま +0.2 kg です。"), "② what it says", r);
 
-  // ③ 汗の量: today's 10 km, 70.5 → 69.3 and 300 ml
+  // ③ 汗の量: taken out at the user's call (2026-11-19, tools/REMOVED.md); what was put in stays
   await part(p, "workout");
-  r = await txt(p, "#dt19Sweat");
-  ok(/^汗の量 ランニング 10 km・60 分・6:00\/km 運動の前 kg 運動のあと kg 運動中に飲んだ ml 計算して残す ふだんの汗：1時間あたり 0\.8 L（最近 2 回の平均）/.test(r) && (await p.getAttribute("#dt19S-pre", "placeholder")) === "69.9", "③ before", r);
-  await p.fill("#dt19S-pre", "70.5"); await p.fill("#dt19S-post", "69.3"); await p.fill("#dt19S-drank", "300");
-  await p.click('#dt19Sweat button:has-text("計算して残す")'); await p.waitForTimeout(400);
-  const run = (await ls(p, "workouts")).find((x) => x.date === D.DAY && x.type === "ランニング");
-  r = await txt(p, "#dt19Sweat");
-  ok(run.pre === 70.5 && run.post === 69.3 && run.drank === 300 && /^汗の量 約 1\.5 L /.test(r) && r.includes("汗で 約 1.5 L 出ました（1時間あたり 1.5 L）。体重の 1.7% です。") && r.includes("このあと 2.3 L ほどを、少しずつ飲みましょう（出た分の1.5倍）。") && r.includes("ふだんの汗：1時間あたり 1.1 L（最近 3 回の平均）"), "③ the sweat", [run, r]);
+  ok(!(await p.$("#dt19Sweat")), "③ gone");
   // ④ 運動と睡眠: 7h30 after 運動 (15), 6h30 (15)
   const nt = await W(p, "nights");
   r = await txt(p, "#dt19Nights");

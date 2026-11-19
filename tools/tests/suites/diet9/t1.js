@@ -87,9 +87,8 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   // ⑤ 日本を旅する: 191 km, between 静岡 and 浜松
   r = await txt(p, "#dt9Trip");
   ok(/191 km/.test(r) && /いま 静岡と浜松のあいだ/.test(r) && /浜松まで あと 59 km/.test(r) && /通った町：横浜（10\/2）・小田原（10\/2）・静岡（11\/5）/.test(r), "⑤ where", r);
-  // ⑥ 距離ごとのベスト
-  r = await txt(p, "#dt9Dist");
-  ok(/3 km .* 15:00/.test(r) && /5 km .* 27:00/.test(r) && /10 km .* 1:00:00/.test(r) && !/ハーフ/.test(r), "⑥ the bests", r);
+  // ⑥ 距離ごとのベスト: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#dt9Dist")), "⑥ gone");
   // ⑦ 消費カロリーを食べものに
   r = await txt(p, "#dt9Burn");
   ok(/この日の消費 約 \d+ kcal は、ごはん（茶わん1杯）\d+(\.\d)? 杯・おにぎり \d+(\.\d)? 個ぶん/.test(r) && /この7日の [\d,]+ kcal は、体脂肪 約 0\.\d\d kg ぶんです/.test(r), "⑦ as foods", r);

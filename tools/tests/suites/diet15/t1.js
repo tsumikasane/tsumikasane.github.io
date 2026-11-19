@@ -67,15 +67,8 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   ok(/新春10km/.test(await txt(p, "#dt15Race")) && !(((await setting(p, "races"))?.list || []).some((x) => x.id === "r1")), "④ taken out: the next one shown");
   await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
   ok(((await setting(p, "races"))?.list || []).some((x) => x.id === "r1") && /つくばマラソン/.test(await txt(p, "#dt15Race")), "④ taken back");
-  // ⑥ 運動を探す: ベンチ, then a メモ's words
-  await p.fill("#dt15FindIn", "ベンチ"); await p.waitForTimeout(300);
-  r = await txt(p, "#dt15Find");
-  ok(/ベンチプレス 1[67] 回・最後は/.test(r) && (await p.locator("#dt15Find .dt10-find-go").count()) === 17, "⑥ found", r);
-  await p.fill("#dt15FindIn", "河川敷"); await p.waitForTimeout(300);
-  ok(/ランニング 1 回/.test(await txt(p, "#dt15Find")) && /河川敷のコース/.test(await txt(p, "#dt15Find")), "⑥ by its メモ", await txt(p, "#dt15Find"));
-  await p.click("#dt15Find .dt10-find-go"); await p.waitForTimeout(400);
-  ok(/11月4日（水）/.test(await txt(p, "#part-workout")), "⑥ to that day");
-
+  // ⑥ 運動を探す: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#dt15Find")), "⑥ gone");
   // ⑨ 記録のチェック: 5; one left as it is, one gone to
   await part(p, "weight");
   r = await txt(p, "#dt15Check");

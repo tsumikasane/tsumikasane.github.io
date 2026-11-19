@@ -47,19 +47,8 @@ const goDay = (p, d) => p.evaluate((d) => { const i = [...document.querySelector
   // ④ 練習のペースの目安: 25:00 for 5 km
   r = await txt(p, "#dt14Paces");
   ok(/5km 換算 25:00 ゆっくり走 6:15〜6:45\/km/.test(r) && /変化走の「速め」 4:54〜5:09\/km/.test(r) && /ペース走 5:18〜5:30\/km/.test(r) && /この4週のラン 12 回のうち 12 回が、ゆっくり走より速めです/.test(r), "④ the paces", r);
-  // ⑤ 体力チェック: 2 before; today's put in and taken back
-  r = await txt(p, "#dt14Fit");
-  ok(/9\/10 10\/12 はじめから 腕立て伏せ 20 24 \+4回 上体起こし 15 17 \+2回 スクワット 30 34 \+4回 プランク 60 75 \+15秒 前回から 34 日たちました。/.test(r), "⑤ the table", r);
-  await p.click('#dt14Fit button:has-text("きょうの結果を入れる")'); await p.waitForTimeout(300);
-  await p.fill('#dt14Fit input[data-k="push"]', "26"); await p.fill('#dt14Fit input[data-k="plank"]', "90");
-  await p.click('#dt14Fit button:has-text("きょうの結果を記録")'); await p.waitForTimeout(400);
-  let ft = (await setting(p, "fitTests"))?.list || [];
-  ok(ft.length === 3 && ft[2].date === DAY && ft[2].push === 26 && ft[2].plank === 90 && ft[2].sit === undefined, "⑤ kept", ft);
-  r = await txt(p, "#dt14Fit");
-  ok(/9\/10 10\/12 11\/15 はじめから 腕立て伏せ 20 24 26 \+6回/.test(r) && /プランク 60 75 90 \+30秒/.test(r) && !/前回から/.test(r), "⑤ the table again", r);
-  await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
-  ok(((await setting(p, "fitTests"))?.list || []).length === 2, "⑤ taken back");
-
+  // ⑤ 体力チェック: taken out at the user's call (2026-11-19, tools/REMOVED.md); settings fitTests stays
+  ok(!(await p.$("#dt14Fit")), "⑤ gone");
   // ⑧ 見通しの変化: slower these 4 weeks, so later each week
   await part(p, "weight");
   r = await txt(p, "#dt14Fc");

@@ -125,20 +125,8 @@ const mmss = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 
   await p.click('#dt18Course button[aria-label="「川沿い」のランを記録に入れる"]'); await p.waitForTimeout(300);
   ok((await p.inputValue("#woType")) === "ランニング" && (await p.inputValue("#woDist")) === "5" && (await p.inputValue("#woNote")) === "川沿い", "⑦ put in the form");
   await p.evaluate(() => { for (const id of ["woDist", "woNote"]) document.getElementById(id).value = ""; document.activeElement?.blur(); });
-  // ⑧ 運動のきつさ: today's two, 3 hard days on end, the 4 weeks, the runs of きつさ 6 (5:44 → 5:40); チェストプレス 6 on and off
-  const rp = await W(p, "rpe");
-  r = await txt(p, "#dt18Rpe");
-  ok(rp.n === 4 && rp.run === 3 && rp.same?.r === 6 && rp.same.a === "2026-10-17" && rp.same.b === "2026-11-14"
-    && /^運動のきつさ きょう レッグプレス 40 kg × 10 回 × 3 セット 8・きつい 1 2 3 4 5 6 7 8 9 10 チェストプレス 40 kg × 10 回 × 3 セット 1 2 3 4 5 6 7 8 9 10 1〜2 楽/.test(r)
-    && r.includes("この4週 4 回・ラン 平均 6・筋トレ 平均 8.3") && r.includes("きつい日（8以上）が 3 日続いています。") && r.includes("きつさ 6 のランのペース：5:44/km（10/17）→ 5:40/km（11/14）。同じきつさで、速く走れるようになっています。"), "⑧ the きつさ", [rp, r]);
-  const chest = '#dt18Rpe [aria-label="「チェストプレス」のきつさ"] button[aria-label="6（ややきつい）"]';
-  await p.click(chest); await p.waitForTimeout(400);
-  let wk = (await ls(p, "workouts")).find((x) => x.date === D.DAY && x.exercise === "チェストプレス");
-  ok(wk.rpe === 6 && (await p.getAttribute(chest, "aria-pressed")) === "true" && /この4週 5 回/.test(await txt(p, "#dt18Rpe")), "⑧ 6 pressed", wk);
-  await p.click(chest); await p.waitForTimeout(400);
-  wk = (await ls(p, "workouts")).find((x) => x.date === D.DAY && x.exercise === "チェストプレス");
-  ok(!("rpe" in wk) && wk.kg === 40 && wk.sets === 3, "⑧ taken off", wk);
-
+  // ⑧ 運動のきつさ: taken out at the user's call (2026-11-19, tools/REMOVED.md); a 運動's rpe stays
+  ok(!(await p.$("#dt18Rpe")), "⑧ gone");
   // ⑨ 予定の線: 9/1's 7日平均 to 68 kg on 12/31, against today's
   await part(p, "weight");
   const startKg = avg7("2026-09-01"), span = days("2026-09-01", "2026-12-31"), cur = avg7(D.DAY), plan = startKg + ((68 - startKg) * days("2026-09-01", D.DAY)) / span, ahead = plan - cur, a1 = Math.round(ahead * 10) / 10;

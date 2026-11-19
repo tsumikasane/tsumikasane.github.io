@@ -23,12 +23,8 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   await p.evaluate((P) => { const l = JSON.parse(localStorage.getItem(P + "expenses") || "[]"); l.push({ id: "in1", kind: "in", amount: 5300, date: "2026-11-25", category: "給与", pay: "j1|2026-10", createdAt: 1 }); localStorage.setItem(P + "expenses", JSON.stringify(l)); }, P);
   await p.reload(); await p.waitForTimeout(900);
   ok(!(await tags(p)).includes("bt14-pay:j1|2026-10") && (await tags(p)).includes("bt14-pay:j1|2026-11"), "③ in 家計簿: " + JSON.stringify(await tags(p)));
-  // ⑥ two days, a word: in words
-  await p.click("#bt14Help summary"); await p.waitForTimeout(300);
-  await p.evaluate(() => { for (const b of document.querySelectorAll("#bt14HelpBody li input")) if (b.checked && !["2026-11-22", "2026-11-25"].includes(b.dataset.day)) b.click(); });
-  await p.fill('#bt14HelpBody input[type="text"]', "17時から入れます");
-  await p.click("#bt14HelpSend"); await p.waitForTimeout(300);
-  ok((await p.evaluate(() => window.__copied)) === "ヘルプに入れる日です。\n11/22（日）\n11/25（水）\n17時から入れます", "⑥ " + JSON.stringify(await p.evaluate(() => window.__copied)));
+  // ⑥ ヘルプに入れる日を文字で: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt14Help")), "⑥ gone");
   // ⑤ 社員 佐藤 in; 店長 田中 off and back
   await p.click("#bt14People summary"); await p.waitForTimeout(300);
   await p.fill('#bt14PeopleBody [data-job="j1"] [data-p="name"]', "社員 佐藤"); await p.fill('#bt14PeopleBody [data-job="j1"] [data-p="tel"]', "080-3333-4444");

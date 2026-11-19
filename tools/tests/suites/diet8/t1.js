@@ -53,9 +53,8 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   r = await txt(p, "#dt8Prs");
   ok(/この30日に 5 回/.test(r) && /ラン 最速 .*前は 6:00\/km 5:24\/km/.test(r) && /ベンチプレス .*前は 55 kg × 6 回 60 kg × 5 回/.test(r), "⑤ the list", r);
   ok((await W(p, "prs")).length === 5, "⑤ five");
-  // ⑥ よくやった種目: スクワット 4 days first
-  r = await txt(p, "#dt8Moves .dt8-move-list li");
-  ok(/スクワット 4 日/.test(r) && /12 セット/.test(r), "⑥ the first", r);
+  // ⑥ よくやった種目: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#dt8Moves")), "⑥ gone");
   // ⑦ 先月とくらべる: 7 days against 2
   r = await txt(p, "#dt8Month");
   ok(/11月1〜14日と、10月1〜14日/.test(r) && /運動した日 7 日 \+5 日 10月 2 日/.test(r), "⑦ the days", r);

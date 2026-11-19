@@ -59,12 +59,8 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   ok(md && (await txt(p, "#mealGoalCard .card-head")).startsWith(`${md[1]}月${md[2]}日`), "③ the day pressed, shown", [second, await txt(p, "#mealGoalCard .card-head")]);
 
   await part(p, "workout");
-  // ④ 種目の目標: ベンチプレス 90 kg × 1; 推定1RM 79, the pace 2.9 kg a week
-  ok((await W(p, "trend", "ベンチプレス")) > 2.5, "④ the pace", await W(p, "trend", "ベンチプレス"));
-  await p.fill("#dt10GoalName", "ベンチプレス"); await p.fill("#dt10GoalKg", "90"); await p.fill("#dt10GoalReps", "1"); await p.click('#dt10Goals button[type="submit"]'); await p.waitForTimeout(400);
-  ok((await setting(p, "moveGoals"))?.list?.[0]?.kg === 90, "④ kept");
-  r = await txt(p, "#dt10Goals .dt10-goal-list");
-  ok(/ベンチプレス 90 kg × 1 回/.test(r) && /いまの推定1RM 79 kg（目標は 1RM で 90 kg）・このペースなら 12月ごろ/.test(r), "④ where it stands", r);
+  // ④ 種目の目標: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#dt10Goals")), "④ gone");
   // ⑤ 記録の推移: 運動の時間, 消費カロリー, ランの距離
   const opts = await p.evaluate(() => [...document.querySelectorAll("#woChartPick option")].map((o) => o.value));
   ok(["dt10min", "dt10kcal", "dt10run"].every((v) => opts.includes(v)), "⑤ the three", opts);

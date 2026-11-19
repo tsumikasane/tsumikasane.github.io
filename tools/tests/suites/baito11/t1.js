@@ -39,17 +39,16 @@ const row = (p, id) => txt(p, `#shiftList li[data-shift="${id}"]`);
   const wk = by("bt11-week:2026-11-22");
   ok(wk && wk.at === "2026-11-21T23:00:00.000Z" && wk.title === "今週のバイトは 2 回（8 時間）" && wk.body === "月 17:00〜22:00（カフェ）・水 18:00〜21:00（塾）　見込み 約 9,800円", "④ " + JSON.stringify(wk));
   ok(al.filter((a) => a.tag.startsWith("bt11-week")).length === 1, "④ the weeks without shifts: none");
-  const lv = by("bt11-leave:j1:2026-11-30:7");
-  ok(lv && lv.at === "2026-11-23T00:00:00.000Z" && lv.body.startsWith("カフェの有給のめやす 3 日が、11月30日（月）で使えなくなります（あと 7 日）"), "⑩ " + JSON.stringify(lv));
-  ok(!by("bt11-leave:j1:2026-11-30:30"), "⑩ 30 days before: past");
+  // ⑩ 有給が使えなくなる前: went with その4 ⑧ 有給休暇のめやす (taken out at the user's call (2026-11-19, tools/REMOVED.md))
+  ok(!al.some((a) => a.tag.startsWith("bt11-leave")), "⑩ none");
   ok((by("bt7-eve:2026-11-16")?.body || "").endsWith("雨の予報です。傘を持っていきましょう") && (by("bt7-go:g1:2026-11-16:17:00")?.body || "").endsWith("雨の予報です。傘を持っていきましょう"), "② in その7's: " + JSON.stringify([by("bt7-eve:2026-11-16"), by("bt7-go:g1:2026-11-16:17:00")]));
   ok(!(by("bt7-eve:2026-11-17")?.body || "").includes("傘"), "② not on a day without rain");
   // ①④⑨⑩ the settings
   await p.click("#moneySettings"); await p.waitForTimeout(500);
-  const f = await p.evaluate(() => ({ gap: document.getElementById("bt11Gap").value, week: document.getElementById("bt11WeekOn").checked, at: document.getElementById("bt11WeekAt").value, leave: document.getElementById("bt11LeaveOn").checked,
+  const f = await p.evaluate(() => ({ gap: document.getElementById("bt11Gap").value, week: document.getElementById("bt11WeekOn").checked, at: document.getElementById("bt11WeekAt").value,
     color: document.querySelector('#jobForms [data-job="j1"] [data-f="color"]').value, sw: document.querySelector('#jobForms [data-job="j1"] .bt11-swatch').getAttribute("style") }));
-  ok(f.gap === "11" && f.week && f.at === "08:00" && f.leave && f.color === "blue" && /--lc-blue/.test(f.sw), "①④⑨⑩ the settings: " + JSON.stringify(f));
-  ok((await txt(p, "#bt11WeekFoot")).length > 0 && (await txt(p, "#bt11LeaveFoot")).length > 0, "④⑩ said");
+  ok(f.gap === "11" && f.week && f.at === "08:00" && f.color === "blue" && /--lc-blue/.test(f.sw), "①④⑨⑩ the settings: " + JSON.stringify(f));
+  ok((await txt(p, "#bt11WeekFoot")).length > 0 && !(await p.$("#bt11LeaveOn")) && !(await p.$("#bt11LeaveFoot")), "④ said, ⑩ gone");
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

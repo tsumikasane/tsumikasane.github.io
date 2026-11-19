@@ -17,26 +17,8 @@ const copied = (p) => p.evaluate(() => window.__copied);
   await p.addInitScript(() => { Object.defineProperty(navigator, "share", { value: undefined, configurable: true }); window.__copied = ""; Object.defineProperty(navigator, "clipboard", { value: { writeText: async (t) => { window.__copied = t; } }, configurable: true }); });
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
-  // ③ the example 打刻の修正のお願い, for the 11/24 shift, in words
-  await p.click("#bt15Tpl summary"); await p.waitForTimeout(300);
-  ok((await p.inputValue("#bt15TplShift")) === "c4", "③ the next shift at first");
-  await p.click("#bt15TplBody .bt15-tpl0 button"); await p.waitForTimeout(300);
-  await p.selectOption("#bt15TplShift", "c5"); await p.waitForTimeout(300);
-  await p.click("#bt15TplBody li.bt15-tpl .btn"); await p.waitForTimeout(300);
-  ok((await copied(p)) === "お疲れさまです。11/24（火）の勤務（17:00〜22:00）の打刻を忘れてしまいました。修正をお願いできますか。", "③ " + (await copied(p)));
-  // ③ one of the user's own
-  await p.fill('#bt15TplBody [data-t="name"]', "入れる時間"); await p.fill('#bt15TplBody [data-t="body"]', "{バイト先}の{日付}は{開始}から入れます");
-  await p.click("#bt15TplSave"); await p.waitForTimeout(300);
-  const tp = (await setting(p, "bt15")).tpls;
-  ok(tp.length === 2 && tp[1].name === "入れる時間" && tp[1].body === "{バイト先}の{日付}は{開始}から入れます", "③ kept: " + JSON.stringify(tp));
-  await p.click(`#bt15TplBody li[data-tpl="${tp[1].id}"] .btn`); await p.waitForTimeout(300);
-  ok((await copied(p)) === "カフェの11/24（火）は17:00から入れます", "③ mine: " + (await copied(p)));
-  await p.click(`#bt15TplBody li[data-tpl="${tp[1].id}"] .bt15-tpl-name`); await p.waitForTimeout(300);
-  ok((await txt(p, `#bt15TplBody li[data-tpl="${tp[1].id}"] .bt15-tpl-text`)) === "カフェの11/24（火）は17:00から入れます", "③ opened, filled in");
-  await p.click(`#bt15TplBody li[data-tpl="${tp[0].id}"] .bt4-adv-x`); await p.waitForTimeout(300);
-  ok((await setting(p, "bt15")).tpls.length === 1, "③ off");
-  await p.click(".toast.show .toast-undo"); await p.waitForTimeout(300);
-  ok((await setting(p, "bt15")).tpls.length === 2, "③ back");
+  // ③ 連絡のひな形（自分で作る）: taken out at the user's call (2026-11-19, tools/REMOVED.md); settings bt15 tpls stays
+  ok(!(await p.$("#bt15Tpl")), "③ gone");
   // ⑩ the 3 days put in as 仮 at once, and taken back
   await p.click("#bt15ReachAdd"); await p.waitForTimeout(500);
   const tent = (await ls(p, "shifts")).filter((x) => x.tentative).map((x) => [x.date, x.start, x.end, x.jobId]).sort();

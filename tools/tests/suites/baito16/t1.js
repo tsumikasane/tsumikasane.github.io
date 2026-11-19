@@ -11,8 +11,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   const p = await phone(b, at("12:00", today));
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
-  // ① 何時間分？ put away
-  ok(await p.evaluate(() => getComputedStyle(document.getElementById("bt2Calc")).display === "none" && getComputedStyle(document.getElementById("bt6Cal")).display !== "none"), "① 何時間分？ put away");
+  // ① バイト先の連絡先 put away (何時間分？ taken out 2026-11-19)
+  ok(await p.evaluate(() => getComputedStyle(document.getElementById("bt14People")).display === "none" && getComputedStyle(document.getElementById("bt6Cal")).display !== "none"), "① 何時間分？ put away");
   // ② まだ仮のシフト
   ok((await txt(p, "#bt16Tent")) === "まだ仮のシフト（2） 11/23（月） 17:00〜22:00 カフェ 確定にする 11/27（金） 17:00〜22:00 カフェ 確定にする 2 件をまとめて確定", "② " + (await txt(p, "#bt16Tent")));
   // ③ 定期券, 3 日あと
@@ -40,8 +40,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   // ①③⑤⑨ the settings
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   await p.click("#bt16CardsBox summary"); await p.waitForTimeout(300);
-  const f = await p.evaluate(() => { const g = (k) => document.querySelector(`#jobForms [data-job="j1"] [data-f="${k}"]`); const c = (id) => document.querySelector(`#bt16Cards [data-card="${id}"]`); return [g("early").value, g("pass").value, document.getElementById("bt16MinWage").value, document.getElementById("bt16TentChk").checked, document.getElementById("bt16PassChk").checked, c("bt2Calc").checked, c("bt6Cal").checked, document.getElementById("bt16CardsHead").textContent, document.querySelectorAll("#bt16Cards [data-card]").length, [...document.querySelectorAll("#bt16Cards [data-card]")].map((x) => x.dataset.card)]; });
-  ok(JSON.stringify(f.slice(0, 8)) === JSON.stringify(["10", "2026-11-23", "1100", true, true, false, true, "カードを選ぶ（1 こ しまっています）"]) && f[8] >= 30 && !["bt15Tax", "bt6Feel", "bt6Bulk", "bt7Photos", "bt5Find", "bt12Cost", "bt9GensenCard", "bt12Feel", "bt2Bulk", "bt5Weeks", "bt7Total", "bt8Records", "bt8Ways", "bt9Heat", "bt14What", "bt15Hunt", "bt16Spend"].some((id) => f[9].includes(id)), "①③⑤⑨ the settings: " + JSON.stringify(f));
+  const f = await p.evaluate(() => { const g = (k) => document.querySelector(`#jobForms [data-job="j1"] [data-f="${k}"]`); const c = (id) => document.querySelector(`#bt16Cards [data-card="${id}"]`); return [g("early").value, g("pass").value, document.getElementById("bt16MinWage").value, document.getElementById("bt16TentChk").checked, document.getElementById("bt16PassChk").checked, c("bt14People").checked, c("bt6Cal").checked, document.getElementById("bt16CardsHead").textContent, document.querySelectorAll("#bt16Cards [data-card]").length, [...document.querySelectorAll("#bt16Cards [data-card]")].map((x) => x.dataset.card)]; });
+  ok(JSON.stringify(f.slice(0, 8)) === JSON.stringify(["10", "2026-11-23", "1100", true, true, false, true, "カードを選ぶ（1 こ しまっています）"]) && f[8] >= 25 && !["bt2Calc", "bt14Help", "bt15Tpl", "bt13Week", "bt5Year", "bt13Miles", "bt15Tax", "bt6Feel", "bt6Bulk", "bt7Photos", "bt5Find", "bt12Cost", "bt9GensenCard", "bt12Feel", "bt2Bulk", "bt5Weeks", "bt7Total", "bt8Records", "bt8Ways", "bt9Heat", "bt14What", "bt15Hunt", "bt16Spend"].some((id) => f[9].includes(id)), "①③⑤⑨ the settings: " + JSON.stringify(f));
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

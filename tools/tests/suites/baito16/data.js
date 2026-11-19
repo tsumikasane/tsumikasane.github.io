@@ -15,7 +15,7 @@ const settings = [
     { id: "j1", name: "カフェ", wage: 1000, plusHol: 100, band: { from: "06:00", to: "09:00", plus: 50 }, fare: 0, night: true, cutoff: 0, payday: 25, commute: 30, early: 10, pass: "2026-11-23" },
     { id: "j2", name: "塾", wage: 1500, fare: 0, night: true, cutoff: 0, payday: 10 },
   ], updatedAt: T0 },
-  { id: "bt16", tentChk: true, passChk: true, minWage: 1100, hide: ["bt2Calc"], updatedAt: T0 },
+  { id: "bt16", tentChk: true, passChk: true, minWage: 1100, hide: ["bt14People"], updatedAt: T0 },
   { id: "bt2Ask", on: true, day: 25, at: "20:00", updatedAt: T0 },
   { id: "bt7", goOn: true, updatedAt: T0 },
 ];

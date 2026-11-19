@@ -42,9 +42,8 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   ok(ms.length === n0 + 1 && ms[ms.length - 1].kcal <= 800, "③ put in", ms[ms.length - 1]);
 
   await part(p, "workout");
-  // ④ 心拍ゾーン: 199, rest 60 → ゾーン2 60〜70% 143〜157
-  r = await txt(p, "#dt6Zone");
-  ok(/ゾーン2・脂肪燃焼/.test(r) && /143〜157 拍/.test(r) && /最大心拍 199/.test(r), "④ zones", r);
+  // ④ 心拍ゾーン: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#dt6Zone")), "④ gone");
   // ⑤ the year: 2026's 運動 days 6, ラン 590 km
   r = await txt(p, "#dt6Year");
   ok(/2026年/.test(r) && /6 日/.test(r) && /590 km/.test(r) && /3 セット/.test(r), "⑤ the year", r);

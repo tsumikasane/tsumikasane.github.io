@@ -49,9 +49,8 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   await p.selectOption("#woType", "筋トレ"); await p.fill("#woExercise", "ベンチプレス"); await p.waitForTimeout(200);
   r = await txt(p, "#dt5RmLine");
   ok(/推定1RM 70 kg/.test(r) && /10回 52.5 kg/.test(r), "④ under 種目", r);
-  // ⑥ the best run in 90 days (5 km in 30, 10 km in 65): 5 km 30:00; the one from September left out
-  r = await txt(p, "#dt5Race");
-  ok(/5 km 6:00\/km 30:00/.test(r) && /ハーフ/.test(r) && /フル/.test(r), "⑥ the times", r);
+  // ⑥ ランのタイム予想: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#dt5Race")), "⑥ gone");
   // ⑦ interval: 20 × 8 with 10 rest = 3:50; run on the clock to its end, then put in
   r = await txt(p, "#dt5Hiit");
   ok(/全部で 3:50/.test(r), "⑦ the length", r);

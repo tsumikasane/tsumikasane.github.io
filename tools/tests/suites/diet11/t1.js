@@ -48,17 +48,8 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   ok(ac.enough && ac.ratio > 1.5, "④ worked out", ac);
   r = await txt(p, "#dt11Load");
   ok(/トレーニングの負荷 \d\.\d\d 倍/.test(r) && /急に増えています/.test(r), "④ said", r);
-  // ③ 運動を文で: parsed, then put in
-  const pz = await W(p, "parse", "ラン 5キロ 30分、スクワット 40kg×10×3\nプランク 60秒 3セット、ストレッチ 10分、腕立て");
-  ok(pz.length === 5 && pz[0].type === "ランニング" && pz[0].km === 5 && pz[0].minutes === 30 && pz[1].exercise === "スクワット" && pz[1].kg === 40 && pz[1].reps === 10 && pz[1].sets === 3
-    && pz[2].exercise === "プランク" && pz[2].per === "sec" && pz[2].reps === 60 && pz[2].sets === 3 && pz[3].type === "その他" && pz[3].minutes === 10 && pz[3].note === "ストレッチ" && pz[4].bad, "③ parsed", pz);
-  await p.click("#dt11Bulk > summary"); await p.waitForTimeout(150);
-  await p.fill("#dt11BulkText", "ラン 5キロ 30分、スクワット 40kg×10×3\nプランク 60秒 3セット、ストレッチ 10分、腕立て"); await p.waitForTimeout(200);
-  ok((await txt(p, "#dt11BulkGo")) === "4件をきょうに追加" && /腕立て（回数がありません）/.test(await txt(p, "#dt11BulkList")), "③ the preview", await txt(p, "#dt11BulkList"));
-  const n0 = (await ls(p, "workouts")).length;
-  await p.click("#dt11BulkGo"); await p.waitForTimeout(600);
-  const added = (await ls(p, "workouts")).slice(n0);
-  ok(added.length === 4 && added.every((x) => x.date === D.DAY) && added.some((x) => x.exercise === "スクワット" && x.kg === 40), "③ put in", added);
+  // ③ 運動を文でまとめて入れる: taken out at the user's call (2026-11-19, tools/REMOVED.md); 食事's (その8 ①) stays
+  ok(!(await p.$("#dt11Bulk")), "③ gone");
 
   await part(p, "weight");
   // ⑩ 目標の一覧: the goals, set and not; 決める opens where it is set

@@ -29,10 +29,9 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   const sum = await txt(p, "#jobSum");
   ok(/8時間をこえた分：1\s時間・\+250\s円/.test(sum) && /6:00〜9:00の時給アップ：3\s時間・\+300\s円/.test(sum) && /引かれる額：−900\s円（3\s回）/.test(sum), "①②③ the month: " + sum);
   ok(sum.includes("12/25 に、自動で収入に入ります"), "⑥ said: " + sum);
-  // ⑧ 塾: from 2025-11-04, 5/4 に (6 か月で週2日 ≈ 年104日: 3 日), 次は 2027/5/4
+  // ⑧ 有給休暇のめやす: taken out at the user's call (2026-11-19, tools/REMOVED.md); the card is その5 ② 有給を使った日 now
   const lv = await txt(p, "#bt4Leave");
-  ok(lv.includes("有給休暇のめやす") && /塾：5\/4 に 3\s日（2028\/5\/3まで使えます）/.test(lv) && /次は 2027\/5\/4 に 4\s日のめやす（いまのペースは 年に約 \d+\s日の勤務）/.test(lv), "⑧ " + lv);
-  ok(lv.includes("カフェ：働きはじめて6か月の 2027/4/5 から、有給休暇がもらえます。"), "⑧ カフェ, from 10/5: " + lv);
+  ok(lv.startsWith("有給を使った日") && lv.includes("有給を使った日を記録") && !lv.includes("めやす") && !lv.includes("もらえます"), "⑧ gone, 有給を使った日 there: " + lv);
   // ⑩ CSV
   const [dl] = await Promise.all([p.waitForEvent("download"), p.click("#bt4Csv")]);
   const csv = fs.readFileSync(await dl.path(), "utf8");

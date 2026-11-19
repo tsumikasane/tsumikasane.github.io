@@ -34,10 +34,8 @@ const block = (p, name) => p.evaluate((name) => [...document.querySelectorAll("#
   await p.click("#bt14People summary"); await p.waitForTimeout(300);
   const pe = await p.evaluate(() => [...document.querySelectorAll('#bt14PeopleBody [data-job="j1"] li')].map((li) => [li.querySelector("span").textContent, li.querySelector("a")?.getAttribute("href") || ""]));
   ok(JSON.stringify(pe) === JSON.stringify([["お店", "tel:0312345678"], ["店長 田中", "tel:09011112222"]]) && !(await p.$('#bt14PeopleBody [data-job="j2"]')), "⑤ " + JSON.stringify(pe));
-  // ⑥ ヘルプに入れる日: 11/22〜12/4 (13 日), ゼミ の 11/24 は外して
-  await p.click("#bt14Help summary"); await p.waitForTimeout(300);
-  const hp = await p.evaluate(() => [...document.querySelectorAll("#bt14HelpBody li")].map((li) => [li.querySelector("input").dataset.day, li.querySelector("input").checked, li.querySelector("small")?.textContent || ""]));
-  ok(hp.length === 13 && hp[0][0] === "2026-11-22" && hp.filter((x) => x[1]).length === 12 && JSON.stringify(hp.find((x) => x[0] === "2026-11-24")) === JSON.stringify(["2026-11-24", false, "予定：ゼミ（13:00〜15:00）"]), "⑥ " + JSON.stringify(hp.slice(0, 4)));
+  // ⑥ ヘルプに入れる日を文字で: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt14Help")), "⑥ gone");
   // ⑦ 時給が変わったら（もしもの計算）: taken out at the user's call (2026-11-19, tools/REMOVED.md)
   ok(!(await p.$("#bt14What")), "⑦ 時給が変わったら: gone");
   // ②③④ the settings

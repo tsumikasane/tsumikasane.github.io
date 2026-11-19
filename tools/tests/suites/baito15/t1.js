@@ -40,7 +40,7 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   // ⑩ 目標まで 10,375 円: いつもの 17:00〜22:00 (4,800 円) を、よく入る月曜から 3 日
   ok((await txt(p, "#bt15Reach")) === "目標に届く入れ方 いつもの 17:00〜22:00（カフェ）で あと 3 回入れると届きます 11/23（月）・11/28（土）・11/30（月） この日を仮のシフトで入れる", "⑩ " + (await txt(p, "#bt15Reach")));
   // ③ the card (⑧ バイト探し taken out at the user's call, 2026-11-19)
-  ok(!(await p.isHidden("#bt15Tpl")) && !(await p.$("#bt15Hunt")), "③ there, ⑧ gone");
+  ok(!(await p.$("#bt15Tpl")) && !(await p.$("#bt15Hunt")), "③⑧ gone");
   // ①②⑧ the settings (⑦'s rows no more)
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   const f = await p.evaluate(() => { const g = (k, id = "j1") => document.querySelector(`#jobForms [data-job="${id}"] [data-f="${k}"]`); return [g("lastTrain").value, g("toStation").value, g("round").value, g("round", "j2").value, !document.getElementById("bt15HuntChk"), !g("fuyo") && !document.getElementById("bt15TaxChk")]; });
