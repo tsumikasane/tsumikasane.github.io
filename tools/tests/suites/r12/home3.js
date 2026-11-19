@@ -55,11 +55,11 @@ function forecast() {
   // 日記を書く: 日記 opens
   await p.locator('.tile[data-tile="review"] .rv-act').click(); await p.waitForTimeout(700);
   ok(await p.evaluate(() => document.documentElement.dataset.tab) === "journal", "⑧ 日記を書く opens 日記");
-  // あしたの準備's head: the calendar at tomorrow
+  // あしたの準備's head: its own page (2026-11-19, the user's call; the calendar at tomorrow before)
   await p.goto(URL0 + "#home"); await p.reload(); await p.waitForTimeout(800);
   await p.locator('.tile[data-tile="tomorrow"] .tile-head').click(); await p.waitForTimeout(800);
-  const cal = await p.evaluate(() => ({ tab: document.documentElement.dataset.tab, sel: document.querySelector("#calGrid .cal-day.sel")?.getAttribute("aria-label") || document.querySelector("#calGrid .cal-day.sel")?.dataset.day || "" }));
-  ok(cal.tab === "calendar" && /10/.test(cal.sel), "⑨ its head: the calendar at tomorrow " + JSON.stringify(cal));
+  const tp = await p.evaluate(() => ({ open: document.getElementById("daySheet").open, title: document.getElementById("sheetTitle").textContent, plans: document.querySelectorAll("#tpPlans li").length, due: document.getElementById("tpDue")?.textContent || "" }));
+  ok(tp.open && tp.title === "あしたの準備" && tp.plans >= 2 && tp.due.includes("レポート提出"), "⑨ its head: the あしたの準備 page " + JSON.stringify(tp));
   // the tiles' settings say when the evening's show
   await p.goto(URL0 + "#home"); await p.reload(); await p.waitForTimeout(800);
   await p.locator("#homeSettings").click(); await p.waitForTimeout(500);
