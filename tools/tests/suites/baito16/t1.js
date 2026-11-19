@@ -25,8 +25,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   const note = await p.evaluate(() => [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("カフェ")).querySelector(".bt16-notes")?.innerText.replace(/\s+/g, " ").trim());
   ok(note === "去年の11月分より +3 回・+16 時間・+16,000 円", "⑥ " + note);
   ok(!(await p.evaluate(() => [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("塾"))?.querySelector(".bt16-notes"))), "⑥ none for 塾 (no 去年)");
-  // ⑧ バイトの日の支出: 7 日 5,600 円・49 日 5,000 円 (固定費はのぞく)
-  ok((await txt(p, "#bt16Spend")) === "バイトの日の支出（この8週間） バイトの日（7 日） 1日 800 円 ほかの日（49 日） 1日 102 円 バイトの日は 1日 698 円 多く使っています 差が大きい費目：食費 +739 円 家計簿の支出（固定費をのぞく）を、勤務のある日とない日に分けて、1日あたりにしています。", "⑧ " + (await txt(p, "#bt16Spend")));
+  // ⑧ バイトの日の支出: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt16Spend")), "⑧ バイトの日の支出: gone");
   // ⑨ 最低賃金 1,100 円: カフェ and 11/9's 900 円
   ok((await txt(p, "#bt16Min")) === "最低賃金（1,100 円）より低い時給 ・ カフェの時給 1,000 円 100 円 低い ・ 11/9（月）の この回の時給 900 円 200 円 低い 最低賃金より低い時給は、ふつう認められていません。数字をたしかめて、お店に聞いてみましょう。", "⑨ " + (await txt(p, "#bt16Min")));
   // ②③④⑤ お知らせ
@@ -41,7 +41,7 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   await p.click("#bt16CardsBox summary"); await p.waitForTimeout(300);
   const f = await p.evaluate(() => { const g = (k) => document.querySelector(`#jobForms [data-job="j1"] [data-f="${k}"]`); const c = (id) => document.querySelector(`#bt16Cards [data-card="${id}"]`); return [g("early").value, g("pass").value, document.getElementById("bt16MinWage").value, document.getElementById("bt16TentChk").checked, document.getElementById("bt16PassChk").checked, c("bt2Calc").checked, c("bt6Cal").checked, document.getElementById("bt16CardsHead").textContent, document.querySelectorAll("#bt16Cards [data-card]").length, [...document.querySelectorAll("#bt16Cards [data-card]")].map((x) => x.dataset.card)]; });
-  ok(JSON.stringify(f.slice(0, 8)) === JSON.stringify(["10", "2026-11-23", "1100", true, true, false, true, "カードを選ぶ（1 こ しまっています）"]) && f[8] >= 40 && !["bt15Tax", "bt6Feel", "bt6Bulk", "bt7Photos", "bt5Find", "bt12Cost", "bt9GensenCard", "bt12Feel"].some((id) => f[9].includes(id)), "①③⑤⑨ the settings: " + JSON.stringify(f));
+  ok(JSON.stringify(f.slice(0, 8)) === JSON.stringify(["10", "2026-11-23", "1100", true, true, false, true, "カードを選ぶ（1 こ しまっています）"]) && f[8] >= 30 && !["bt15Tax", "bt6Feel", "bt6Bulk", "bt7Photos", "bt5Find", "bt12Cost", "bt9GensenCard", "bt12Feel", "bt2Bulk", "bt5Weeks", "bt7Total", "bt8Records", "bt8Ways", "bt9Heat", "bt14What", "bt15Hunt", "bt16Spend"].some((id) => f[9].includes(id)), "①③⑤⑨ the settings: " + JSON.stringify(f));
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

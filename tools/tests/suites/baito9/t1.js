@@ -29,9 +29,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ok(cmp.includes("バイト先をくらべる（この3か月）") && /塾 1時間あたりがいちばん 3\s回・9\s時間・13,500\s円 1時間あたり 1,500\s円/.test(cmp), "① " + cmp);
   // ③ the mark: 1 month left
   ok((await txt(p, "#jobYear")).includes("目安をこえないには、のこり 1 か月分（11月分まで）で"), "③ " + (await txt(p, "#jobYear")));
-  // ⑧ the year: 8 days
-  const heat = await p.evaluate(() => ({ on: document.querySelectorAll("#bt9Heat .bt9-heat i:not(.lv0):not(.pad)").length, t: document.getElementById("bt9Heat").innerText.replace(/\s+/g, " ") }));
-  ok(heat.on === 8 && /働いた日 8\s日/.test(heat.t) && heat.t.includes("2026年の勤務"), "⑧ " + JSON.stringify(heat));
+  // ⑧ 1年の勤務: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt9Heat")), "⑧ 1年の勤務: gone");
   // ⑦ December: 塾's block not shown
   await p.click("#monthNav .navbtn:nth-of-type(2)"); await p.waitForTimeout(400);
   ok(!(await txt(p, "#jobSum")).includes("塾"), "⑦ 塾 gone from December: " + (await txt(p, "#jobSum")));

@@ -19,12 +19,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   // ⑦ 休みの日: 10 days of shifts in November
   const cal = await txt(p, "#bt6Cal");
   ok(/11月の休み 20\s日・/.test(cal) && cal.includes("次の休みは きょう"), "⑦ " + cal);
-  // ① records
-  const rec = await txt(p, "#bt8Records");
-  ok(rec.includes("バイトの記録") && /いちばん長い勤務 9\s時間（11\/14 09:00〜19:00）/.test(rec) && /いちばん長い連勤 3\s日（11\/12〜11\/14）/.test(rec) && rec.includes("いちばん働いた月 11月"), "① " + rec);
-  // ②③ the hours of the day, the days of the week
-  const ways = await txt(p, "#bt8Ways");
-  ok(ways.includes("いちばん多い時間帯は 夜（18〜22時）です。") && /月曜日 8\s回/.test(ways) && /木曜日 8\s回/.test(ways), "②③ " + ways);
+  // ① バイトの記録 and ②③ 働き方: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt8Records")) && !(await p.$("#bt8Ways")), "①②③ バイトの記録・働き方: gone");
   // ⑥ 出勤の押し忘れ: 10 minutes after tomorrow's 17:00
   const al = await p.evaluate(() => window.__bt8.alarms(Date.now()).filter((a) => String(a.tag).startsWith("bt8-in:")));
   const t27 = al.find((a) => a.tag === "bt8-in:t27:2026-11-27:17:00");

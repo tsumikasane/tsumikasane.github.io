@@ -38,9 +38,8 @@ const block = (p, name) => p.evaluate((name) => [...document.querySelectorAll("#
   await p.click("#bt14Help summary"); await p.waitForTimeout(300);
   const hp = await p.evaluate(() => [...document.querySelectorAll("#bt14HelpBody li")].map((li) => [li.querySelector("input").dataset.day, li.querySelector("input").checked, li.querySelector("small")?.textContent || ""]));
   ok(hp.length === 13 && hp[0][0] === "2026-11-22" && hp.filter((x) => x[1]).length === 12 && JSON.stringify(hp.find((x) => x[0] === "2026-11-24")) === JSON.stringify(["2026-11-24", false, "予定：ゼミ（13:00〜15:00）"]), "⑥ " + JSON.stringify(hp.slice(0, 4)));
-  // ⑦ 1,050 円なら: この3か月 54 時間 (月 18 時間)
-  await p.click("#bt14What summary"); await p.waitForTimeout(300);
-  ok((await p.inputValue("#bt14WhatWage")) === "1050" && (await txt(p, "#bt14WhatOut")) === "いまの 1,000円 から 1,050円 になると、この3か月の平均（月 約 18 時間）で 月 +900 円・年 +10,800 円 年の目安まで働けるのは あと 約 16 時間 → 約 15 時間", "⑦ " + (await txt(p, "#bt14WhatOut")));
+  // ⑦ 時給が変わったら（もしもの計算）: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt14What")), "⑦ 時給が変わったら: gone");
   // ②③④ the settings
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   const f = await p.evaluate(() => ({ max: document.querySelector('#jobForms [data-job="j1"] [data-f="fareMax"]').value, pay: document.getElementById("bt14PayChk").checked, wall: document.getElementById("bt14WallChk").checked,

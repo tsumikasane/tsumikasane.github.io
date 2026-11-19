@@ -52,23 +52,11 @@ const copied = (p) => p.evaluate(() => window.__copied);
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   await p.selectOption('#jobForms [data-job="j1"] [data-f="round"]', "0"); await p.waitForTimeout(900);
   ok(!("round" in (await job(p, "j1"))) && (await job(p, "j1")).fuyo === true, "② each minute; ⑦'s tick kept");
-  await p.click("#bt15HuntChk"); await p.waitForTimeout(300);
-  ok((await setting(p, "bt15")).taxChk === true && (await setting(p, "bt15")).huntOff === true && !(await tags(p)).length, "⑧ off (⑦'s taxChk kept, nothing sent): " + JSON.stringify(await tags(p)));
+  ok(!(await p.$("#bt15HuntChk")) && (await setting(p, "bt15")).taxChk === true && !(await tags(p)).length, "⑧ its お知らせ gone (⑦'s taxChk kept, nothing sent): " + JSON.stringify(await tags(p)));
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   ok((await txt(p, '#shiftList li[data-shift="c2"]')).includes("4,896 円") && !(await p.$("#jobSum .bt15-notes")), "② the 11/9 shift: " + (await txt(p, '#shiftList li[data-shift="c2"]')));
-  // ⑧ the interview in the calendar; パン屋 in, 採用, made a job
-  await p.click("#bt15Hunt summary"); await p.waitForTimeout(300);
-  await p.click('#bt15HuntBody li[data-hunt="h1"] .btn.ghost'); await p.waitForTimeout(600);
-  const ev = (await ls(p, "events")).find((e) => e.title === "面接：本屋");
-  ok(ev && ev.date === "2026-11-21" && ev.time === "15:00" && ev.endTime === "16:00" && ev.memo === "駅前" && (await setting(p, "bt15")).hunt[0].ev === ev.id && !(await p.$('#bt15HuntBody li[data-hunt="h1"] .btn.ghost')), "⑧ in the calendar: " + JSON.stringify(ev));
-  await p.fill('#bt15HuntBody [data-h="name"]', "パン屋"); await p.fill('#bt15HuntBody [data-h="wage"]', "1050"); await p.fill('#bt15HuntBody [data-h="memo"]', "家の近く");
-  await p.click("#bt15HuntAdd"); await p.waitForTimeout(400);
-  const h2 = (await setting(p, "bt15")).hunt.find((x) => x.name === "パン屋");
-  ok(h2 && h2.wage === 1050 && h2.st === "sent" && h2.memo === "家の近く" && !h2.day, "⑧ in: " + JSON.stringify(h2));
-  await p.selectOption(`#bt15HuntBody li[data-hunt="${h2.id}"] select`, "got"); await p.waitForTimeout(400);
-  await p.click(`#bt15HuntBody li[data-hunt="${h2.id}"] .btn:not(.ghost)`); await p.waitForTimeout(500);
-  const j3 = (await setting(p, "jobs")).items.find((j) => j.name === "パン屋");
-  ok(j3 && j3.wage === 1050 && j3.fromHunt === h2.id && (await setting(p, "bt15")).hunt.find((x) => x.id === h2.id).st === "got" && !(await p.$(`#bt15HuntBody li[data-hunt="${h2.id}"] .btn:not(.ghost)`)), "⑧ a job: " + JSON.stringify(j3));
+  // ⑧ バイト探し: taken out at the user's call (2026-11-19, tools/REMOVED.md); what was put in stays
+  ok(!(await p.$("#bt15Hunt")) && (await setting(p, "bt15")).hunt.some((x) => x.name === "本屋"), "⑧ gone, what was put in kept");
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

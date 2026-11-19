@@ -26,9 +26,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   const nx = await txt(p, "#bt3Next");
   ok(nx.includes("16:30 に出ると間に合います（通勤 30 分）") && nx.includes("持ち物：エプロン、名札"), "④⑤ next: " + nx);
   ok(await p.getAttribute("#bt3Next a[href^='tel:']", "href") === "tel:0312345678" && (await p.getAttribute("#bt3Next a[href*='maps.apple.com']", "href")).includes(encodeURIComponent("東京都新宿区1-2-3")), "④ 電話・地図");
-  // ⑦ the weeks: 12, this one 11/22〜 with 5 時間, the limit at 20
-  const wk = await p.evaluate(() => ({ n: document.querySelectorAll("#bt5Weeks .bt5-weeks > div").length, label: document.querySelector("#bt5Weeks .bt5-weeks").getAttribute("aria-label"), limit: !!document.querySelector("#bt5Weeks .bt5-limit"), hidden: document.getElementById("bt5Weeks").hidden }));
-  ok(!wk.hidden && wk.n === 12 && wk.label.includes("11/22の週 5時間") && wk.label.includes("11/1の週 5時間") && wk.limit, "⑦ " + JSON.stringify(wk));
+  // ⑦ 週ごとの働いた時間: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt5Weeks")), "⑦ 週ごとの働いた時間: gone");
   ok(!(await p.$("#bt5Find")), "⑧ 勤務を探す: gone");
   // ⑩ 2026 年: 10月分 10,000 + 11月分 27,500
   const yr = await txt(p, "#bt5Year");

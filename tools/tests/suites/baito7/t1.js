@@ -20,9 +20,8 @@ const T = (s) => Date.parse(s + "+09:00");
   ok(/1時間あたり 1,200\s円/.test(sum), "⑥ 1時間あたり without 手当・ボーナス: " + sum);
   // ⑦ November's pay on 12/28 (月) as it is
   ok(sum.includes("給料日 12月28日（月）"), "⑦ a weekday stays");
-  // ② これまで: from 10/5, 2 回 (to today), 10 時間, 10,000, 950円 → 1,000円
-  const tot = await txt(p, "#bt7Total");
-  ok(tot.includes("これまでのバイト") && /10\/5から 1か月・2\s回・10\s時間/.test(tot) && /給料の見込みの合計 10,000\s円/.test(tot) && tot.includes("時給：950円 → 1,000円"), "② " + tot);
+  // ② これまでのバイト: taken out at the user's call (2026-11-19, tools/REMOVED.md)
+  ok(!(await p.$("#bt7Total")), "② これまでのバイト: gone");
   // ①⑧ the お知らせ
   const al = await p.evaluate(() => window.__bt7.alarms(Date.now()).filter((a) => /^bt7-/.test(a.tag)).map((a) => ({ at: a.at, title: a.title, body: a.body, tag: a.tag })));
   const go = al.find((a) => a.tag === "bt7-go:n2:2026-11-27:17:00"), eve = al.find((a) => a.tag === "bt7-eve:2026-11-27");

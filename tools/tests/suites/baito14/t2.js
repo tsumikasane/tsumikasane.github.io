@@ -39,10 +39,8 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   ok(JSON.stringify((await job(p, "j1")).people.map((x) => x.name)) === '["社員 佐藤"]', "⑤ off");
   await p.click(".toast.show .toast-undo"); await p.waitForTimeout(400);
   ok((await job(p, "j1")).people.length === 2, "⑤ back");
-  // ⑦ 950 円なら
-  await p.click("#bt14What summary"); await p.waitForTimeout(300);
-  await p.fill("#bt14WhatWage", "950"); await p.waitForTimeout(200);
-  ok((await txt(p, "#bt14WhatOut")).includes("月 −900 円・年 −10,800 円"), "⑦ " + (await txt(p, "#bt14WhatOut")));
+  // ⑦ 時給が変わったら: taken out at the user's call (2026-11-19)
+  ok(!(await p.$("#bt14What")), "⑦ 時給が変わったら: gone");
   // ⑩ 給料明細の写真: before 勤務カレンダー, where シフト表の写真 was (taken off 2026-11-18); shown large
   await p.click("#bt14Slips summary"); await p.waitForTimeout(300);
   await p.setInputFiles("#bt14SlipFile", { name: "slip.png", mimeType: "image/png", buffer: PNG }); await p.waitForTimeout(1200);
