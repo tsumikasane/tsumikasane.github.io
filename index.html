@@ -8904,7 +8904,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield st-upto" id="stUptoField" hidden><input type="number" id="stUpto" min="1" max="99999" inputmode="numeric"><span class="unit" id="stUptoUnit"></span><span class="st-upto-now" id="stUptoNow"></span></div>
           <label class="flabel" for="stNote">メモ <span class="opt">任意</span></label>
           <div class="ffield"><input type="text" id="stNote" maxlength="1000" list="stNoteHints"><datalist id="stNoteHints"></datalist></div>
-          <div class="actions"><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
+          <!-- (勉強の集中タイマー: ToDo's focus timer started from here, its minutes in 勉強 under the subject picked) -->
+          <div class="actions"><button class="btn ghost" type="button" id="stFocusGo"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-timer"/></svg>集中タイマーを始める</button><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
         </form>
         <ul class="list card" id="studyList"></ul>
         <div class="muted small" id="studyTotal"></div>
@@ -14966,7 +14967,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // each. Since 2026-11-13 (the user's call, 勉強 ①〜⑩; still no timer and no goal a day, as they chose at first): ① +15分
   // +30分 +1時間 under 時間, ② what is recorded again and again with one press, ③ the subject's memos of before as
   // suggestions, ④ この1週間 a bar a day, ⑤ 勉強カレンダー, ⑥ 科目ごとの時間, ⑦ ふりかえり, ⑧ 試験まで, ⑨ 教材 and how far
-  // it went, ⑩ the subjects in the user's own order, and put away
+  // it went, ⑩ the subjects in the user's own order, and put away. A timer after all since 2026-11-20 (the user's call): ToDo's
+  // focus timer started from the form, its minutes recorded here (勉強の集中タイマー, after 勉強 その2's block)
 
   // ⑩ the user's order (↑ ↓ under the gear): those moved have one, any added since come after them as they were added. One
   // put away (しまう) is off the form's chips; its records keep it, and its colour
@@ -15011,7 +15013,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderStudy() {
     const cur = stSubjectChoice ? subjects.get(stSubjectChoice) : null;
     if (stSubjectChoice && (!cur || cur.shelved)) stSubjectChoice = "";
-    renderStChips();
+    renderStChips(); stFocusSync();
     for (const fn of [stSubjectEditor, stMatEditor, stExamEditor]) draw(fn); // (under the gear)
     stFillMatSelect(); stFillHints();
     const items = study.items.filter((x) => x.date === viewDate).sort((a, b) => num(a.createdAt) - num(b.createdAt));
@@ -15046,11 +15048,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("stMin").addEventListener("input", stSyncMinWords);
 
   // ② what has been recorded twice or more in the last 90 days with the same subject, time and memo: the 6 most often
-  // (then the latest), a press putting one more on the day shown, with 元に戻す. One of a subject put away isn't offered
+  // (then the latest), a press putting one more on the day shown, with 元に戻す. One of a subject put away isn't offered,
+  // nor those the focus timer made (focus: true, not put in by hand)
   function stOftenList() {
     const since = addDays(todayKey, -90), by = new Map();
     for (const x of study.items) {
-      if (!isDay(x.date || "") || x.date < since || x.date > todayKey || !(num(x.minutes) > 0)) continue;
+      if (x.focus || !isDay(x.date || "") || x.date < since || x.date > todayKey || !(num(x.minutes) > 0)) continue;
       const sub = subjectOf(x);
       if (sub?.shelved) continue;
       const note = (x.note || "").trim(), k = [sub?.id || "", num(x.minutes), note].join("\u0001");
@@ -25263,7 +25266,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月20日 0:42"; // 48609d32 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月20日 0:58"; // 4c0066e5 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -67083,6 +67086,30 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     draw(st2MarkMats); draw(renderSt2Res); draw(st2SubMark);
     $("st2ShareRow").hidden = !study.items.length;
   }
+
+  // ---------- 勉強の集中タイマー (the user's call, 2026-11-20, asked by the ToDo session: started from ToDo and from 勉強; a
+  // timer in 勉強 after all, where the first choice was none): ToDo's focus timer started from 勉強's form, beside 追加,
+  // while the day shown is today. Its minutes go in 勉強 as records of the subject picked in the form (科目なし with none:
+  // the user's answer, 「科目で記録する」) and of the 教材 picked; メモ and どこまで stay in their fields. The timer is
+  // ToDo's code: focusStart's third (study) is kept on the timer as v.study and handed back, stFocusCredit called as its
+  // minutes are credited (a set over, one stopped, one started again) and stFocusName for its bar and its words. A record
+  // made so has focus: true, and ② よく記録する leaves it out (not put in by hand) ----------
+  function stFocusName(st) { const sub = st?.sub ? subjects.get(st.sub) : null; return sub ? oneLine(sub.name) : "勉強"; }
+  function stFocusCredit(st, mins, day = todayKey) {
+    const m = Math.round(num(mins)), sub = st?.sub ? subjects.get(st.sub) : null, mat = st?.mat ? stMatOf(st.mat) : null;
+    if (!st || !(m >= 1) || !isDay(day || "")) return;
+    const item = { date: day, minutes: m, focus: true, createdAt: Date.now() };
+    if (sub) item.subjectId = sub.id;
+    if (mat) item.mat = mat.id;
+    act(() => study.add(item));
+    tdSay(`勉強${sub ? `（${oneLine(sub.name)}）` : ""}に ${durText(m)}を記録しました`); // (after the timer's own words)
+  }
+  function stFocusSync() { $("stFocusGo").hidden = viewDate !== todayKey; }
+  $("stFocusGo").addEventListener("click", () => {
+    const st = { sub: stSubjectChoice && subjects.get(stSubjectChoice) ? stSubjectChoice : "" }, m = stMatOf($("stMat").value);
+    if (m) st.mat = m.id;
+    focusStart(null, null, st);
+  });
 
   // ---------- バイト その3 ①〜⑩ (the user's calls, 2026-11-14): the next shifts (①), a shift from a few words (②), rest and
   // days in a row looked over (③), the week's hours against a limit (④), the month's aim (⑤), the pay as it came against
