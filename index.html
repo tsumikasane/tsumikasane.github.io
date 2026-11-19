@@ -21271,7 +21271,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // 週 and 日: the days' names (none in 日, the bar on top says it), the 終日 row, and the hours. A plan with a time on one
   // day is a block from its start to its end (one without an end half an hour tall); the others, holidays and the
   // deadlines (ToDo's and 目標's, outlined as in the month) go in 終日, a run across its days in a lane as in the month
-  function renderTimeGrid(todoBy, goalBy, hidden) {
+  function renderTimeGrid(todoBy, goalBy, hidden, examBy = new Map()) { // (勉強の試験: examBy)
     const days = viewDays(), n = days.length, first = days[0], last = days[n - 1];
     $("calTime").style.setProperty("--cols", n);
     const turnsBy = turnsByDay(first, last);
@@ -21300,6 +21300,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       else if (cal13EvName(d)) items.push({ kind: 1, c0: c, n: 1, hol: cal13EvName(d), ev13: true }); // (その13 ① 季節の行事)
       for (const x of (todoBy.get(d) || []).filter((x) => !x.done)) items.push({ kind: 3, c0: c, n: 1, todo: x, day: d });
       for (const x of (goalBy.get(d) || []).filter((x) => !x.done && !x.pausedAt)) items.push({ kind: 4, c0: c, n: 1, goal: x, day: d });
+      for (const x of examBy.get(d) || []) items.push({ kind: 2.5, c0: c, n: 1, exam: x, day: d }); // (勉強の試験)
     });
     items.sort((x, y) => x.kind - y.kind || x.c0 - y.c0 || y.n - x.n || (x.t && y.t ? num(x.t.e.createdAt) - num(y.t.e.createdAt) : 0));
     const MAX = n === 1 ? 6 : 4, lanes = [], more = new Array(n).fill(0), placed = [];
@@ -21320,6 +21321,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         return el("button", { type: "button", class: "tg-bar" + (it.from ? " from" : "") + (it.on ? " on" : "") + (l ? "" : " plain") + (e.ten ? " ten" : "") + (cal4Cx(e, it.t.start) ? " cx" : ""), style: `${at}; --bc: ${labelHue(l)}`, "data-ev": e.id + "|" + it.t.start,
           "aria-label": `「${e.title}」を編集（${when}${l ? "・" + l.name : ""}）`, onclick: (ev) => editFromGrid(e.id, it.t.start, it.day, ev.detail === 0) }, cal4Name(it.t));
       }
+      if (it.exam) return el("button", { type: "button", class: "tg-bar due", style: `${at}; --bc: ${it.exam.hue}`, "aria-label": `「${it.exam.e.name}」（勉強の試験）、${fmtMDW(it.day)}を開く`, onclick: () => openDay(it.day, false) }, it.exam.text); // (勉強の試験)
       const name = it.todo ? it.todo.text : it.goal.title, kind = it.todo ? "ToDo" : it.goal.cell ? "マス" : "目標";
       return el("button", { type: "button", class: "tg-bar due", style: `${at}; --bc: ${it.todo ? "var(--c-todo)" : goalHue(it.goal)}`,
         "aria-label": `「${name}」（${kind}の期限）、${fmtMDW(it.day)}を開く`, onclick: () => openDay(it.day, false) }, name);
@@ -21399,10 +21401,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if ($("calMonthName").textContent !== title) $("calMonthName").textContent = title; // a live region: only a change is read out
     const todoBy = groupBy(todos.items, (t) => t.due);
     const goalBy = groupBy([...goals.items, ...cellDues()], (g) => g.deadline); // (the cells' 期限 too, the user's call)
+    const examBy = cxExamsBy(); // (勉強の試験)
     const hidden = calHidden(), ws0 = weekStart();
     for (const b of $("weekStart").children) b.setAttribute("aria-pressed", String(Number(b.dataset.ws) === ws0));
     if (calView === "year") draw(() => renderCalYear(hidden)); // (カレンダー その2 ⑦)
-    else if (calView !== "month") draw(() => renderTimeGrid(todoBy, goalBy, hidden));
+    else if (calView !== "month") draw(() => renderTimeGrid(todoBy, goalBy, hidden, examBy));
     else {
       // whole weeks from Sunday, padded with the neighbouring months' days
       const first = calMonth + "-01";
@@ -21444,18 +21447,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const own = evs.filter((t) => !drawn.has(w + "|" + t.e.id + "|" + t.start)); // the ones not drawn as a run's bar
         const todosDue = (todoBy.get(d) || []).filter((t) => !t.done);
         const goalsDue = (goalBy.get(d) || []).filter((g) => !g.done && !g.pausedAt);
+        const examsDay = examBy.get(d) || []; // (勉強の試験)
         // the day's plans as bars: events (and ① shifts) by time in their label's colour, then ToDo and goal deadlines; the
         // day's name lists the labels too
         const sh = (shiftBy.get(d) || []).filter((p) => p.first), mk = markBy.get(d);
         const plans = [
           ...[...own.map((t) => ({ k: cal14SortKey(t), text: cal17BarTime(t) + cal4Name(t), hue: labelHue(labelOf(t.e)), plain: !labelOf(t.e), ten: !!t.e.ten, cx: cal4Cx(t.e, t.start) })), // (カレンダー その4 ①③ ★ and 20歳, ② 中止)
             ...sh.map((p) => ({ k: p.x.start, text: cal17ShiftTime(p) + shiftName(p.x), hue: cjHue(p.x) }))].sort((a, b) => a.k.localeCompare(b.k)),
+          ...examsDay.map((x) => ({ text: x.text, hue: x.hue, due: true })), // (勉強の試験)
           ...todosDue.map((t) => ({ text: t.text, hue: "var(--c-todo)", due: true })),
           ...goalsDue.map((g) => ({ text: g.title, hue: goalHue(g), due: true })),
         ];
         const hol = calHolName(d); // (その7 ① 自分の休みの日 too)
         const evNames = [...new Set(evs.map(({ e }) => (labelOf(e) || {}).name).filter(Boolean))];
-        const notes = [evs.length ? `予定 ${evs.length} 件` + (evNames.length ? `（${evNames.join("、")}）` : "") : "", sh.length ? `バイト ${sh.map((p) => shiftText(p.x)).join("、")}` : "",
+        const notes = [evs.length ? `予定 ${evs.length} 件` + (evNames.length ? `（${evNames.join("、")}）` : "") : "", sh.length ? `バイト ${sh.map((p) => shiftText(p.x)).join("、")}` : "", examsDay.length ? `試験 ${examsDay.map((x) => x.e.name).join("、")}` : "",
           todosDue.length ? `ToDo の期限 ${todosDue.length} 件` : "", goalsDue.length ? `目標の期限 ${goalsDue.length} 件` : "",
           mk ? `記録 ${MARKS.filter(([k]) => mk.has(k)).map(([, name]) => name).join("・")}` : ""];
         cells.push(el("button", {
@@ -21492,16 +21497,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const goalsDue = goalBy.get(calDay) || [];
     const dueCount = lateTodos.length + todosDue.length + goalsDue.length;
     const dayShifts = (shiftsByDay(calDay, calDay).get(calDay) || []).filter((p) => p.first); // ①
+    const dayExams = examBy.get(calDay) || []; // (勉強の試験)
     syncSheetHead();
     draw(() => renderDayExtras(calDay, evs)); // ③⑥
     const list = $("calDayList");
     list.replaceChildren();
     // the plans of labels hidden from the calendar are counted, so nothing seems lost
     const keptNote = kept ? el("li", { class: "empty" }, `隠しているラベルの予定が ${kept} 件あります。`) : null;
-    if (!evs.length && !dueCount && !dayShifts.length) { list.append(keptNote || el("li", { class: "empty" }, "この日の予定はありません。")); return; }
+    if (!evs.length && !dueCount && !dayShifts.length && !dayExams.length) { list.append(keptNote || el("li", { class: "empty" }, "この日の予定はありません。")); return; }
     // the plans and the shifts by time (終日 ones first)
     const rows = [...evs.map((t) => [cal14SortKey(t), () => planRow(t, () => editEvent(t.e.id, t.start), "を編集")]), ...dayShifts.map((p) => [p.x.start, () => shiftRow(p.x, () => openShiftFromDay(p.x.id))])];
     for (const [, row] of rows.sort((a, b) => a[0].localeCompare(b[0]))) list.append(row());
+    for (const x of dayExams) list.append(cxExamRow(x, calDay)); // (勉強の試験)
     // in the order ToDo's page has them (期限切れ first, each part's 重要 ones first, one done today in its place, those
     // done before after), each with its repeat and its memo as there (the user's call: a day's ToDo said only 「ToDo の期限」)
     for (const t of [...lateTodos, ...todosDue].sort(todoOrder)) {
@@ -25358,7 +25365,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月19日 23:03"; // c21cca1d (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月19日 23:05"; // 383a028a (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -39541,6 +39548,43 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   CAL18_HELP.find(([place]) => place === "設定・ほか")?.[1].push(["家計簿のバイト", "バイトの予定を家計簿のバイトの勤務にして、給料の見込みに入れます。日のリストの勤務には、その回の給料も出ます。"]);
   cjReady = true;
+
+  // ---------- カレンダーに勉強の試験 (the user's call, 2026-11-19, passed on by the coordinator: 「勉強のほうで設定した試験を
+  // カレンダーにも反映してほしい」): 勉強's 試験 (settings studyExams, read through stExams() and never written here) on their
+  // days as 勉強 has them, as the shifts are, so a change there shows here at once: on the month's squares and in 週・日's
+  // 終日 row as a deadline's bar (in the subject's colour, else 勉強's), and in a day's list with the days to it; a press
+  // there opens 勉強's settings at it (戻る comes back to the day). Those gone by show too, as everything does on the
+  // calendar. Function declarations and var, as the page may draw before this runs ----------
+  // the exams by day: { e, s (its subject or null), hue, text (試験 before a name that doesn't say what it is) }
+  function cxExamsBy() {
+    const by = new Map();
+    let list = [];
+    try { list = stExams(); } catch { return by; }
+    for (const e of list) {
+      const s = e.sub ? subjects.get(e.sub) || null : null, name = oneLine(e.name) || "試験";
+      const x = { e, s, hue: s ? labelHue(s) : "var(--c-study)", text: /試験|テスト|検定|模試|受験|入試/.test(name) ? name : `試験 ${name}` };
+      if (!by.has(e.date)) by.set(e.date, []);
+      by.get(e.date).push(x);
+    }
+    for (const l of by.values()) l.sort((a, b) => num(a.e.createdAt) - num(b.e.createdAt));
+    return by;
+  }
+  // a day's row: 試験 in the subject's colour, its name, the subject and the days to it (終わりました once gone by)
+  function cxExamRow(x, d) {
+    const left = daysBetween(todayKey, d), when = left < 0 ? "終わりました" : left === 0 ? "きょう" : left === 1 ? "あした" : `あと ${left} 日`;
+    const sub = [x.s ? x.s.name : "", when].filter(Boolean).join("・");
+    return el("li", { class: "btn-row" + (left < 0 ? " done" : "") },
+      el("button", { type: "button", class: "row-btn nav", "aria-label": `「${x.e.name}」（勉強の試験・${sub}）を勉強の設定で開く`, onclick: () => cxOpenExam(x.e.id) },
+        el("span", { class: "chip", style: `--chip-c: ${x.hue}` }, "試験"),
+        el("span", { class: "body" }, el("span", { class: "text" }, x.e.name), el("span", { class: "sub" }, sub)),
+        el("span", { class: "chev" }, icon("next", 16))));
+  }
+  // 勉強's settings in the same sheet, its row of 試験 brought into sight
+  function cxOpenExam(id) {
+    openSettings(false, "study");
+    setTimeout(() => { const row = $("stExamRows")?.querySelector(`[data-id="${CSS.escape(id)}"]`); if (row) row.scrollIntoView({ block: "center", behavior: "auto" }); }, 80);
+  }
+  CAL18_HELP.find(([place]) => place === "月・週・日・年")?.[1].push(["勉強の試験", "勉強の設定で決めた試験が、その日に科目の色で出ます。日のリストで押すと、勉強の設定の試験が開きます。"]);
 
   // ---------- 目標: 使わないマスを×で埋める (the user's call, 2026-11-11: a chart can't always be filled in whole; its empty
   // squares crossed out so it reads as finished). An empty cell crossed is { t: "", x: true }: still empty to all that
