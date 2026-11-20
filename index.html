@@ -5842,6 +5842,8 @@ ul.list > li.btn-row { padding: 0; }
 .sync-lead { margin: 0 0 var(--space-2); line-height: 1.6; }
 .sync-error { margin: var(--space-1) 0 0; color: var(--warn); font-weight: 600; }
 .sync-leave-head { margin: 0 0 var(--space-1); }
+.sync-verify { margin: var(--space-1) 0; padding: 10px 12px; border-radius: 12px; background: var(--fill); }
+.sync-verify p { margin: 0; }
 #syncIn p { margin: 0 0 var(--space-1); line-height: 1.6; }
 .check-line { display: flex; align-items: center; gap: var(--space-1); margin-top: 6px; line-height: 1.4; }
 .check-line input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
@@ -8422,13 +8424,37 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <p id="syncWho"></p>
           <p class="muted small" id="syncLast"></p>
           <p class="sync-error" id="syncInError" role="alert" hidden></p>
+          <!-- メールアドレスの確認 (the user's call, 2026-11-20): till its link in the mail is pressed -->
+          <div class="sync-verify" id="syncVerify" hidden>
+            <p id="syncVerifyText"></p>
+            <div class="notice-actions">
+              <button type="button" class="btn sm" id="syncVerified">確認しました</button>
+              <button type="button" class="link-btn" id="syncVerifySend">確認のメールをもう一度送る</button>
+            </div>
+          </div>
           <div class="notice-actions">
             <button type="button" class="btn sm" id="syncNow">いま同期する</button>
+            <button type="button" class="link-btn" id="syncPwOpen">パスワードを変える</button>
             <button type="button" class="link-btn danger" id="syncSignOut">ログアウト</button>
             <!-- (a device handed to someone else: the user's call, 2026-11-20) -->
             <button type="button" class="link-btn danger" id="syncSignOutWipe">ログアウトして、この端末の記録を消す</button>
             <!-- (退会: the user's call, 2026-11-20) -->
             <button type="button" class="link-btn danger" id="syncLeaveOpen">アカウントを消す（退会）</button>
+          </div>
+        </div>
+        <!-- パスワードを変える (the user's call, 2026-11-20) -->
+        <div class="card pad" id="syncPw" hidden>
+          <p class="sync-leave-head"><strong>パスワードを変える</strong></p>
+          <form class="add" id="syncPwForm" autocomplete="on" onsubmit="return false">
+            <label class="flabel" for="syncPwOld">いまのパスワード</label>
+            <div class="ffield"><input type="password" id="syncPwOld" autocomplete="current-password" minlength="6"></div>
+            <label class="flabel" for="syncPwNew">新しいパスワード</label>
+            <div class="ffield"><input type="password" id="syncPwNew" autocomplete="new-password" minlength="6"></div>
+          </form>
+          <p class="sync-error" id="syncPwError" role="alert" hidden></p>
+          <div class="notice-actions">
+            <button type="button" class="btn sm" id="syncPwGo">変える</button>
+            <button type="button" class="link-btn" id="syncPwCancel">やめる</button>
           </div>
         </div>
         <!-- 退会 (the user's call, 2026-11-20): the account and its records at the server, after the password once more -->
@@ -25308,7 +25334,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月21日 6:13"; // 2463d956 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月21日 6:51"; // 8f73a03d (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -25728,11 +25754,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     auth.languageCode = "ja"; // the mail for a forgotten password, in Japanese
     const records = () => F.collection(db, "users", auth.currentUser.uid, "records");
     return {
-      onAuth: (cb) => A.onAuthStateChanged(auth, (u) => cb(u ? { uid: u.uid, email: u.email } : null)),
+      onAuth: (cb) => A.onAuthStateChanged(auth, (u) => cb(u ? { uid: u.uid, email: u.email, verified: !!u.emailVerified } : null)),
       signIn: (email, pw) => A.signInWithEmailAndPassword(auth, email, pw),
-      signUp: (email, pw) => A.createUserWithEmailAndPassword(auth, email, pw),
+      // a new account: a mail to confirm its address goes with it (the user's call, 2026-11-20), not waited for
+      async signUp(email, pw) { const c = await A.createUserWithEmailAndPassword(auth, email, pw); A.sendEmailVerification(c.user).catch(() => {}); return c; },
+      verify: () => A.sendEmailVerification(auth.currentUser),
+      async verified() { await auth.currentUser.reload(); return !!auth.currentUser.emailVerified; },
       signOut: () => A.signOut(auth),
       reset: (email) => A.sendPasswordResetEmail(auth, email),
+      // パスワードを変える (the user's call, 2026-11-20): the password now asked for first, as Firebase wants a recent sign-in
+      async changePassword(was, next) {
+        const u = auth.currentUser;
+        await A.reauthenticateWithCredential(u, A.EmailAuthProvider.credential(u.email, was));
+        await A.updatePassword(u, next);
+      },
       // 退会 (the user's call, 2026-11-20): the password asked for again (Firebase wants a recent sign-in for it), every record
       // of the account deleted at the server, 400 at a time, then the account (a stop part way: pressed again, the rest go)
       async leave(pw) {
@@ -25838,7 +25873,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("syncOut").hidden = on || ask;
     $("syncIn").hidden = !on;
     $("syncSwitch").hidden = !ask;
-    if (!on) $("syncLeave").hidden = true; // (退会: only while signed in)
+    if (!on) $("syncLeave").hidden = $("syncPw").hidden = true; // (退会 and パスワードを変える: only while signed in)
+    $("syncVerify").hidden = !on || syncUser.verified !== false; // (メールアドレスの確認, till it is done)
+    if (on) $("syncVerifyText").textContent = `メールアドレス（${syncUser.email || ""}）の確認がまだです。届いたメールのリンクを押してから、「確認しました」を押してください。`;
     $("syncNote").textContent = on ? "オン" : ask ? "確認待ち" : "オフ";
     if (ask) {
       const e = syncUser.email || "このアカウント";
@@ -25927,6 +25964,47 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     await syncWipe(id);
   });
   function showSyncInError(msg) { $("syncInError").textContent = msg; $("syncInError").hidden = !msg; }
+  // メールアドレスの確認 (the user's call, 2026-11-20): 確認のメールをもう一度送る, and 確認しました (the account read again)
+  $("syncVerifySend").addEventListener("click", async () => {
+    if (!remote || !syncUser) return;
+    try { await remote.verify(); flash(`${syncUser.email} に、確認のメールを送りました。メールのリンクを押してから「確認しました」を押してください。`); }
+    catch (e) { flash(SYNC_ERRORS[e?.code] || "送れませんでした。少しあとで、もう一度ためしてください。"); }
+  });
+  $("syncVerified").addEventListener("click", async () => {
+    if (!remote || !syncUser) return;
+    try {
+      const done = await remote.verified();
+      if (syncUser) syncUser.verified = done;
+      renderSync();
+      flash(done ? "メールアドレスを確認しました。" : "まだ確認できていません。届いたメールのリンクを押してから、もう一度押してください。");
+    } catch (e) { flash(SYNC_ERRORS[e?.code] || "確かめられませんでした。インターネットにつながっているか確かめてください。"); }
+  });
+  // パスワードを変える (the user's call, 2026-11-20): the password now, then the new one (6 letters and more)
+  const PW_ERRORS = {
+    "auth/wrong-password": "いまのパスワードがちがいます。", "auth/invalid-credential": "いまのパスワードがちがいます。", "auth/invalid-login-credentials": "いまのパスワードがちがいます。",
+    "auth/weak-password": "新しいパスワードは 6 文字以上にしてください。", "test-version": "テスト版では、パスワードを変えられません。",
+  };
+  function showPwError(msg) { $("syncPwError").textContent = msg; $("syncPwError").hidden = !msg; }
+  $("syncPwOpen").addEventListener("click", () => {
+    showPwError(""); $("syncPwOld").value = $("syncPwNew").value = "";
+    $("syncPw").hidden = false;
+    $("syncPw").scrollIntoView({ block: "center" });
+    $("syncPwOld").focus();
+  });
+  $("syncPwCancel").addEventListener("click", () => { $("syncPw").hidden = true; $("syncPwOld").value = $("syncPwNew").value = ""; showPwError(""); });
+  $("syncPwGo").addEventListener("click", async () => {
+    const was = $("syncPwOld").value, next = $("syncPwNew").value;
+    showPwError("");
+    if (!remote || !syncUser) return;
+    if (!was || !next) { showPwError("いまのパスワードと、新しいパスワードを入れてください。"); return; }
+    if (next.length < 6) { showPwError("新しいパスワードは 6 文字以上にしてください。"); return; }
+    $("syncPwGo").disabled = true;
+    try { await remote.changePassword(was, next); }
+    catch (e) { $("syncPwGo").disabled = false; showPwError(PW_ERRORS[e?.code] || SYNC_ERRORS[e?.code] || `変えられませんでした（${e?.code || e?.message || "不明"}）。`); return; }
+    $("syncPwGo").disabled = false;
+    $("syncPw").hidden = true; $("syncPwOld").value = $("syncPwNew").value = "";
+    flash("パスワードを変えました。ほかの端末は、新しいパスワードでログインし直すことがあります。");
+  });
   // 退会 (the user's call, 2026-11-20): アカウントを消す, with the password once more. The account's records at the server
   // and the account go (remote.leave), nothing going up meanwhile (syncHold); then the notification server forgets the
   // account's devices; then this device's records too (the page starts again without them), unless 「この端末の記録も消す」

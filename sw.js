@@ -29,18 +29,21 @@ self.addEventListener("fetch", (event) => {
   // the page: network first, checked with the server past any copy the browser keeps; the last copy when offline.
   // (A navigation request can't be copied with new options, so it is asked for again by its address; should that end in
   // a redirect, the plain request is sent instead, as a page may not be answered with a redirected response.)
+  // Only the app's own page is kept as the app (another page of the site, such as privacy.html, is just itself: kept as
+  // the app, it would open offline in the app's place)
   if (req.mode === "navigate") {
+    const app = /\/(index\.html)?$/.test(url.pathname);
     event.respondWith(
       fetch(req.url, { cache: "no-cache", credentials: "same-origin" })
         .then((res) => (res.redirected ? fetch(req) : res))
         .then((res) => {
-          if (res.ok) {
+          if (res.ok && app) {
             const copy = res.clone();
             caches.open(CACHE).then((cache) => cache.put("./index.html", copy));
           }
           return res;
         })
-        .catch(() => caches.match("./index.html"))
+        .catch(() => (app ? caches.match("./index.html") : caches.match(req)))
     );
     return;
   }
