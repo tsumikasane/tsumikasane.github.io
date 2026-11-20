@@ -75,7 +75,7 @@ async function open(b, when) {
   await p.clock.setFixedTime(new Date("2026-11-14T07:45:00+09:00"));
   await p.click(".h4-wake"); await p.waitForTimeout(400);
   const bd = (await lsOf(p, "bodyDays")).find((x) => x.id === D.DAY);
-  ok(bd && bd.wake === "07:45" && bd.bed === "23:30" && bd.water === 200, "⑩ wake into からだ's record, the rest kept", bd);
+  ok(bd && bd.wake === "07:45" && bd.bed === "23:30", "⑩ wake into からだ's record, the rest kept (the water put in by すぐに記録 went with it, 2026-11-19)", bd);
   ok((await tileTxt(p, "h4sleep")).startsWith("睡眠8時間15分ゆうべ23:30→07:45") && !!(await p.$('.tile[data-tile="h4sleep"].h2-done')), "⑩ last night's hours", await tileTxt(p, "h4sleep"));
   await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(200);
   await p.screenshot({ path: out + "/h4-home.png", fullPage: true });

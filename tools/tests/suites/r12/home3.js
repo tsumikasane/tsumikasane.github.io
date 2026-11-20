@@ -43,7 +43,7 @@ function forecast() {
   await seed(p, DATA);
   await p.evaluate((P) => localStorage.setItem(P + "wxPlace", JSON.stringify({ lat: 35.68, lon: 139.77, at: Date.now() })), P);
   await p.reload(); await p.waitForTimeout(1000);
-  ok((await order(p)).startsWith("review,tomorrow,quick,weather,todo,calendar,countdown,"), "21:00: " + await order(p));
+  ok((await order(p)).startsWith("review,tomorrow,weather,todo,calendar,countdown,"), "21:00: " + await order(p));
   const rv = await tileText(p, "review");
   ok(rv === "きょうのふりかえり 6こ きょう積んだブロック ToDo 1件 完了 勉強 1時間 30分 運動 ラン 4 km・筋トレ 3セット 食事 2回・1,350 kcal 体重 65.2 kg 支出 1,200円 日記を書く"
     || /^きょうのふりかえり 7こ きょう積んだブロック ToDo 1件 完了 勉強 1 時間 30 分 運動 ラン 4 km・筋トレ 3セット 食事 2回・1,350 kcal 体重 65.2 kg 支出 1,200 円 日記を書く( 文字で送る)?$/.test(rv), "⑧ " + rv); // (文字で送る: きょう その2, 2026-11-13)

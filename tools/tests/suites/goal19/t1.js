@@ -24,8 +24,8 @@ const badge = (p) => p.evaluate(() => document.querySelector('#menu button[data-
   await seed(p, { goals: all(), settings, todos, events, journal }, "goal"); await p.waitForTimeout(1000);
   await p.evaluate(() => { window.__shared = []; Object.defineProperty(navigator, "share", { configurable: true, value: async (d) => { window.__shared.push(d); } }); Object.defineProperty(navigator, "canShare", { configurable: true, value: () => true }); });
 
-  // ② 目標のタブの数: 長文's plan to answer, and 模試2回目・毎日30語 past their 期限
-  ok((await badge(p)) === "3", "② the number over 目標's icon", await badge(p));
+  // ② 目標のタブの数: 模試2回目・毎日30語 past their 期限 (長文's plan to answer went with 予定のあとに聞く, 2026-11-20)
+  ok((await badge(p)) === "2", "② the number over 目標's icon", await badge(p));
   // ① やる日: with きょうのマス (one today, one yesterday's), in 1週間のマス on its day
   ok((await txt(p, "#goalToday")) === "きょう（日曜日）のマス 2 マス 毎日30語 11/14にやる予定でした・TOEIC 800点 模試2回目 きょうやる・TOEIC 800点", "① the cells to do today (and one left from yesterday)", await txt(p, "#goalToday"));
   ok((await txt(p, '#goalWeek7 li[data-day="2026-11-17"]')) === "火曜日 11/17 本棚" && (await txt(p, '#goalWeek7 li[data-day="2026-11-15"]')) === "きょう 11/15 模試2回目", "① in 1週間のマス, on their days", await txt(p, "#goalWeek7"));
@@ -90,11 +90,11 @@ const badge = (p) => p.evaluate(() => document.querySelector('#menu button[data-
   await p.click("#goalBadgeOn"); await p.waitForTimeout(300);
   ok((await badge(p)) === "", "② off: no number");
   await p.click("#goalBadgeOn"); await p.waitForTimeout(300);
-  ok((await badge(p)) === "3", "② on again");
+  ok((await badge(p)) === "2", "② on again");
   await done(p);
   // ① 模試2回目, done from きょうのマス: heard (⑥), off the list, the number down (②)
   await p.locator("#goalToday li", { hasText: "模試2回目" }).locator(".check").click(); await p.waitForTimeout(700);
-  ok((await goal(p, "g1")).mandala[2].c[1].d === true && (await W(p, "chimes")) === 2 && !(await txt(p, "#goalToday")).includes("模試2回目") && (await badge(p)) === "2", "① done today: ⑥ heard, ② one less", [await W(p, "chimes"), await badge(p)]);
+  ok((await goal(p, "g1")).mandala[2].c[1].d === true && (await W(p, "chimes")) === 2 && !(await txt(p, "#goalToday")).includes("模試2回目") && (await badge(p)) === "1", "① done today: ⑥ heard, ② one less", [await W(p, "chimes"), await badge(p)]);
 
   ok(!p.errs.length, "no errors", p.errs);
   console.log(fails ? `FAIL ${fails}` : "ALL OK");
