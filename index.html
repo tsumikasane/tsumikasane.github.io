@@ -8129,7 +8129,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- 同期 stopped (the user's call: it showed only on 記録's 同期 row, so the devices drifted apart unseen): signed out
              without ログアウト here, or failing for a day -->
         <div class="card backup-nudge" id="syncNudge" hidden>
-          <strong>同期が止まっています</strong>
+          <strong id="syncNudgeHead">同期が止まっています</strong>
           <span class="nudge-text" id="syncNudgeText"></span>
           <div class="notice-actions">
             <button type="button" class="btn sm" id="syncNudgeOpen">同期を開く</button>
@@ -8420,15 +8420,28 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="card pad" id="syncIn" hidden>
           <p id="syncWho"></p>
           <p class="muted small" id="syncLast"></p>
+          <p class="sync-error" id="syncInError" role="alert" hidden></p>
           <div class="notice-actions">
             <button type="button" class="btn sm" id="syncNow">いま同期する</button>
             <button type="button" class="link-btn danger" id="syncSignOut">ログアウト</button>
+            <!-- (a device handed to someone else: the user's call, 2026-11-20) -->
+            <button type="button" class="link-btn danger" id="syncSignOutWipe">ログアウトして、この端末の記録を消す</button>
+          </div>
+        </div>
+        <!-- another account signed in where one's records are (the user's call, 2026-11-20): what becomes of them -->
+        <div class="card import-ask" id="syncSwitch" hidden>
+          <strong>この端末の記録をどうしますか？</strong>
+          <span class="nudge-text" id="syncSwitchText"></span>
+          <div class="notice-actions">
+            <button type="button" class="btn sm" id="syncSwitchFresh">この端末の記録を消して、切りかえる</button>
+            <button type="button" class="link-btn" id="syncSwitchJoin">この端末の記録も、このアカウントに入れる</button>
+            <button type="button" class="link-btn" id="syncSwitchCancel">ログインをやめる</button>
           </div>
         </div>
         <!-- 記録 その6 ⑨ the records waiting to go up (the user's call, 2026-11-15) -->
         <h3 class="group-head" id="rec6PendHead" hidden>送るのを待っている記録</h3>
         <ul class="list card" id="rec6Pend" hidden></ul>
-        <p class="group-foot">記録は Firebase（Google のクラウド）にも保存され、ログインした本人しか読めません。パスワードはこのアプリには残りません。ログアウトしても、この端末の記録は消えません。同じ記録を 2 か所でほぼ同時に直したときは、あとから直したほうが残り、もう片方は「最近削除した項目」に入ります。</p>
+        <p class="group-foot">記録は Firebase（Google のクラウド）にも保存され、ログインした本人しか読めません。パスワードはこのアプリには残りません。「ログアウト」では、この端末の記録は消えません。端末をほかの人にわたすときは「ログアウトして、この端末の記録を消す」を押してください。別のアカウントでログインしたときは、この端末の記録をどうするか聞きます。同じ記録を 2 か所でほぼ同時に直したときは、あとから直したほうが残り、もう片方は「最近削除した項目」に入ります。</p>
       </section>
 
       <!-- 記録 › 端末の中のコピー: the copies made each day, newest first; one picked shows what it would bring back first -->
@@ -11757,6 +11770,25 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       return false;
     }
   })();
+  // ---------- この端末の記録を消す (the user's call, 2026-11-20: a device handed to someone else, or another account) ----------
+  // asked for from 同期 (ログアウトして、この端末の記録を消す; or another account signed in here, and この端末の記録を消して、
+  // 切りかえる): the page marks it and starts again, and it is done here, before anything is read in, so nothing saved on
+  // the way out comes back. Every record and setting kept under the app's name goes, with its databases (the bigger
+  // storage, the daily copies and those kept, the photos and files kept on this device alone). A sign-in stays: Firebase
+  // keeps its own
+  const WIPE_KEY = LS_PREFIX + "wipe";
+  const WIPE_DBS = ["tsumikasane-records", "tsumikasane-copies", "tsumikasane-kept", "tsumikasane-photos", "tsumikasane-plan-photos", "tsumikasane-files", "tsumikasane-baito-photos"];
+  let deviceWiped = false;
+  (() => {
+    try { if (!localStorage.getItem(WIPE_KEY)) return; } catch { return; }
+    for (const kept of [localStorage, sessionStorage]) try { for (const k of Object.keys(kept)) if (k.startsWith(LS_PREFIX)) kept.removeItem(k); } catch {}
+    if (window.indexedDB) {
+      for (const n of WIPE_DBS) try { indexedDB.deleteDatabase(n); } catch {}
+      // (any other of the app's a later version may have made)
+      try { indexedDB.databases?.().then((l) => { for (const d of l || []) if (d.name?.startsWith("tsumikasane-") && !WIPE_DBS.includes(d.name)) indexedDB.deleteDatabase(d.name); }, () => {}); } catch {}
+    }
+    deviceWiped = true; // (said as the page is up)
+  })();
   // つみかさね's last tally (tsumiBlocks, mode "tally"), kept till a record or a setting is saved next
   let tsumiTallied = null;
   // and its blocks, made afresh after the same, not on every kind pressed (the user's call: 6,000 records took a moment a press)
@@ -12082,10 +12114,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // what goes up: the records, and the settings but this device's own (the backup reminder's)
   const syncs = (st, id) => remembers(st) || (st === settings && id !== "backup");
   const storeNamed = (name) => ALL_STORES.find((x) => x.name === name);
+  // a change while signed out, to the records an account had here (the user's call, 2026-11-20): another account signed in
+  // later is told they never went to that one (ownerDirty)
+  function syncNoteOut(st, ids) {
+    if (!syncState.owner || !ids.some((id) => syncs(st, id))) return;
+    syncFresh();
+    if (!syncState.ownerDirty) { syncState.ownerDirty = true; saveSyncState(); }
+  }
   let syncApplying = false, syncTimer = null;
   // a change here, to go up a moment later (not one that came down, and only while signed in)
   function syncNote(st, ids) {
-    if (syncApplying || !syncState.uid) return;
+    if (syncApplying) return;
+    if (!syncState.uid) { syncNoteOut(st, ids); return; }
     syncFresh();
     const t = Date.now();
     let any = false;
@@ -25250,7 +25290,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月21日 0:24"; // 17dbd765 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月21日 5:34"; // 9218786a (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -25699,48 +25739,81 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       syncFresh();
       // who was signed in here, kept till ログアウト (a sign-out from elsewhere is said on きょう), and since when
       syncAuthKnown = true;
+      const was = syncState.email; // (whose the records here were, as a version before this one kept it: the address)
       if (u) { syncState.email = u.email || syncState.email || "このアカウント"; if (!syncState.since || syncState.uid !== u.uid) syncState.since = Date.now(); saveSyncState(); }
+      if (syncState.uid && !syncState.owner) syncState.owner = syncState.uid; // (signed in before the account was kept as theirs)
       if (u && syncState.uid !== u.uid) {
-        // signed in here for the first time: everything here goes up (changed when it says it was), and all of it comes down.
-        // So does what was deleted here (when), so another device's copy of it goes too, unless changed there since; but not
-        // a day's own record (日記, からだ, ルーティーン: the day is its id), as another device's of that day was written there
-        Object.assign(syncState, { uid: u.uid, pulled: 0, pending: {}, recent: {}, at: 0, error: "" });
-        for (const st of ALL_STORES) for (const x of st.items) if (syncs(st, x.id)) syncState.pending[`${st.name}~${x.id}`] = num(x.updatedAt) || num(x.createdAt) || 1;
-        for (const t of deleted.items) {
-          const st = !t.id.includes("#") && storeNamed(t.store);
-          if (st && syncs(st, t.rid) && !isDay(t.rid) && !st.get(t.rid)) syncState.pending[`${t.store}~${t.rid}`] = num(t.at) || 1;
-        }
+        // another account's records here (the user's call, 2026-11-20): nothing goes up or comes down till it is chosen
+        // what becomes of them (この端末の記録をどうしますか？, on 同期's page); the account's own, or none, go with it
+        const own = String(syncState.owner || ""), other = own.startsWith("address:") ? own.slice(8) !== u.email : own ? own !== u.uid : !!(was && u.email && was !== u.email);
+        if (other && syncHasRecords()) {
+          if (!syncState.owner) syncState.owner = "address:" + was; // (asked again, should the app be opened again first)
+          syncState.ask = { uid: u.uid, email: u.email || "" };
+          saveSyncState();
+        } else syncAdopt(u);
+      }
+      if (!u) {
+        if (syncState.uid) Object.assign(syncState, { uid: null, pulled: 0, pending: {}, recent: {}, at: 0, error: "" });
+        delete syncState.ask; // (signed out before it was chosen: the records here stay as they were)
         saveSyncState();
       }
-      if (!u && syncState.uid) { Object.assign(syncState, { uid: null, pulled: 0, pending: {}, recent: {}, at: 0, error: "" }); saveSyncState(); }
       renderAll(); // the row, this page, and where 記録 says the records are
-      if (u) syncNow();
+      if (u) sayAuthed();
+      if (u && syncState.uid === u.uid) syncNow();
     });
   }
+  // signed in here for the first time (or the records here put in): everything here goes up (changed when it says it was),
+  // and all of it comes down. So does what was deleted here (when), so another device's copy of it goes too, unless changed
+  // there since; but not a day's own record (日記, からだ, ルーティーン: the day is its id), as another device's of that day
+  // was written there. The records here are the account's from then on (owner)
+  function syncAdopt(u) {
+    Object.assign(syncState, { uid: u.uid, owner: u.uid, pulled: 0, pending: {}, recent: {}, at: 0, error: "" });
+    delete syncState.ask; delete syncState.ownerDirty;
+    for (const st of ALL_STORES) for (const x of st.items) if (syncs(st, x.id)) syncState.pending[`${st.name}~${x.id}`] = num(x.updatedAt) || num(x.createdAt) || 1;
+    for (const t of deleted.items) {
+      const st = !t.id.includes("#") && storeNamed(t.store);
+      if (st && syncs(st, t.rid) && !isDay(t.rid) && !st.get(t.rid)) syncState.pending[`${t.store}~${t.rid}`] = num(t.at) || 1;
+    }
+    saveSyncState();
+  }
+  const syncHasRecords = () => ALL_STORES.some((st) => st !== deleted && st.items.some((x) => syncs(st, x.id)));
+  // another account signed in, waiting for what becomes of the records here
+  function syncAsking() { return !!(syncUser && syncState.ask && syncState.ask.uid === syncUser.uid); }
   function renderSyncRow() {
     $("syncRow").hidden = !syncReady() || !canStoreLocal;
     const on = !!(syncUser && syncState.uid), bad = on && (syncState.error === "failed" || syncState.error === "denied");
-    $("syncState").textContent = !remote && syncReady() && syncState.error === "offline" ? "オフライン" : !on ? "オフ" : syncState.error === "offline" ? "オフライン" : bad ? "うまくいっていません" : "オン";
+    $("syncState").textContent = !remote && syncReady() && syncState.error === "offline" ? "オフライン" : !on ? (syncAsking() ? "確認待ち" : "オフ") : syncState.error === "offline" ? "オフライン" : bad ? "うまくいっていません" : "オン";
     $("syncState").classList.toggle("warn", bad);
     $("syncBtn").setAttribute("aria-label", `同期、${$("syncState").textContent}`);
     renderSyncNudge();
   }
   function renderSyncNudge() {
-    const on = !!(syncUser && syncState.uid), out = !!remote && syncAuthKnown && !on && !!syncState.email;
+    const on = !!(syncUser && syncState.uid), ask = syncAsking(), out = !!remote && syncAuthKnown && !on && !ask && !!syncState.email;
     const failing = on && (syncState.error === "failed" || syncState.error === "denied") && Date.now() - num(syncState.at || syncState.since) > 864e5;
-    $("syncNudge").hidden = !(canStoreLocal && syncReady() && (out || failing));
+    $("syncNudge").hidden = !(canStoreLocal && syncReady() && (ask || out || failing));
     if ($("syncNudge").hidden) return;
-    $("syncNudgeText").textContent = out
+    $("syncNudgeHead").textContent = ask ? "この端末の記録をどうしますか？" : "同期が止まっています";
+    $("syncNudgeText").textContent = ask
+      ? `${syncUser.email || "このアカウント"} でログインしましたが、この端末には別のアカウントの記録があるので、まだ同期していません。`
+      : out
       ? `${syncState.email} のログインが切れたので、この端末の記録はほかの端末とそろっていません。もう一度ログインしてください。`
       : (syncState.at ? `最後にそろったのは ${fmtMDW(ymd(new Date(syncState.at)))}です。` : "")
         + (syncState.error === "denied" ? "Firebase のルールで止められています。" : "インターネットにつながっているか確かめて、「いま同期する」を押してください。");
   }
   function renderSync() {
-    const on = !!(syncUser && syncState.uid);
+    const on = !!(syncUser && syncState.uid), ask = syncAsking();
     rec6Pending(); // (記録 その6 ⑨ the records waiting to go up)
-    $("syncOut").hidden = on;
+    $("syncOut").hidden = on || ask;
     $("syncIn").hidden = !on;
-    $("syncNote").textContent = on ? "オン" : "オフ";
+    $("syncSwitch").hidden = !ask;
+    $("syncNote").textContent = on ? "オン" : ask ? "確認待ち" : "オフ";
+    if (ask) {
+      const e = syncUser.email || "このアカウント";
+      $("syncSwitchText").textContent = `${e} でログインしました。この端末には、前にログインしていた別のアカウントの記録があります。`
+        + (syncState.ownerDirty ? "ログアウトしたあとに書いたり直したりしたものは、前のアカウントには送られていません。" : "")
+        + `「消して、切りかえる」は、この端末の記録と、写真・ファイル・端末の中のコピーを消してから、${e} の記録を受け取ります。写真とファイルは同期されないので、消すと戻せません。`
+        + `「このアカウントに入れる」は、この端末の記録を ${e} に送ります。`;
+    }
     if (!on) return;
     $("syncWho").textContent = `${syncUser.email || ""} でログインしています。同じアカウントでログインしたほかの端末と、記録が自動でそろいます。`;
     const at = syncState.at ? new Date(syncState.at) : null, waiting = Object.keys(syncState.pending).length;
@@ -25761,6 +25834,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     "auth/operation-not-allowed": "Firebase で「メール / パスワード」のログインが、まだ有効になっていません。",
   };
   function showSyncError(msg) { $("syncError").textContent = msg; $("syncError").hidden = !msg; }
+  // 登録しました or ログインしました, said once the account has come: with what comes next (the records here asked about, or
+  // the sync begun)
+  let syncAuthed = "";
+  function sayAuthed() {
+    if (!syncAuthed || !syncUser) return;
+    flash(`${syncAuthed}しました。` + (syncAsking() ? "この端末の記録をどうするか、選んでください。" : "同期をはじめます。"));
+    syncAuthed = "";
+  }
   async function syncAuth(kind) {
     const email = $("syncEmail").value.trim(), pw = $("syncPassword").value;
     showSyncError("");
@@ -25770,7 +25851,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     try {
       await (kind === "up" ? remote.signUp(email, pw) : remote.signIn(email, pw));
       $("syncPassword").value = "";
-      flash(kind === "up" ? "登録しました。同期をはじめます。" : "ログインしました。同期をはじめます。");
+      syncAuthed = kind === "up" ? "登録" : "ログイン"; sayAuthed(); // (or as the account comes, should it come after)
     } catch (e) {
       showSyncError(SYNC_ERRORS[e?.code] || `うまくいきませんでした（${e?.code || e?.message || "不明"}）。`);
     } finally { $("syncSignIn").disabled = $("syncSignUp").disabled = false; }
@@ -25789,13 +25870,56 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("syncForm").addEventListener("submit", (ev) => { ev.preventDefault(); syncAuth("in"); });
   $("syncNow").addEventListener("click", () => syncNow(true));
   armLink($("syncSignOut"), "ログアウト", "もう一度押すとログアウトします", async () => {
+    await syncNow(); // (what waits here goes up first, when it can)
     syncFresh(); syncState.email = ""; saveSyncState(); // signed out on purpose: nothing to say on きょう
     try { await remote?.signOut(); } catch {}
     flash("ログアウトしました。この端末の記録はそのままです。");
   });
+  // ログアウトして、この端末の記録を消す (the user's call, 2026-11-20: a device handed to someone else): only once all that
+  // waits here has gone up, so nothing is lost that the account hasn't; this device's notifications let go of in the account
+  // too (its other devices stop sending them here), then signed out, and the page starts again without them
+  armLink($("syncSignOutWipe"), "ログアウトして、この端末の記録を消す", "もう一度押すと消します", async () => {
+    showSyncInError("");
+    await syncNow();
+    syncFresh();
+    const waiting = Object.keys(syncState.pending).length;
+    if (!syncUser || !syncState.uid || syncState.error || waiting) {
+      showSyncInError(`${waiting ? `まだ送れていない記録が ${fmtN(waiting)} 件あるので、` : "同期できなかったので、"}消していません。インターネットにつないで、もう一度押してください。`);
+      return;
+    }
+    const id = pushLocal().id;
+    if (id) { pushForgetHere(); await syncNow(); }
+    syncFresh(); syncState.email = ""; saveSyncState(); // signed out on purpose: nothing to say on きょう
+    try { await remote?.signOut(); } catch {}
+    await syncWipe(id);
+  });
+  function showSyncInError(msg) { $("syncInError").textContent = msg; $("syncInError").hidden = !msg; }
+  // この端末の記録をどうしますか？ (another account signed in where one's records are, the user's call, 2026-11-20):
+  // 消して、切りかえる (the page starts again without them, and gets the account's), このアカウントに入れる (they go up, as a
+  // first sign-in has them), ログインをやめる (they stay as they were)
+  armLink($("syncSwitchFresh"), "この端末の記録を消して、切りかえる", "もう一度押すと消します", () => { if (syncAsking()) syncWipe(); });
+  armLink($("syncSwitchJoin"), "この端末の記録も、このアカウントに入れる", "もう一度押すと入れます", () => {
+    if (!syncAsking()) return;
+    syncFresh(); syncAdopt(syncUser); renderAll(); syncNow();
+    flash("この端末の記録も、このアカウントに入れます。同期をはじめます。");
+  });
+  $("syncSwitchCancel").addEventListener("click", async () => {
+    syncFresh(); delete syncState.ask; syncState.email = ""; saveSyncState(); // (nothing to say on きょう)
+    try { await remote?.signOut(); } catch {}
+    flash("ログインをやめました。この端末の記録はそのままです。");
+  });
+  // this device let go of (WIPE_KEY, at the top, as the page starts again): its notifications first, at the server and here,
+  // so another's plans don't come to it (id: this device's at the server, when it was let go of in the account already)
+  async function syncWipe(id = pushLocal().id) {
+    const soon = (p) => Promise.race([p, new Promise((ok) => setTimeout(ok, 4000))]);
+    if (id) await soon(pushCall("DELETE", "/d/" + id).catch(() => {}));
+    if (pushSupported()) await soon((async () => { const sub = await (await swReady()).pushManager.getSubscription(); await sub?.unsubscribe(); })().catch(() => {}));
+    try { localStorage.setItem(WIPE_KEY, "1"); } catch {}
+    location.reload();
+  }
   // drawn before the page slides in, so it arrives whole
   // (from 記録's 設定 too: the sheet goes at once, and 同期 slides in over 記録 as it did from there)
-  function openSync() { if (sheetEl.open) closeSheet(true); showSyncError(""); renderSync(); showTab("sync"); }
+  function openSync() { if (sheetEl.open) closeSheet(true); showSyncError(""); showSyncInError(""); renderSync(); showTab("sync"); }
   $("syncBtn").addEventListener("click", openSync);
   $("syncNudgeOpen").addEventListener("click", openSync);
   $("emptySync").addEventListener("click", openSync);
@@ -73719,6 +73843,7 @@ ${parts.join("\n")}
     draw(wxShare); // (天気 その1 ⑩ this device's mornings, kept for the other devices, as the app opens)
     draw(focusTick); // the focus timer, carrying on (or over while the app was away)
     draw(() => restoreDraft(!initial || initial === "home"));
+    if (deviceWiped) flash("この端末の記録を消しました。"); // (同期: ログアウトして消す, or 消して切りかえる)
     syncBooted = true;
     startSync();
   }
