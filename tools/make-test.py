@@ -136,6 +136,7 @@ man["description"] = "（テスト版）" + man["description"]
 
 # ---- the rest as it is, and the orange icon
 shutil.copyfile(TOP / "sw.js", OUT / "sw.js")
+shutil.copyfile(TOP / "privacy.html", OUT / "privacy.html")  # (プライバシーポリシー: the app links to it)
 (OUT / ".nojekyll").touch()
 for name in ("apple-touch-icon.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "icon.svg"):
     shutil.copyfile(ICONS / name, OUT / "icons" / name)

@@ -23,6 +23,9 @@ const twice = async (p, sel) => { await p.click(sel); await wait(p, 150); await 
   await p.context().addInitScript(FAKE);
   await seed(p, {}, "todo");
   await openSync(p);
+  // プライバシーポリシー: said under 新しく登録する, and at the foot
+  ok((await p.getAttribute("#syncOut .sync-policy a", "href")) === "./privacy.html" && (await txt(p, "#syncOut .sync-policy")) === "「新しく登録する」を押すと、プライバシーポリシーに同意したことになります。"
+    && (await p.getAttribute("#sec-sync .group-foot a", "href")) === "./privacy.html", "プライバシーポリシー: linked from 同期");
   await auth(p, "up", "z@example.com");
   let sv = await server(p);
   ok(sv.users.u1?.mails === 1, "登録: a mail to confirm the address went", sv.users.u1);
@@ -59,6 +62,21 @@ const twice = async (p, sel) => { await p.click(sel); await wait(p, 150); await 
   await auth(p, "in", "z@example.com", "newpass1");
   ok((await signedIn(p)) === "u1" && (await vis(p, "#syncIn")), "the new password: signed in");
   ok(!p.errs.length, "no page errors", p.errs);
+  await p.context().close();
+
+  // プライバシーポリシー's page; and, once it has been opened, the app's own copy for offline is still the app (sw.js)
+  const q = await phone(b, new Date("2026-11-20T10:00:00+09:00"));
+  await seed(q, {}, "home");
+  await q.waitForFunction(() => !!navigator.serviceWorker?.controller, null, { timeout: 15000 }).catch(() => {});
+  ok(await q.evaluate(() => !!navigator.serviceWorker?.controller), "the app's worker at work");
+  await q.goto(URL0 + "privacy.html"); await wait(q, 800);
+  const page = await q.content();
+  ok((await q.title()) === "プライバシーポリシー｜つみかさね" && page.includes("運営者：つみかさね運営") && page.includes("mailto:tsumikasane23@gmail.com") && !page.includes("{{"), "the page: its operator and address", await q.title());
+  await q.context().setOffline(true);
+  await q.goto(URL0).catch(() => {}); await wait(q, 1500);
+  const t = await q.title().catch(() => "");
+  ok(t.startsWith("つみかさね") && !t.includes("プライバシーポリシー"), "offline, after the page: the app, not the page", t);
+  await q.context().setOffline(false);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");
   process.exit(fails ? 1 : 0);
