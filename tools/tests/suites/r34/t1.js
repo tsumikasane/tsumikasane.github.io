@@ -57,17 +57,12 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   await p.click('#bd2Cal .bd2-cal-day[aria-label^="10/20"]'); await p.waitForTimeout(500);
   ok((await p.evaluate(() => document.getElementById("wtFormLabel").textContent)).startsWith("10/20"), "④ a day pressed: that day", await p.evaluate(() => document.getElementById("wtFormLabel").textContent));
 
-  // ⑦ 水分: today 400 ml, a cup and a bottle; ⑧ 睡眠: last night 00:30 → 06:30 (6 時間), the week's mean
+  // ⑦ 水分: taken out at the user's call (2026-11-20, tools/REMOVED.md); today's 400 ml stays. ⑧ 睡眠: last night 00:30 → 06:30 (6 時間), the
+  // week's mean
   await p.evaluate(() => document.querySelector(".datenav button:last-child")?.click());
   await p.goto(process.env.URL0 + "#weight"); await p.reload(); await p.waitForTimeout(1200);
-  ok((await txt(p, ".bd2-water-v")) === "400 / 2,000 ml", "⑦ today's water against the aim", await txt(p, ".bd2-water-v"));
-  await p.locator("#bd2Daily button", { hasText: "コップ1杯" }).click(); await p.waitForTimeout(400);
-  await p.locator("#bd2Daily button", { hasText: "＋500 ml" }).click(); await p.waitForTimeout(400);
-  ok((await ls(p, "bodyDays")).find((x) => x.id === "2026-11-11")?.water === 1100 && (await txt(p, ".bd2-water-v")) === "1,100 / 2,000 ml", "⑦ a cup and a bottle: 1,100 ml", await txt(p, ".bd2-water-v"));
-  await p.locator("#status button").click(); await p.waitForTimeout(400);
-  ok((await ls(p, "bodyDays")).find((x) => x.id === "2026-11-11")?.water === 600, "⑦ 元に戻す");
-  await p.selectOption("#bd2WaterGoal", "1500"); await p.waitForTimeout(300);
-  ok((await txt(p, ".bd2-water-v")) === "600 / 1,500 ml", "⑦ the aim changed", await txt(p, ".bd2-water-v"));
+  ok(!(await p.$(".bd2-water-v")) && !(await p.$("#bd2WaterGoal")) && !(await p.$("#bd2Daily .bd2-less")) && !(await txt(p, "#bd2Daily")).includes("水分"), "⑦ gone", await txt(p, "#bd2Daily"));
+  ok((await ls(p, "bodyDays")).find((x) => x.id === "2026-11-11")?.water === 400, "⑦ the 400 ml put in before stays");
   ok((await txt(p, ".bd2-sleep-v")).replace(/\s/g, "") === "6時間" && (await txt(p, "#bd2Daily .bd2-sec:last-child .sub")).startsWith("この7日の平均"), "⑧ last night 6 時間, the week's mean", await txt(p, "#bd2Daily .bd2-sec:last-child"));
   await p.fill("#bd2Bed", "23:00"); await p.dispatchEvent("#bd2Bed", "change"); await p.waitForTimeout(400);
   ok((await ls(p, "bodyDays")).find((x) => x.id === "2026-11-11")?.bed === "23:00" && (await txt(p, ".bd2-sleep-v")).replace(/\s/g, "") === "7時間30分", "⑧ a time changed: kept, 7時間30分", await txt(p, ".bd2-sleep-v"));

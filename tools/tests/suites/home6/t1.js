@@ -82,10 +82,10 @@ async function open(b, when) {
   await p.click("#h6CClose"); await p.waitForTimeout(300);
   ok(!(await p.evaluate(() => document.getElementById("h6Clock").open)) && (await p.evaluate(() => window.__wake.join(","))) === "on:screen,off", "⑥ closed, let go");
 
-  // ⑧ what the page can do, and a tile's own
+  // ⑧ what the page can do, and a tile's own (31 tiles: 33 before 水分 and きょうのテーマ were taken out, 2026-11-20)
   await more(p, "h6-guide-btn");
   const dts = await p.$$eval("#h6GuideBody dt[data-about]", (l) => l.map((x) => x.dataset.about));
-  ok(await p.evaluate(() => document.getElementById("h6Guide").open) && dts.length >= 33 && dts.includes("h5year") && !["quick", "h4mood", "h4watch", "h4breath", "h5mood"].some((k) => dts.includes(k)), "⑧ every tile's word", dts.length);
+  ok(await p.evaluate(() => document.getElementById("h6Guide").open) && dts.length >= 31 && dts.includes("h5year") && !["quick", "h4mood", "h4watch", "h4breath", "h5mood", "h3water", "h3theme"].some((k) => dts.includes(k)), "⑧ every tile's word", dts.length);
   await p.keyboard.press("Escape"); await p.waitForTimeout(300);
   await hold(p, "calendar"); await p.waitForTimeout(300);
   await p.locator("#h2TileGroup button", { hasText: "このタイルについて" }).click(); await p.waitForTimeout(500);
@@ -100,12 +100,16 @@ async function open(b, when) {
   ok(sh && sh.files.length === 1 && sh.files[0][0] === "tsumikasane-2026-11-14.png" && sh.files[0][1] === "image/png" && sh.files[0][2] > 20000, "⑩ a picture to the share sheet", sh);
 
   // ② the order of use
-  for (let i = 0; i < 3; i++) { await p.click('.tile[data-tile="h3water"] .h3-plus'); await p.waitForTimeout(200); } // (水分: きょうの気分, pressed before, was taken out 2026-11-19)
-  ok((await H(p, "uses")).h3water >= 3, "② presses counted", await H(p, "uses"));
+  // (on メモ: 書く, 保存 and 消す. 水分, pressed before, was taken out 2026-11-20, and きょうの気分 before it, 2026-11-19;
+  // the presses are said in the gear's sheet as it is drawn again with the records, so the memo is kept and then emptied)
+  await p.click('.tile[data-tile="h4memo"] .h4-memo-write'); await p.waitForTimeout(300);
+  await p.fill("#h4MemoIn", "牛乳"); await p.click('.tile[data-tile="h4memo"] .h4-memo-save'); await p.waitForTimeout(400);
+  await p.click('.tile[data-tile="h4memo"] .h4-memo-clear'); await p.waitForTimeout(400);
+  ok((await H(p, "uses")).h4memo >= 3, "② presses counted", await H(p, "uses"));
   await p.click("#homeSettings"); await p.waitForTimeout(600);
-  ok(flat(await p.textContent("#h6UseNote")).startsWith("この端末でよく押すタイル：水分（"), "② the counts said", await p.textContent("#h6UseNote"));
+  ok(flat(await p.textContent("#h6UseNote")).startsWith("この端末でよく押すタイル：メモ（"), "② the counts said", await p.textContent("#h6UseNote"));
   await p.click("#h6SortUse"); await p.waitForTimeout(400);
-  ok((await H(p, "prefs")).order?.[0] === "h3water", "② 水分 first", (await H(p, "prefs")).order?.slice(0, 3));
+  ok((await H(p, "prefs")).order?.[0] === "h4memo", "② メモ first", (await H(p, "prefs")).order?.slice(0, 3));
   await p.locator("#sheetStatus button:visible").first().click(); await p.waitForTimeout(400);
   ok(!(await H(p, "prefs")).order, "② 元に戻す");
   await closeSheet(p);

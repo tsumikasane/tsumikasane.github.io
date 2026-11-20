@@ -1,6 +1,6 @@
-// からだ その2: the edges — a page with nothing yet (水分 back to none, 睡眠 half put in and emptied), あったこと kept for a
+// からだ その2: the edges — a page with nothing yet (睡眠 half put in and emptied; 水分 taken out 2026-11-20), あったこと kept for a
 // day while another is looked at and taken off, 生理, 停滞期 not said, the calendar's months, the 節目 not said twice nor
-// for a past day, サイズの目標's line and emptied, 水分 on a past day, the week's notification on and off, and CSV in
+// for a past day, サイズの目標's line and emptied, the week's notification on and off, and CSV in
 // other shapes, written over and taken back
 process.env.URL0 = process.env.URL0 || "http://localhost:8777/";
 const { chromium } = require("playwright");
@@ -24,20 +24,15 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   const b = await chromium.launch();
   const mk = async () => { const p = await phone(b, WHEN, { deviceScaleFactor: 1 }); p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); }); return p; };
 
-  // ---- nothing recorded yet: only 水分・睡眠 shows
+  // ---- nothing recorded yet: only 睡眠 shows (水分 taken out 2026-11-20)
   const e = await mk();
   await seed(e, {}, "weight"); await e.waitForTimeout(900);
   const vis = await e.evaluate(() => ["bd2Quick", "bd2Effects", "bd2Plateau", "bd2Cal", "bd2Daily"].map((id) => { const x = document.getElementById(id); return !x.hidden && x.offsetHeight > 0; }));
-  ok(JSON.stringify(vis) === "[false,false,false,false,true]", "nothing yet: only 水分・睡眠", vis);
-  ok((await txt(e, ".bd2-water-v")) === "0 / 2,000 ml" && (await txt(e, ".bd2-sleep-v")) === "—" && (await txt(e, ".bd2-sleep-note")).startsWith("きょうの朝までの夜です。"), "nothing yet: 0 ml, no sleep",
-    [await txt(e, ".bd2-water-v"), await txt(e, ".bd2-sleep-v"), await txt(e, ".bd2-sleep-note")]);
-  ok(!(await e.isVisible("#bd2Daily .bd2-less")) && !(await e.$('#bd2Tags button:has-text("生理")')), "nothing yet: no −200; no 生理 without 女性");
-  // ⑦ a cup, then back to none: the day's gone, and not into 最近削除した項目
-  await e.locator("#bd2Daily button", { hasText: "コップ1杯" }).click(); await e.waitForTimeout(400);
-  ok((await bday(e, "2026-11-11"))?.water === 200 && (await e.isVisible("#bd2Daily .bd2-less")), "⑦ a cup on a day with nothing");
-  await e.click("#bd2Daily .bd2-less"); await e.waitForTimeout(400);
-  const tomb = (await ls(e, "deleted")).find((t) => t.id === "bodyDays/2026-11-11");
-  ok(!(await bday(e, "2026-11-11")) && tomb && !tomb.data && !(await e.isVisible("#bd2Daily .bd2-less")), "⑦ back to none: gone, nothing in 最近削除した項目", tomb);
+  ok(JSON.stringify(vis) === "[false,false,false,false,true]", "nothing yet: only 睡眠", vis);
+  ok(!(await e.$(".bd2-water-v")) && (await txt(e, ".bd2-sleep-v")) === "—" && (await txt(e, ".bd2-sleep-note")).startsWith("きょうの朝までの夜です。"), "nothing yet: no 水分 (taken out), no sleep",
+    [await txt(e, ".bd2-sleep-v"), await txt(e, ".bd2-sleep-note")]);
+  ok(!(await e.$("#bd2Daily .bd2-less")) && !(await e.$('#bd2Tags button:has-text("生理")')), "nothing yet: no −200; no 生理 without 女性");
+  // ⑦ a cup, then back to none: went with 水分 (taken out 2026-11-20); ⑧ below empties a day the same way
   // ⑧ 寝た only: kept, no length; under an hour: none; over midnight; both emptied: gone
   await setTime(e, "#bd2Bed", "23:30");
   ok((await bday(e, "2026-11-11"))?.bed === "23:30" && (await txt(e, ".bd2-sleep-v")) === "—", "⑧ 寝た only: kept, no length yet");
@@ -69,10 +64,8 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   await p.locator("#bd2Tags button", { hasText: "塩分多め" }).click(); await p.waitForTimeout(400);
   const r10 = await wt(p, "2026-11-10");
   ok(!("tags" in r10) && r10.kg === 67.2, "② off: none kept, the rest as it was", r10);
-  // ⑦ a past day's 水分, its own; the words say which day
-  ok((await txt(p, ".bd2-water-v")) === "1,600 / 2,000 ml", "⑦ the day before: its own", await txt(p, ".bd2-water-v"));
-  await p.locator("#bd2Daily button", { hasText: "コップ1杯" }).click(); await p.waitForTimeout(400);
-  ok((await bday(p, "2026-11-10"))?.water === 1800 && (await status(p)).startsWith("水分 200 ml を足しました（きのう 1,800 ml）"), "⑦ a cup, the day before", await status(p));
+  // ⑦ a past day's 水分: taken out at the user's call (2026-11-20, tools/REMOVED.md); the day before's 1,600 ml stays
+  ok(!(await p.$(".bd2-water-v")) && (await bday(p, "2026-11-10"))?.water === 1600, "⑦ gone, the day before's kept", await bday(p, "2026-11-10"));
 
   // ---- 停滞期 not said: no goal, a goal above, nothing this last week
   const q = await mk();
