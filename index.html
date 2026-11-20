@@ -5841,6 +5841,7 @@ ul.list > li.btn-row { padding: 0; }
 .row-btn .row-count.warn { color: var(--warn); }
 .sync-lead { margin: 0 0 var(--space-2); line-height: 1.6; }
 .sync-error { margin: var(--space-1) 0 0; color: var(--warn); font-weight: 600; }
+.sync-leave-head { margin: 0 0 var(--space-1); }
 #syncIn p { margin: 0 0 var(--space-1); line-height: 1.6; }
 .check-line { display: flex; align-items: center; gap: var(--space-1); margin-top: 6px; line-height: 1.4; }
 .check-line input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
@@ -8426,6 +8427,23 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <button type="button" class="link-btn danger" id="syncSignOut">ログアウト</button>
             <!-- (a device handed to someone else: the user's call, 2026-11-20) -->
             <button type="button" class="link-btn danger" id="syncSignOutWipe">ログアウトして、この端末の記録を消す</button>
+            <!-- (退会: the user's call, 2026-11-20) -->
+            <button type="button" class="link-btn danger" id="syncLeaveOpen">アカウントを消す（退会）</button>
+          </div>
+        </div>
+        <!-- 退会 (the user's call, 2026-11-20): the account and its records at the server, after the password once more -->
+        <div class="card pad" id="syncLeave" hidden>
+          <p class="sync-leave-head"><strong>アカウントを消しますか？</strong></p>
+          <p class="sync-lead" id="syncLeaveText"></p>
+          <form class="add" id="syncLeaveForm" autocomplete="off" onsubmit="return false">
+            <label class="flabel" for="syncLeavePassword">パスワード</label>
+            <div class="ffield"><input type="password" id="syncLeavePassword" autocomplete="current-password" minlength="6"></div>
+          </form>
+          <label class="check-line"><input type="checkbox" id="syncLeaveWipe" checked><span>この端末の記録も消す</span></label>
+          <p class="sync-error" id="syncLeaveError" role="alert" hidden></p>
+          <div class="notice-actions">
+            <button type="button" class="btn sm danger-fill" id="syncLeaveGo">アカウントを消す</button>
+            <button type="button" class="link-btn" id="syncLeaveCancel">やめる</button>
           </div>
         </div>
         <!-- another account signed in where one's records are (the user's call, 2026-11-20): what becomes of them -->
@@ -25290,7 +25308,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月21日 5:34"; // 9218786a (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月21日 6:13"; // 2463d956 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -25577,6 +25595,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   };
   const syncReady = () => !!(FIREBASE_CONFIG || window.__syncRemote);
   let remote = null, syncUser = null, syncBusy = null;
+  let syncHold = false; // (退会 under way: nothing goes up, as a record sent then would be left at the server with no one to read it)
   // what came down: a record changed there later than here (or not waiting here at all) takes its place, or goes when it
   // was deleted there (into 最近削除した項目 here too); how many were put in place. Two changes made at once, here and
   // there (the same day's 日記 written in Safari and in the home-screen app before either had gone up): the later one is
@@ -25664,7 +25683,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // down, then up; one run at a time. Offline or failing, the queue stays for the next time (opening the app, coming back
   // to it, a minute later, back online)
   function syncNow(byHand) {
-    if (!remote || !syncUser || !syncState.uid || ALL_STORES.some((s) => !s.loaded)) return Promise.resolve();
+    if (syncHold || !remote || !syncUser || !syncState.uid || ALL_STORES.some((s) => !s.loaded)) return Promise.resolve();
     if (syncBusy) {
       if (!byHand) return syncBusy;
       flash("同期しています。少しお待ちください。"); // one running by itself: this one after it
@@ -25696,7 +25715,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") { if (!remote) startSync(); else syncNow(); }
-    else if (remote && syncUser && Object.keys(syncState.pending).length) pushPending().catch(() => {}); // going away: up now
+    else if (!syncHold && remote && syncUser && Object.keys(syncState.pending).length) pushPending().catch(() => {}); // going away: up now
   });
   window.addEventListener("online", () => (remote ? syncNow() : startSync()));
   setInterval(() => { if (document.visibilityState === "visible") syncNow(); }, 60000);
@@ -25714,6 +25733,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       signUp: (email, pw) => A.createUserWithEmailAndPassword(auth, email, pw),
       signOut: () => A.signOut(auth),
       reset: (email) => A.sendPasswordResetEmail(auth, email),
+      // 退会 (the user's call, 2026-11-20): the password asked for again (Firebase wants a recent sign-in for it), every record
+      // of the account deleted at the server, 400 at a time, then the account (a stop part way: pressed again, the rest go)
+      async leave(pw) {
+        const u = auth.currentUser;
+        await A.reauthenticateWithCredential(u, A.EmailAuthProvider.credential(u.email, pw));
+        const snap = await F.getDocs(records());
+        for (let k = 0; k < snap.docs.length; k += 400) {
+          const batch = F.writeBatch(db);
+          for (const d of snap.docs.slice(k, k + 400)) batch.delete(d.ref);
+          await batch.commit();
+        }
+        await A.deleteUser(u);
+      },
       async push(docs) {
         for (let k = 0; k < docs.length; k += 400) {
           const batch = F.writeBatch(db);
@@ -25806,6 +25838,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("syncOut").hidden = on || ask;
     $("syncIn").hidden = !on;
     $("syncSwitch").hidden = !ask;
+    if (!on) $("syncLeave").hidden = true; // (退会: only while signed in)
     $("syncNote").textContent = on ? "オン" : ask ? "確認待ち" : "オフ";
     if (ask) {
       const e = syncUser.email || "このアカウント";
@@ -25894,6 +25927,54 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     await syncWipe(id);
   });
   function showSyncInError(msg) { $("syncInError").textContent = msg; $("syncInError").hidden = !msg; }
+  // 退会 (the user's call, 2026-11-20): アカウントを消す, with the password once more. The account's records at the server
+  // and the account go (remote.leave), nothing going up meanwhile (syncHold); then the notification server forgets the
+  // account's devices; then this device's records too (the page starts again without them), unless 「この端末の記録も消す」
+  // was let go of: they stay here, nobody's (owner)
+  const LEAVE_ERRORS = {
+    "auth/wrong-password": "パスワードがちがいます。", "auth/invalid-credential": "パスワードがちがいます。", "auth/invalid-login-credentials": "パスワードがちがいます。",
+    "auth/admin-restricted-operation": "Firebase の設定で、アカウントを消すことが止められています。",
+    "test-version": "テスト版では、アカウントを消せません。",
+  };
+  function showLeaveError(msg) { $("syncLeaveError").textContent = msg; $("syncLeaveError").hidden = !msg; }
+  $("syncLeaveOpen").addEventListener("click", () => {
+    showLeaveError(""); $("syncLeavePassword").value = ""; $("syncLeaveWipe").checked = true;
+    $("syncLeaveText").textContent = `${syncUser?.email || "このアカウント"} のアカウントと、サーバーにあるこのアカウントの記録をすべて消します。消したものは戻せません。ほかの端末にある記録は、その端末に残ります（同期はできなくなります）。確かめるため、パスワードを入れてください。`;
+    $("syncLeave").hidden = false;
+    $("syncLeave").scrollIntoView({ block: "center" });
+    $("syncLeavePassword").focus();
+  });
+  $("syncLeaveCancel").addEventListener("click", () => { $("syncLeave").hidden = true; $("syncLeavePassword").value = ""; showLeaveError(""); });
+  $("syncLeaveGo").addEventListener("click", async () => {
+    const pw = $("syncLeavePassword").value;
+    showLeaveError("");
+    if (!remote || !syncUser || !syncState.uid) return;
+    if (!pw) { showLeaveError("パスワードを入れてください。"); return; }
+    const wipe = $("syncLeaveWipe").checked;
+    const ids = [...new Set([...settings.items.filter((x) => typeof x.id === "string" && x.id.startsWith("push:")).map((x) => x.id.slice(5)), pushLocal().id].filter(Boolean))];
+    const was = syncState.email;
+    $("syncLeaveGo").disabled = true;
+    syncHold = true;
+    try {
+      await syncBusy; // (a sync under way finishes first)
+      syncFresh(); syncState.email = ""; saveSyncState(); // (gone on purpose: nothing to say on きょう)
+      await remote.leave(pw);
+    } catch (e) {
+      syncHold = false; $("syncLeaveGo").disabled = false;
+      syncFresh(); syncState.email = was; saveSyncState();
+      showLeaveError(LEAVE_ERRORS[e?.code] || SYNC_ERRORS[e?.code] || `消せませんでした（${e?.code || e?.message || "不明"}）。インターネットにつないで、もう一度押してください。`);
+      return;
+    }
+    $("syncLeave").hidden = true; $("syncLeaveGo").disabled = false; $("syncLeavePassword").value = "";
+    const soon = (p) => Promise.race([p, new Promise((ok) => setTimeout(ok, 4000))]);
+    await Promise.all(ids.map((id) => soon(pushCall("DELETE", "/d/" + id).catch(() => {}))));
+    syncHold = false;
+    if (wipe) { await syncWipe(null); return; } // (its notifications forgotten at the server already)
+    syncFresh(); delete syncState.owner; delete syncState.ownerDirty; saveSyncState();
+    if (pushLocal().id) pushForgetHere();
+    renderAll();
+    flash("アカウントを消しました。この端末の記録はそのままです。");
+  });
   // この端末の記録をどうしますか？ (another account signed in where one's records are, the user's call, 2026-11-20):
   // 消して、切りかえる (the page starts again without them, and gets the account's), このアカウントに入れる (they go up, as a
   // first sign-in has them), ログインをやめる (they stay as they were)

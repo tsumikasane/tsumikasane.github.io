@@ -86,6 +86,18 @@ page = swap(page, '''      async push(docs) {
           await batch.commit();
         }
       },''', '''      async push(docs) {}, // テスト版: 本番 → テスト only, so nothing written here ever goes up to the real records''', "sync's push")
+# 退会: the real account and its records are never deleted from it (it signs in with the real account)
+page = swap(page, '''      async leave(pw) {
+        const u = auth.currentUser;
+        await A.reauthenticateWithCredential(u, A.EmailAuthProvider.credential(u.email, pw));
+        const snap = await F.getDocs(records());
+        for (let k = 0; k < snap.docs.length; k += 400) {
+          const batch = F.writeBatch(db);
+          for (const d of snap.docs.slice(k, k + 400)) batch.delete(d.ref);
+          await batch.commit();
+        }
+        await A.deleteUser(u);
+      },''', '''      async leave() { throw Object.assign(new Error("テスト版"), { code: "test-version" }); }, // テスト版: 本番のアカウントと記録は、ここからは消さない''', "sync's leave")
 # 通知アラーム: its alarms go to its own device only; the real devices' ids come down with the real records, and the
 # test version's plans (tried changes and all) must never reach them
 if "async function pushSend()" in page:
@@ -94,6 +106,9 @@ if "async function pushSend()" in page:
 for write in ("writeBatch", "setDoc", "updateDoc", "deleteDoc", "addDoc", ".commit(", "batch.set", "batch.delete"):
     if write in page:
         sys.exit(f"make-test: the page still writes to Firestore ({write}); the test version wasn't made")
+for change in ("deleteUser",):
+    if change in page:
+        sys.exit(f"make-test: the page could still change the real account ({change}); the test version wasn't made")
 page = swap(page, r'<p class="sync-lead">[^<]*</p>', '<p class="sync-lead">テスト版です。本番と同じメールアドレスとパスワードで「ログイン」すると、本番の記録がここにも届きます。ここで書いたり消したりしたものは、本番には送りません。</p>', "sync's lead", regex=True)
 page = swap(page, '''    "auth/operation-not-allowed": ''', '''    "auth/unauthorized-domain": "テスト版のアドレスが、Firebase の「承認済みドメイン」にまだ入っていません。",
     "auth/operation-not-allowed": ''', "sync's error words")
@@ -101,8 +116,8 @@ page = swap(page, "<title>つみかさね</title>", "<title>つみかさね テ�
 page = swap(page, '<meta name="apple-mobile-web-app-title" content="つみかさね">', '<meta name="apple-mobile-web-app-title" content="テスト版">', "the home-screen name")
 page = swap(page, "</head>", '''<style>/* テスト版: an orange mark at the top of every page, so it is never taken for the real one */
 body::after { content: "テスト版"; position: fixed; z-index: 2147483647; top: env(safe-area-inset-top, 0px); left: 50%; transform: translateX(-50%); padding: 1px 10px 2px; border-radius: 0 0 8px 8px; background: #ff9f0a; color: #000; font: 700 11px/1.4 -apple-system, system-ui, sans-serif; pointer-events: none; }
-/* no new accounts made from it: it only gets the real records */
-#syncSignUp { display: none !important; }
+/* no new accounts made from it, nor the real one let go of: it only gets the real records */
+#syncSignUp, #syncLeaveOpen { display: none !important; }
 </style>
 </head>''', "the head's end")
 (OUT / "index.html").write_text(page, encoding="utf-8", newline="\n")
