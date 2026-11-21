@@ -69,15 +69,15 @@ const titles = (g) => g.mandala.map((c) => c?.t || null);
   await p.click("#goalPickEnd"); await p.waitForTimeout(300);
   ok(!(await p.$("#goalList.picking")) && !!(await p.$("#goalPickStart")), "④ おわる");
 
-  // ⑩ 達成したマスをうすく: on, this device's
+  // ⑩ 達成したマスをうすく: taken out at the user's call (2026-11-21): no switch; one turned on before, on this device, read by nothing
   await p.click("#goalSettings"); await p.waitForTimeout(600);
-  await p.click("#goalDim"); await p.waitForTimeout(300);
-  ok((await p.evaluate(() => localStorage.getItem("tsumikasane:goalDimDone"))) === "on", "⑩ on, this device's");
+  ok(!(await p.$("#goalDim")) && !(await txt(p, "#goalSetGroup")).includes("うすく表示"), "⑩ (taken out) no switch in 設定");
+  await p.evaluate(() => localStorage.setItem("tsumikasane:goalDimDone", "on"));
   await done(p);
 
   await open(p, "TOEIC");
   const op = (k) => p.evaluate((k) => Number(getComputedStyle(document.querySelector(`.m-cell[data-k="${k}"]`)).opacity), k);
-  ok((await p.evaluate(() => document.getElementById("mGrid").classList.contains("dimdone"))) && (await op(1)) < 0.5 && (await op(0)) === 1, "⑩ 文法 (done) faded, 単語 not", [await op(1), await op(0)]);
+  ok(!(await p.evaluate(() => document.getElementById("mGrid").classList.contains("dimdone"))) && (await op(1)) === 1 && (await op(0)) === 1, "⑩ (taken out) 文法 (done) not faded", [await op(1), await op(0)]);
   // ⑥ the bars of the cells with cells inside
   const bars = await p.evaluate(() => [0, 1, 2, 3, 4, 5].map((k) => document.querySelector(`.m-cell[data-k="${k}"] .m-pbar i`)?.style.width ?? null));
   ok(bars[1] === "100%" && bars[0] && bars[0] !== "0%" && bars[2] && bars[3] && bars[4] === null && bars[5] === null, "⑥ bars on 単語・文法・模試・リスニング only", bars);

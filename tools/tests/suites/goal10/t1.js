@@ -27,15 +27,8 @@ const nows = (p) => p.evaluate(() => Date.now());
   ok(t.startsWith("月ごとの進み") && t.includes(`今月 ${mo}マス`) && (await p.$$eval("#goalMonths .mv-bar", (x) => x.length)) === 12, "③ 12 months, this one's", t);
   // ⑧ 中間目標の前日のお知らせ: taken out (the user's call, 2026-11-20)
   ok(!(await W(p, "alarms", await nows(p))).some((a) => a.tag.startsWith("goal-ms:")), "⑧ (taken out) no notification the day before a 中間目標");
-  // ② やりたいこと: one added, then made a goal
-  await p.fill("#goalWish input", "フルマラソンを走る"); await p.press("#goalWish input", "Enter"); await p.waitForTimeout(500);
-  ok((await ls(p, "settings")).find((x) => x.id === "goalWish")?.items?.[0]?.t === "フルマラソンを走る", "② kept");
-  await p.locator("#goalWish .gwish-list button", { hasText: "目標にする" }).click(); await p.waitForTimeout(800);
-  ok((await p.inputValue("#goalTitle")) === "フルマラソンを走る", "② a new goal with its words");
-  await p.fill("#goalCriterion", "完走"); await p.fill("#goalDeadline", "2027-12-31"); await p.waitForTimeout(200);
-  await p.click("#goalSave"); await p.waitForTimeout(900);
-  ok((await ls(p, "goals")).some((g) => g.title === "フルマラソンを走る") && !(await ls(p, "settings")).find((x) => x.id === "goalWish").items.length, "② added: off the list");
-  await done(p);
+  // ② やりたいこと（いつか）: taken out at the user's call (2026-11-21, tools/REMOVED.md)
+  ok(!(await p.$("#goalWish")) && !(await txt(p, "#sec-goal")).includes("やりたいこと"), "② (taken out) no やりたいこと（いつか）");
   // ④ 文字の大きさ: 大きく
   await p.click("#goalSettings"); await p.waitForTimeout(600);
   await p.click('#goalFont button[data-font="l"]'); await p.waitForTimeout(300);

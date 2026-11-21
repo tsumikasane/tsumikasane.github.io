@@ -24,9 +24,9 @@ const nows = (p) => p.evaluate(() => Date.now());
   // ⑨ 目標のつながり
   let t = await txt(p, "#goalLinks");
   ok(t.startsWith("目標のつながり 2 件") && t.includes("社会人になるまでに") && t.includes("↳ マス「英語」 📚 TOEIC 800点".replace("📚 ", "")) && t.includes("→ 達成したら次に ハーフマラソンを走る 12/1から"), "⑨ the goals joined", t);
-  // ④ 進行中の目標を画像で保存
-  let [dl] = await Promise.all([p.waitForEvent("download", { timeout: 8000 }).catch(() => null), p.click("#goalImgSave")]);
-  ok(dl && dl.suggestedFilename() === "tsumikasane-goals-2026-11-11.png", "④ the goals under way as a picture", dl && dl.suggestedFilename());
+  // ④ 進行中の目標を画像で保存: taken out at the user's call (2026-11-21, tools/REMOVED.md)
+  ok(!(await p.$("#goalImgSave")) && !(await p.$("#goalImgRow")), "④ (taken out) no 進行中の目標を画像で保存");
+  let dl;
   // ⑧ 期限のお知らせを増やす: 1か月前 and 当日
   await p.click("#goalSettings"); await p.waitForTimeout(600);
   await p.locator("#goalDueMore .chip-btn", { hasText: "1か月前" }).click(); await p.waitForTimeout(300);
@@ -34,9 +34,9 @@ const nows = (p) => p.evaluate(() => Date.now());
   ok(JSON.stringify((await ls(p, "settings")).find((x) => x.id === "goalDueMore")?.days) === "[30,0]", "⑧ kept");
   const al = (await W(p, "alarms", await nows(p))).find((a) => a.tag === "goal:g3:30");
   ok(al && new Date(al.at).toISOString() === "2026-12-01T00:00:00.000Z" && al.body === "目標の期限まで、あと30日です（12/31・いま 33%）", "⑧ a month before, 9:00", al);
-  // ⑥ 2回押す on
-  await p.click("#goalUn2"); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => localStorage.getItem("tsumikasane:goalUncheck2") === "on"), "⑥ on, this device's");
+  // ⑥ 2回押す: taken out at the user's call (2026-11-21): no switch; one turned on before, on this device, read by nothing
+  ok(!(await p.$("#goalUn2")) && !(await txt(p, "#goalSetGroup")).includes("2回押す"), "⑥ (taken out) no switch in 設定");
+  await p.evaluate(() => localStorage.setItem("tsumikasane:goalUncheck2", "on"));
   await done(p);
 
   await open(p, "TOEIC");
@@ -57,12 +57,10 @@ const nows = (p) => p.evaluate(() => Date.now());
   [dl] = await Promise.all([p.waitForEvent("download", { timeout: 8000 }).catch(() => null), p.click("#mJson")]);
   const file = dl ? await dl.path() : null, data = file ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
   ok(dl.suggestedFilename() === "tsumikasane-goal-2026-11-11.json" && data?.kind === "goal" && data.goal.title === "TOEIC 800点" && data.goal.mandala[0].c[1].m === "公式の単語帳" && !JSON.stringify(data).includes('"ev"') && data.goal.mandala[1].c[0].d === true, "⑤ the goal as a file", data && Object.keys(data.goal));
-  // ⑥ 2回押す: 文法書1周 (done)
+  // ⑥ 2回押す taken out: 文法書1周 (done) taken off at one press, though it was on before on this device
   await p.click('.m-cell[data-k="1"] [data-role="open"]'); await p.waitForTimeout(500);
   await p.locator('.m-cell[data-k="0"] [data-role="check"]').click(); await p.waitForTimeout(400);
-  ok((await goal(p, "g1")).mandala[1].c[0].d === true && (await status(p)).includes("もう一度押すと、達成を取り消します"), "⑥ the first press only says so");
-  await p.locator('.m-cell[data-k="0"] [data-role="check"]').click(); await p.waitForTimeout(400);
-  ok(!(await goal(p, "g1")).mandala[1].c[0].d, "⑥ the second takes it off");
+  ok(!(await goal(p, "g1")).mandala[1].c[0].d && !(await status(p)).includes("もう一度押すと"), "⑥ (taken out) one press takes it off", await status(p));
   await p.locator('.m-cell[data-k="0"] [data-role="check"]').click(); await p.waitForTimeout(400);
   ok((await goal(p, "g1")).mandala[1].c[0].d === true, "⑥ checking it again: at once");
   await p.click("#sheetCancel"); await p.waitForTimeout(500);

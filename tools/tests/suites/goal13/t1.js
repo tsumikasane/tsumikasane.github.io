@@ -33,11 +33,8 @@ const tags = async (p) => (await W(p, "alarms", await p.evaluate(() => Date.now(
   ok((await badge("run3")).includes("3日つづけて 11/13・NEW") && (await badge("early")).includes("朝のうちに 11/11・NEW") && (await badge("c10")).includes("10マス 10/30") && (await badge("first")).includes("はじめの一歩 2025/7/5") && (await badge("ahead")).includes("余裕をもって 6/20"),
     "⑥ each on the day it was earned, the newest marked", [await badge("run3"), await badge("early"), await badge("c10"), await badge("first"), await badge("ahead")]);
   ok((await badge("c50")).includes("50マス マスを50こ達成する") && (await p.$$eval("#goalBadges .g13-badge.got", (x) => x.length)) === 7, "⑥ one still to earn says how", await badge("c50"));
-  // ⑩ 今週の報告を送る
-  await p.evaluate(() => { window.__shared = null; Object.defineProperty(navigator, "share", { configurable: true, value: async (d) => { window.__shared = d; } }); });
-  await p.click("#goalReport"); await p.waitForTimeout(300);
-  const rep = (await p.evaluate(() => window.__shared))?.text || "";
-  ok(rep.startsWith("今週の目標（11/8〜11/14）\n") && rep.includes("\n・朝ランを習慣に 80%（今週 4マス）\n　1回目、2回目、3回目、4回目\n") && rep.includes("（今週 2マス・1時間35分）\n　単語帳1周、苦手まとめ") && rep.includes("・部屋を片づける 33%（今週 0マス・30分）") && rep.endsWith("\n\n合計 6マス・取り組んだ時間 2時間5分") && !rep.includes("ハーフマラソン"), "⑩ the week in words", rep);
+  // ⑩ 今週の報告を送る: taken out at the user's call (2026-11-21, tools/REMOVED.md)
+  ok(!(await p.$("#goalReport")) && !(await txt(p, "#sec-goal")).includes("今週の報告"), "⑩ (taken out) no 今週の報告を送る");
 
   // ① まとめて選ぶ: 期限を延ばす for two
   await p.click("#goalPickStart"); await p.waitForTimeout(300);
