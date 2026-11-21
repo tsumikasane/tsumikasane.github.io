@@ -6,6 +6,9 @@ before. Exits 1 with any NEW.
 
   python3 tools/tests/run.py              everything: the comparison tests and every suite (about 25 minutes)
   python3 tools/tests/run.py ToDo         a chat's suites and comparison tests (and those for every page)
+  python3 tools/tests/run.py ToDo --changed   and, before a release, the other chats' suites that mention what this
+                                          change takes away (an id, a name, words on the page); it says too when the
+                                          change touches the parts every page shares, the time for everything
   python3 tools/tests/run.py r37 r38      those suites alone
   python3 tools/tests/run.py cmp          the comparison tests alone
   python3 tools/tests/run.py --list       the suites by chat, with their tests
@@ -15,6 +18,7 @@ before. Exits 1 with any NEW.
 A suite is a folder under suites/ with its suite.txt (port, chat, tests) and, if some of its failures are known, its
 known.txt. Its servers: the working tree at 8765, the page before at 8766, each suite's hook build at its port. They stay
 up after it (TEST_WORK, /tmp/tsumikasane-tests by default, keeps what it made: logs/, out/, summary.txt)."""
+import bisect
 import concurrent.futures
 import os
 import pathlib
@@ -34,6 +38,18 @@ TIMEOUT = 420  # seconds a test may take
 CHATS = ["きょう・天気", "カレンダー", "ToDo", "目標", "つみかさね・記録", "ダイエット", "家計簿・バイト", "日記・勉強・ルーティーン"]
 EVERY = "ぜんぶ"  # a comparison test for every page: run with any chat's
 RESERVED = {8765, 8766, 8767}  # the page now, the page before, the test version looked at by hand (WORKFLOW.md)
+# --changed: the parts every page shares (WORKFLOW.md, アプリのつくり): files of their own, and index.html's sections by
+# their headings (`  // ---------- … ----------`), and the helpers at the start of its script, before the first heading.
+# A change to them is one to run everything for
+SHARED_FILES = ("sw.js", "manifest.webmanifest", "tools/make-test.py", "push/")
+SHARED_SECTIONS = ("(shared", "storage", "この端末の記録を消す", "消した記録", "保存できないとき", "同期", "tabs", "date navigation",
+                   "通知アラーム", "通知を受け取る", "記録の書き出し・読み込み", "記録を守る仕組み", "端末の中のコピー",
+                   "保存できる量", "読めなくなった記録の控え", "最近削除した項目", "書きかけ", "boot")  # (この画面の版: make-test.py sets it each time)
+# (comments, words left in them not on the page: <!-- -->, /* */ from a line's start (not accept="image/*"'s), // after a
+# space or a bracket (not https://'s))
+COMMENT = re.compile(r"<!--.*?-->|^[ \t]*/\*.*?\*/|(?<![:\w\"'\\/])//[^\n]*", re.S | re.M)
+IDENT = re.compile(r"[A-Za-z_$][\w$-]{3,}")  # (an id, a class, a function's or a setting's name: with a capital, a digit or a -)
+WORDS = re.compile(r"[ぁ-ゖァ-ヺー一-龯々〆]{3,}")  # (words on the page)
 
 
 def table(path):
@@ -144,6 +160,50 @@ def prepare(all_suites, base):
     sys.exit("run.py: the servers didn't come up: " + ", ".join(str(p) for p in ports if not up(p)))
 
 
+def git(*args):
+    return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
+
+
+def changes(base, all_suites, cmp_rows):
+    """--changed: what this change (the page before, base, against the working tree) takes away: ids, class and function
+    names, and words on the page that were there and are nowhere now (comments left out); the suites and comparison tests
+    that mention them, with what they mention. And what of the parts every page shares it touches"""
+    old, new = git("show", f"{base}:index.html"), (ROOT / "index.html").read_text(encoding="utf-8")
+    o, n = COMMENT.sub(" ", old), COMMENT.sub(" ", new)
+    gone_names = {x for x in set(IDENT.findall(o)) - set(IDENT.findall(n)) if re.search(r"[A-Z0-9-]", x)}  # (not a word as "opened")
+    gone_words = set(WORDS.findall(o)) - set(WORDS.findall(n))
+
+    def mentions(text):
+        found = sorted(set(IDENT.findall(text)) & gone_names)
+        found += sorted(w for w in set(WORDS.findall(text)) if any(w in g for g in gone_words) and w not in n)
+        return found
+    why = {}
+    for s in all_suites:
+        hit = sorted({m for f in sorted((HERE / "suites" / s["name"]).glob("*.js")) for m in mentions(f.read_text(encoding="utf-8"))})
+        if hit:
+            why[s["name"]] = hit
+    for rel, _ in cmp_rows:
+        hit = mentions((HERE / "cmp" / rel).read_text(encoding="utf-8"))
+        if hit:
+            why[rel] = hit
+    # the parts every page shares: their files; index.html's lines changed, by the sections they are in
+    files = set(git("diff", "--name-only", base).split()) | {l[3:] for l in git("status", "--porcelain").splitlines() if l.startswith("??")}
+    shared = sorted(f for f in files if f.startswith(SHARED_FILES))
+    lines = new.split("\n")
+    script = next((i + 1 for i, l in enumerate(lines) if l.startswith("<script>")), 0)
+    heads = [(i + 1, l.strip()) for i, l in enumerate(lines) if l.startswith("  // ---------- ")]
+    at = [h for h, _ in heads]
+    touched = set()
+    for m in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", git("diff", "-U0", base, "--", "index.html"), re.M):
+        start = int(m.group(1)); end = start + max(int(m.group(2) or 1), 1) - 1
+        if script and at and end >= script and start < at[0]:
+            touched.add("はじめの共通の部品（el・flash など）")
+        for h, name in heads[max(0, bisect.bisect_right(at, start) - 1):bisect.bisect_right(at, end)]:
+            if any(k in name for k in SHARED_SECTIONS):
+                touched.add(re.sub(r"\s*(\(.*|-+)$", "", name.replace("// ----------", "", 1)).strip())  # (its name, without the notes)
+    return why, shared + sorted(touched)
+
+
 def run_node(cwd, file, log):
     env = dict(os.environ)
     if "NODE_PATH" not in env:
@@ -175,7 +235,8 @@ def main(args):
             jobs = int(n)
         else:
             rest.append(a)
-    args = rest
+    args = [a for a in rest if a != "--changed"]
+    changed = "--changed" in rest
     all_suites = suites()
     cmp_rows = table(HERE / "cmp" / "list.txt")
     for rel, chat in cmp_rows:
@@ -197,9 +258,17 @@ def main(args):
     if unknown:
         sys.exit(f"run.py: no such suite or chat: {' '.join(unknown)} (see --list)")
     chats = [a for a in args if a in CHATS]
-    picked = [s for s in all_suites if not args or s["name"] in args or s["chat"] in chats]
-    cmps = [(rel, c) for rel, c in cmp_rows if not args or "cmp" in args or (chats and c in chats + [EVERY])]
     base = base_rev()
+    why, shared = changes(base, all_suites, cmp_rows) if changed else ({}, [])
+    everything = not args and not changed
+    picked = [s for s in all_suites if everything or s["name"] in args or s["chat"] in chats or s["name"] in why]
+    cmps = [(rel, c) for rel, c in cmp_rows if everything or "cmp" in args or ((chats or changed) and c in chats + [EVERY]) or rel in why]
+    if changed:
+        more = [f"{k}（{'・'.join(v[:3])}{'…' if len(v) > 3 else ''}）" for k, v in why.items()
+                if not any(s["name"] == k and s["chat"] in chats for s in all_suites) and not any(r == k and c in chats + [EVERY] for r, c in cmp_rows)]
+        print("（この変更で消えたものが出てくる、ほかのスイートも流します：" + "、".join(more) + "）" if more else "（この変更で消えたものが出てくる、ほかのスイートはありません）", flush=True)
+        if shared:
+            print("（共通の部分が変わっています：" + "、".join(shared) + "。出す前に、ぜんぶのテスト `run.py -j 3` を流してください）", flush=True)
     prepare(all_suites, base)
     report, new = [], 0
 
