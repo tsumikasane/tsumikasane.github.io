@@ -40,7 +40,7 @@ const editRow = async (p, text) => { await p.locator("#todoList li", { hasText: 
   let p = await open(b, "11:00");
   // ④ a free time: レポート (90 min, due in 2 days) — today 12:30〜13:00 too short, 15:00〜17:00 fits
   await editRow(p, "レポート");
-  ok(await p.isVisible("#recSlot") && await p.isVisible("#recFocus"), "④ and the timer in its sheet");
+  ok(await p.isVisible("#recSlot") && !(await p.$("#recFocus")), "④ in its sheet (the timer on it taken out, 2026-11-21)");
   await p.click("#recSlot"); await p.waitForTimeout(300);
   const slots = await p.evaluate(() => [...document.querySelectorAll("#recSlots .chip-btn")].map((x) => x.textContent));
   ok(slots[0] === "きょう 15:00〜16:30" && slots[1] === "あした 08:00〜09:30" && !slots.some((x) => x.includes("12:30")), "④ the free times that hold 1 時間 30 分 (授業 till 12:30, 30 分 to ゼミ too short)", slots);
@@ -60,7 +60,7 @@ const editRow = async (p, text) => { await p.locator("#todoList li", { hasText: 
 
   // ⑤ picking: from その他
   await p.click("#todoMore"); await p.waitForTimeout(300);
-  ok((await menu(p)).join("|").includes("選択して、まとめて変える") && (await menu(p)).includes("完了のふりかえり") && (await menu(p)).includes("集中タイマーを始める"), "⑤⑦ and the timer in その他", await menu(p));
+  ok((await menu(p)).join("|").includes("選択して、まとめて変える") && (await menu(p)).includes("完了のふりかえり") && !(await menu(p)).some((w) => w.includes("集中タイマー")), "⑤⑦ in その他 (the timer taken out, 2026-11-21)", await menu(p));
   await pressMenu(p, "選択して");
   ok(await p.isVisible("#tdSelBar") && await p.isVisible("#tdSelHead") && await p.isHidden("#sec-todo .td-tools") && await txt(p, "#tdSelN") === "ToDoを選んでください" && await p.isDisabled("#tdSelDue"), "⑤ picking: the bar, nothing picked yet");
   await p.locator("#todoList li", { hasText: "牛乳を買う" }).locator(".check").click();
@@ -145,7 +145,7 @@ const editRow = async (p, text) => { await p.locator("#todoList li", { hasText: 
   await p.click("#tdSetRows .td-set-edit .td-set-acts .link-btn:last-child"); await p.waitForTimeout(400);
   sets = (await ls(p, "settings")).find((x) => x.id === "todoSets");
   ok(sets.list.length === 2 && sets.list[1].name === "テスト前", "⑥ a new one made there");
-  ok(await p.isVisible("#tdRemindAt") && await p.inputValue("#focusWork") === "25" && await p.inputValue("#focusRest") === "5", "① and the timer's settings in 編集");
+  ok(await p.isVisible("#tdRemindAt") && !(await p.$("#focusWork")) && !(await p.$("#focusRest")), "① in 編集 (the timer's lengths taken out, 2026-11-21)");
   await p.keyboard.press("Escape"); await p.waitForTimeout(600);
 
   // ⑦ looked back on: this week (Sun 11/8 – Sat 11/14), the week before, this month
@@ -158,12 +158,12 @@ const editRow = async (p, text) => { await p.locator("#todoList li", { hasText: 
   await p.reload(); await p.waitForTimeout(700);
   await p.click("#todoMore"); await p.waitForTimeout(300); await pressMenu(p, "完了のふりかえり"); await p.waitForTimeout(400);
   let rev = await txt(p, "#tdRevBody");
-  ok(rev.includes("11/8〜11/14") && /3 件 完了 （先週は 2 件・\+1）/.test(rev) && rev.includes("期限までに完了 1/2 件（50%）") && rev.includes("集中した時間 1 時間 15 分"), "⑦ this week: 3, the week before 2, by the 期限 1 of 2, focused", rev);
+  ok(rev.includes("11/8〜11/14") && /3 件 完了 （先週は 2 件・\+1）/.test(rev) && rev.includes("期限までに完了 1/2 件（50%）") && !rev.includes("集中した時間"), "⑦ this week: 3, the week before 2, by the 期限 1 of 2 (not the time focused, 2026-11-21)", rev);
   ok(rev.includes("リストごと") && /大学 1 件/.test(rev) && /リストなし 1 件/.test(rev) && /ラベルごと/.test(rev) && /大学 2 件/.test(rev), "⑦ by list and by label", rev);
   ok(await p.locator("#tdRevBody path.td-bar").count() === 2, "⑦ a bar a day with any");
   await p.locator("#tdRevBody .seg button", { hasText: "今月" }).click(); await p.waitForTimeout(300);
   rev = await txt(p, "#tdRevBody");
-  ok(rev.includes("11/1〜11/30") && /5 件 完了/.test(rev) && rev.includes("集中した時間 1 時間 45 分"), "⑦ this month", rev);
+  ok(rev.includes("11/1〜11/30") && /5 件 完了/.test(rev) && !rev.includes("集中した時間"), "⑦ this month", rev);
   ok(await p.evaluate(() => document.getElementById("sheetTitle").textContent) === "完了のふりかえり", "⑦ in the sheet, titled");
   await p.screenshot({ path: __dirname + "/shots/t-review.png" });
   ok(!p.errs.length, "no errors: " + p.errs.join(" | "));

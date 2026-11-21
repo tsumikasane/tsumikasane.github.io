@@ -1,4 +1,4 @@
-// ToDo その24 ①〜⑦⑨ (⑧ やる日 taken off 2026-11-18, ⑩ よく使う時刻 with the new form's 時刻 2026-11-19: the user's calls), through the hook build at 8883 (the insides) and as a user would
+// ToDo その24 ①③〜⑦ (⑧ やる日 taken off 2026-11-18, ⑩ よく使う時刻 with the new form's 時刻 2026-11-19, ② and ⑨ with ToDo's 集中 2026-11-21: the user's calls), through the hook build at 8883 (the insides) and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8883/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -53,14 +53,8 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   const b = await chromium.launch();
   const p = await open(b, "2026-11-11T08:30:00+09:00");
 
-  // ---- ⑨ きのうのつづき
-  ok(await p.isVisible("#td24ContCard") && (await txt(p, "#td24ContCard")).includes("きのうは「レポートを書く」に50分集中しました。"), "⑨ yesterday's, on a card", await txt(p, "#td24ContCard"));
-  await p.locator("#td24ContCard button", { hasText: "つづきを始める" }).click(); await p.waitForTimeout(900);
-  ok((await W(p, "now"))?.todoId === "a" && (await sheetTitle(p)) === "集中", "⑨ つづきを始める: the timer on it, its own screen", await W(p, "now"));
-  await closeSheet(p); await W(p, "stop"); await p.waitForTimeout(500);
-  ok(await p.isVisible("#td24ContCard"), "⑨ still offered (nothing focused yet)");
-  await p.locator("#td24ContCard .td24-cont-x").click(); await p.waitForTimeout(300);
-  ok(await p.isHidden("#td24ContCard"), "⑨ × : not today");
+  // ---- ⑨ きのうのつづき (taken out with ToDo's 集中, 2026-11-21: yesterday's set on a ToDo kept, no card)
+  ok(!(await p.$("#td24ContCard")) && !(await txt(p, "#sec-todo")).includes("きのうのつづき"), "⑨ no card");
 
   // ---- ① かかる時間を名前から (⑩ よく使う時刻 went with the new form's 時刻, the user's call of 2026-11-19)
   await p.click("#todoAdd"); await p.waitForTimeout(700);
@@ -81,18 +75,10 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   ok(e2?.mins === 90 && e2.due === "2026-11-12" && !e2.time, "① added with the day and its time", e2);
   await closeSheet(p);
 
-  // ---- ② サブタスクで集中
-  await hold(p, "cu2"); await press(p, "サブタスクで集中");
-  ok((await items(p)).map(flat).join("|") === "構成|図", "② its steps to do", await items(p));
-  await press(p, "構成"); await p.waitForTimeout(800);
-  ok((await W(p, "now"))?.step === "k1" && (await txt(p, "#focusName")) === "スライド作り：構成", "② the timer on the step, said on the bar", [await W(p, "now"), await txt(p, "#focusName")]);
-  ok((await sheetTitle(p)) === "集中" && (await txt(p, ".td24-step-now")) === "いま：構成" && (await p.locator(".td24-step-go").count()) === 2, "② in 1件に集中する画面, a ▶ by each step");
-  await closeSheet(p);
-  await W(p, "put", { ...(await W(p, "now")), end: NOW - 1000, at: NOW - 26 * MIN }); await p.waitForTimeout(700);
-  ok((await status(p)).includes("「構成」は終わりましたか？"), "② over: asked", await status(p));
-  await p.locator("#status button", { hasText: "サブタスクを完了" }).click(); await p.waitForTimeout(500);
-  ok((await todo(p, "cu2")).steps.find((s) => s.id === "k1").done === true, "② サブタスクを完了: checked");
-  await W(p, "stop"); await p.waitForTimeout(300);
+  // ---- ② サブタスクで集中 (taken out, 2026-11-21)
+  await hold(p, "cu2");
+  ok(!(await items(p)).map(flat).some((w) => w.includes("集中")), "② not in a row's menu", await items(p));
+  await p.keyboard.press("Escape"); await p.waitForTimeout(300);
 
   // ---- ③ 連続を守るお知らせ
   await p.click("#todoSettings"); await p.waitForTimeout(900);
@@ -140,7 +126,7 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
 
   // ---- the guide
   const gd = await W(p, "guide");
-  ok(["かかる時間を名前から", "サブタスクで集中", "連続を守るお知らせ", "やりたい度", "ToDoの絵文字", "つながりで見る", "使っていないリスト・ラベル", "きのうのつづき"].every((w) => gd.includes(w)) && !gd.includes("休みの日にやる・平日にやる") && !gd.includes("よく使う時刻"), "the guide has them (not the ones taken out)");
+  ok(["かかる時間を名前から", "連続を守るお知らせ", "やりたい度", "ToDoの絵文字", "つながりで見る", "使っていないリスト・ラベル"].every((w) => gd.includes(w)) && !["休みの日にやる・平日にやる", "よく使う時刻", "サブタスクで集中", "きのうのつづき"].some((w) => gd.includes(w)), "the guide has them (not the ones taken out)");
 
   ok(!p.errs.length, "no errors", p.errs);
   await b.close();

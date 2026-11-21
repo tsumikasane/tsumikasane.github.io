@@ -1,4 +1,5 @@
-// ToDo その7: the edges (other days and clocks, odd cases, what else counts them; ⑩ ファイル taken off 2026-11-18, the user's call)
+// ToDo その7: the edges (other days and clocks, odd cases, what else counts them; ⑩ ファイル taken off 2026-11-18, ⑥ and ⑧ with
+// ToDo's 集中 2026-11-21: the user's calls)
 process.env.URL0 = process.env.URL0 || "http://localhost:8782/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -101,39 +102,12 @@ async function open(b, when, more = {}, hash = "todo") {
     await p.context().close();
   }
 
-  // ---- ⑥ another's timer running; a step checked there
-  {
-    const p = await open(b, "2026-11-11T08:30:00+09:00");
-    await p.evaluate(({ P }) => localStorage.setItem(P + "focus", JSON.stringify({ kind: "work", todoId: "e", len: 25, end: Date.now() + 10 * 60e3, left: null, at: Date.now() })), { P });
-    await hold(p, "b"); await press(p, "このToDoに集中する");
-    ok((await txt(p, ".td7-focus-kind")) === "ほかのToDo「資料を読む」の集中タイマーが動いています" && !!(await p.$('.td7-focus-acts button:has-text("このToDoで始める")')), "⑥ another's timer: said, このToDoで始める");
-    await p.locator('.td7-focus-steps .td-step', { hasText: "単語帳 2章" }).click(); await p.waitForTimeout(500);
-    ok((await todo(p, "b")).steps.find((s) => s.id === "s2").done === true && (await txt(p, ".td7-focus-sub")).includes("サブタスク2/3"), "⑥ a step checked there");
-    await p.locator(".td7-focus-acts button", { hasText: "このToDoで始める" }).click(); await p.waitForTimeout(500);
-    ok((await W(p, "focus"))?.todoId === "b" && (await txt(p, ".td7-focus-time")) === "25:00", "⑥ the timer on this one now");
-    errs.push(...p.errs);
-    await p.context().close();
-  }
-
   // ---- ⑦ fewer to do than 8 weeks ago: 減りました
   {
     const old = Array.from({ length: 6 }, (_, i) => ({ id: "o" + i, text: `昔のToDo${i}`, createdAt: T("2026-09-01"), done: true, doneAt: T("2026-11-0" + (2 + i), 10) }));
     const p = await open(b, "2026-11-11T08:30:00+09:00", { replace: true, todos: old });
     await menu(p, "完了のふりかえり");
     ok((await txt(p, ".td7-flow-say")) === "この8週で、追加0件・完了6件。まだのToDoは6件から0件に減りました（-6）。いいペースです！", "⑦ fewer: 減りました", await txt(p, ".td7-flow-say"));
-    errs.push(...p.errs);
-    await p.context().close();
-  }
-
-  // ---- ⑧ 鳴らしてみる sounds even with 鳴らさない (ポン)
-  {
-    const p = await open(b, "2026-11-11T08:30:00+09:00");
-    await p.evaluate(() => { window.__osc = 0; const A = window.AudioContext || window.webkitAudioContext, o = A.prototype.createOscillator; A.prototype.createOscillator = function () { window.__osc++; return o.call(this); }; });
-    await p.click("#todoSettings"); await p.waitForTimeout(800);
-    await p.click("#td7SoundTry"); await p.waitForTimeout(200);
-    ok((await p.evaluate(() => window.__osc)) === 1 && (await W(p, "sound")) === "", "⑧ 鳴らしてみる: ポン, still 鳴らさない");
-    await p.selectOption("#td7Sound", "bell"); await p.waitForTimeout(200);
-    ok((await p.evaluate(() => window.__osc)) === 4, "⑧ 鈴: three tones");
     errs.push(...p.errs);
     await p.context().close();
   }

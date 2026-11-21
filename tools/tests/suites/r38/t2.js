@@ -1,4 +1,4 @@
-// ToDo その8: the edges, through the hook build at 8783
+// ToDo その8: the edges, through the hook build at 8783 (③ and ⑤ taken out 2026-11-21, the user's call)
 process.env.URL0 = process.env.URL0 || "http://localhost:8783/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -56,17 +56,6 @@ async function open(b, when, data = D.all(), o = {}) {
   ok(!(await W(p, "nowList")).some((id) => id === "sd1" || id === "sd2"), "② not in いまやるなら");
   ok(!(await W(p, "board")).some((id) => id === "sd1" || id === "sd2"), "② not on the board");
 
-  // ---- ③ a 期限 with a time: up to it
-  await W(p, "add", { text: "企画書を出す", due: "2026-11-11", time: "13:00", mins: 60, createdAt: Date.now() });
-  await p.waitForTimeout(600);
-  const kk = (await ls(p, "todos")).find((t) => t.text === "企画書を出す");
-  const s1 = (await W(p, "starts"))[kk.id];
-  ok(s1 && s1.at === at("2026-11-11", "12:00"), "③ up to its time (13:00): 12:00", s1 && new Date(s1.at).toISOString());
-  await W(p, "update", kk.id, { pct: 50 }); await p.waitForTimeout(500);
-  const s2 = (await W(p, "starts"))[kk.id];
-  ok(!s2, "③ half done: 30 minutes left, not counted (under an hour)", s2);
-  ok(!(await W(p, "starts")).e && !(await W(p, "starts")).sd1, "③ none for one overdue or with no 期限");
-
   // ---- ④ on a list's tab, none; 決めない
   await W(p, "setting", "td8Goal", { n: 5, updatedAt: Date.now() }); await W(p, "render"); await p.waitForTimeout(400);
   ok(!(await p.isHidden("#td8GoalCard")), "④ on すべて");
@@ -74,12 +63,7 @@ async function open(b, when, data = D.all(), o = {}) {
   ok(await p.isHidden("#td8GoalCard"), "④ not on a list's tab");
   await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
 
-  // ---- ⑤ stopped part way: the minutes so far kept
-  await hold(p, "c"); await press(p, "5分だけやってみる");
-  await p.context().clock.setFixedTime(new Date("2026-11-11T08:33:10+09:00")); await p.waitForTimeout(500);
-  await p.click("#focusStop"); await p.waitForTimeout(400);
-  ok(Number((await todo(p, "c")).focus) === 3 && await p.isHidden("#td8FiveCard"), "⑤ stopped at 3 minutes: kept, no card", (await todo(p, "c")).focus);
-  await p.context().clock.setFixedTime(new Date("2026-11-11T08:40:00+09:00"));
+  await p.context().clock.setFixedTime(new Date("2026-11-11T08:40:00+09:00")); // (⑤ 5分だけ taken out, 2026-11-21: the clock as it had it)
 
   // ---- ⑦⑧ a list added goes last; the tab showing put away goes to すべて
   await p.click("#todoSettings"); await p.waitForTimeout(800);

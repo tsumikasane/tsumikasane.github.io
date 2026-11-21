@@ -44,19 +44,14 @@ const wl = (p) => p.evaluate(() => window.__wl);
   const b = await chromium.launch();
   const p = await open(b, "2026-11-11T08:30:00+09:00");
 
-  // ---- ① 集中中は画面を消さない
-  await W(p, "focus", "c"); await p.waitForTimeout(500);
-  ok((await wl(p)).req === 1, "① the focus timer started: the screen kept on", await wl(p));
-  await W(p, "stop"); await p.waitForTimeout(500);
-  ok((await wl(p)).rel === 1, "① it stopped: let go", await wl(p));
-  await p.click("#todoSettings"); await p.waitForTimeout(900);
-  ok(await p.isChecked("#td21WakeOn"), "① in ToDo's 編集, on at first");
-  await p.locator("#td21WakeOn").uncheck(); await p.waitForTimeout(300);
-  await closeSheet(p);
-  await W(p, "focus", "c"); await p.waitForTimeout(500);
-  ok((await wl(p)).req === 1, "① off: not kept on", await wl(p));
+  // ---- ① 集中中は画面を消さない (taken out, 2026-11-21: a timer going, the screen not kept on)
+  await p.evaluate(({ P }) => localStorage.setItem(P + "focus", JSON.stringify({ kind: "work", todoId: null, study: { sub: "" }, len: 25, end: Date.now() + 20 * 60e3, left: null, at: Date.now() - 5 * 60e3 })), { P });
+  await p.evaluate(() => document.dispatchEvent(new Event("visibilitychange"))); await p.waitForTimeout(5600);
+  ok((await wl(p)).req === 0, "① the focus timer going: the screen not kept on", await wl(p));
   await W(p, "stop"); await p.waitForTimeout(300);
-  await p.evaluate((P) => localStorage.removeItem(P + "td21Wake"), P);
+  await p.click("#todoSettings"); await p.waitForTimeout(900);
+  ok(!(await p.$("#td21WakeOn")) && !(await p.$("#tdFmAwayOn")), "① not in ToDo's 編集, nor 離れたら記録する");
+  await closeSheet(p);
 
   // ---- ② できることを探す
   await menu(p, "できることの一覧");
@@ -136,11 +131,9 @@ const wl = (p) => p.evaluate(() => window.__wl);
   await menu(p, "完了カレンダー"); await p.locator('.td18-cd[aria-label^="11/10、"]').click(); await p.waitForTimeout(400);
   ok((await txt(p, ".td18-day")).includes("日記を書く😄"), "⑨ in 完了カレンダー", await txt(p, ".td18-day"));
   await closeSheet(p);
-  await W(p, "ask", true); await p.waitForTimeout(300);
+  await W(p, "ask", true); await p.waitForTimeout(300); // (その9 ⑧'s 「ひとことを聞く」 on before: taken out, 2026-11-21)
   await p.click('#todoList [data-check="c"]'); await p.waitForTimeout(900);
-  ok((await p.locator("#td9AskCard .td21-mood").count()) === 4, "⑨ under 「どうだった？」 too");
-  await p.locator("#td9AskCard .td21-mood", { hasText: "🙂" }).click(); await p.waitForTimeout(400);
-  ok((await todo(p, "c")).mood === 2, "⑨ kept from there", await todo(p, "c"));
+  ok(!(await p.$("#td9AskCard")) && !(await txt(p, "#sec-todo")).includes("どうだった"), "⑨ no 「どうだった？」 to be under");
 
   // ---- ⑩ 1週間の目標
   await p.click("#todoSettings"); await p.waitForTimeout(900);
@@ -152,7 +145,7 @@ const wl = (p) => p.evaluate(() => window.__wl);
 
   // ---- the guide
   const g = await W(p, "guide");
-  ok(["集中中は画面を消さない", "できることを探す", "繰り返しのこれからの回", "リストのお知らせを止める", "古い完了を片づける", "買い物リストの予算", "前回のサブタスクも入れる", "このToDoの歩み", "終えたときの気分", "1週間の目標"].every((w) => g.includes(`"${w}"`)), "the guide has them");
+  ok(!g.includes("集中中は画面を消さない") && ["できることを探す", "繰り返しのこれからの回", "リストのお知らせを止める", "古い完了を片づける", "買い物リストの予算", "前回のサブタスクも入れる", "このToDoの歩み", "終えたときの気分", "1週間の目標"].every((w) => g.includes(`"${w}"`)), "the guide has them");
 
   ok(!p.errs.length, "no errors", p.errs);
   await b.close();

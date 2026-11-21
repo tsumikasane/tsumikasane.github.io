@@ -1,4 +1,5 @@
-// ToDo その23 ①〜⑩, through the hook build at 8886 (the insides) and as a user would
+// ToDo その23 ①②③⑤〜⑨ (④ 集中した時間帯 and ⑩ 集中中に離れた回数 with ToDo's 集中, 2026-11-21: the user's call), through the hook
+// build at 8886 (the insides) and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8886/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -133,23 +134,18 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   await undo(p);
   ok(!(await todo(p, "b")).done, "⑧ 元に戻す");
 
-  // ---- ⑩ 集中中に離れた回数, ④ 集中した時間帯
+  // ---- ⑩ 集中中に離れた回数, ④ 集中した時間帯 (taken out with ToDo's 集中, 2026-11-21)
   await W(p, "put", { kind: "work", todoId: "c", len: 25, end: NOW + 10 * MIN, left: null, at: NOW - 15 * MIN }); await p.waitForTimeout(300);
   await W(p, "vis", "hidden"); await p.waitForTimeout(100);
   await p.evaluate(({ P, at, set }) => localStorage.setItem(P + "td23Hide", JSON.stringify({ at, set })), { P, at: NOW - MIN, set: NOW - 15 * MIN });
   await W(p, "vis", "visible"); await p.waitForTimeout(400);
   let v = await W(p, "now");
-  ok(v.away === 1 && v.awayMs === MIN, "⑩ left for a minute while it counted down: counted", v);
-  await W(p, "vis", "hidden"); await W(p, "vis", "visible"); await p.waitForTimeout(200);
-  ok((await W(p, "now")).away === 1, "⑩ a moment (under 3 seconds): not counted");
-  await W(p, "put", { ...(await W(p, "now")), end: NOW - 1000, away: 2, awayMs: 3 * MIN }); await p.waitForTimeout(700);
-  ok((await status(p)).includes("とちゅうでアプリを離れたのは2回（3分）でした"), "⑩ said as the set is over", await status(p));
-  const ss = await W(p, "sess");
-  ok(ss.length === 1 && ss[0][2] === 25 && ss[0][3] === "c" && ss[0][4] === 2 && ss[0][1] === NOW - 1000, "④ the time kept, with the count", ss);
+  ok(!v.away && !v.awayMs, "⑩ left for a minute while it counted down: not counted", v);
+  await W(p, "put", { ...(await W(p, "now")), end: NOW - 1000 }); await p.waitForTimeout(700);
+  ok((await status(p)).includes("25分の集中、おつかれさまでした") && !(await status(p)).includes("離れた"), "⑩ nothing said as the set is over", await status(p));
   await W(p, "stop"); await p.waitForTimeout(300);
   await menu(p, "ToDoの記録");
-  const fb = await txt(p, ".td23-focus");
-  ok(fb.includes("8時台") && fb.includes("きょうの集中1回") && fb.includes("8:04〜8:29") && fb.includes("メールに返信・25分・離れた2回"), "④ in ToDoの記録: the hour, today's times", fb);
+  ok(!(await p.$(".td23-focus")) && !(await txt(p, "#tdPanelBody")).includes("集中した時間帯"), "④ not in ToDoの記録");
   await closeSheet(p);
 
   // ---- ⑦ きょうのToDoを画像で送る
@@ -174,7 +170,7 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
 
   // ---- the guide
   const gd = await W(p, "guide");
-  ok(["行に出すもの", "運動とつなぐ", "リストの見出し", "集中した時間帯", "期間で見る", "@リスト名", "きょうのToDoを画像で送る", "サブタスクをぜんぶ終えたら完了", "片手で追加", "集中中に離れた回数"].every((w) => gd.includes(w)), "the guide has them");
+  ok(["行に出すもの", "運動とつなぐ", "リストの見出し", "期間で見る", "@リスト名", "きょうのToDoを画像で送る", "サブタスクをぜんぶ終えたら完了", "片手で追加"].every((w) => gd.includes(w)) && !["集中した時間帯", "集中中に離れた回数"].some((w) => gd.includes(w)), "the guide has them (not ④⑩)", gd);
 
   ok(!p.errs.length, "no errors", p.errs);
   await b.close();

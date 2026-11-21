@@ -86,10 +86,9 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
   ok(!!(await todo(p, "c")), "④ 元に戻す");
   await W(p, "setting", "td16", { swipe: ["d0", "d1", ""], updatedAt: Date.now() }); await p.waitForTimeout(300); // (the first ones again: 来週 taken out, the user's call of 2026-11-18)
 
-  // ---- ⑤ 集中した時間（14日）
+  // ---- ⑤ 集中した時間（14日） (taken out with ToDo's 集中, 2026-11-21: the timer's log kept, not drawn here)
   await menu(p, "ToDoの記録");
-  ok((await p.evaluate(() => document.querySelectorAll(".td16-chart .td16-bar").length)) === 2 && (await txt(p, ".td16-focus .td15-trend-head")).startsWith("1時間15分"), "⑤ two days' columns, and the total", await txt(p, ".td16-focus .td15-trend-head"));
-  ok((await p.evaluate(() => document.querySelectorAll(".td16-focus + .td15-table tbody tr").length)) === 14, "⑤ as a table too");
+  ok(!(await p.$(".td16-chart")) && !(await p.$(".td16-focus")) && !(await txt(p, "#tdPanelBody")).includes("集中した時間"), "⑤ not in ToDoの記録");
   await closeSheet(p);
 
   // ---- ⑥ 期限を文字で決める

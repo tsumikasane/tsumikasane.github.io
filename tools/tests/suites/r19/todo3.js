@@ -1,4 +1,5 @@
-// ToDo ⑧⑨ (⑩ 写真 taken off 2026-11-18, the user's call) and the focus timer, and a repeat carrying the new fields on
+// ToDo ⑧⑨ (⑩ 写真 taken off 2026-11-18, the user's call) and the focus timer (勉強's and 目標's since ToDo's 集中 went,
+// 2026-11-21), and a repeat carrying the new fields on
 process.env.URL0 = process.env.URL0 || "http://localhost:8768/";
 const { chromium } = require("playwright");
 const fs = require("fs");
@@ -41,7 +42,7 @@ const jpeg = async (p) => Buffer.from(await p.evaluate(() => { const c = documen
   // ⑧ put off again: the swipe's あした (via its menu) makes 3, the row says so, its sheet offers what to do
   ok((await txt(p, "#todoList")).includes("2回先送り"), "⑧ the row says twice");
   await p.locator("#todoList li", { hasText: "申込書" }).dispatchEvent("contextmenu"); await p.waitForTimeout(300);
-  ok((await p.evaluate(() => [...document.querySelectorAll("#todoMenuGroup .ask-btn")].map((x) => x.textContent))).includes("集中タイマーを始める"), "the timer in a row's menu");
+  ok(!(await p.evaluate(() => [...document.querySelectorAll("#todoMenuGroup .ask-btn")].map((x) => x.textContent))).some((w) => w.includes("集中")), "no timer in a row's menu (taken out, 2026-11-21)");
   await pressMenu(p, "あしたに移す");
   let a = (await ls(p, "todos")).find((t) => t.id === "a");
   ok(a.due === addDays(today, 1) && a.moved === 3, "⑧ moved later: 3", a);
@@ -73,12 +74,11 @@ const jpeg = async (p) => Buffer.from(await p.evaluate(() => { const c = documen
   await p.locator("#todoList li.done", { hasText: "ゴミ出し" }).locator(".check").click(); await p.waitForTimeout(600);
   ok((await ls(p, "todos")).find((t) => t.id === "c").time === "07:30", "repeat taken back: the fields back on it");
 
-  // the timer: from a row's menu, counting down over every page
-  await p.locator("#todoList li", { hasText: "ゴミ出し" }).dispatchEvent("contextmenu"); await p.waitForTimeout(300);
-  await pressMenu(p, "集中タイマーを始める");
-  ok(await p.isVisible("#focusBar") && (await txt(p, "#focusBar")).startsWith("集中 25:00") && (await txt(p, "#focusBar")).includes("ゴミ出し"), "timer: 集中 25:00 with its ToDo", await txt(p, "#focusBar"));
+  // the timer (going on, as 勉強's or 目標's would be; one without a ToDo): counting down over every page
+  await p.evaluate(({ P }) => localStorage.setItem(P + "focus", JSON.stringify({ kind: "work", todoId: null, len: 25, end: Date.now() + 25 * 60e3, left: null, at: Date.now() })), { P });
+  await p.reload(); await p.waitForTimeout(900);
+  ok(await p.isVisible("#focusBar") && /^集中 (25:00|24:5\d)/.test(await txt(p, "#focusBar")), "timer: 集中 25:00", await txt(p, "#focusBar"));
   const f0 = await p.evaluate(({ P }) => JSON.parse(localStorage.getItem(P + "focus")), { P });
-  ok(f0.kind === "work" && f0.todoId === "c" && f0.len === 25 && f0.end - (await p.evaluate(() => Date.now())) > 24 * 60e3, "timer: kept on this device", f0);
   const fa = await p.evaluate(() => window.__focusAlarms(Date.now()));
   ok(fa.length === 2 && fa[0].at === f0.end && fa[1].at === f0.end + 5 * 60e3 && !(await p.evaluate(() => window.__alarmTimes(Date.now()).some((a) => a.tag.startsWith("focus")))), "timer: its end to this device only", fa);
   await p.click("#focusPause"); await p.waitForTimeout(300);
@@ -88,27 +88,28 @@ const jpeg = async (p) => Buffer.from(await p.evaluate(() => { const c = documen
   // 12 minutes in, ended: those minutes kept
   await p.evaluate(({ P }) => { const v = JSON.parse(localStorage.getItem(P + "focus")); v.end = Date.now() + 13 * 60e3; localStorage.setItem(P + "focus", JSON.stringify(v)); }, { P });
   await p.click("#focusStop"); await p.waitForTimeout(500);
-  let c = (await ls(p, "todos")).find((t) => t.id === "c"), log = (await ls(p, "settings")).find((x) => x.id === "focusLog");
-  ok(await p.isHidden("#focusBar") && c.focus === 12 && log.days[today] === 12 && (await toast(p)).includes("集中した 12 分を記録しました"), "timer: ended at 12 minutes, kept", { focus: c.focus, log, t: await toast(p) });
-  ok((await txt(p, "#todoList")).includes("集中 12 分"), "timer: the minutes on its row");
+  let log = (await ls(p, "settings")).find((x) => x.id === "focusLog");
+  ok(await p.isHidden("#focusBar") && log.days[today] === 12 && (await toast(p)).includes("集中した 12 分を記録しました"), "timer: ended at 12 minutes, kept", { log, t: await toast(p) });
+  ok(!(await txt(p, "#todoList")).includes("集中"), "timer: nothing of it on ToDo's rows");
   // over while the app was away: 25 minutes kept, then 休憩, then done
-  await p.evaluate(({ P }) => localStorage.setItem(P + "focus", JSON.stringify({ kind: "work", todoId: "c", len: 25, end: Date.now() - 2 * 60e3, left: null, at: Date.now() - 27 * 60e3 })), { P });
+  await p.evaluate(({ P }) => localStorage.setItem(P + "focus", JSON.stringify({ kind: "work", todoId: null, len: 25, end: Date.now() - 2 * 60e3, left: null, at: Date.now() - 27 * 60e3 })), { P });
   await p.reload(); await p.waitForTimeout(900);
-  c = (await ls(p, "todos")).find((t) => t.id === "c");
-  ok(c.focus === 37 && await p.isVisible("#focusBar") && (await txt(p, "#focusBar")).startsWith("休憩 3:"), "timer: over while away: kept, 休憩 going on", { focus: c.focus, bar: await txt(p, "#focusBar") });
+  ok(await p.isVisible("#focusBar") && (await txt(p, "#focusBar")).startsWith("休憩 3:"), "timer: over while away: kept, 休憩 going on", await txt(p, "#focusBar"));
   await p.click("#focusPause"); await p.waitForTimeout(300); // 集中する: 休憩 cut short
   ok((await txt(p, "#focusBar")).startsWith("集中 25:00"), "timer: 休憩 cut short, the next 集中");
   await p.evaluate(({ P }) => localStorage.setItem(P + "focus", JSON.stringify({ kind: "work", todoId: null, len: 25, end: Date.now() - 40 * 60e3, left: null, at: Date.now() - 65 * 60e3 })), { P });
   await p.reload(); await p.waitForTimeout(900);
   ok(await p.isHidden("#focusBar") && (await toast(p)).includes("集中タイマーが終わっていました（25分を記録）"), "timer: both over while away: said, with もう1回", await toast(p));
   log = (await ls(p, "settings")).find((x) => x.id === "focusLog");
-  ok(log.days[today] === 12 + 25 + 25, "timer: the day's minutes (one without a ToDo too)", log.days);
-  // the length from 編集
+  ok(log.days[today] === 12 + 25 + 25, "timer: the day's minutes", log.days);
+  // the lengths as kept (編集's 集中タイマー went with ToDo's 集中): 勉強's timer, 50 分
   await p.click("#todoSettings"); await p.waitForTimeout(500);
-  await p.selectOption("#focusWork", "50"); await p.waitForTimeout(200);
+  ok(!(await p.$("#focusWork")) && !(await p.$("#focusForm")), "timer: its lengths not in ToDo's 編集");
   await p.keyboard.press("Escape"); await p.waitForTimeout(600);
-  await p.click("#todoMore"); await p.waitForTimeout(300); await pressMenu(p, "集中タイマーを始める");
-  ok((await txt(p, "#focusBar")).startsWith("集中 50:00") && (await txt(p, "#focusName")) === "", "timer: 50 分 from 編集, without a ToDo from その他", await txt(p, "#focusBar"));
+  await p.evaluate(({ P }) => { const s = JSON.parse(localStorage.getItem(P + "settings")); s.push({ id: "focus", work: 50, rest: 10, updatedAt: 1 }); localStorage.setItem(P + "settings", JSON.stringify(s)); }, { P });
+  await p.goto(URL0 + "#study"); await p.reload(); await p.waitForTimeout(900);
+  await p.click("#stFocusGo"); await p.waitForTimeout(400);
+  ok((await txt(p, "#focusBar")).startsWith("集中 50:00") && (await txt(p, "#focusName")) === "勉強", "timer: 50 分 as kept, from 勉強", await txt(p, "#focusBar"));
   await p.goto(URL0 + "#home"); await p.reload(); await p.waitForTimeout(800);
   ok(await p.isVisible("#focusBar"), "timer: over another page, after the app opened again");
   await p.screenshot({ path: __dirname + "/shots/t-timer.png" });

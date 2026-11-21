@@ -74,8 +74,8 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
 
   // ---- ④ この1週間にやったこと
   const wt = await W(p, "weekText");
-  ok(wt.startsWith("11/5（木）〜11/11（水）にやったこと") && flat(wt).includes("11/10（火）（集中50分）"), "④ day by day, with the time focused", wt);
-  ok(wt.includes("✓ 洗濯") && wt.includes("集中した時間：合わせて"), "④ the done ones and the total", wt);
+  ok(wt.startsWith("11/5（木）〜11/11（水）にやったこと") && !wt.includes("集中"), "④ day by day (not the time focused: taken out with ToDo's 集中, 2026-11-21)", wt);
+  ok(wt.includes("✓ 洗濯"), "④ the done ones", wt);
   await p.evaluate(() => { window.__sent = []; navigator.share = async (x) => { window.__sent.push(x); }; });
   await menu(p, "この1週間にやったことを送る");
   ok((await p.evaluate(() => window.__sent[0]?.text || "")).includes("✓ 洗濯"), "④ sent");

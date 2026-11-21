@@ -74,7 +74,7 @@ const at = (s) => Date.parse(`${s}+09:00`);
   await menu(p, "時間の使いかた");
   body = await txt(p, "#tdPanelBody");
   ok((await sheetTitle(p)) === "時間の使いかた" && body.includes("あわせて1時間22分です"), "③ all of it", body);
-  ok(/リストごとの集中した時間リストなし.*52分大学30分/.test(body), "③ by list", body);
+  ok(/リストごとのやった時間リストなし.*52分大学30分/.test(body) && !body.includes("集中"), "③ by list (やった時間: 集中 no more, 2026-11-21)", body);
   ok(!body.includes("ラベルごと"), "③ not by label with none");
   ok(/残りのかかる時間リストなし8時間15分大学8時間12分/.test(body), "③ what is left, by list", body);
   await closeSheet(p);
@@ -152,20 +152,18 @@ const at = (s) => Date.parse(`${s}+09:00`);
   ok(!al.some((x) => String(x.tag).startsWith("td-cls:2026-11-16")), "⑩ none for a class with none");
   ok((await W(p, "bell", cl.tag)) === "授業の前", "⑩ its kind");
 
-  // ---- ⑨ 授業・バイト・予定の最中
+  // ---- ⑨ 授業・バイト・予定の最中 (taken out, 2026-11-21: one turned on before does nothing)
   const h0 = al.find((x) => x.url === "./#todo:h" && x.at === at("2026-11-11T20:00:00"));
   ok(!!h0, "⑨ 薬を飲む told at 20:00 as it is", al.filter((x) => x.url === "./#todo:h"));
   await W(p, "put", { busy: true }); await p.waitForTimeout(300);
   al = await W(p, "alarms");
   const h1 = al.find((x) => x.tag === "todo-busy:" + h0.tag);
-  ok(h1 && h1.at === at("2026-11-11T21:50:00"), "⑨ in the middle of バイト (13:00〜21:50): as it ends", h1);
-  const eve2 = al.find((x) => x.tag === "todo-busy:td-eve2:2026-11-11");
-  ok(eve2 && eve2.at === at("2026-11-11T21:50:00") && (await W(p, "bell", eve2.tag)) === "前の晩のまとめ（予定のあと）", "⑨ ⑧'s too, said so", eve2);
-  ok(al.some((x) => x.tag === "td-cls:2026-11-12:ev-en" && x.at === at("2026-11-12T10:30:00")), "⑨ ⑩'s not moved");
+  ok(!h1 && al.some((x) => x.tag === h0.tag && x.at === h0.at) && !al.some((x) => String(x.tag).startsWith("todo-busy:")), "⑨ (taken out, 2026-11-21; on before too): as it is", al.filter((x) => x.url === "./#todo:h"));
+  ok(al.some((x) => x.tag === "td-cls:2026-11-12:ev-en" && x.at === at("2026-11-12T10:30:00")), "⑩'s as it is");
 
   // ---- the guide
   const g = await W(p, "guide");
-  ok(["前の晩のまとめ", "授業の前のお知らせ", "授業・バイト・予定の最中", "今月やる", "ほかのToDoのサブタスクにする", "名前の#タグ", "保存した探し方", "時間の使いかた", "次に会う日", "返事をうながす"].every((w) => g.includes(`"${w}"`)), "the guide has them");
+  ok(!g.includes("最中") && ["前の晩のまとめ", "授業の前のお知らせ", "今月やる", "ほかのToDoのサブタスクにする", "名前の#タグ", "保存した探し方", "時間の使いかた", "次に会う日", "返事をうながす"].every((w) => g.includes(`"${w}"`)), "the guide has them");
 
   ok(!p.errs.length, "no errors", p.errs);
   await b.close();

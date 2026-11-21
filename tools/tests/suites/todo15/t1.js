@@ -123,13 +123,11 @@ const T = (d, hm) => Date.parse(`${d}T${hm}:00+09:00`);
   ok((await heads(p)).some((h) => h.startsWith("おすすめ順")), "⑥ its heading", await heads(p));
   await W(p, "view", { sort: "" }); await p.waitForTimeout(300);
 
-  // ---- ⑦ 時間を決めて集中する
-  await hold(p, "c"); await press(p, "時間を決めて集中する");
-  await p.locator("#todoMenuGroup button").filter({ hasText: /^45\s*分$/ }).click(); await p.waitForTimeout(400);
-  const fc = await W(p, "focus");
-  ok(fc && fc.todoId === "c" && fc.len === 45 && fc.kind === "work", "⑦ 45 minutes on it", fc);
-  ok((await status(p)).includes("45分"), "⑦ said", await status(p));
-  await p.evaluate(() => document.getElementById("focusStop")?.click()); await p.waitForTimeout(300);
+  // ---- ⑦ 時間を決めて集中する (taken out with ToDo's 集中, 2026-11-21)
+  await hold(p, "c");
+  ok(!(await items(p)).some((w) => w.includes("集中")), "⑦ not in a row's menu", await items(p));
+  await p.keyboard.press("Escape"); await p.waitForTimeout(300);
+  ok(!(await W(p, "guide")).includes("時間を決めて集中する"), "⑦ nor in the guide");
 
   // ---- ⑧ 見積もりのくせ (three done taking 1.5 times as long)
   for (const [i, m, f] of [["x1", 30, 45], ["x2", 60, 90], ["x3", 20, 30]]) await W(p, "add", { id: i, text: `前の${i}`, done: true, doneAt: T("2026-11-09", "20:00"), mins: m, focus: f, createdAt: T("2026-11-08", "09:00") });

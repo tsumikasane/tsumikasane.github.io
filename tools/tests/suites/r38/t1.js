@@ -1,4 +1,5 @@
-// ToDo その8 ①〜⑩, through the hook build at 8783 (the insides) and as a user would
+// ToDo その8 ①②④⑥〜⑩ (③ 始めどき and ⑤ 5分だけ taken out 2026-11-21, the user's call), through the hook build at 8783 (the
+// insides) and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8783/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -107,20 +108,13 @@ async function open(b, when, o = {}) {
   ok((await W(p, "later", "c")) === true, "② as あとで for the rest (tdLater)");
   await undo(p);
 
-  // ---- ③ 始めどき
-  ok((await rowSub(p, "a")).includes("12:30までに始める"), "③ on its row: 12:30 today", await rowSub(p, "a"));
-  ok((await rowSub(p, "g")).includes("あした12:30までに始める"), "③ あした 12:30", await rowSub(p, "g"));
-  ok(!(await rowSub(p, "b")).includes("始める"), "③ not yet (more than 3 days off)", await rowSub(p, "b"));
-  ok((await rowSub(p, "k8")).includes("すぐ始めましょう") && await p.evaluate(() => !!document.querySelector('#todoList [data-check="k8"]').closest("li").querySelector(".td8-start.warn")), "③ too big for today's free time: すぐ", await rowSub(p, "k8"));
+  // ---- ③ 始めどき (taken out, 2026-11-21)
+  ok(!(await rowSub(p, "a")).includes("始める") && !(await rowSub(p, "g")).includes("始める") && !(await rowSub(p, "k8")).includes("すぐ始めましょう") && !(await p.$(".td8-start")), "③ not on the rows", await rowSub(p, "a"));
   let al = await W(p, "alarms", at("2026-11-11", "08:30"));
-  const st = al.find((a) => a.tag === "td-start:a:2026-11-12");
-  ok(st && st.at === at("2026-11-11", "12:30") && st.title === "始めどき：レポートを書く" && st.body.includes("かかる時間 5 時間"), "③ its notification", st);
+  ok(!al.some((a) => /^td-start/.test(a.tag)), "③ no notification");
   await p.click("#todoSettings"); await p.waitForTimeout(800);
-  await p.click("#td8StartOn"); await p.waitForTimeout(500);
+  ok(!(await p.$("#td8StartOn")), "③ not in 編集");
   await p.click("#sheetDone"); await p.waitForTimeout(500);
-  al = await W(p, "alarms", at("2026-11-11", "08:30"));
-  ok(!al.some((a) => /^td-start/.test(a.tag)) && !(await rowSub(p, "a")).includes("始める"), "③ off: none");
-  await p.click("#todoSettings"); await p.waitForTimeout(800); await p.click("#td8StartOn"); await p.waitForTimeout(500); await p.click("#sheetDone"); await p.waitForTimeout(500);
 
   // ---- ④ 1日の目標
   ok(await p.isHidden("#td8GoalCard"), "④ none at first");
@@ -137,29 +131,12 @@ async function open(b, when, o = {}) {
   await p.click('#todoList [data-check="h"]'); await p.waitForTimeout(1000);
   ok((await txt(p, "#td8GoalCard .td-fc-n")) === "4/3" && !(await p.evaluate(() => window.__said.some((s) => s.includes("目標")))), "④ more: counted, not said again", await p.evaluate(() => window.__said));
 
-  // ---- ⑤ 5分だけ
+  // ---- ⑤ 5分だけ (taken out with ToDo's 集中, 2026-11-21)
   await hold(p, "f");
-  ok((await items(p)).includes("5分だけやってみる（タイマー5分）"), "⑤ in a row's menu");
-  await press(p, "5分だけやってみる");
-  let v = await W(p, "focus");
-  ok(v && v.five && v.len === 5 && v.todoId === "f" && (await txt(p, "#focusKind")) === "5分だけ", "⑤ the timer, five minutes", v);
-  al = await W(p, "focusAlarms", at("2026-11-11", "08:31"));
-  ok(al.map((a) => a.title + ":" + a.body + "@" + a.at).join() === "5分たちました:「銀行で振り込み」、このまま続けますか？@" + at("2026-11-11", "08:35"), "⑤ its notification (no 休憩's)", al);
-  await p.context().clock.setFixedTime(new Date("2026-11-11T08:36:30+09:00")); await p.waitForTimeout(800);
-  v = await W(p, "focus");
-  ok(!v && !(await p.isHidden("#td8FiveCard")) && (await txt(p, "#td8FiveCard .td-fc-text")) === "「銀行で振り込み」を5分やりました。このまま続けますか？", "⑤ over: no 休憩, the card", [v, await txt(p, "#td8FiveCard")]);
-  ok(num((await todo(p, "f")).focus) === 5, "⑤ its five minutes kept", (await todo(p, "f")).focus);
-  await p.locator("#td8FiveCard button", { hasText: "続ける" }).click(); await p.waitForTimeout(400);
-  v = await W(p, "focus");
-  ok(v && !v.five && v.len === 25 && v.todoId === "f" && await p.isHidden("#td8FiveCard"), "⑤ 続ける: the timer's own length", v);
-  await p.click("#focusStop"); await p.waitForTimeout(400);
-  // again, and ここまで
-  await hold(p, "f"); await press(p, "5分だけやってみる");
-  await p.context().clock.setFixedTime(new Date("2026-11-11T08:43:00+09:00")); await p.waitForTimeout(800);
-  await p.locator("#td8FiveCard button", { hasText: "ここまで" }).click(); await p.waitForTimeout(400);
-  ok(await p.isHidden("#td8FiveCard") && (await status(p)).includes("5分でも、前に進みました"), "⑤ ここまで");
-  // いまやるなら's 5分だけ
-  ok(await p.evaluate(() => !!document.querySelector("#td6NowCard .td8-five-btn")), "⑤ in いまやるなら");
+  ok(!(await items(p)).some((w) => w.includes("5分だけ")), "⑤ not in a row's menu", await items(p));
+  await p.keyboard.press("Escape"); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => !document.querySelector("#td6NowCard .td8-five-btn") && !document.getElementById("td8FiveCard")), "⑤ not in いまやるなら, no card");
+  await p.context().clock.setFixedTime(new Date("2026-11-11T08:43:00+09:00")); await p.waitForTimeout(800); // (the clock as the rest of it has it)
 
   // ---- ⑥ サブタスクの候補
   await p.click("#todoAdd"); await p.waitForTimeout(700);
@@ -271,7 +248,7 @@ async function open(b, when, o = {}) {
   ok(!(await p.evaluate(() => document.getElementById("daySheet").open)) && (await p.inputValue("#todoSearch")) === "n", "⑩ not while typing");
   await p.fill("#todoSearch", ""); await p.dispatchEvent("#todoSearch", "input"); await p.evaluate(() => document.activeElement.blur());
   await p.keyboard.press("?"); await p.waitForTimeout(400);
-  ok((await txt(p, "#todoMenuMsg")) === "キーボードの操作（ToDoのページ）" && (await p.$$(".td8-keys dt")).length === 12, "⑩ ? the list", await txt(p, "#todoMenuMsg"));
+  ok((await txt(p, "#todoMenuMsg")) === "キーボードの操作（ToDoのページ）" && (await p.$$(".td8-keys dt")).length === 11, "⑩ ? the list (5 5分だけ taken out, 2026-11-21)", await txt(p, "#todoMenuMsg"));
   await p.keyboard.press("Escape"); await p.waitForTimeout(300);
   await p.keyboard.press("]"); await p.waitForTimeout(300);
   ok((await W(p, "tab")) === "l-uni", "⑩ ] the next tab", await W(p, "tab"));
@@ -281,8 +258,7 @@ async function open(b, when, o = {}) {
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
   await p.evaluate(() => document.querySelector('#todoList [data-check="c"]').focus());
   await p.keyboard.press("5"); await p.waitForTimeout(400);
-  ok((await W(p, "focus"))?.five && (await W(p, "focus")).todoId === "c", "⑩ 5 5分だけ");
-  await p.click("#focusStop"); await p.waitForTimeout(300);
+  ok(!(await W(p, "focus")), "⑩ 5: nothing (5分だけ taken out)");
   await p.evaluate(() => document.querySelector('#todoList [data-check="c"]').focus());
   await p.keyboard.press("e"); await p.waitForTimeout(700);
   ok((await title(p)) === "ToDoを編集", "⑩ E 開く", await title(p));

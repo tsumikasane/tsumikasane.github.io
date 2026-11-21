@@ -46,7 +46,7 @@ const base = () => ({ todos: D.todos(), todoLists: D.lists(), events: D.events()
   await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(300);
   await p.locator("#td4ViewBar button").click(); await p.waitForTimeout(300);
 
-  // ② すき間時間: till 英語の授業 at 9:00, 30 minutes; what fits, and 始める
+  // ② すき間時間: till 英語の授業 at 9:00, 30 minutes; what fits (its 始める went with ToDo's 集中, 2026-11-21)
   await menu(p, "すき間時間でできるToDo");
   ok((await txt(p, ".td-panel-lead")) === "次の予定「英語の授業」（09:00）まで、あと 30 分です。", "② till the next plan", await txt(p, ".td-panel-lead"));
   let gap = await p.evaluate(() => [...document.querySelectorAll(".td4-gap .row-link")].map((x) => x.textContent));
@@ -54,9 +54,8 @@ const base = () => ({ todos: D.todos(), todoLists: D.lists(), events: D.events()
   await p.locator(".td4-gap-chips button", { hasText: /^5\s?分$/ }).click(); await p.waitForTimeout(300);
   gap = await p.evaluate(() => [...document.querySelectorAll(".td4-gap .row-link")].map((x) => x.textContent));
   ok(gap.join(",") === "図書館の本を返す", "② 5 minutes: one", gap);
-  await p.locator(".td4-go").first().click(); await p.waitForTimeout(600);
-  ok(!(await p.evaluate(() => document.getElementById("daySheet").open)) && (await txt(p, "#focusName")) === "図書館の本を返す", "② 始める: the timer on it", await txt(p, "#focusName"));
-  await p.click("#focusStop"); await p.waitForTimeout(300);
+  ok(!(await p.$(".td4-go")) && !(await txt(p, ".td4-gap")).includes("始める"), "② no 始める (the timer on it, taken out with ToDo's 集中, 2026-11-21)");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(600);
 
   // ③ 日に分ける: レポート 4時間 by 11/16, 1時間 a day → 4 days; 2時間 → 2; made, each in its day's きょうやる
   await hold(p, "a"); await p.waitForTimeout(300);

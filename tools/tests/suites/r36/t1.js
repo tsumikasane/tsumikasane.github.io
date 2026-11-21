@@ -277,12 +277,13 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00"), WK = "2026-11-08";
   const kd = (await byText(p, "課題を出す"))[0];
   ok(kd && kd.due === "2026-11-20" && kd.memo === "第3章" && kd.flag === true && !(await byText(p, "洗剤を買う"))[0]?.flag && !(await byText(p, "大学")).length, "⑩ its task rows (p1 as 重要), not the section", kd);
 
-  // ---- ①③ 始める: the focus timer on it, and the card goes while it runs
+  // ---- ① 始める (taken out with ToDo's 集中, 2026-11-21); the card still goes while a timer runs (勉強's, 目標's)
   await p.evaluate(({ P }) => { localStorage.removeItem(P + "td6Now"); }, { P });
   await W(p, "render"); await p.waitForTimeout(300);
-  const first = await txt(p, "#td6NowCard .td6-now-name");
-  await p.locator("#td6NowCard button", { hasText: "始める" }).click(); await p.waitForTimeout(500);
-  ok((await status(p)).includes(`集中タイマーを始めました（25分）：「${first}」`) && await p.isHidden("#td6NowCard"), "① 始める: the timer on it; the card goes while it runs", [first, await status(p)]);
+  ok(await p.isVisible("#td6NowCard") && !(await p.locator("#td6NowCard button", { hasText: "始める" }).count()), "① no 始める");
+  await p.evaluate(({ P }) => localStorage.setItem(P + "focus", JSON.stringify({ kind: "work", todoId: null, study: { sub: "" }, len: 25, end: Date.now() + 20 * 60e3, left: null, at: Date.now() - 5 * 60e3 })), { P });
+  await W(p, "render"); await p.waitForTimeout(300);
+  ok(await p.isHidden("#td6NowCard"), "① the card goes while a timer runs");
 
   ok(!p.errs.length, "no errors", p.errs);
   console.log(fails ? `${fails} FAILED` : "ALL OK");

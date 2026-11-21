@@ -1,4 +1,5 @@
-// ToDo その7 ①〜⑨ (⑩ ファイル taken off 2026-11-18, the user's call), through the hook build at 8782 (the insides) and as a user would
+// ToDo その7 ①〜⑤⑦⑨ (⑩ ファイル taken off 2026-11-18; ⑥ 1件に集中する画面 and ⑧ 完了したときの音 2026-11-21: the user's calls), through
+// the hook build at 8782 (the insides) and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8782/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -49,7 +50,7 @@ async function open(b, when) {
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
   ok((await txt(p, '#todoList li:has([data-check="g"]) .td7-doing')) === "やっている" && !(await p.$('#todoList li:has([data-check="e"]) .td7-doing')), "① やっている on a row (not with その6's bar)");
   await hold(p, "a");
-  ok((await items(p)).includes("やっているにする") && (await items(p)).includes("このToDoに集中する"), "①⑥ in a row's menu", await items(p));
+  ok((await items(p)).includes("やっているにする") && !(await items(p)).includes("このToDoに集中する"), "① in a row's menu (not ⑥'s 集中, taken out)", await items(p));
   await press(p, "やっているにする");
   ok((await todo(p, "a")).doing === "2026-11-11", "① やっているにする from the menu");
   await hold(p, "a"); await press(p, "「まだ」に戻す");
@@ -89,25 +90,8 @@ async function open(b, when) {
   await undo(p);
   ok(!(await byText(p, "用事")).length && (await todo(p, "c")) && (await todo(p, "f")), "⑤ 元に戻す: both back");
 
-  // ---- ⑥ 集中: from a row's menu; 始める, 一時停止, 完了にする, the next
-  await hold(p, "a"); await press(p, "このToDoに集中する");
-  ok((await title(p)) === "集中" && (await txt(p, ".td7-focus-name")) === "レポートを書く" && (await txt(p, ".td7-focus-sub")) === "期限11/12（木）・かかる時間5時間" && (await txt(p, ".td7-focus-time")) === "25:00", "⑥ the screen: its name, 期限, time", await txt(p, ".td7-focus-sub"));
-  await p.locator(".td7-focus-acts button", { hasText: "始める" }).click(); await p.waitForTimeout(500);
-  ok((await W(p, "focus"))?.todoId === "a" && (await txt(p, ".td7-focus-kind")) === "集中" && !!(await p.$('.td7-focus-acts button:has-text("一時停止")')), "⑥ 始める: the timer on it");
-  await p.locator(".td7-focus-acts button", { hasText: "一時停止" }).click(); await p.waitForTimeout(500);
-  ok((await txt(p, ".td7-focus-kind")) === "一時停止中" && !!(await p.$('.td7-focus-acts button:has-text("再開")')), "⑥ 一時停止");
-  await p.locator(".td-pick-go button", { hasText: "完了にする" }).click(); await p.waitForTimeout(900);
-  ok((await todo(p, "a")).done && !(await W(p, "focus")) && (await txt(p, ".td7-focus-done strong")) === "完了しました！" && !!(await p.$('.td7-focus-done button:has-text("次は「資料を読む」")')), "⑥ 完了にする: the timer ended, done, the next offered");
-  await p.locator(".td7-focus-done button", { hasText: "次は" }).click(); await p.waitForTimeout(500);
-  ok((await txt(p, ".td7-focus-name")) === "資料を読む", "⑥ on to the next");
-  await p.click("#sheetDone"); await p.waitForTimeout(500);
-  await p.click('#todoList [data-check="a"]'); await p.waitForTimeout(1800);
-  // いまやるなら's 始める: the screen, the timer started
-  const top = (await p.evaluate(() => document.querySelector("#td6NowCard .td6-now-name")?.textContent));
-  await p.locator("#td6NowCard button", { hasText: "始める" }).click(); await p.waitForTimeout(700);
-  ok((await title(p)) === "集中" && (await txt(p, ".td7-focus-name")) === top && (await txt(p, ".td7-focus-kind")) === "集中", "⑥ いまやるなら's 始める: the screen, its timer running", top);
-  await p.locator(".td7-focus-acts button", { hasText: "終わる" }).click(); await p.waitForTimeout(400);
-  await p.click("#sheetDone"); await p.waitForTimeout(500);
+  // ---- ⑥ 集中 (1件に集中する画面): taken out with ToDo's 集中, 2026-11-21
+  ok(!!(await p.$("#td6NowCard .td6-now-next")) && !(await p.locator("#td6NowCard button", { hasText: "始める" }).count()), "⑥ いまやるなら: no 始める");
 
   // ---- ⑦ 追加と完了 in 完了のふりかえり
   await menu(p, "完了のふりかえり");
@@ -119,20 +103,14 @@ async function open(b, when) {
   ok((await txt(p, ".td7-flow .tip")).startsWith(`${Number(flow[0].w.slice(5, 7))}/${Number(flow[0].w.slice(8))}〜`) && (await txt(p, ".td7-flow .tip")).includes(`追加${flow[0].add}件・完了${flow[0].done}件`), "⑦ a week's numbers (keys)", await txt(p, ".td7-flow .tip"));
   await p.click("#sheetDone"); await p.waitForTimeout(500);
 
-  // ---- ⑧ 完了したときの音 (counted by the tones made)
-  await p.evaluate(() => { window.__osc = 0; const A = window.AudioContext || window.webkitAudioContext, o = A.prototype.createOscillator; A.prototype.createOscillator = function () { window.__osc++; return o.call(this); }; });
+  // ---- ⑧ 完了したときの音 (taken out, 2026-11-21: none, one picked before too; counted by the tones made)
+  await p.evaluate(({ P }) => { localStorage.setItem(P + "td7Sound", JSON.stringify("chime")); window.__osc = 0; const A = window.AudioContext || window.webkitAudioContext, o = A.prototype.createOscillator; A.prototype.createOscillator = function () { window.__osc++; return o.call(this); }; }, { P });
   await p.click('#todoList [data-check="f"]'); await p.waitForTimeout(400);
-  ok((await p.evaluate(() => window.__osc)) === 0, "⑧ none at first");
+  ok((await p.evaluate(() => window.__osc)) === 0, "⑧ none as one is checked off");
   await p.click('#todoList [data-check="f"]'); await p.waitForTimeout(1800);
   await p.click("#todoSettings"); await p.waitForTimeout(800);
-  ok((await p.inputValue("#td7Sound")) === "" && (await p.inputValue("#td7TidyDays")) === "0", "④⑧ in 編集, off at first");
-  await p.selectOption("#td7Sound", "chime"); await p.waitForTimeout(300);
-  ok((await p.evaluate(({ P }) => JSON.parse(localStorage.getItem(P + "td7Sound")), { P })) === "chime" && (await p.evaluate(() => window.__osc)) === 2, "⑧ チャイム picked (kept on this device; played as picked)");
+  ok(!(await p.$("#td7Sound")) && (await p.inputValue("#td7TidyDays")) === "0", "④ in 編集, off at first (⑧ not there)");
   await p.click("#sheetDone"); await p.waitForTimeout(500);
-  await p.click('#todoList [data-check="f"]'); await p.waitForTimeout(400);
-  ok((await p.evaluate(() => window.__osc)) === 4, "⑧ as one is checked off");
-  await p.click('#todoList [data-check="f"]'); await p.waitForTimeout(1800);
-  ok((await p.evaluate(() => window.__osc)) === 4, "⑧ not as one is checked back on");
 
   // ---- ④ 整理: 30 days; 履修登録 (done 10/1) to 最近削除, with 元に戻す
   await p.click("#todoSettings"); await p.waitForTimeout(800);

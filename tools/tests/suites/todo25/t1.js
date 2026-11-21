@@ -1,4 +1,5 @@
-// ToDo その25 ①②③⑤〜⑩ (④ 声のメモ taken off 2026-11-18, the user's call), through the hook build at 8887 (the insides) and as a user would
+// ToDo その25 ①③⑥〜⑨ (④ 声のメモ taken off 2026-11-18; ② かかった時間を聞く, ⑤ 休憩のすごし方, ⑩ ToDoなしの集中をToDoに and ①'s 編集,
+// with ToDo's 集中, 2026-11-21: the user's calls), through the hook build at 8887 (the insides) and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8887/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -65,9 +66,6 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   ok(await p.isVisible("#reFin25"), "⑨ in its sheet");
   await p.fill("#reFin25", "3ページ書けたら終わり"); await saveSheet(p);
   ok((await todo(p, "a")).finish === "3ページ書けたら終わり", "⑨ kept", await todo(p, "a"));
-  await W(p, "focus7", "a"); await p.waitForTimeout(800);
-  ok((await txt(p, ".td25-fin")) === "完了基準3ページ書けたら終わり", "⑨ in 1件に集中する画面", await txt(p, ".td25-fin"));
-  await closeSheet(p);
   const r1 = await todo(p, "r1");
   await check(p, "r1");
   const next = (await byText(p, "ゴミ出し")).find((t) => !t.done && t.id !== "r1");
@@ -83,14 +81,9 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   ok((await p.inputValue("#reMins")) === "110", "⑦ かかる時間 made their total");
   await saveSheet(p);
   ok((await todo(p, "st1")).mins === 110, "⑦ saved", await todo(p, "st1"));
-  await hold(p, "st1"); await press(p, "サブタスクで集中"); await press(p, "問題を解く（1時間）"); await p.waitForTimeout(800);
-  const sv = await W(p, "now");
-  ok(sv?.step === "t2" && sv.len === 60, "⑦ サブタスクで集中 for that long", sv);
-  ok((await txt(p, ".td25-steps-left-line")) === "のこり1時間20分（ぜんぶで1時間50分）", "⑦ in 1件に集中する画面", await txt(p, ".td25-steps-left-line"));
-  // ---- ⑥ ＋5分 (in 1件に集中する画面 all through the set)
-  await p.locator("#tdPanelBody .td25-more").click(); await p.waitForTimeout(400);
-  ok((await W(p, "now")).len === 65, "⑥ ＋5分 in 1件に集中する画面", await W(p, "now"));
-  await closeSheet(p); await W(p, "stop"); await p.waitForTimeout(300);
+  await hold(p, "st1");
+  ok(!(await items(p)).map(flat).some((w) => w.includes("集中")), "⑦ no サブタスクで集中 in its menu (taken out, 2026-11-21)", await items(p));
+  await p.keyboard.press("Escape"); await p.waitForTimeout(300);
 
   // ---- ⑥ ＋5分 on the bar
   await W(p, "put", { kind: "work", todoId: "a", len: 25, end: NOW + 10 * MIN, left: null, at: NOW - 15 * MIN }); await p.waitForTimeout(400);
@@ -103,29 +96,19 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   await W(p, "run22Put", { at: NOW - MIN, n: 2 });
   await W(p, "put", { kind: "rest", todoId: "a", len: 5, end: NOW + 4 * MIN, left: null, at: NOW - MIN, worked: 25 }); await p.waitForTimeout(400);
   ok(await p.isVisible("#td25More"), "⑥ in the 休憩 after a set");
-  // ---- ⑤ 休憩のすごし方 (that 休憩)
-  ok(await p.isVisible("#td25RestCard") && (await txt(p, "#td25RestCard")).startsWith("休憩のあいだに"), "⑤ a card over the list in 休憩", await txt(p, "#td25RestCard"));
-  const tip1 = await p.evaluate(() => document.querySelector("#td25RestCard .td25-rest-tip")?.textContent);
-  ok(TIPS.includes(tip1), "⑤ something to do", tip1);
-  await p.locator("#td25RestCard button", { hasText: "ほかのを見る" }).click(); await p.waitForTimeout(300);
-  const tip2 = await p.evaluate(() => document.querySelector("#td25RestCard .td25-rest-tip")?.textContent);
-  ok(TIPS.includes(tip2) && tip2 !== tip1, "⑤ ほかのを見る", [tip1, tip2]);
-  ok(!(await p.$("#td25RestCard .td25-breathe")) && (await p.locator("#td25RestCard .td25-rest-acts button").count()) === 1, "⑤ no 1分 深呼吸 (きょう's ひと息 taken out, 2026-11-19): ほかのを見る alone");
-  await W(p, "focus7", "a"); await p.waitForTimeout(800);
-  ok(await p.isVisible(".td25-rest-focus") && TIPS.includes(await p.evaluate(() => document.querySelector(".td25-rest-focus .td25-rest-tip")?.textContent)), "⑤ in 1件に集中する画面 too");
-  await closeSheet(p);
+  // ---- ⑤ 休憩のすごし方 (taken out, 2026-11-21)
+  ok(!(await p.$("#td25RestCard")) && !(await p.$(".td25-rest-tip")), "⑤ no card over the list in 休憩");
   await p.click("#td25More"); await p.waitForTimeout(400);
   w = await W(p, "now");
   ok(w.kind === "work" && w.len === 5 && w.todoId === "a" && w.more === true && (await W(p, "run22")).n === 1, "⑥ in 休憩: back to 集中 for 5 minutes, as the same set", [w, await W(p, "run22")]);
-  ok(await p.isHidden("#td25RestCard"), "⑤ the card gone with 休憩");
   await W(p, "stop"); await p.waitForTimeout(300);
 
   // ---- ① 自動で続ける
   await p.click("#todoSettings"); await p.waitForTimeout(900);
-  ok(!(await p.isChecked("#td25AutoOn")) && !(await p.isChecked("#td25AskOn")), "①② in 編集, off at first");
-  await p.locator("#td25AutoOn").check(); await p.locator("#td25AskOn").check(); await p.waitForTimeout(400);
+  ok(!(await p.$("#td25AutoOn")) && !(await p.$("#td25AskOn")) && !(await p.$("#focusForm")), "①② not in 編集 (with 集中タイマー, taken out 2026-11-21)");
   await closeSheet(p);
-  ok((await W(p, "set")).auto === true && (await W(p, "set")).ask === true, "①② kept", await W(p, "set"));
+  ok((await W(p, "set")).auto === false, "① off at first", await W(p, "set"));
+  await W(p, "set25", { auto: true }); await p.waitForTimeout(300); // (one turned on before: as kept, for 勉強's and 目標's timer)
   await W(p, "put", { kind: "rest", todoId: "a", len: 5, end: NOW - 1000, left: null, at: NOW - 301000, worked: 25 }); await p.waitForTimeout(600);
   w = await W(p, "now");
   ok(w?.kind === "work" && w.todoId === "a" && w.len === 25 && (await status(p)).includes("休憩おわり。次の集中を自動で始めました（25分）"), "① 休憩 over: the next set by itself", [w, await status(p)]);
@@ -134,31 +117,16 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   await W(p, "put", { kind: "rest", todoId: "a", len: 15, end: NOW - 1000, left: null, at: NOW - 901000, worked: 25, long: true }); await p.waitForTimeout(600);
   ok(!(await W(p, "now")) && (await status(p)).includes("休憩おわり。次の集中をはじめましょう"), "① not after a long 休憩", await status(p));
 
-  // ---- ⑩ ToDoなしの集中をToDoに
-  const e0 = Math.round((await todo(p, "e")).focus || 0);
+  // ---- ⑩ ToDoなしの集中をToDoに, ② かかった時間を聞く (taken out, 2026-11-21)
   await W(p, "put", { kind: "work", todoId: null, len: 25, end: NOW - 1000, left: null, at: NOW - 25 * MIN - 1000 }); await p.waitForTimeout(700);
-  ok((await status(p)).includes("25分の集中、おつかれさまでした") && await p.locator("#status button", { hasText: "ToDoにつける" }).isVisible(), "⑩ a set with no ToDo over: ToDoにつける", await status(p));
-  await p.locator("#status button", { hasText: "ToDoにつける" }).click(); await p.waitForTimeout(400);
-  ok((await items(p)).map(flat).includes("資料を読む"), "⑩ the ToDos to put it on", await items(p));
-  await press(p, "資料を読む"); await p.waitForTimeout(600);
-  const ss = await W(p, "sessions");
-  ok(Math.round((await todo(p, "e")).focus) === e0 + 25 && ss[ss.length - 1][3] === "e" && (await W(p, "now"))?.todoId === "e", "⑩ its minutes on it, its time of day too, the 休憩 with it", [await todo(p, "e"), ss[ss.length - 1], await W(p, "now")]);
-  ok((await status(p)).includes("集中した25分を「資料を読む」につけました"), "⑩ said", await status(p));
-  await p.locator("#status button", { hasText: "元に戻す" }).click(); await p.waitForTimeout(600);
-  ok(Math.round((await todo(p, "e")).focus || 0) === e0 && (await W(p, "sessions")).slice(-1)[0][3] === null, "⑩ 元に戻す", [await todo(p, "e"), (await W(p, "sessions")).slice(-1)[0]]);
+  ok((await status(p)).includes("25分の集中、おつかれさまでした") && !(await p.locator("#status button", { hasText: "ToDoにつける" }).count()), "⑩ a set with no ToDo over: no ToDoにつける", await status(p));
   await W(p, "stop"); await p.waitForTimeout(300);
   await W(p, "put", { kind: "work", todoId: null, len: 25, end: NOW + 13 * MIN, left: null, at: NOW - 12 * MIN }); await p.waitForTimeout(400);
   await p.click("#focusStop"); await p.waitForTimeout(500);
-  ok((await status(p)).includes("集中した12分を記録しました") && await p.locator("#status button", { hasText: "ToDoにつける" }).isVisible(), "⑩ ended early: ToDoにつける too", await status(p));
-
-  // ---- ② かかった時間を聞く (on)
+  ok((await status(p)).includes("集中した12分を記録しました") && !(await p.locator("#status button", { hasText: "ToDoにつける" }).count()), "⑩ ended early: none either", await status(p));
+  await W(p, "set25", { ask: true }); await p.waitForTimeout(300); // (one turned on before)
   await check(p, "c");
-  ok(await p.isVisible("#td25TimeCard") && (await txt(p, "#td25TimeCard")).startsWith("「メールに返信」は、どれくらいかかりましたか？") && (await txt(p, "#td25TimeCard .td25-est")) === "見積もりどおり（15分）", "② asked as it is done", await txt(p, "#td25TimeCard"));
-  await p.evaluate(() => [...document.querySelectorAll("#td25TimeCard button")].find((b) => b.textContent.replace(/\s/g, "") === "30分").click()); await p.waitForTimeout(500);
-  ok((await todo(p, "c")).focus === 30 && (await p.isHidden("#td25TimeCard")), "② picked: on it", await todo(p, "c"));
-  await W(p, "update", "f", { focus: 20 }); await p.waitForTimeout(300);
-  await check(p, "f");
-  ok(await p.isHidden("#td25TimeCard"), "② not for one focused on");
+  ok(!(await p.$("#td25TimeCard")) && !(await txt(p, "#todoList")).includes("どれくらいかかりましたか"), "② not asked", await todo(p, "c"));
 
   // ---- ⑧ 来週やる
   ok((await W(p, "nextKey")) === "2026-11-15", "⑧ next week's first day");
@@ -181,7 +149,7 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
 
   // ---- the guide, その23's row picker
   const g = await W(p, "guide");
-  ok(["自動で続ける", "かかった時間を聞く", "終えたら次を決める", "休憩のすごし方", "集中をあと5分", "サブタスクのかかる時間", "来週やる", "完了基準", "ToDoなしの集中をToDoに"].every((w) => g.includes(w)) && !g.includes("声のメモ"), "the guide");
+  ok(["終えたら次を決める", "サブタスクのかかる時間", "来週やる", "完了基準"].every((w) => g.includes(w)) && !["声のメモ", "自動で続ける", "かかった時間を聞く", "休憩のすごし方", "集中をあと5分", "ToDoなしの集中をToDoに", "集中する"].some((w) => g.includes(w)), "the guide", g);
   const rowsOf = JSON.parse(await W(p, "rows"));
   ok(["そのつどの繰り返し", "来週やる", "声のメモ"].every((w) => rowsOf.some(([, x]) => x === w)), "その23 ① 行に出すもの", rowsOf);
 
