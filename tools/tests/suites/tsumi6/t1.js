@@ -37,7 +37,8 @@ const inMonth = (m, to = "9999") => [...perDay].filter(([d]) => d.startsWith(m) 
   ok(await p.isVisible("#ts6LastLine") && last === (diff > 0 ? `先月の同じころより ${diff} こ多いペースです` : diff < 0 ? `先月の同じころより ${-diff} こ少ないペースです` : "先月の同じころと同じペースです"), "3 先月の同じころと", { last, diff });
   // 8 つみねこおみくじ: taken out at the user's call (2026-11-18, tools/REMOVED.md)
   ok(!(await p.$("#ts6LuckBtn")) && !(await txt(p, "#sec-tsumi")).includes("おみくじ"), "8 no つみねこおみくじ");
-  ok(await p.isHidden("#ts6YearLine"), "4 no line with no goal");
+  // 4 ことしの目標: taken out at the user's call (2026-11-21, tools/REMOVED.md)
+  ok(!(await p.$("#ts6YearLine")) && !(await txt(p, "#sec-tsumi")).includes("ことしの目標"), "4 no ことしの目標's line");
 
   // the gear
   await p.click("#tsumiSettings"); await wait(p, 700);
@@ -75,21 +76,9 @@ const inMonth = (m, to = "9999") => [...perDay].filter(([d]) => d.startsWith(m) 
   const [dl] = await Promise.all([p.waitForEvent("download"), p.click("#ts6Csv")]);
   const csv = fs.readFileSync(await dl.path(), "utf8").replace(/^﻿/, "").trim().split("\r\n");
   ok(dl.suggestedFilename() === `tsumikasane-blocks-${today}.csv` && csv[0] === "日付,時刻,種類,中身,もとの記録" && csv.length === total + 1 && csv[csv.length - 1].startsWith(`${today},21:00,日記`), "9 the table, oldest first", csv.slice(-2));
-  // 4 ことしの目標
-  await p.fill("#ts6YearN", "2000"); await p.click("#ts6YearForm .btn"); await wait(p, 400);
-  const yc = inMonth("2026");
-  let goal = await txt(p, "#ts6YearGoal");
-  ok(goal.startsWith(`2026年は ${yc} / 2,000 こ`) && goal.includes(`あと ${(2000 - yc).toLocaleString()} こ`) && goal.includes("目標をはずす"), "4 the goal, how far", goal);
-  await p.keyboard.press("Escape"); await wait(p, 700);
-  ok((await txt(p, "#ts6YearBtn")) === `ことしの目標 ${yc} / 2,000 こ`, "4 the line at the card's foot", await txt(p, "#ts6YearBtn"));
-  await p.click("#tsumiSettings"); await wait(p, 700);
-  await p.fill("#ts6YearN", "100"); await p.click("#ts6YearForm .btn"); await wait(p, 300);
-  await p.keyboard.press("Escape"); await wait(p, 1500);
-  ok((await txt(p, "#ts6YearBtn")) === "ことしの目標の 100 こに届きました" && (await toast(p) + "").length >= 0, "4 reached");
-  const set = await p.evaluate((P) => JSON.parse(localStorage.getItem(P + "settings") || "[]").find((x) => x.id === "tsumiYearGoal"), P);
-  ok(set && set.n === 100 && set.year === "2026" && set.doneAt > 0, "4 kept with the account, reached once", set);
-  // 6 積む: the way to it
-  await p.click("#tsumiSettings"); await wait(p, 700);
+  // 4 ことしの目標: taken out (2026-11-21); a goal kept with the account before, read by nothing
+  ok(!(await p.$("#ts6YearForm")) && !(await p.$("#ts6YearGoal")) && !(await txt(p, "#tsumiGroup")).includes("ことしの目標"), "4 the gear: no ことしの目標");
+  // 6 積む: the way to it (the gear still open)
   await p.locator("#ts6Idle .link-btn").click(); await wait(p, 900);
   ok(await p.evaluate(() => document.getElementById("daySheet").open), "6 積む: 勉強's sheet");
   ok(!p.errs.length, "no errors: " + p.errs.join(" | "));

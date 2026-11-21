@@ -79,12 +79,9 @@ const avg = (xs) => (Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10
   ok(JSON.stringify(await rows(p, "#ts10Week")) === JSON.stringify(ranked), "8 the weeks with the most", { got: await rows(p, "#ts10Week"), ranked });
   // 9 1年前のきょうのブロック
   ok(JSON.stringify(await rows(p, "#ts10Ago")) === JSON.stringify(["1年前・2025年11月14日（金）（1 こ）", "日記 22:00", "2年前・2024年11月14日（木）（1 こ）", "食事 19:00 夕食・カレー"]), "9 a year and two ago today", await rows(p, "#ts10Ago"));
-  // 10 きょうの目標の達成記録 (3 a day)
-  const okDay = (d) => (perDay.get(d) || 0) >= 3;
-  let n30 = 0, best = 0, cur = 0;
-  for (let i = 0; i < 30; i++) if (okDay(addDays(today, -i))) n30++;
-  for (let i = 364; i >= 0; i--) { cur = okDay(addDays(today, -i)) ? cur + 1 : 0; best = Math.max(best, cur); }
-  ok((await txt(p, "#ts10Goal")) === `この30日で ${n30} 日、1日 3 こに届きました いま 1 日続けて届いています・この1年でいちばん長く続いたのは ${best} 日（いまの目標の数で数えます）`, "10 the days the goal was reached", { got: await txt(p, "#ts10Goal"), n30, best });
+  // 10 きょうの目標の達成記録: taken out with きょうの目標 at the user's call (2026-11-21, tools/REMOVED.md); its count kept
+  // with the account before (tsumiDayGoal, 3 a day here) read by nothing
+  ok(!(await p.$("#ts10Goal")) && !(await txt(p, "#tsumiGroup")).includes("いまの目標の数で数えます") && !(await txt(p, "#sec-tsumi")).includes("きょうの目標"), "10 no きょうの目標の達成記録");
   // 5 the later one opened
   await p.locator("#ts10Same .link-btn").click(); await wait(p, 900);
   ok(await p.evaluate(() => document.getElementById("daySheet").open), "5 pressed: the 食事 opened, to put right or delete");

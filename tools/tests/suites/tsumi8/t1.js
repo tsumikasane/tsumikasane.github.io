@@ -62,8 +62,8 @@ const DATA = { meals, study, workouts, settings, tsumiPets: { day: today, n: 0, 
   ok(JSON.stringify(await rows(p, "#ts8Usual")) === JSON.stringify(["食事 まんなか 07:30・62 こから 07:30ごろ", "運動 まんなか 18:00・20 こから 18:00ごろ", "勉強 まんなか 21:10・59 こから 21:10ごろ"]), "5 each one's usual time, earliest first", await rows(p, "#ts8Usual"));
   // 8 よくある積む順番
   ok(JSON.stringify(await rows(p, "#ts8Order")) === JSON.stringify(["その日の最初に積むのは 60 日のうち 60 日 食事", "食事 → 勉強 このあとに積んだ日 40 日", "食事 → 運動 このあとに積んだ日 20 日", "運動 → 勉強 このあとに積んだ日 19 日"]), "8 the first, and one after another", await rows(p, "#ts8Order"));
-  // 10 なかよし度
-  ok((await txt(p, "#ts8FriendHead")) === "つみねことのなかよし度" && (await txt(p, "#ts8Friend")) === "♥♥♥♡♡ 大のなかよし 105 ポイント（積んだ日 60・なでた 45） あと 195 ポイントで「親友」", "10 the points, the step and the next", await txt(p, "#ts8Friend"));
+  // 10 なかよし度: taken out at the user's call (2026-11-21, tools/REMOVED.md); the pets kept in this browser left as they were
+  ok(!(await p.$("#ts8Friend")) && !(await p.$("#ts8FriendHead")) && !(await txt(p, "#tsumiGroup")).includes("なかよし度") && JSON.parse(await p.evaluate((P) => localStorage.getItem(P + "tsumiPets"), P)).total === 45, "10 no なかよし度")
   // 9 ひとこと集を送る: taken out with ブロックにひとこと (the user's call, 2026-11-18, tools/REMOVED.md)
   ok(!(await p.$("#ts8Notes")), "9 no ひとこと集を文字で送る");
   // 2 めあて in the gear: あした first; 勉強 picked

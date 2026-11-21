@@ -25,7 +25,7 @@ async function addMeal(p, text = "おにぎり") {
 (async () => {
   const b = await chromium.launch();
   // ---------- a year and more of records (2,231 blocks), 2026-11-10 23:50 (after the day's last, the ルーティーン at 23:30) ----------
-  const D = make(); D.settings.push(REWARDS);
+  const D = make(); D.settings.push(REWARDS, { id: "tsumiNeko", head: "santa", scarf: false, updatedAt: 1 }); // (着せかえ's, picked before it was taken out)
   let p = await phone(b, at("23:50", "2026-11-10"), { deviceScaleFactor: 1 });
   await seed(p, D, "tsumi"); await p.waitForTimeout(1800);
   const n0 = await p.evaluate(() => window.__ts.shown().length);
@@ -34,7 +34,7 @@ async function addMeal(p, text = "おにぎり") {
   // ⑧ the cat: in sight at the summit, pressed → its words, the next at the next press
   await p.click("#tsumiToTop").catch(() => {}); await p.waitForTimeout(300);
   let xy = await nekoXY(p), lines = await p.evaluate(() => window.__ts.lines());
-  ok(!!xy && lines[0] === "きょうは 5 こ積んだね。えらい！" && lines.some((l) => l.startsWith("436 日つづけて")) && lines.some((l) => l === "あと 47 こで 67 段目ができるよ") && lines.some((l) => l === "あと 269 こで「ケーキを食べる」だよ") && lines.some((l) => l.startsWith("いまの高さは 223.1 m。あべのハルカスまで、あと 769 こ")), "⑧ what it may say", lines);
+  ok(!!xy && lines[0] === "きょうは 5 こ積んだね。えらい！" && lines.some((l) => l.startsWith("436 日つづけて")) && lines.some((l) => l === "あと 47 こで 67 段目ができるよ") && lines.some((l) => l === "あと 269 こで「ケーキを食べる」だよ") && !lines.some((l) => /^(いまの高さは|このペースなら|きょうの目標まで|今月の目標まで)/.test(l)), "⑧ what it may say (高さ, このペースなら, the goals: taken out with them, 2026-11-21)", lines);
   await p.mouse.click(xy.x, xy.y); await p.waitForTimeout(250);
   ok(await p.isVisible("#nekoSay") && (await txt(p, "#nekoSay")) === lines[0].replace(/\s+/g, " ") && (await txt(p, "#nekoSaySr")) === lines[0], "⑧ pressed: its first word, in a bubble and read out", await txt(p, "#nekoSay"));
   ok(await p.evaluate(() => { const g = window.__ts.geo(); return !!g; }), "⑧ (stairs drawn)");
@@ -44,13 +44,18 @@ async function addMeal(p, text = "おにぎり") {
   const bx = await p.evaluate(() => { const g = window.__ts.geo(), r = document.getElementById("tsumiCanvas").getBoundingClientRect(); return { x: r.left + g.ox + g.pitch * 0.5, y: r.top + g.gridH - g.pitch * 0.5 }; });
   await p.mouse.click(bx.x, bx.y); await p.waitForTimeout(250);
   ok(!(await p.isVisible("#nekoSay")), "⑧ a press elsewhere: its words go");
-  // ⑦ 「N こ目」 pressed
-  await p.locator("#tsumiTip button", { hasText: "こ目" }).click(); await p.waitForTimeout(250);
-  ok(await p.evaluate(() => document.getElementById("tsumiInfo").open) && /こを1本に積みあげると、[\d.,]+ mです（1こ 10 cm）。/.test(await txt(p, "#tsumiInfoMsg")), "⑦ 「N こ目」: how high", await txt(p, "#tsumiInfoMsg"));
-  await p.click("#tsumiInfoGo"); await p.waitForTimeout(700);
-  ok(await sheetOpen(p) && await p.evaluate(() => { const r = document.getElementById("tsumiHeightHead").getBoundingClientRect(); return r.top >= 0 && r.top < 300; }), "⑦ 高さくらべを全部見る: the gear at 高さくらべ");
-  const h = await txt(p, "#tsumiHeight");
-  ok(h.startsWith("いまの高さ 223.1 m（2,231 こ）") && h.includes("つぎはあべのハルカス（300 m）。あと 769 こ") && h.includes("牛久大仏（120 m）") && h.includes("に超えました") && h.includes("東京タワー（333 m） あと 1,099 こ"), "⑦ the gear's 高さくらべ", h);
+  // ⑦ 高さくらべ: taken out at the user's call (2026-11-21, tools/REMOVED.md): 「N こ目」 a word again, no press for the height
+  ok(await p.locator("#tsumiTip button", { hasText: "こ目" }).count() === 0 && (await txt(p, "#tsumiTip")).includes("こ目") && !(await p.$("#tsumiInfo")), "⑦ 「N こ目」: no press for the height", await txt(p, "#tsumiTip"));
+  await p.click("#tsumiSettings"); await p.waitForTimeout(700);
+  ok(await sheetOpen(p) && !(await p.$("#tsumiHeight")) && !(await txt(p, "#tsumiGroup")).includes("高さくらべ"), "⑦ the gear: no 高さくらべ");
+  // ③ (2026-11-21) the gear's ten taken out at the user's call: none of them, and its contents without 手紙 and つみねこ
+  const gear = await txt(p, "#tsumiGroup");
+  const left = ["未来の自分への手紙", "高さくらべ", "このペースなら", "今月の目標", "ことしの目標", "きょうの目標", "つみねこの名前", "なかよし度", "つみねこの日記", "着せかえ", "おすすめ："].filter((w) => gear.includes(w));
+  ok(!left.length, "the gear: none of the ten", left);
+  const toc = await p.evaluate(() => [...document.querySelectorAll("#tsumiToc button")].map((x) => `${x.textContent}:${x.dataset.to}`));
+  ok(JSON.stringify(toc) === JSON.stringify(["探す:tsumiFindHead", "記録:tsumiKindsHead", "ふりかえり:tsumiYearsHead tsumiMemoryHead", "記念:tsumiMemoHead", "写真:tsumiAlbumHead", "送る:ts6SendHead", "クイズ:ts7QuizHead", "目標:ts8AimHead", "見え方:tsumiLookHead", "お知らせ:tsumiRemindHead"]), "the gear's contents: no 手紙, no つみねこ; 目標 at きょう・あしたのめあて", toc);
+  await p.locator("#tsumiToc button", { hasText: "目標" }).click(); // (a smooth scroll, a long way: about a second and a half)
+  ok(await p.waitForFunction(() => { const r = document.getElementById("ts8AimHead").getBoundingClientRect(); return r.top >= 0 && r.top < 400; }, null, { timeout: 5000 }).then(() => true, () => false), "目標 pressed: at きょう・あしたのめあて");
   // ⑤ 記念
   const memo = await txt(p, "#tsumiMemos");
   ok(memo.includes("目標を達成：TOEIC 800点") && memo.includes("2,000 こ目の節目") && memo.includes("ごほうび：新しいイヤホン（1,000 こ）") && /ほか \d+ 件を見る/.test(memo), "⑤ 記念のブロック, newest first, six then ほか", memo.slice(0, 300));
@@ -66,16 +71,9 @@ async function addMeal(p, text = "おにぎり") {
   await p.fill("#tsumiRewardN", "2232"); await p.fill("#tsumiRewardText", "映画を見る"); await p.click("#tsumiRewardForm button[type=submit]"); await p.waitForTimeout(300);
   let rw = (await setting(p, "tsumiRewards")).items;
   ok(rw.length === 3 && rw.some((r) => r.n === 2232 && r.text === "映画を見る" && !r.got) && (await toast(p)).includes("2,232 こで「映画を見る」の約束をしました") && (await txt(p, "#tsumiRewards")).includes("2,232 こで 映画を見る あと 1 こ"), "⑥ promised", rw);
-  // ⑨ the closet
-  ok(await p.getAttribute('#nekoCloset [data-item="auto"]', "aria-pressed") === "true" && await p.evaluate(() => window.__ts.look(2231)) === "1crown", "⑨ おまかせ in November: the crown (1,000 and more), the scarf");
-  ok(await p.getAttribute('#nekoCloset [data-item="santa"]', "aria-disabled") === "false", "⑨ Santa's hat had (blocks in December last year)");
-  await p.click('#nekoCloset [data-item="santa"]'); await p.waitForTimeout(250);
-  ok((await setting(p, "tsumiNeko"))?.head === "santa" && await p.evaluate(() => window.__ts.look(2231)) === "1santa" && (await toast(p)).includes("「サンタ帽」にしました"), "⑨ Santa's hat put on");
-  ok(await p.evaluate(() => document.activeElement?.dataset?.item) === "santa" || true, "⑨ (focus kept)");
-  await p.click("#nekoCloset .neko-scarf input"); await p.waitForTimeout(250);
-  ok((await setting(p, "tsumiNeko"))?.scarf === false && await p.evaluate(() => window.__ts.look(2231)) === "0santa", "⑨ the scarf off");
-  await p.click('#nekoCloset [data-item="auto"]'); await p.waitForTimeout(200); await p.click("#nekoCloset .neko-scarf input"); await p.waitForTimeout(200);
-  ok(await p.evaluate(() => window.__ts.look(2231)) === "1crown", "⑨ おまかせ again");
+  // ⑨ 着せかえ: taken out at the user's call (2026-11-21, tools/REMOVED.md): what it wears by the season and its count stays,
+  // the one picked before (kept with the account: Santa's hat, the scarf off) read by nothing
+  ok(!(await p.$("#nekoCloset")) && await p.evaluate(() => window.__ts.look(2231)) === "1crown" && (await setting(p, "tsumiNeko"))?.head === "santa", "⑨ no 着せかえ: in November the crown (1,000 and more) and the scarf, as おまかせ had it", await p.evaluate(() => window.__ts.look(2231)));
   // ⑩ the week's notification
   await p.click("#tsumiWeekOn"); await p.waitForTimeout(200);
   await p.selectOption("#tsumiWeekWd", "3"); await p.waitForTimeout(150);
@@ -118,19 +116,29 @@ async function addMeal(p, text = "おにぎり") {
   const yt = await txt(p, "#tyBody");
   ok(await tabNow(p) === "tsumiyear" && (await txt(p, "#tyTitle")) === "2026年のつみかさね" && yt.startsWith(`${y26.toLocaleString("ja-JP")}こ 2025年より +`) && yt.includes("段のぼりました（34 段 → 66 段）") && yt.includes("いちばん長く続いた 314 日（1/1〜11/10）") && yt.includes("いちばん積んだのは") && yt.includes("夜（17〜23時）に積むことが、いちばん多い年でした") && yt.includes("目標を達成：TOEIC 800点"), "① 2026's page", yt.slice(0, 500));
   ok(await p.isDisabled("#tyNext") && !(await p.isDisabled("#tyPrev")) && (await p.getAttribute("#backBtn", "aria-label")) === "つみかさねに戻る", "① ‹ › and back");
+  // 月のひとこと: written on the year's page now (under the calendar view's month, till that was taken out, 2026-11-21)
+  await p.locator("#tyBody .ts-month-note button", { hasText: "11月にひとこと" }).click(); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => document.getElementById("tsTextAsk").open), "月のひとこと: 11月にひとこと, on the year's page");
+  await p.fill("#tsTextInput", "よく積んだ月"); await p.click("#tsTextSave"); await p.waitForTimeout(500);
+  const notes = await p.evaluate(() => [...document.querySelectorAll("#tyBody .ty-notes li")].map((li) => li.querySelector(".m").textContent + "|" + li.querySelector("button")?.textContent));
+  ok((await setting(p, "tsumiMonthNotes"))?.words?.["2026-11"] === "よく積んだ月" && JSON.stringify(notes) === '["11月|よく積んだ月"]' && !(await p.$("#tyBody .ts-month-note")), "月のひとこと: kept, listed, this month's written", notes);
+  await p.locator("#tyBody .ty-notes button").click(); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => document.getElementById("tsTextAsk").open) && (await p.inputValue("#tsTextInput")) === "よく積んだ月", "月のひとこと: pressed, to change it");
+  await p.click("#tsTextNo"); await p.waitForTimeout(300);
   await p.click("#tyPrev"); await p.waitForTimeout(300);
   ok((await txt(p, "#tyTitle")) === "2025年のつみかさね" && (await txt(p, "#tyBody")).startsWith("618こ") && await p.isDisabled("#tyPrev"), "① 2025's");
   await p.click("#tyNext"); await p.waitForTimeout(300);
   await p.locator(".ty-m").nth(7).click(); await p.waitForTimeout(900);
-  ok(await tabNow(p) === "tsumi" && JSON.stringify(await p.evaluate(() => window.__ts.cal())) === '[true,"2026-08"]' && (await txt(p, ".ts-month")).startsWith("8月は"), "① a month's bar: the calendar at that month", [await p.evaluate(() => window.__ts.cal()), await txt(p, ".ts-month")]);
-  await p.click('#tsumiViews button[data-view="near"]'); await p.waitForTimeout(300);
+  const aug = await p.evaluate(() => { const k = window.__ts.pick(), s = window.__ts.shown(); return [s.find((x) => x.key === k)?.day, s.find((x) => x.day >= "2026-08-01")?.day]; });
+  ok(await tabNow(p) === "tsumi" && aug[0] && aug[0] === aug[1] && await p.evaluate(() => window.__ts.cal()) === false && await p.isVisible("#tsumiCanvas"), "① a month's bar: the stairs at its first block (at the calendar, till that was taken out, 2026-11-21)", aug);
   await p.click("#tsumiSettings"); await p.waitForTimeout(600);
   await p.locator("#tsumiYears button", { hasText: "2026年" }).click(); await p.waitForTimeout(900);
   await p.click(".ty-play"); await p.waitForTimeout(1000);
   const ra = await p.evaluate(() => { const a = window.__ts.anim(), s = window.__ts.shown(); return a && { from: a.from, to: a.to, replay: a.replay, first: s.findIndex((b) => b.t >= Date.parse("2026-01-01T00:00:00+09:00")), n: s.length }; });
   ok(await tabNow(p) === "tsumi" && ra && ra.replay && ra.from === ra.first && ra.to === ra.n && (await toast(p)).includes("2026年のブロック"), "① この1年を階段で再生: the year's blocks drop in again", ra);
-  await p.click("#tsumiPlay"); await p.waitForTimeout(200);
-  ok(!(await p.evaluate(() => window.__ts.anim())), "① stopped with ■");
+  ok(!(await p.$("#tsumiPlay")), "① ▶ (and ■) by the gear: taken out (2026-11-21)");
+  await p.click("#tsumiCanvas", { position: { x: 4, y: 4 } }); await p.waitForTimeout(200);
+  ok(!(await p.evaluate(() => window.__ts.anim())), "① the stairs pressed: the year's replay stops");
   ok(!p.errs.length, "no error", p.errs);
   await p.close();
 
@@ -159,27 +167,22 @@ async function addMeal(p, text = "おにぎり") {
   xy = await nekoXY(p);
   if (xy) { await p.mouse.click(xy.x, xy.y); await p.waitForTimeout(250); }
   ok((await txt(p, "#nekoSaySr")) === "きょうはまだ積んでないよ。1こだけでも積もう", "⑧ nothing today, in the evening (first: つみねこのおねがい was taken out, 2026-11-19)", await txt(p, "#nekoSaySr"));
-  ok(await p.evaluate(() => window.__ts.look(149)) === "1" && await p.evaluate(() => [...document.querySelectorAll("#nekoCloset [data-item]")].length) === 0, "⑨ 100 and more: the scarf only, no season now");
-  // ① ② the calendar: a day with none, pressed, its records to write in
-  await p.click('#tsumiViews button[data-view="cal"]'); await p.waitForTimeout(300);
-  ok(/^11月はここまで 2[0-9] こ /.test(await txt(p, ".ts-month")) && (await txt(p, ".ts-month")).includes("積んだ日 7 / 10 日"), "① the month: 7 of its 10 days", await txt(p, ".ts-month"));
-  const empties = await p.evaluate(() => [...document.querySelectorAll("#tsumiCal button.d.empty")].map((x) => x.textContent));
-  ok(JSON.stringify(empties) === '["3","5","10"]', "② the days gone by with none (today too) can be pressed", empties);
-  await p.locator("#tsumiCal button.d.empty", { hasText: "5" }).click(); await p.waitForTimeout(900);
-  ok(await tabNow(p) === "recday" && (await txt(p, "#recDayTitle")).startsWith("11月5日") && (await txt(p, "#recDayBody")).includes("この日の記録はありません") && (await txt(p, "#recDayBody")).includes("日記を書く"), "② its records, with the ways to write in it", await txt(p, "#recDayBody"));
-  await p.click("#backBtn"); await p.waitForTimeout(900);
-  ok(await tabNow(p) === "tsumi" && (await p.evaluate(() => window.__ts.cal()))[0] === true, "② back: the calendar as it was");
+  ok(await p.evaluate(() => window.__ts.look(149)) === "1" && await p.evaluate(() => [...document.querySelectorAll("#nekoCloset [data-item]")].length) === 0, "⑨ 100 and more: the scarf only, no season now (着せかえ taken out: nothing to pick)");
+  // ② カレンダー: taken out at the user's call (2026-11-21, tools/REMOVED.md): the switch 大きく・全体・種類; カレンダー kept as
+  // the view on this phone before, the stairs; 種類 still in their place
+  const views = await p.evaluate(() => [...document.querySelectorAll("#tsumiViews button")].map((x) => x.dataset.view));
+  ok(JSON.stringify(views) === '["near","all","kinds"]' && !(await txt(p, "#tsumiViews")).includes("カレンダー"), "② the switch: no カレンダー", views);
+  await p.evaluate((P) => localStorage.setItem(P + "tsumiCal", "1"), P); await p.reload(); await p.waitForTimeout(1500);
+  ok(await p.evaluate(() => window.__ts.cal()) === false && await p.isVisible("#tsumiCanvas") && !(await p.isVisible("#tsumiCal")), "② カレンダー kept as the view before: the stairs");
+  await p.click('#tsumiViews button[data-view="kinds"]'); await p.waitForTimeout(400);
+  ok(await p.isVisible("#tsumiCal .ts-pillars") && !(await p.isVisible("#tsumiCanvas")), "② 種類 still in the stairs' place");
   await p.click('#tsumiViews button[data-view="near"]'); await p.waitForTimeout(300);
-  // ⑦ a height passed: 149 → 150 is 奈良の大仏 (15 m)
+  // ⑦ a height passed (149 → 150 was 奈良の大仏, 15 m): said no more, with 高さくらべ taken out (2026-11-21)
   await addMeal(p, "おにぎり");
   await p.waitForTimeout(300);
-  ok((await toast(p)).includes("積んだ高さが奈良の大仏（15 m）を超えました"), "⑦ passed: said", await toast(p));
-  // ⑨ locked ones: not put on
+  ok(await p.evaluate(() => window.__ts.shown().length) === 150 && !(await toast(p)).includes("積んだ高さ"), "⑦ a height passed: not said", await toast(p));
   await p.click("#tsumiSettings"); await p.waitForTimeout(600);
-  ok(await p.getAttribute('#nekoCloset [data-item="hat"]', "aria-disabled") === "true" && await p.getAttribute('#nekoCloset [data-item="santa"]', "aria-disabled") === "true" && (await txt(p, '#nekoCloset [data-item="santa"]')).includes("12月1日〜25日") && (await p.getAttribute('#nekoCloset [data-item="hat"]', "aria-label")) === "ニット帽（500 こで手に入ります）" && (await p.getAttribute('#nekoCloset [data-item="santa"]', "aria-label")) === "サンタ帽（12月1日〜25日に積むと手に入ります）", "⑨ the hat (500) and Santa's (December) still to come");
-  await p.$eval('#nekoCloset [data-item="hat"]', (x) => x.click()); await p.waitForTimeout(200);
-  ok(!(await setting(p, "tsumiNeko")), "⑨ pressing one still to come keeps nothing");
-  ok((await txt(p, "#tsumiHeight")).includes("奈良の大仏（15 m） " ) || (await txt(p, "#tsumiHeight")).includes("奈良の大仏（15 m）"), "⑦ passed in the gear");
+  ok(!(await p.$("#nekoCloset")) && !(await p.$("#tsumiHeight")), "⑦ ⑨ the gear: no 高さくらべ, no 着せかえ");
   ok(!(await txt(p, "#tsumiMemos")).includes("自己ベスト"), "⑤ no 運動, no 自己ベスト");
   ok(!p.errs.length, "no error", p.errs);
   await p.close();
@@ -188,7 +191,7 @@ async function addMeal(p, text = "おにぎり") {
   p = await phone(b, at("08:00", "2026-12-25"), { deviceScaleFactor: 1 });
   await seed(p, make("2026-12-24"), "tsumi"); await p.waitForTimeout(1500);
   ok(await p.isVisible("#tsumiYearLine") && (await txt(p, "#tsumiYearBtn")) === "2026年のつみかさねをふりかえる", "① 12月25日: the year's line at the foot");
-  ok(await p.evaluate(() => window.__ts.look(window.__ts.shown().length)) === "1santa", "⑨ おまかせ in December: Santa's hat");
+  ok(await p.evaluate(() => window.__ts.look(window.__ts.shown().length)) === "1santa", "⑨ December: Santa's hat, by the season");
   await p.click("#tsumiYearBtn"); await p.waitForTimeout(900);
   ok(await tabNow(p) === "tsumiyear" && (await txt(p, "#tyTitle")) === "2026年のつみかさね", "① pressed: its page");
   ok(!p.errs.length, "no error", p.errs);

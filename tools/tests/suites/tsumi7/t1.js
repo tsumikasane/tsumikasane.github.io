@@ -76,16 +76,8 @@ const sumDays = (from, to) => [...per].filter(([d]) => d >= from && d <= to).red
   ok(await p.inputValue("#tsumiFind") === "ラーメン" && await p.isVisible("#tsumiFound"), "7 pressed: looked for");
   // 9 ひとことのタグ: taken out with ブロックにひとこと (the user's call, 2026-11-18, tools/REMOVED.md)
   ok(!(await p.$("#ts7Tags")) && !(await p.$("#ts7TagList")) && !(await txt(p, "#tsumiGroup")).includes("ひとことのタグ"), "9 no ひとことのタグ");
-  // 5 目標のおすすめ
-  const avg = sumDays(addDays(today, -28), addDays(today, -1)) / 28;
-  const sugDay = Math.max(1, Math.ceil(avg * 1.1)), sugMonth = Math.max(10, Math.ceil((avg * 1.1 * 30) / 10) * 10), yc = [...per.values()].reduce((a, b) => a + b, 0);
-  const sugYear = Math.max(50, Math.ceil((yc + avg * 1.1 * 48) / 50) * 50);
-  ok((await txt(p, "#ts7SugDay")) === `おすすめ：1日 ${sugDay} こ（この4週間は1日 ${(Math.round(avg * 10) / 10).toFixed(1)} こ） これにする`, "5 きょうの目標's", await txt(p, "#ts7SugDay"));
-  ok((await txt(p, "#ts7SugMonth")) === `おすすめ：${sugMonth} こ（この4週間のペースで11月まるごと） これにする`, "5 今月の目標's", await txt(p, "#ts7SugMonth"));
-  ok((await txt(p, "#ts7SugYear")) === `おすすめ：${sugYear} こ（ことしの ${yc} こに、この4週間のペースで12月31日まで） これにする`, "5 ことしの目標's", await txt(p, "#ts7SugYear"));
-  await p.locator("#ts7SugDay .link-btn").click(); await wait(p, 400);
-  const dg = (await ls(p, "settings")).find((x) => x.id === "tsumiDayGoal");
-  ok(dg && dg.n === sugDay && await p.isHidden("#ts7SugDay"), "5 これにする: the goal set, the suggestion gone", dg);
+  // 5 目標のおすすめ: under きょう・今月・ことし's goals, taken out with them at the user's call (2026-11-21, tools/REMOVED.md)
+  ok(!(await p.$("#ts7SugDay")) && !(await p.$("#ts7SugMonth")) && !(await p.$("#ts7SugYear")) && !(await txt(p, "#tsumiGroup")).includes("おすすめ："), "5 no 目標のおすすめ");
   // 10 日記に書き足す
   await p.click("#ts7Jn"); await wait(p, 600);
   let jn = (await ls(p, "journal")).find((j) => (j.date || j.id) === today);
@@ -108,7 +100,6 @@ const sumDays = (from, to) => [...per].filter(([d]) => d >= from && d <= to).red
   await p.click("#tsumiSettings"); await wait(p, 800);
   const all2 = await txt(p, "#ts7All");
   ok(all2.includes("今週 6 / 7 日。あと 1 日で皆勤です") && (await p.evaluate(() => document.querySelector("#ts7All .ts7-dot:last-child").className)).includes("today"), "2 today still to come", all2);
-  ok((await txt(p, "#ts7SugDay")) === "おすすめ：1日 1 こ（この4週間は1日 0.7 こ） これにする", "5 from 20 days: 1 a day", await txt(p, "#ts7SugDay"));
   if (p.errs.length) errs.push(...p.errs);
   await p.close();
 
