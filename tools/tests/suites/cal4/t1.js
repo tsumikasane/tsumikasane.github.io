@@ -10,7 +10,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll(".toast.show
 const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P + k) || "[]"), { P, k });
 const ev = async (p, id) => (await ls(p, "events")).find((e) => e.id === id);
 const setting = async (p, id) => (await ls(p, "settings")).find((x) => x.id === id) || null;
-const cell = (p, md) => p.evaluate((md) => { const c = [...document.querySelectorAll(".cal-day")].find((x) => x.getAttribute("aria-label").startsWith(md)); return c ? { bars: [...c.querySelectorAll(".bar")].map((b) => b.textContent + (b.classList.contains("cx") ? "#cx" : "")), stamp: c.querySelector(".cal4-stamp")?.textContent || "", label: c.getAttribute("aria-label") } : null; }, md);
+const cell = (p, md) => p.evaluate((md) => { const c = [...document.querySelectorAll(".cal-day")].find((x) => x.getAttribute("aria-label").startsWith(md)); return c ? { bars: [...c.querySelectorAll(".bar")].map((b) => b.textContent + (b.classList.contains("cx") ? "#cx" : "")), stamp: ((h) => (h && document.querySelector("symbol" + h) ? h.slice(4) : c.querySelector(".cal4-stamp")?.textContent || ""))(c.querySelector(".cal4-stamp use")?.getAttribute("href")), label: c.getAttribute("aria-label") } : null; }, md);
 const openDayOf = async (p, md) => { await p.evaluate((md) => [...document.querySelectorAll(".cal-day")].find((x) => x.getAttribute("aria-label").startsWith(md)).click(), md); await p.waitForTimeout(700); };
 const openPlan = async (p, md, title) => { await openDayOf(p, md); await p.locator("#calDayList .row-btn", { hasText: title }).first().click(); await p.waitForTimeout(700); };
 const closeSheet = async (p) => { for (let i = 0; i < 4 && (await p.evaluate(() => document.getElementById("daySheet").open)); i++) { await p.keyboard.press("Escape"); await p.waitForTimeout(700); } };
@@ -25,7 +25,7 @@ let b;
 
   // ①③④② in the month
   let c = await cell(p, "11月16日");
-  ok(c && c.bars.includes("★ゼミ") && c.stamp === "🎂" && c.label.includes("スタンプ 🎂"), "① ★ before a 大事な予定, ④ its stamp in the corner", c);
+  ok(c && c.bars.includes("★ゼミ") && c.stamp === "cake" && c.label.includes("スタンプ 誕生日"), "① ★ before a 大事な予定, ④ its stamp in the corner (Lucide's cake, named in words)", c);
   c = await cell(p, "11月18日");
   ok(c && c.bars.includes("英会話#cx"), "② a turn called off is struck through", c);
   c = await cell(p, "11月25日");
@@ -48,8 +48,9 @@ let b;
   await p.click('#cal4Day [data-stamp="⭐"]'); await p.waitForTimeout(500);
   ok((await setting(p, "calendar"))?.stamps?.["2026-11-25"] === "⭐", "④ a stamp put on the day", (await setting(p, "calendar"))?.stamps);
   ok((await p.getAttribute('#cal4Day [data-stamp="⭐"]', "aria-pressed")) === "true", "④ shown as picked");
+  ok((await toast(p)).includes("11月25日（水）に「大事な日」のスタンプを付けました"), "④ said in words", await toast(p));
   await closeSheet(p);
-  ok((await cell(p, "11月25日")).stamp === "⭐", "④ and in the month");
+  ok((await cell(p, "11月25日")).stamp === "star", "④ and in the month");
   await openDayOf(p, "11月15日");
   ok(await p.evaluate(() => !document.querySelector("#cal4Day .cal4-from")), "⑩ none for あした (its title says it)");
   await closeSheet(p);
