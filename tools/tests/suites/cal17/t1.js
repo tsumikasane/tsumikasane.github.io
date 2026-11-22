@@ -31,10 +31,11 @@ let b;
   ok((await p.inputValue("#cal17Len")) === "60", "① an hour at first");
   await p.selectOption("#cal17Len", "30"); await p.waitForTimeout(400);
   ok((await setting(p, "calendar")).len17 === 30, "① kept");
-  // ⑤ ④ ⑥ switched on there too
-  await p.check("#cal17BarTime"); await p.check("#cal17Bands"); await p.check("#cal17GapOn"); await p.waitForTimeout(400);
+  // ⑤ ④ switched on there too; ⑥ すきま時間のお知らせ taken out (the user's call, 2026-11-22): not there
+  await p.check("#cal17BarTime"); await p.check("#cal17Bands"); await p.waitForTimeout(400);
   const cs = await setting(p, "calendar");
-  ok(cs.barTime17 === true && cs.bands17 === true && cs.gap17?.on === true && (await p.inputValue("#cal17GapMin")) === "60", "④⑤⑥ on", cs);
+  ok(cs.barTime17 === true && cs.bands17 === true, "④⑤ on", cs);
+  ok(!(await p.$("#cal17GapOn")) && !(await txt(p, "#daySheet")).includes("すきま時間のお知らせ"), "⑥ taken out: not in the gear");
   // ② 研究 made one with ゼミ
   ok(await p.isVisible("#cal17Merge"), "② under the labels");
   await p.selectOption("#cal17From", "l2"); await p.selectOption("#cal17To", "l1");
@@ -51,11 +52,9 @@ let b;
   const bars = await p.evaluate(() => [...[...document.querySelectorAll(".cal-day")].find((x) => x.getAttribute("aria-label").startsWith("11月16日")).querySelectorAll(".bar")].map((x) => x.textContent));
   ok(JSON.stringify(bars) === '["9:00 線形代数","10:00 ゼミ","14:00 面接","19:00 夕食"]', "⑤ before their names", bars);
 
-  // ⑥ the time between plans
+  // ⑥ taken out: none of the time between plans, though on from before (data.js)
   let al = await alarms(p);
-  const g1 = al.find((a) => a.tag === "cal-gap:2026-11-16:12:00"), g2 = al.find((a) => a.tag === "cal-gap:2026-11-16:15:00");
-  ok(g1 && new Date(g1.at).toISOString() === "2026-11-16T03:00:00.000Z" && g1.title === "すきま時間 1 時間 30 分" && g1.body === "次の「面接」（14:00、13:30に出発）まで、1 時間 30 分あります", "⑥ after ゼミ, the way to 面接 counted", g1);
-  ok(g2 && g2.body === "次の「夕食」（19:00）まで、4 時間あります" && !al.some((a) => a.tag === "cal-gap:2026-11-16:10:30"), "⑥ after 面接; none where they run into each other", g2);
+  ok(!al.some((a) => String(a.tag).startsWith("cal-gap:")) && (await setting(p, "calendar")).gap17?.on === true, "⑥ taken out: no すきま時間, the setting kept", al.map((a) => a.tag));
 
   // ③ 平日, ④ 時限の帯 (週)
   await p.click('#calViews [data-view="week"]'); await p.waitForTimeout(600);

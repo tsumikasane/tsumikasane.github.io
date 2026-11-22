@@ -37,17 +37,15 @@ let b;
   await p.click("#cal7OffAdd"); await p.waitForTimeout(500);
   let offs = (await setting(p, "calendar")).offDays;
   ok(offs.length === 2 && offs[1].name === "学園祭" && offs[1].from === "2026-11-21" && offs[1].to === "2026-11-23", "① 学園祭 put in", offs);
-  // ③ the label's 通知アラーム, ④ the evening before, in the gear
+  // ③ the label's 通知アラーム in the gear; ④ the evening before taken out (the user's call, 2026-11-22): not in the gear,
+  // and none comes for the ★ plan, its setting kept on from before (data.js) as it was
   ok((await p.inputValue("#cal7LA-l1")) === "30" && (await p.inputValue("#cal7LA-l2")) === "", "③ ゼミ 30分前, 遊び いつもどおり");
-  await p.click("#cal7StarOn"); await p.waitForTimeout(500);
-  ok((await setting(p, "calendar")).starEve?.on === true, "④ turned on");
+  ok(!(await p.$("#cal7StarOn")) && !(await txt(p, "#daySheet")).includes("大事な予定の前の日のお知らせ"), "④ taken out: not in the gear");
   await closeSheet(p);
   c = await cell(p, "11月22日");
   ok(c && c.red && c.hol === "学園祭", "① each of its days red", c);
   al = await p.evaluate(() => window.__cal7.alarms(Date.now()));
-  const star = al.find((a) => a.tag === "cal-star:e1:2026-11-17");
-  ok(star && star.title === "あしたは大事な予定：面接" && new Date(star.at).toISOString() === "2026-11-16T11:00:00.000Z" && star.body.includes("14:00から・〇〇ビル") && star.body.includes("履歴書") && !star.body.includes("印鑑"), "④ the evening before, with what is still to take", star);
-  ok(!al.some((a) => a.tag.startsWith("cal-star:e2")), "④ not for a plan that isn't ★");
+  ok(!al.some((a) => a.tag.startsWith("cal-star:")) && (await setting(p, "calendar")).starEve?.on === true, "④ taken out: none the evening before a ★ plan, the setting kept");
 
   // ⑤ read out
   const say = await p.evaluate(() => window.__cal7.speech("2026-11-17"));

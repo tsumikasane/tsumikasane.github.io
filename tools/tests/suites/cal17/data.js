@@ -16,7 +16,7 @@ function make() {
     ],
     labels: [{ id: "l1", name: "ゼミ", color: "blue", createdAt: 1 }, { id: "l2", name: "研究", color: "green", createdAt: 2 }, { id: "lc", name: "授業", color: "orange", createdAt: 3 }],
     settings: [
-      { id: "calendar", freeFrom: "09:00", freeTo: "22:00", updatedAt: 1 },
+      { id: "calendar", freeFrom: "09:00", freeTo: "22:00", gap17: { on: true, min: 60 }, updatedAt: 1 }, // (⑥ すきま時間のお知らせ on from before: taken out, 2026-11-22)
       { id: "timetable", from: "2026-10-01", to: "2027-02-10", items: [{ id: "c1", wd: 1, p: 1, name: "線形代数", room: "A101" }, { id: "c2", wd: 3, p: 2, name: "英語", room: "B202" }], updatedAt: 1 },
     ],
   };

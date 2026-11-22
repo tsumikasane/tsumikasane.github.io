@@ -6,11 +6,16 @@ before. Exits 1 with any NEW.
 
   python3 tools/tests/run.py              everything: the comparison tests and every suite (about 25 minutes)
   python3 tools/tests/run.py ToDo         a chat's suites and comparison tests (and those for every page)
-  python3 tools/tests/run.py ToDo --changed   and, before a release, the other chats' suites that mention what this
-                                          change takes away (an id, a name, words on the page); it says too when the
-                                          change touches the parts every page shares, the time for everything
+  python3 tools/tests/run.py ToDo --changed   before a release: of the chat's suites, those of the parts it changes
+                                          (a section 「ToDo その15」 → the suite about 「ToDo その15」; a part of the chat
+                                          with no suite of its own, as 「ToDo」 itself → all the chat's), the chat's
+                                          comparison tests, and any suite that mentions what this change takes away (an
+                                          id, a name, words on the page); it says too when the change touches the parts
+                                          every page shares, the time for everything (a line there that only called
+                                          what was taken away, or a comment, doesn't count)
   python3 tools/tests/run.py r37 r38      those suites alone
   python3 tools/tests/run.py cmp          the comparison tests alone
+  python3 tools/tests/run.py ToDo --changed --dry   what that would run, and no more
   python3 tools/tests/run.py --list       the suites by chat, with their tests
   python3 tools/tests/run.py -j 3 ...     three at a time (a suite's tests still one after another); the results in
                                           the same order. A failure seen only so: run that suite alone to be sure
@@ -37,6 +42,20 @@ WORK = pathlib.Path(os.environ.get("TEST_WORK", "/tmp/tsumikasane-tests"))
 TIMEOUT = 420  # seconds a test may take
 CHATS = ["きょう・天気", "カレンダー", "ToDo", "目標", "つみかさね・記録", "ダイエット", "家計簿・バイト", "日記・勉強・ルーティーン"]
 EVERY = "ぜんぶ"  # a comparison test for every page: run with any chat's
+# --changed: a part of the page (a section of index.html) with no suite of its own, as 「ToDo」 itself, is its chat's by
+# these words in its name; with none of them, it is the chat's run for
+CHAT_WORDS = {"きょう・天気": ("きょう", "天気", "タイル"), "カレンダー": ("カレンダー", "月・週・日", "予定", "時間割", "祝日"),
+              "ToDo": ("ToDo",), "目標": ("目標", "マンダラ"), "つみかさね・記録": ("つみかさね", "記録", "つみねこ"),
+              "ダイエット": ("ダイエット", "食事", "運動", "からだ", "体重"), "家計簿・バイト": ("家計簿", "バイト", "お金"),
+              "日記・勉強・ルーティーン": ("日記", "勉強", "ルーティーン")}
+
+
+def part_key(text):
+    """the part of the page a section's name or a suite's comment is about: up to its 「その N」 or 「①〜⑩」, spaces left
+    out (「カレンダー その9 ①〜⑩ (the user's calls…」 and 「カレンダー その9 ①〜⑩（繰り返しの…」 are both 「カレンダーその9」);
+    none for the rest"""
+    m = re.match(r"\s*(.+?(?:その\s*\d+|①〜⑩))", text)
+    return re.sub(r"\s+", "", m.group(1)) if m else None
 RESERVED = {8765, 8766, 8767}  # the page now, the page before, the test version looked at by hand (WORKFLOW.md)
 # --changed: the parts every page shares (WORKFLOW.md, アプリのつくり): files of their own, and index.html's sections by
 # their headings (`  // ---------- … ----------`), and the helpers at the start of its script, before the first heading.
@@ -193,15 +212,34 @@ def changes(base, all_suites, cmp_rows):
     script = next((i + 1 for i, l in enumerate(lines) if l.startswith("<script>")), 0)
     heads = [(i + 1, l.strip()) for i, l in enumerate(lines) if l.startswith("  // ---------- ")]
     at = [h for h, _ in heads]
-    touched = set()
-    for m in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", git("diff", "-U0", base, "--", "index.html"), re.M):
+    touched, parts = set(), set()
+    diff = git("diff", "-U0", base, "--", "index.html")
+    for m in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@[^\n]*\n((?:[-+][^\n]*\n?)*)", diff, re.M):
         start = int(m.group(1)); end = start + max(int(m.group(2) or 1), 1) - 1
-        if script and at and end >= script and start < at[0]:
+        gone = [COMMENT.sub(" ", l[1:]).strip() for l in m.group(3).splitlines() if l.startswith("-")]
+        came = [COMMENT.sub(" ", l[1:]).strip() for l in m.group(3).splitlines() if l.startswith("+")]
+        # (no more than a comment changed, or lines taken out that called what went, as 「out.push(...cal7StarAlarms(now))」:
+        # the lines the same but for their comments set aside, none put in, and each taken out naming something gone)
+        left = [x for x in came if x]
+        for x in [x for x in gone if x]:
+            if x in left:
+                left.remove(x)
+            elif not set(IDENT.findall(x)) & gone_names:
+                left.append(x)
+                break
+        light = not left
+        if script and at and end >= script and start < at[0] and not light:
             touched.add("はじめの共通の部品（el・flash など）")
+        if start < script and any(came):  # (the page's HTML and CSS, more than taken out: not a part with a suite)
+            parts.add("HTML・CSS")
         for h, name in heads[max(0, bisect.bisect_right(at, start) - 1):bisect.bisect_right(at, end)]:
+            short = re.sub(r"\s*(\(.*|-+)$", "", name.replace("// ----------", "", 1)).strip()  # (its name, without the notes)
             if any(k in name for k in SHARED_SECTIONS):
-                touched.add(re.sub(r"\s*(\(.*|-+)$", "", name.replace("// ----------", "", 1)).strip())  # (its name, without the notes)
-    return why, shared + sorted(touched)
+                if not light:
+                    touched.add(short)
+            elif start >= script:
+                parts.add(short)
+    return why, shared + sorted(touched), sorted(parts)
 
 
 def run_node(cwd, file, log):
@@ -235,8 +273,8 @@ def main(args):
             jobs = int(n)
         else:
             rest.append(a)
-    args = [a for a in rest if a != "--changed"]
-    changed = "--changed" in rest
+    args = [a for a in rest if a not in ("--changed", "--dry")]
+    changed, dry = "--changed" in rest, "--dry" in rest
     all_suites = suites()
     cmp_rows = table(HERE / "cmp" / "list.txt")
     for rel, chat in cmp_rows:
@@ -259,9 +297,37 @@ def main(args):
         sys.exit(f"run.py: no such suite or chat: {' '.join(unknown)} (see --list)")
     chats = [a for a in args if a in CHATS]
     base = base_rev()
-    why, shared = changes(base, all_suites, cmp_rows) if changed else ({}, [])
+    why, shared, parts = changes(base, all_suites, cmp_rows) if changed else ({}, [], [])
     everything = not args and not changed
-    picked = [s for s in all_suites if everything or s["name"] in args or s["chat"] in chats or s["name"] in why]
+    whole, own = set(chats), set()  # (the chats whose suites all run; the suites of the parts changed)
+    if changed and chats:
+        # --changed with a chat: of its suites, those of the parts changed; a part with no suite of its own (as
+        # 「ToDo」 itself, or 「月・週・日」) runs all its chat's suites (the chat its name says, else those asked for).
+        # A part of another chat's is said, not run: that chat added to the chats asked for runs it
+        keys = {part_key(s["about"]): s for s in all_suites if part_key(s["about"])}
+        whole, other = set(), set()
+        for name in parts:
+            k = part_key(name)
+            at = {c: min((name.find(w) for w in words if w in name), default=-1) for c, words in CHAT_WORDS.items()}
+            of = sorted((i, c) for c, i in at.items() if i >= 0)[:1]  # (the chat whose word comes first in the name)
+            of = [c for _, c in of] or chats
+            if k in keys:
+                if keys[k]["chat"] in chats:
+                    own.add(keys[k]["name"])
+                else:
+                    other.add(keys[k]["chat"])
+            elif of[0] in chats:
+                whole |= set(of)
+            else:
+                other |= set(of)
+        print("（変えたところ：" + ("、".join(parts) if parts else "なし") + "）", flush=True)
+        if whole:
+            print("（スイートのない部分が変わっているので、" + "・".join(sorted(whole)) + " のスイートをぜんぶ流します）", flush=True)
+        if own:
+            print("（その部分のスイート：" + "・".join(sorted(own, key=natural)) + "）", flush=True)
+        if other:
+            print("（ほかのチャットの部分も変わっています：" + "・".join(sorted(other)) + "。そのテストも流すときは、そのチャットも並べてください：run.py " + " ".join(chats + sorted(other)) + " --changed）", flush=True)
+    picked = [s for s in all_suites if everything or s["name"] in args or s["chat"] in whole or s["name"] in why or (changed and chats and s["name"] in own)]
     cmps = [(rel, c) for rel, c in cmp_rows if everything or "cmp" in args or ((chats or changed) and c in chats + [EVERY]) or rel in why]
     if changed:
         more = [f"{k}（{'・'.join(v[:3])}{'…' if len(v) > 3 else ''}）" for k, v in why.items()
@@ -269,6 +335,9 @@ def main(args):
         print("（この変更で消えたものが出てくる、ほかのスイートも流します：" + "、".join(more) + "）" if more else "（この変更で消えたものが出てくる、ほかのスイートはありません）", flush=True)
         if shared:
             print("（共通の部分が変わっています：" + "、".join(shared) + "。出す前に、ぜんぶのテスト `run.py -j 3` を流してください）", flush=True)
+    if dry:  # (--dry: what would run, and no more)
+        print("（流すもの：" + "、".join([f"cmp/{rel}" for rel, _ in cmps] + [s["name"] for s in picked]) + f"。{len(cmps) + sum(len(s['tests']) for s in picked)} 件）")
+        return 0
     prepare(all_suites, base)
     report, new = [], 0
 

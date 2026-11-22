@@ -17,7 +17,7 @@ function make() {
       { id: "e8", title: "サークル", date: "2026-11-10", time: "18:00", endTime: "20:00", notes: { "2026-11-10": { mood: "good", text: "楽しかった", at: T("2026-11-10", 21) } }, createdAt: 8 },
       { id: "e9", title: "発表", date: "2026-11-12", time: "13:00", endTime: "14:00", notes: { "2026-11-12": { mood: "bad", text: "緊張した", at: T("2026-11-12", 15) } }, createdAt: 9 },
     ],
-    settings: [{ id: "calendar", freeFrom: "09:00", freeTo: "22:00", offDays: [{ id: "o1", name: "創立記念日", from: "2026-11-18", to: "2026-11-18" }], labelAlarms: { l1: 30 },
+    settings: [{ id: "calendar", freeFrom: "09:00", freeTo: "22:00", starEve: { on: true, at: "20:00" }, offDays: [{ id: "o1", name: "創立記念日", from: "2026-11-18", to: "2026-11-18" }], labelAlarms: { l1: 30 },
       checkSets: [{ id: "k1", name: "旅行", items: ["充電器", "歯ブラシ"] }], updatedAt: 1 }],
   };
 }

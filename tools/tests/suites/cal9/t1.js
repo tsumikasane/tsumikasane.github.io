@@ -75,32 +75,28 @@ let b;
   ok((await p.inputValue("#findText")) === "田中さん" && found.includes("ゼミ") && found.includes("飲み会") && !found.includes("勉強会"), "③ 田中さん's plans", found.slice(0, 200));
   await closeSheet(p);
 
-  // ⑤ a while without 予定's notifications
+  // ⑤ a while without 予定's notifications and ⑥ a day's limit taken out (the user's call, 2026-11-22): not in the gear;
+  // with them kept from before (a while that covers ゼミ's turn, 8 時間), ゼミ's alarm still comes, and neither the day nor
+  // a new plan says anything of a limit
   let al = await p.evaluate(() => window.__cal9.alarms(Date.now()));
-  ok(al.some((a) => a.tag === "e2:2026-11-16"), "⑤ ゼミ's alarm as it is");
+  ok(al.some((a) => a.tag === "e2:2026-11-16"), "ゼミ's alarm as it is");
   await p.click("#calSettings"); await p.waitForTimeout(700);
-  await setVal(p, "cal9QuietFrom", "2026-11-16"); await setVal(p, "cal9QuietTo", "2026-11-17");
-  await p.click("#cal9QuietOn"); await p.waitForTimeout(500);
-  ok(JSON.stringify((await setting(p, "calendar")).quiet9) === '{"from":"2026-11-16","to":"2026-11-17"}', "⑤ kept", (await setting(p, "calendar")).quiet9);
-  al = await p.evaluate(() => window.__cal9.alarms(Date.now()));
-  ok(!al.some((a) => a.tag === "e2:2026-11-16"), "⑤ none while resting", al.map((a) => a.tag));
-  // ⑥ a day's limit
-  await p.fill("#cal9Max", "8"); await p.press("#cal9Max", "Tab"); await p.waitForTimeout(400);
-  ok((await setting(p, "calendar")).busyMax === 8, "⑥ 8時間 kept");
+  const gear = await txt(p, "#daySheet");
+  ok(!(await p.$("#cal9QuietFrom")) && !(await p.$("#cal9Max")) && !gear.includes("予定のお知らせを休む") && !gear.includes("1日の予定の目安"), "⑤⑥ taken out: not in the gear");
   // ⑦ 最近削除した予定
   ok((await txt(p, "#cal9Trash")) === "最近削除した予定（1件）", "⑦ how many", await txt(p, "#cal9Trash"));
-  await p.click("#cal9Quiet" + "Off"); await p.waitForTimeout(400);
-  ok(!(await setting(p, "calendar")).quiet9, "⑤ やめる");
   await p.click("#cal9Trash"); await p.waitForTimeout(1000);
   ok((await tabNow(p)) === "trash" && (await txt(p, "#trashList")).includes("削除した予定"), "⑦ 記録's page with the plans", [await tabNow(p), await txt(p, "#trashList")]);
-  p = await open({ ...make(), settings: [{ id: "calendar", freeFrom: "09:00", freeTo: "22:00", busyMax: 8, updatedAt: 1 }] });
+  p = await open({ ...make(), settings: [{ id: "calendar", freeFrom: "09:00", freeTo: "22:00", busyMax: 8, quiet9: { from: "2026-11-16", to: "2026-11-17" }, updatedAt: 1 }] });
+  al = await p.evaluate(() => window.__cal9.alarms(Date.now()));
+  ok(al.some((a) => a.tag === "e2:2026-11-16"), "⑤ taken out: ゼミ's alarm comes in the while kept from before", al.map((a) => a.tag));
   await openDayOf(p, "11月17日");
-  ok((await txt(p, "#cal4Day .cal9-over")) === "目安の 8 時間をこえています", "⑥ the day over its limit", await txt(p, "#cal4Day"));
+  ok(!(await p.$("#cal4Day .cal9-over")), "⑥ taken out: the day over 8 時間 says nothing of it", await txt(p, "#cal4Day"));
   await closeSheet(p);
   await openDayOf(p, "11月16日");
   await p.click("#dayAdd"); await p.waitForTimeout(700);
   await setVal(p, "planTime", "12:00"); await setVal(p, "planEndTime", "20:00"); await p.waitForTimeout(300);
-  ok((await txt(p, "#planBusy")) === "この日は予定が合計 9 時間 30 分になります（目安 8 時間）", "⑥ the form says so", await txt(p, "#planBusy"));
+  ok(!(await p.$("#planBusy")), "⑥ taken out: nor the new plan");
   await closeSheet(p);
 
   // ⑧ よく使う tidied: its 整理 in the new plan's form went with that よく使う (the user's call, 2026-11-18); one left out

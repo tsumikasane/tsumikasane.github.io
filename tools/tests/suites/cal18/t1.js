@@ -95,10 +95,10 @@ let b;
   await p.click("#calSettings"); await p.waitForTimeout(800);
   await p.selectOption("#cal18Pad", "30"); await p.waitForTimeout(400);
   ok((await setting(p, "calendar")).pad18 === 30 && JSON.stringify(await p.evaluate(() => window.__cal18.free("2026-11-16"))) === '["17:30〜22:00"]', "⑦ 30分 kept free around each", await p.evaluate(() => window.__cal18.free("2026-11-16")));
-  await p.check("#cal18Last"); await p.waitForTimeout(400);
+  // ⑨ 最後の回のお知らせ taken out (the user's call, 2026-11-22): not in the gear, and none comes, though on from before (data.js)
+  ok(!(await p.$("#cal18Last")) && !(await txt(p, "#daySheet")).includes("最後の回のお知らせ"), "⑨ taken out: not in the gear");
   al = await alarms(p);
-  const last = al.find((a) => a.tag === "cal-last:e7:2026-11-23");
-  ok(last && iso(last) === "2026-11-22T11:00:00.000Z" && last.title === "あしたは「線形代数」の最後の回です" && last.body === "11月23日（月） 09:00・A101", "⑨ the evening before its last turn", last);
+  ok(!al.some((a) => String(a.tag).startsWith("cal-last:")) && (await setting(p, "calendar")).last18 === true, "⑨ taken out: none the evening before a last turn, the setting kept", al.map((a) => a.tag));
   ok(await p.isVisible("#cal18Defs") && (await p.inputValue("#cal18Len-l1")) === "90" && (await p.inputValue("#cal18Words-l1")) === "ゼミ、輪講", "②③ in the gear");
   await p.fill("#cal18Place-l2", "1号館"); await p.press("#cal18Place-l2", "Tab"); await p.waitForTimeout(400);
   ok((await setting(p, "calendar")).labelDefs18?.l2?.place === "1号館", "② another kept");

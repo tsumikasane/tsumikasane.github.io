@@ -15,7 +15,7 @@ function make() {
     ],
     labels: [{ id: "l1", name: "ゼミ", color: "blue", createdAt: 1 }, { id: "l2", name: "授業", color: "orange", createdAt: 2 }],
     settings: [
-      { id: "calendar", freeFrom: "09:00", freeTo: "22:00", labelDefs18: { l1: { len: 90, place: "研究棟", words: "ゼミ、輪講" } }, updatedAt: 1 },
+      { id: "calendar", freeFrom: "09:00", freeTo: "22:00", last18: true, labelDefs18: { l1: { len: 90, place: "研究棟", words: "ゼミ、輪講" } }, updatedAt: 1 },
       { id: "timetable", from: "2026-10-01", to: "2027-02-10", items: [{ id: "c1", wd: 1, p: 1, name: "線形代数", room: "A101", teacher: "田中先生" }, { id: "c2", wd: 3, p: 2, name: "英語", room: "B202" }], updatedAt: 1 },
     ],
   };
