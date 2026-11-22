@@ -52,14 +52,12 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   // ⑥ 10,000 歩 × 76.5 cm = 7.7 km
   r = await txt(p, "#dt6Walk");
   ok(/約 7.7 km/.test(r) && /歩幅 77 cm/.test(r), "⑥ km", r);
-  // ⑦ 新しいシューズ: 250 + 20 + 10 = 280 km (the 300 before it the old pair's)
-  r = await txt(p, "#dt6Shoes");
-  ok(/新しいシューズ/.test(r) && /280 \/ 600 km/.test(r) && /あと 320 km/.test(r), "⑦ the pair now", r);
+  // ⑦ シューズの距離: taken out at the user's call (2026-11-22, tools/REMOVED.md), with its setting (ランニングシューズ); settings runShoes stays
+  ok(!(await p.$("#dt6Shoes")), "⑦ gone");
   await p.click("#wtSettings"); await p.waitForTimeout(500);
-  await p.fill("#dt6ShoeName", "3足目"); await p.fill("#dt6ShoeFrom", "2026-11-11"); await p.click('#dt6ShoeForm button[type="submit"]'); await p.waitForTimeout(500);
-  ok((await setting(p, "runShoes"))?.list.length === 3, "⑦ a pair added");
+  ok(await p.isVisible("#woSetGroup") && !(await p.$("#dt6ShoeForm")) && !(await p.$("#dt6ShoeList")) && !/ランニングシューズ/.test(await txt(p, "#woSetGroup")), "⑦ its setting gone", await txt(p, "#woSetGroup"));
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
-  ok(/3足目/.test(await txt(p, "#dt6Shoes")) && /10 \/ 600 km/.test(await txt(p, "#dt6Shoes")), "⑦ from its day", await txt(p, "#dt6Shoes"));
+  ok(JSON.stringify(await setting(p, "runShoes")) === JSON.stringify(D.settings().find((x) => x.id === "runShoes")), "⑦ the pairs kept as they were", await setting(p, "runShoes"));
 
   await part(p, "weight");
   // ⑧ スコア: 睡眠 7.5h 20, 水分 20, 歩数 20, 食事 (1,200+ ≤ 2,000) 20, 運動 20

@@ -57,23 +57,16 @@ const avg7 = (ws, d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.add
   r = await txt(p, "#dt17Zones");
   ok(z.km.join() === "20,10,5" && z.easy === 57 && /^ランの強さの配分 ゆっくり 57% ゆっくり 20 km ふつう 10 km 速め 5 km ゆっくり走が少なめです。ふだんのランの8割をゆっくりにすると、疲れにくく、速くもなりやすいと言われています。 この4週のラン 7 回・35 km。ゆっくりは 6:00\/km より遅いペースです。$/.test(r), "⑥ the runs", [z, r]);
   ok((await p.locator("#dt17Zones .dt17-z-bar i").count()) === 3, "⑥ the bar");
-  // ④ きょうのおすすめ: the menu (月曜), つかれ, a knee, 6 days in a row, then done
-  r = await txt(p, "#dt17Today");
-  ok(/^きょうのおすすめ ▶ ラン 4 km（ゆっくり）とレッグプレス・チェストプレス・プランク きょうのメニューです。$/.test(r), "④ the menu", r);
-  const days = await ls(p, "bodyDays"), withPain = (pain) => days.map((x) => (x.id === D.DAY ? { ...x, pain } : x));
-  await put(p, "bodyDays", withPain(["tired"])); await part(p, "workout");
-  r = await txt(p, "#dt17Today");
-  ok(/2種目だけにしましょう つかれが残っている日です。レッグプレス・チェストプレスだけでも十分です（メニューのメモ）。$/.test(r), "④ tired", r);
-  await put(p, "bodyDays", withPain(["knee", "tired"])); await part(p, "workout");
-  r = await txt(p, "#dt17Today");
-  ok(/ランはエアロバイク30分にしましょう ひざが痛む日です（メニューのメモ）。筋トレは脚以外のチェストプレス・プランクにしましょう。$/.test(r), "④ a knee", r);
+  // ④ きょうのおすすめ: taken out at the user's call (2026-11-22, tools/REMOVED.md); not shown either with つかれ and a knee
+  // (bodyDays pain, kept), 6 days in a row or 運動 done
+  ok(!(await p.$("#dt17Today")), "④ gone");
+  const days = await ls(p, "bodyDays");
+  await put(p, "bodyDays", days.map((x) => (x.id === D.DAY ? { ...x, pain: ["knee", "tired"] } : x)));
   const wos = await ls(p, "workouts");
   await put(p, "workouts", [...wos, { id: "walk", date: D.addDays(D.DAY, -1), type: "ウォーキング", minutes: 30, createdAt: D.T(D.addDays(D.DAY, -1), 18) }]); await part(p, "workout");
-  r = await txt(p, "#dt17Today");
-  ok(/^きょうのおすすめ 休 休養日にしましょう 6 日続けて運動しています。/.test(r), "④ 6 days in a row", r);
+  ok(!(await p.$("#dt17Today")), "④ gone with つかれ, a knee and 6 days in a row");
   await put(p, "workouts", [...(await ls(p, "workouts")), { id: "sq", date: D.DAY, type: "筋トレ", exercise: "スクワット", reps: 30, sets: 2, createdAt: D.T(D.DAY, 11) }]); await part(p, "workout");
-  r = await txt(p, "#dt17Today");
-  ok(/^きょうのおすすめ 済 きょうは運動ずみです スクワットをしました。/.test(r), "④ done", r);
+  ok(!(await p.$("#dt17Today")) && JSON.stringify((await ls(p, "bodyDays")).find((x) => x.id === D.DAY)?.pain) === '["knee","tired"]', "④ gone with 運動 done, the pains kept");
   ok(/スクワット いまは スクワット（ベスト 30 回） .* 30 回できたので、次は「ブルガリアンスクワット」へ進めます。/.test(await txt(p, "#dt17Ladder")), "⑤ the next step ready", await txt(p, "#dt17Ladder"));
 
   // ⑦ 脈拍の変化: 68 against 60

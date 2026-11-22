@@ -90,9 +90,11 @@ const avg7 = (d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.addDays
   r = await txt(p, "#dt19Story");
   ok(r.startsWith("これまでのあゆみ 47 日目 走 11/16（月） はじめて 10 km を走った（1:00:00） 測 11/15（日） ウエスト 83.6 cm") && (await p.locator("#dt19Story li").count()) === Math.min(8, got.length), "⑦ the newest 8", r);
   if (got.length > 8) { await p.click('#dt19Story button:has-text("ぜんぶ見る")'); await p.waitForTimeout(200); ok((await p.locator("#dt19Story li").count()) === got.length, "⑦ ぜんぶ見る"); }
-  // ⑧ はじめにやること: 6 of 7 (no 期限); 決める opens the settings at it; とじる
+  // ⑧ はじめにやること: 4 of 5 (no 期限); 決める opens the settings at it; とじる. 食事をはじめて記録 and 運動をはじめて記録:
+  // taken out at the user's call (2026-11-22, tools/REMOVED.md)
   r = await txt(p, "#dt19Setup");
-  ok(/^はじめにやること 6 \/ 7 ✓ 身長・年齢・性別 できました ✓ 目標体重 できました 目標の期限 決める ✓ 食事の目安（1日の kcal） できました/.test(r) && JSON.stringify((await W(p, "setup")).map(([, x]) => x)) === "[true,true,false,true,true,true,true]", "⑧ the steps", r);
+  ok(/^はじめにやること 4 \/ 5 ✓ 身長・年齢・性別 できました ✓ 目標体重 できました 目標の期限 決める ✓ 食事の目安（1日の kcal） できました ✓ 体重をはじめて記録 できました/.test(r) && !/食事をはじめて記録|運動をはじめて記録/.test(r)
+    && JSON.stringify(await W(p, "setup")) === JSON.stringify([["身長・年齢・性別", true], ["目標体重", true], ["目標の期限", false], ["食事の目安（1日の kcal）", true], ["体重をはじめて記録", true]]), "⑧ the steps", r);
   await p.click('#dt19Setup button[aria-label="目標の期限へ"]'); await p.waitForTimeout(500);
   ok(await p.evaluate(() => document.activeElement?.id === "wtBy"), "⑧ to the 期限", await p.evaluate(() => document.activeElement?.id));
   await p.keyboard.press("Escape"); await p.waitForTimeout(400);
@@ -126,12 +128,12 @@ const avg7 = (d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.addDays
   ok(wide <= 393, "no sideways scroll", wide);
   ok(!p.errs.length, "no errors", p.errs);
 
-  // a new account: はじめにやること (0 of 7) only
+  // a new account: はじめにやること (0 of 5) only
   await seed(p, { settings: [] }, "diet");
   for (const k of ["meal", "workout", "weight"]) {
     await part(p, k);
     const shown = await p.evaluate(() => ["dt19Stock", "dt19Back", "dt19Sweat", "dt19Nights", "dt19Walk", "dt19Night", "dt19Story"].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }));
-    ok(!shown.length && /^はじめにやること 0 \/ 7/.test(await txt(p, "#dt19Setup")), `a new account (${k})`, shown);
+    ok(!shown.length && /^はじめにやること 0 \/ 5/.test(await txt(p, "#dt19Setup")) && !/食事をはじめて記録|運動をはじめて記録/.test(await txt(p, "#dt19Setup")), `a new account (${k})`, shown);
   }
   ok(!p.errs.length, "no errors on a new account", p.errs);
   await b.close();

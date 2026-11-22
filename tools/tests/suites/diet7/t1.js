@@ -68,14 +68,15 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   await p.click("#dt4PhotoClose"); await p.waitForTimeout(200);
 
   await part(p, "workout");
-  // ⑤⑥ ベンチプレス 60 kg: warm-ups and plates; 62.5 and 61; a machine's: no plates
+  // ⑤ ベンチプレス 60 kg: warm-ups, the bar alone first; a machine's: from the last time. ⑥ プレート: taken out at the
+  // user's call (2026-11-22, tools/REMOVED.md), with its setting (バーベル); settings barKg stays, ⑤ reading it
   await p.selectOption("#woType", "筋トレ"); await p.fill("#woExercise", "ベンチプレス"); await p.fill("#woWeight", "60"); await p.waitForTimeout(200);
   r = await txt(p, "#dt7Lift");
-  ok(/ウォームアップ 20 kg×10・25 kg×8・35 kg×5・47.5 kg×3/.test(r) && /プレート 片側 20 kg/.test(r), "⑤⑥ 60 kg", r);
+  ok(/ウォームアップ 20 kg×10・25 kg×8・35 kg×5・47.5 kg×3/.test(r) && !/プレート|片側/.test(r), "⑤ 60 kg, ⑥ no plates", r);
   await p.fill("#woWeight", "62.5"); await p.waitForTimeout(150);
-  ok(/片側 20 \+ 1.25 kg/.test(await txt(p, "#dt7Lift")), "⑥ 62.5 kg", await txt(p, "#dt7Lift"));
-  await p.fill("#woWeight", "61"); await p.waitForTimeout(150);
-  ok(/ちょうどには作れません/.test(await txt(p, "#dt7Lift")), "⑥ 61 kg can't be made", await txt(p, "#dt7Lift"));
+  ok(!/プレート|片側/.test(await txt(p, "#dt7Lift")), "⑥ 62.5 kg: no plates", await txt(p, "#dt7Lift"));
+  await p.fill("#woWeight", "20"); await p.waitForTimeout(150);
+  ok(await p.isHidden("#dt7Lift"), "⑥ 20 kg, the bar alone (no warm-ups): nothing shown", await txt(p, "#dt7Lift"));
   await p.fill("#woExercise", "レッグプレス"); await p.fill("#woWeight", ""); await p.waitForTimeout(150);
   r = await txt(p, "#dt7Lift");
   ok(/40 kg×8・60 kg×5・80 kg×3/.test(r) && /100 kg の前に/.test(r) && !/プレート/.test(r), "⑤ a machine's, from the last time", r);
@@ -83,7 +84,7 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   await p.click("#dt7WoCopy button"); await p.waitForTimeout(300);
   const clip = await p.evaluate(() => navigator.clipboard.readText()).catch(() => "");
   ok(clip.startsWith("11月14日（土）の運動") && clip.includes("筋トレ ベンチプレス 60 kg × 5 回 × 3 セット") && clip.includes("ランニング 5 km・30 分・6:00/km") && /合計 .*消費 約/.test(clip), "⑦ the words", clip);
-  // ⑧ お知らせ: on, Sunday taken off; today (with 運動) none; ⑥ a bar of 15 kg
+  // ⑧ お知らせ: on, Sunday taken off; today (with 運動) none; ⑥ バーベル (the bar's weight): gone from the settings
   await p.click("#wtSettings"); await p.waitForTimeout(500);
   await p.check("#dt7RemindOn"); await p.waitForTimeout(400);
   await p.click('#dt7RemindDays button[aria-label="日曜"]'); await p.waitForTimeout(400);
@@ -92,11 +93,16 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   const al = await W(p, "alarms", WHEN.getTime());
   ok(al.length === 5 && al.every((a) => a.title === "運動の時間です" && a.url === "./#workout") && !al.some((a) => a.tag === "dt7-wo:2026-11-14" || a.tag === "dt7-wo:2026-11-15"), "⑧ Monday to Friday", al.map((a) => a.tag));
   ok((await W(p, "push"))[0]?.[0] === "woRemind", "⑧ in what the alarms are made from");
-  await p.selectOption("#dt7Bar", "15"); await p.waitForTimeout(300);
-  ok((await setting(p, "barKg"))?.kg === 15, "⑥ the bar kept");
+  ok(!(await p.$("#dt7Bar")) && !/バーベル|バーの重さ/.test(await txt(p, "#woSetGroup")), "⑥ the bar's setting gone", await txt(p, "#woSetGroup"));
   await p.keyboard.press("Escape"); await p.waitForTimeout(400);
-  await p.fill("#woExercise", "ベンチプレス"); await p.fill("#woWeight", "60"); await p.waitForTimeout(150);
-  ok(/片側 20 \+ 2.5 kg/.test(await txt(p, "#dt7Lift")), "⑥ with a bar of 15 kg", await txt(p, "#dt7Lift"));
+  // a bar of 15 kg set before (settings barKg): kept as it was, ⑤ starting from it
+  const bar = { id: "barKg", kg: 15, updatedAt: D.T("2026-10-01") };
+  await p.evaluate(({ P, bar }) => localStorage.setItem(P + "settings", JSON.stringify([...JSON.parse(localStorage.getItem(P + "settings") || "[]"), bar])), { P, bar });
+  await part(p, "workout");
+  await p.selectOption("#woType", "筋トレ"); await p.fill("#woExercise", "ベンチプレス"); await p.fill("#woWeight", "60"); await p.waitForTimeout(150);
+  r = await txt(p, "#dt7Lift");
+  ok(/ウォームアップ 15 kg×10・25 kg×8・35 kg×5・47.5 kg×3/.test(r) && !/プレート|片側/.test(r), "⑤ from a bar of 15 kg kept", r);
+  ok(JSON.stringify(await setting(p, "barKg")) === JSON.stringify(bar), "⑥ barKg kept as it was", await setting(p, "barKg"));
 
   await part(p, "weight");
   // ⑨ 内訳: はじめから, both down; 30日

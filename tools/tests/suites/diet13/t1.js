@@ -35,28 +35,11 @@ const N = new Intl.NumberFormat("ja-JP");
   r = await txt(p, "#dt13Cost");
   ok(/食費とカロリー 11月 値段を入れた食事 14,100 円（15 食） 1食あたり 940 円 100 kcal あたり 114 円 いちばん高かった食事 1,500 円 焼肉定食（11\/15（日）） 先月 4,250 円 先月より \+9,850 円/.test(r), "① this month's", r);
 
-  // ④ 痛み・つかれ: ひざ 3 days on end and つかれ; Sunday's menu has a 4 km run and カーフレイズ
+  // ④ 痛み・つかれ: taken out at the user's call (2026-11-22, tools/REMOVED.md); a day's pains (bodyDays pain) stay
   await part(p, "workout");
-  r = await txt(p, "#dt13Pain");
-  ok(/きょうのラン（4 km）をエアロバイク30分に替えましょう（メニューのメモ）。 エアロバイク30分を入れる 脚を使う筋トレは、軽めにするか休みましょう（きょうのメニューでは カーフレイズ）。 忙しい日や疲れが残る日は、2種目だけでも十分です（メニューのメモ）。 ひざの痛みが 3 日続いています。/.test(r)
-    && /この30日・ひざ 3 日・つかれ 1 日/.test(r), "④ said as the menu's メモ", r);
-  ok((await p.getAttribute('#dt13Pain button:has-text("ひざ")', "aria-pressed")) === "true", "④ ひざ on");
-  await p.click('#dt13Pain button:has-text("エアロバイク30分を入れる")'); await p.waitForTimeout(300);
-  ok(await p.inputValue("#woType") === "エアロバイク" && await p.inputValue("#woMin") === "30", "④ エアロバイク 30 分 put in the form");
-  await p.click('#dt13Pain button:has-text("つかれ")'); await p.waitForTimeout(300);
-  await p.click('#dt13Pain button:has-text("ひざ")'); await p.waitForTimeout(300);
-  let day = (await ls(p, "bodyDays")).find((x) => x.id === DAY);
-  ok(day && day.pain === undefined && day.steps === 3000, "④ off again: the day kept with its 歩数", day);
-  ok(/押しておくと、メニューのメモに合わせてお知らせします/.test(await txt(p, "#dt13Pain")), "④ nothing to say");
-  // a day with nothing else: kept with its pain, and gone with it
-  await p.evaluate(() => { const i = [...document.querySelectorAll('.datenav input[type="date"]')].find((x) => x.offsetParent); i.value = "2026-09-10"; i.dispatchEvent(new Event("change", { bubbles: true })); }); await p.waitForTimeout(400);
-  await p.click('#dt13Pain button:has-text("腰")'); await p.waitForTimeout(300);
-  day = (await ls(p, "bodyDays")).find((x) => x.id === "2026-09-10");
-  ok(day && JSON.stringify(day.pain) === '["back"]', "④ a day with only its pain kept", day);
-  ok(/背中・脚を使う筋トレは、軽めにするか休みましょう/.test(await txt(p, "#dt13Pain")), "④ 腰: 背中 and 脚");
-  await p.click('#dt13Pain button:has-text("腰")'); await p.waitForTimeout(300);
-  ok(!(await ls(p, "bodyDays")).some((x) => x.id === "2026-09-10"), "④ and gone with it");
-  await part(p, "workout");
+  ok(!(await p.$("#dt13Pain")), "④ gone");
+  const pains = (xs) => xs.filter((x) => x.pain).map((x) => `${x.id}:${x.pain.join("+")}`).sort().join();
+  ok(pains(await ls(p, "bodyDays")) === pains(D.bodyDays()), "④ the pains kept as they were", pains(await ls(p, "bodyDays")));
 
   // ⑤ 伸び悩みの種目: ベンチプレス, not スクワット
   r = await txt(p, "#dt13Stall");

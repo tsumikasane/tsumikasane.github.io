@@ -36,37 +36,17 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   const k = await W(p, "kinds"); r = await txt(p, "#dt15Kinds");
   ok(k.kinds === 9 && k.was === 8 && /9 種類 この7日 22 品・前の7日は 8 種類（\+1） よく続いているもの トースト 7 回・定食 6 回 はじめて食べたもの おにぎり/.test(r), "③ the kinds", [k, r]);
 
-  // ⑦ 休んだ理由: today none yet; 時間がない the most
+  // ⑦ 休んだ理由: taken out at the user's call (2026-11-22, tools/REMOVED.md); a day's reason (bodyDays skip) stays
   await part(p, "workout");
-  r = await txt(p, "#dt15Skip");
-  const sk = await W(p, "skips");
-  ok(sk.told === 3 && r.includes(`この30日の休み ${sk.off} 日（理由あり 3 日）・時間がない 2・つかれ 1`) && /いちばん多いのは「時間がない」。1分の「すきま運動」/.test(r), "⑦ the reasons", [sk, r]);
-  await p.click('#dt15Skip button:has-text("やる気")'); await p.waitForTimeout(300);
-  ok((await ls(p, "bodyDays")).find((x) => x.id === DAY)?.skip === "mood" && (await p.getAttribute('#dt15Skip button:has-text("やる気")', "aria-pressed")) === "true", "⑦ today's kept");
-  await p.click('#dt15Skip button:has-text("やる気")'); await p.waitForTimeout(300);
-  const dd = (await ls(p, "bodyDays")).find((x) => x.id === DAY);
-  ok(dd && dd.skip === undefined && dd.bed === "23:00", "⑦ off again, the day kept", dd);
+  ok(!(await p.$("#dt15Skip")), "⑦ gone");
+  const skips = (xs) => xs.filter((x) => x.skip).map((x) => `${x.id}:${x.skip}`).sort().join();
+  ok(skips(await ls(p, "bodyDays")) === skips(D.bodyDays()), "⑦ the reasons kept as they were", skips(await ls(p, "bodyDays")));
   // ⑤ ロング走の推移
   r = await txt(p, "#dt15Long");
   ok(/いちばん長いのは 14 km（11\/14）・この4週は 14 km まで/.test(r) && /つくばマラソン（ハーフマラソン）に向けて、ロング走は 15〜18 km まで/.test(r) && (await p.locator("#dt15Long .dt15-l-col").count()) === 12, "⑤ the weeks", r);
-  // ④ 大会の予定: つくば in 27 days; 1:55:00 against 2:00:00; 18 km this week; 秋の10km's result asked
-  const pl = await W(p, "plan", "r1"); r = await txt(p, "#dt15Race");
-  ok(pl.days === 27 && pl.pred === 6900 && pl.week === 18 && /大会の予定 あと 27 日 つくばマラソン 消す 12\/13（日）・ハーフマラソン・目標 2:00:00 いまの予想 1:55:00 目標より 5:00 速い予想です 今週の距離の目安 18 km ここ4週の平均は 週 16 km。/.test(r), "④ the race", [pl, r]);
-  ok(/「秋の10km」（11\/8）の結果を、運動の記録に入れる/.test(r), "④ the past one asked");
-  await p.click('#dt15Race button:has-text("運動の記録に入れる")'); await p.waitForTimeout(400);
-  ok(await p.inputValue("#woType") === "ランニング" && await p.inputValue("#woDist") === "10", "④ its result put in the form");
-  await part(p, "workout");
-  // another race put in, then the next one taken out (元に戻す)
-  await p.click('#dt15Race button:has-text("ほかの大会も入れる")'); await p.waitForTimeout(300);
-  await p.fill('#dt15Race input[aria-label="大会の名前"]', "新春10km"); await p.fill('#dt15Race input[aria-label="大会の日"]', "2027-01-10");
-  await p.selectOption('#dt15Race select[aria-label="距離"]', "10"); await p.fill('#dt15Race input[aria-label="目標タイム（時:分:秒）"]', "50:00");
-  await p.click('#dt15Race button:has-text("入れる") >> nth=-1'); await p.waitForTimeout(400);
-  let rs = (await setting(p, "races"))?.list || [];
-  ok(rs.length === 3 && rs.some((x) => x.name === "新春10km" && x.date === "2027-01-10" && x.km === 10 && x.goal === 3000), "④ put in", rs);
-  await p.click('#dt15Race button[aria-label="「つくばマラソン」を消す"]'); await p.waitForTimeout(400);
-  ok(/新春10km/.test(await txt(p, "#dt15Race")) && !(((await setting(p, "races"))?.list || []).some((x) => x.id === "r1")), "④ taken out: the next one shown");
-  await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
-  ok(((await setting(p, "races"))?.list || []).some((x) => x.id === "r1") && /つくばマラソン/.test(await txt(p, "#dt15Race")), "④ taken back");
+  // ④ 大会の予定: taken out at the user's call (2026-11-22, tools/REMOVED.md); settings races stays (⑤ above reads it)
+  ok(!(await p.$("#dt15Race")), "④ gone");
+  ok(JSON.stringify(await setting(p, "races")) === JSON.stringify(D.settings().find((x) => x.id === "races")), "④ the races kept as they were", await setting(p, "races"));
   // ⑥ 運動を探す: taken out at the user's call (2026-11-19, tools/REMOVED.md)
   ok(!(await p.$("#dt15Find")), "⑥ gone");
   // ⑨ 記録のチェック: 5; one left as it is, one gone to
