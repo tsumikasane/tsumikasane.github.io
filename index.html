@@ -11970,6 +11970,83 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
   }
 
+  // ---------- the page's place under a dialog (iPhone, iPad) ----------
+  // a record put in moved the page to its top or near it (the user's call, 2026-11-22): on an iPhone, Safari moves the page
+  // under a dialog by itself, for the keyboard coming up for a field in it, or as the dialog goes, the focus handed to the
+  // page's first field (the date at the top) and brought into sight. So the page's place as the first dialog opens is put
+  // back as the last one closes, and over the next moment (the keyboard going down), unless another page is showing, this
+  // app moved the page itself meanwhile (a page opened, a ToDo added lit in the list) or a finger did once it closed; a
+  // field the focus was handed to that way lets go of it, and a dialog's own field lets go before the dialog closes, so
+  // the keyboard goes down with it
+  let pageMoves = 0, pagePlace = null, pageBackTimers = [];
+  const pageScrollTo = window.scrollTo.bind(window);
+  function pageBackStop() { for (const t of pageBackTimers) clearTimeout(t); pageBackTimers = []; pagePlace = null; }
+  // what is at the middle of the screen, by the nearest thing round it with an id (a list or card drawn anew keeps its
+  // holder), and where it is on the screen: the page is put back with it there, the page under the dialog changed
+  // meanwhile (a card above it gone with the record put in) or not
+  function pageRef() {
+    for (const f of [0.5, 0.35, 0.65]) {
+      for (let e = document.elementFromPoint(innerWidth / 2, innerHeight * f); e && e !== document.body; e = e.parentElement) {
+        const pos = getComputedStyle(e).position;
+        if (pos === "fixed" || pos === "sticky" || e.matches("dialog")) break;
+        if (e.id) return { el: e, id: e.id, top: e.getBoundingClientRect().top };
+      }
+    }
+    return null;
+  }
+  function pageBack(closed) {
+    const k = pagePlace;
+    if (!k) return;
+    const put = () => {
+      if (pagePlace !== k) return;
+      if (tab !== k.tab || pageMoves !== k.moves) { pageBackStop(); return; }
+      const f = document.activeElement;
+      if (closed && f && f !== k.had && f.matches?.("input, select, textarea")) f.blur();
+      const e = k.ref && (k.ref.el.isConnected ? k.ref.el : document.getElementById(k.ref.id));
+      const to = e && e.getClientRects().length ? Math.round(scrollY + e.getBoundingClientRect().top - k.ref.top) : k.y;
+      if (Math.abs(scrollY - to) > 1) pageScrollTo(0, to);
+    };
+    put();
+    if (!closed) return;
+    for (const ms of [50, 150, 350, 700]) pageBackTimers.push(setTimeout(put, ms));
+    pageBackTimers.push(setTimeout(pageBackStop, 1200));
+  }
+  if (appleTouch) {
+    // this app's own moves of the page, and its own focus on the page, counted: told apart from Safari's
+    const counted = (o, name, moves) => {
+      const f = o[name];
+      if (typeof f === "function") o[name] = function (...a) { const y = scrollY, r = f.apply(this, a); if (moves(this, a, y)) pageMoves++; return r; };
+    };
+    const onPage = (e) => !(e instanceof Element) || !e.closest("dialog[open]");
+    for (const name of ["scrollTo", "scrollBy", "scroll"]) counted(window, name, () => true);
+    counted(Element.prototype, "scrollIntoView", (e, a, y) => onPage(e) && (scrollY !== y || a[0]?.behavior === "smooth"));
+    counted(HTMLElement.prototype, "focus", (e) => onPage(e));
+    const showModal = HTMLDialogElement.prototype.showModal, close = HTMLDialogElement.prototype.close;
+    HTMLDialogElement.prototype.showModal = function (...a) {
+      if (!document.querySelector("dialog[open]")) { pageBackStop(); pagePlace = { y: scrollY, ref: pageRef(), tab, moves: pageMoves, had: document.activeElement }; }
+      return showModal.apply(this, a);
+    };
+    HTMLDialogElement.prototype.close = function (...a) {
+      if (this.open && this.contains(document.activeElement)) document.activeElement.blur();
+      return close.apply(this, a);
+    };
+    document.addEventListener("close", () => { if (!document.querySelector("dialog[open]")) pageBack(true); }, true);
+    for (const t of ["touchstart", "pointerdown", "wheel", "keydown"]) document.addEventListener(t, () => { if (pageBackTimers.length && !document.querySelector("dialog[open]")) pageBackStop(); }, { capture: true, passive: true });
+  }
+  // the field the next entry starts in, the cursor put back in it only where it is in sight (above the keyboard on a
+  // phone), the page not moved for it (the user's call: a record put in moved the page to its top or near it)
+  function nextField(f) {
+    if (!f || !f.getClientRects().length) return;
+    const v = window.visualViewport, r = f.getBoundingClientRect();
+    let top = v ? v.offsetTop : 0, bottom = top + (v ? v.height : innerHeight);
+    for (let p = f.parentElement; p && p !== document.body; p = p.parentElement) {
+      if (p.scrollHeight <= p.clientHeight || !/auto|scroll|hidden/.test(getComputedStyle(p).overflowY)) continue;
+      const b = p.getBoundingClientRect();
+      top = Math.max(top, b.top); bottom = Math.min(bottom, b.bottom);
+    }
+    if (r.top >= top && r.bottom <= bottom) f.focus({ preventScroll: true });
+  }
+
   // two-step delete: first press arms it, second press within 3 s deletes. List rows have no room for a label, so the ×
   // carries the name 削除 and a 44px target (DADS's exception for icon-only controls), with the entry's name where given
   // (「…」を削除), so VoiceOver says which; armed, it spells the action out
@@ -13197,7 +13274,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const id of ["mealText", "mealKcal", "mealP", "mealF", "mealC", "mealPrice"]) $(id).value = "";
     mealFilled = null; $("mealFillNote").hidden = true; $("mealSuggest").hidden = true; $("mealPriceNote").hidden = true;
     syncMealAt(true);
-    $("mealText").focus();
+    nextField($("mealText"));
   });
   // what was typed before comes back as suggestions under the field (the user's call): the foods eaten and the 筋トレ moves
   // done, the most often typed first, then the latest; up to 30
@@ -13787,7 +13864,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     for (const id of WO_FIELDS) $(id).value = "";
     woEach.reset();
     setRepsUnit(""); // 回 again for the next move
-    $(type === "筋トレ" ? "woExercise" : "woDist").focus(); // the kind stays picked for the next one
+    nextField($(type === "筋トレ" ? "woExercise" : "woDist")); // the kind stays picked for the next one
   });
   // what an entry says: 5.2 km・30 分・320 kcal, or ベンチプレス・60 kg × 10 回 × 3 セット; one from before the kinds, its minutes.
   // Sets of their own each say theirs, those alike one after another as one (60 kg × 10 回 × 2 セット、50 kg × 12 回)
@@ -14775,7 +14852,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (m) { item.mat = m.id; if (upto > 0) item.upto = total ? Math.min(upto, total) : upto; }
     act(() => study.add(item));
     if (m && total && !wasDone && item.upto === total) { flash(`「${m.name}」を最後までやりきりました`); $("stMat").value = ""; stFillMatSelect(); } // (off the menu now)
-    $("stMin").value = ""; $("stNote").value = ""; $("stUpto").value = ""; stSyncMinWords(); $("stMin").focus();
+    $("stMin").value = ""; $("stNote").value = ""; $("stUpto").value = ""; stSyncMinWords(); nextField($("stMin"));
   });
   function renderStudy() {
     const cur = stSubjectChoice ? subjects.get(stSubjectChoice) : null;
@@ -16531,7 +16608,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!mo2Put(item)) return; // (家計簿 その2 ② 分けて入れる, ④ 声かけ)
     $("exAmount").value = ""; $("exMemo").value = "";
     if (monthOf(date) !== viewMonth) { viewMonth = monthOf(date); renderMoney(); }
-    $("exAmount").focus();
+    nextField($("exAmount"));
   });
   $("budgetForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
@@ -19218,6 +19295,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (settingsFrom && settingsScope === "job") saveJobs(); // and バイトの設定
     if (todoNewIds.length) spotTodos(todoNewIds); // the ToDos added from it, lit in the list it uncovers
     if (instant === true || reduceMotion.matches) { sheetEl.close(); handOverFlash(); return; }
+    // (iPhone) the keyboard goes down with it, and the page under it is in its place as it uncovers (pageBack)
+    if (appleTouch && sheetEl.contains(document.activeElement)) document.activeElement.blur();
+    pageBack(false);
     sheetClosing = true;
     handOverFlash();
     const opts = { duration: 220, easing: "cubic-bezier(.4, 0, 1, 1)", fill: "forwards" };
@@ -24968,7 +25048,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月21日 13:38"; // e302e3b2 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月22日 12:15"; // 93746bce (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }

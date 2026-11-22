@@ -44,7 +44,7 @@ RESERVED = {8765, 8766, 8767}  # the page now, the page before, the test version
 SHARED_FILES = ("sw.js", "manifest.webmanifest", "tools/make-test.py", "push/")
 SHARED_SECTIONS = ("(shared", "storage", "この端末の記録を消す", "消した記録", "保存できないとき", "同期", "tabs (a sidebar", "date navigation",
                    "通知アラーム", "通知を受け取る", "記録の書き出し・読み込み", "記録を守る仕組み", "端末の中のコピー",
-                   "保存できる量", "読めなくなった記録の控え", "最近削除した項目", "書きかけ", "boot")  # (この画面の版: make-test.py sets it each time)
+                   "保存できる量", "読めなくなった記録の控え", "最近削除した項目", "書きかけ", "the page's place under a dialog", "boot")  # (この画面の版: make-test.py sets it each time)
 # (comments, words left in them not on the page: <!-- -->, /* */ from a line's start (not accept="image/*"'s), // after a
 # space or a bracket (not https://'s))
 COMMENT = re.compile(r"<!--.*?-->|^[ \t]*/\*.*?\*/|(?<![:\w\"'\\/])//[^\n]*", re.S | re.M)

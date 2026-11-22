@@ -98,5 +98,7 @@
   - 印刷：`printBox(box)`（印刷用の箱を置いて印刷し、終わったら片づけます）
   - 設定のスイッチ：`switchEl({ id, checked, onchange, … })`
   - 画像・ファイル：`savePicture(canvas, name, title)`（描いた画像を保存）、`handOut(blob, name)`（ファイルを渡す。スマホは共有シート、ほかはダウンロード）、`downloadBlob(blob, name)`（ダウンロードだけ）、`picShow(p, blob, name, title, label, alt)`（画像を大きく見せて 共有・保存・閉じる）
+  - 記録したあと、次の入力欄に戻す：`nextField(field)`（その欄が見えているときだけ。ページは動かしません。`field.focus()` だと、iPhone ではキーボードの上に出すためにページが上に動きます）
+- iPhone・iPad では、ダイアログ（シート・食事の記録画面・メニューなど）を開いたときのページの位置を覚えておき、閉じたら元に戻します（「the page's place under a dialog」。2026-11-22、記録を入れるとページの上に飛ぶバグ）。Safari が、キーボードのためや、閉じるときにページの最初の入力欄（上の日付）にフォーカスを移して、ページを動かすためです。アプリが自分でページを動かしたとき（別のページを開いた・`scrollIntoView` など）は戻しません。`showModal` と `close` を包んでいるので、ダイアログはふつうに `showModal()`・`close()` で開け閉めしてください。テストは `tools/tests/suites/pageplace`
 - 予定などのお知らせ（通知アラーム）は、アプリが時刻を通知サーバー（`push/`、Cloudflare Workers）に送り、サーバーが Web Push で届けます（「通知アラーム」「通知を受け取る」のセクションの `alarmTimes`）。
 - 画面は、スマホ（iPhone のホーム画面のアプリ）がいちばん大事です。PC の広い画面でも崩れないようにします。ダークモードもあります。
