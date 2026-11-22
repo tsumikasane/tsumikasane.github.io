@@ -33,6 +33,9 @@ const tags = async (p) => (await W(p, "alarms", await p.evaluate(() => Date.now(
   ok((await badge("run3")).includes("3日つづけて 11/13・NEW") && (await badge("early")).includes("朝のうちに 11/11・NEW") && (await badge("c10")).includes("10マス 10/30") && (await badge("first")).includes("はじめの一歩 2025/7/5") && (await badge("ahead")).includes("余裕をもって 6/20"),
     "⑥ each on the day it was earned, the newest marked", [await badge("run3"), await badge("early"), await badge("c10"), await badge("first"), await badge("ahead")]);
   ok((await badge("c50")).includes("50マス マスを50こ達成する") && (await p.$$eval("#goalBadges .g13-badge.got", (x) => x.length)) === 7, "⑥ one still to earn says how", await badge("c50"));
+  const bi = await p.$$eval("#goalBadges .g13-badge", (xs) => xs.map((x) => { const h = x.querySelector(".g13-icon svg.lc use")?.getAttribute("href"); return { k: x.dataset.badge, icon: !!(h && document.querySelector("symbol" + h)), got: x.classList.contains("got"), color: getComputedStyle(x.querySelector(".g13-icon")).color }; }));
+  const gotC = new Set(bi.filter((x) => x.got).map((x) => x.color)), notC = new Set(bi.filter((x) => !x.got).map((x) => x.color));
+  ok(bi.length === 12 && bi.every((x) => x.icon) && gotC.size === 1 && notC.size === 1 && ![...gotC].some((c) => notC.has(c)) && !/\p{Extended_Pictographic}/u.test(await txt(p, "#goalBadges")), "⑥ each a Lucide icon from the sprite (lucide.dev, 2026-11-22), those earned in the goal's colour, no emoji", bi);
   // ⑩ 今週の報告を送る: taken out at the user's call (2026-11-21, tools/REMOVED.md)
   ok(!(await p.$("#goalReport")) && !(await txt(p, "#sec-goal")).includes("今週の報告"), "⑩ (taken out) no 今週の報告を送る");
 
