@@ -93,7 +93,7 @@ const wl = (p) => p.evaluate(() => window.__wl);
   ok((await txt(p, "#td21Budget")) === "予算1,000円・カゴ300円・まだの分200円・のこり500円", "⑥ in its card", await txt(p, "#td21Budget"));
   await menu(p, "「買い物」の予算"); await p.fill("#todoMenuGroup .ask-field input", "400"); await p.locator("#todoMenuGroup .ask-go").click(); await p.waitForTimeout(500);
   ok((await txt(p, "#td21Budget")).endsWith("・100円こえています") && (await p.getAttribute("#td21Budget", "class")).includes("over"), "⑥ over it: said", await txt(p, "#td21Budget"));
-  await tab(p, "すべて");
+  await tab(p, "ぜんぶ");
 
   // ---- ⑤ 古い完了を片づける
   ok((await moreItems(p)).includes("古い完了を片づける（3か月より前2件）"), "⑤ offered, with how many");
@@ -121,6 +121,7 @@ const wl = (p) => p.evaluate(() => window.__wl);
   await closeSheet(p);
 
   // ---- ⑨ 終えたときの気分
+  await p.click('#todoParts button[data-part="done"]'); await p.waitForTimeout(300); // (the done ones: 完了, the bar at the foot)
   await hold(p, "x1"); await press(p, "終えたときの気分");
   await p.locator("#todoMenuGroup .td21-mood", { hasText: "😄" }).click(); await p.waitForTimeout(400);
   ok((await todo(p, "x1")).mood === 1, "⑨ kept", await todo(p, "x1"));
@@ -132,6 +133,7 @@ const wl = (p) => p.evaluate(() => window.__wl);
   ok((await txt(p, ".td18-day")).includes("日記を書く😄"), "⑨ in 完了カレンダー", await txt(p, ".td18-day"));
   await closeSheet(p);
   await W(p, "ask", true); await p.waitForTimeout(300); // (その9 ⑧'s 「ひとことを聞く」 on before: taken out, 2026-11-21)
+  await p.click('#todoParts button[data-part="open"]'); await p.waitForTimeout(300);
   await p.click('#todoList [data-check="c"]'); await p.waitForTimeout(900);
   ok(!(await p.$("#td9AskCard")) && !(await txt(p, "#sec-todo")).includes("どうだった"), "⑨ no 「どうだった？」 to be under");
 

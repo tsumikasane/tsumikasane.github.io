@@ -43,7 +43,7 @@ const base = () => ({ todos: D.todos(), todoLists: D.lists(), events: D.events()
   await done(p);
   await p.locator("#todoTabs button", { hasText: "学校" }).click(); await p.waitForTimeout(300);
   ok((await txt(p, "#todoList")) === "「返事待ちだけ」に合うToDoはありません。", "① none in 学校: said so", await txt(p, "#todoList"));
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(300);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(300);
   await p.locator("#td4ViewBar button").click(); await p.waitForTimeout(300);
 
   // ② すき間時間: till 英語の授業 at 9:00, 30 minutes; what fits (its 始める went with ToDo's 集中, 2026-11-21)
@@ -128,7 +128,7 @@ const base = () => ({ todos: D.todos(), todoLists: D.lists(), events: D.events()
   ok(!(await txt(p, "#td4ShopCard")).includes("カゴ") && (await ls(p, "todos")).filter((t) => t.listId === "L2" && t.done).every((t) => t.paid === true), "⑥ those done there before: not in the basket", await txt(p, "#td4ShopCard"));
   await menu(p, "買い物リストをやめる");
   ok(!(await ls(p, "todoLists")).find((l) => l.id === "L2").shop, "⑥ and back");
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(300);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(300);
 
   // ⑧ 繰り返しの提案: ゴミ出し on four Mondays
   const rep = await W(p, "rep");

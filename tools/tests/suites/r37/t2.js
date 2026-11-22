@@ -63,7 +63,7 @@ async function open(b, when, more = {}, hash = "todo") {
     ok(await r.isVisible("#td7CloseCard"), "③ …at 21:05");
     await r.locator("#todoTabs button", { hasText: "大学" }).click(); await r.waitForTimeout(400);
     ok(await r.isHidden("#td7CloseCard"), "③ not on a list's tab");
-    await r.locator("#todoTabs button", { hasText: "すべて" }).click(); await r.waitForTimeout(400);
+    await r.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await r.waitForTimeout(400);
     await r.locator("#td7CloseCard button", { hasText: "1件ずつ見直す" }).click(); await r.waitForTimeout(600);
     ok(!!(await r.$('.td7-close-row button[aria-label="「日記を書く」をこの回をとばす"]')) && !(await r.$('.td7-close-row button[aria-label="「日記を書く」を期限なし"]')), "③ a repeat: この回をとばす, not 期限なし");
     await r.locator('.td7-close-row button[aria-label="「日記を書く」をこの回をとばす"]').click(); await r.waitForTimeout(500);

@@ -101,7 +101,7 @@ const find = async (p, q) => { await p.fill("#todoSearch", q); await p.waitForTi
   ok(!(await byText(p, "財布")).some((t) => !t.done), "③ not again that day");
   await menu(p, "「持ち物」の毎朝のリセットをやめる");
   ok(!(await W(p, "lists")).find((x) => x.id === "l-pack").ckDaily, "③ taken off");
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(500);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(500);
   ok(!(await moreItems(p)).some((x) => x.includes("毎朝リセット")), "③ only on a checklist's tab");
 
   // ---- ④ コンパクト表示

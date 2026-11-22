@@ -114,7 +114,7 @@ const T = (d, hm) => Date.parse(`${d}T${hm}:00+09:00`);
   ok((await p.evaluate(() => document.querySelector('#todoTabs [aria-pressed="true"]')?.textContent || "")).includes("大学"), "⑤ 大学 shown");
   await undo(p);
   ok((await todo(p, "j1")).listId === "l-job" && (await W(p, "lists")).some((l) => l.id === "l-job" && l.name === "バイト"), "⑤ 元に戻す: as it was");
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
 
   // ---- ⑥ おすすめ順
   await W(p, "view", { sort: "rec" }); await p.waitForTimeout(400);
@@ -154,7 +154,7 @@ const T = (d, hm) => Date.parse(`${d}T${hm}:00+09:00`);
   ok(await p.isVisible(".td15-tip") && /件$/.test(await txt(p, ".td15-tip")), "⑨ a day's number at the pointer", await txt(p, ".td15-tip"));
   ok((await p.evaluate(() => document.querySelectorAll(".td15-table tbody tr").length)) === 30, "⑨ as a table too");
   await closeSheet(p);
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
 
   // ---- ⑩ つづきを追加
   ok((await W(p, "nextName", "単語帳 1章")) === "単語帳 2章" && (await W(p, "nextName", "課題(2/5)")) === "課題(3/5)" && (await W(p, "nextName", "第９話を見る")) === "第１０話を見る"

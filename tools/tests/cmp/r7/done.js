@@ -1,6 +1,7 @@
 // a ToDo checked off goes down to 完了 a moment after (the user's call, 2026-11-22: every one checked off to 完了; before
-// it, one done today kept its place): for that moment it stays where it was, then it is the first in 完了, its name and
-// line one lighter grey; unchecked there, it is one to do again in its place
+// it, one done today kept its place): for that moment it stays where it was, then it is the first in 完了 (the other half
+// of the bar at the foot, the user's call the same day), its name and line one lighter grey; unchecked there, it is one
+// to do again in its place, in すべて
 const { chromium } = require('playwright');
 let fails = 0;
 const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') + m + (x !== undefined ? ': ' + (typeof x === 'string' ? x : JSON.stringify(x)) : '')); };
@@ -33,6 +34,8 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   const head = (r, name) => r.findIndex((x) => x.startsWith('#' + name + '|'));
   let r = await rows();
   console.log('before', JSON.stringify(r));
+  // (すべて・完了 in the bar at the foot, the user's call 2026-11-22: 完了 is the bar's other half)
+  const part = async (n) => { await p.evaluate((n) => document.querySelector(`#todoParts button[data-part="${n}"]`).click(), n); await p.waitForTimeout(250); };
   // ---- one in きょう checked: for a moment it stays where it was, then it is the first in 完了
   await check('歯医者の予約'); await p.waitForTimeout(300);
   r = await rows();
@@ -40,18 +43,24 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   await p.waitForTimeout(1900);
   r = await rows();
   console.log('after1', JSON.stringify(r));
-  ok(r[head(r, 'きょう')] === '#きょう|2 件' && !r.slice(head(r, 'きょう'), head(r, '完了')).some((x) => x.includes('歯医者の予約')), 'after the moment: gone from きょう, 2 left there', r.slice(head(r, 'きょう'), head(r, 'きょう') + 3));
-  ok(r[head(r, '完了')] === '#完了|14 件' && r[head(r, '完了') + 1] === '✓歯医者の予約', '…the first in 完了', r.slice(head(r, '完了'), head(r, '完了') + 2));
+  ok(r[head(r, 'きょう')] === '#きょう|2 件' && !r.some((x) => x.includes('歯医者の予約')) && head(r, '完了') < 0, 'after the moment: gone from すべて, 2 left in きょう, no 完了 there', r.slice(head(r, 'きょう'), head(r, 'きょう') + 3));
+  await part('done');
+  r = await rows();
+  ok(r[0] === '#完了|14 件' && r[1] === '✓歯医者の予約', '…the first in 完了', r.slice(0, 2));
   let s = await rowOf('歯医者の予約');
   ok(s && /\bdone\b/.test(s.cls) && !/\bkept\b/.test(s.cls) && s.day === 'きょう' && s.del, 'its row: done, one line, きょう at its end, with ×', s);
   ok(s.color === 'rgb(142, 142, 147)' && s.line.includes('line-through') && s.lineColor === s.color, 'its name and line one lighter grey (#8e8e93), not red', s);
   await p.screenshot({ path: `${out}/done_1.png` });
+  await part('open');
   // ---- a repeat checked: its turn in 完了, the next one in これから
   await check('ゴミ出し'); await p.waitForTimeout(2100);
   r = await rows();
   console.log('after2', JSON.stringify(r));
-  ok(r[head(r, '完了') + 1] === '✓ゴミ出し', "a repeat's turn in 完了, the first there", r.slice(head(r, '完了'), head(r, '完了') + 3));
   ok(head(r, 'これから') > head(r, 'きょう') && r[head(r, 'これから') + 1] === 'ゴミ出し', 'its next turn in これから', r.slice(head(r, 'これから'), head(r, 'これから') + 2));
+  await part('done');
+  r = await rows();
+  ok(r[1] === '✓ゴミ出し', "a repeat's turn in 完了, the first there", r.slice(0, 3));
+  await part('open');
   await check('牛乳を買う'); await p.waitForTimeout(2100);
   r = await rows();
   ok(head(r, 'きょう') < 0, 'きょう all done: its heading gone', r.slice(0, 6));
@@ -61,21 +70,29 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   r = await rows();
   ok(head(r, '期限切れ') < 0 && !(await p.evaluate(() => !!todoList.querySelector('.dayhead.warn'))), '期限切れ all done: its heading gone, nothing red', r.slice(0, 4));
   // ---- 完了: the last ten done, the newest first (those of today, then the day before), the rest a press away
+  await part('done');
+  r = await rows();
   const hd = head(r, '完了');
-  ok(r[hd] === '#完了|18 件' && r[hd + 1] === '✓部屋の掃除' && r[hd + 2] === '✓請求書を送る' && r[hd + 6] === '✓きのうやったこと' && r.slice(hd + 1).filter((x) => x.startsWith('✓')).length === 10, '完了: all 18, the newest first, ten showing', r.slice(hd, hd + 7));
+  ok(hd === 0 && r[hd] === '#完了|18 件' && r[hd + 1] === '✓部屋の掃除' && r[hd + 2] === '✓請求書を送る' && r[hd + 6] === '✓きのうやったこと' && r.slice(hd + 1).filter((x) => x.startsWith('✓')).length === 10, '完了: all 18, the newest first, ten showing', r.slice(hd, hd + 7));
   ok(/ほか 8 件を見る/.test(r[r.length - 1]), 'ほか 8 件を見る', r[r.length - 1]);
   await p.screenshot({ path: `${out}/done_2.png`, fullPage: true });
   // the rest, from the keyboard: focus on the first of them, in 完了
   await p.evaluate(() => todoList.querySelector('.more-done button').click()); await p.waitForTimeout(400);
   ok(await p.evaluate(() => document.activeElement?.closest('li')?.querySelector('.row-link')?.textContent === '前にやったこと4'), 'ほか…を見る from the keyboard: focus on the eleventh in 完了', await p.evaluate(() => document.activeElement?.closest('li')?.textContent));
-  // ---- unchecked in 完了: to do again, in its place, with its 期限 and memo
+  // ---- unchecked in 完了: gone to すべて (said, with 元に戻す), to do again in its place, with its 期限 and memo
   await check('歯医者の予約'); await p.waitForTimeout(400);
+  r = await rows();
+  ok(!r.some((x) => x.includes('歯医者の予約')) && /「歯医者の予約」を未完了に戻しました/.test(await p.evaluate(() => document.getElementById('status').textContent)), 'unchecked in 完了: gone from it, said so', r.slice(0, 3));
+  await part('open');
   r = await rows();
   ok(r[head(r, 'きょう')] === '#きょう|1 件' && r[head(r, 'きょう') + 1] === '歯医者の予約', 'unchecked: to do again in きょう', r.slice(head(r, 'きょう'), head(r, 'きょう') + 2));
   s = await rowOf('歯医者の予約');
   ok(s.sub && !/\bdone\b/.test(s.cls), 'with its 期限 and memo again', s);
-  // ---- the same day, opened again: in 完了
+  // ---- the same day, opened again: in 完了 (the page opens on すべて)
   await p.reload(); await p.waitForTimeout(800);
+  r = await rows();
+  ok(!r.some((x) => x.includes('牛乳を買う')) && await p.evaluate(() => document.querySelector('#todoParts [aria-pressed="true"]')?.dataset.part === 'open'), 'opened again: すべて, the done ones not in it');
+  await part('done');
   r = await rows();
   ok(r.indexOf('✓牛乳を買う') > head(r, '完了') && !r.some((x) => x.endsWith('(kept)')), 'opened again the same day: in 完了');
   // ---- × on a done one: deleted with 元に戻す, back in 完了
@@ -91,6 +108,7 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   // ---- the next day: still in 完了
   await p.evaluate((pre) => { const T = JSON.parse(localStorage.getItem(pre + 'todos')); const m = new Date(); m.setHours(0, 0, 0, 0); for (const t of T) if (t.done && t.doneAt >= m.getTime()) t.doneAt = m.getTime() - 7200e3; localStorage.setItem(pre + 'todos', JSON.stringify(T)); }, pre);
   await p.reload(); await p.waitForTimeout(800);
+  await part('done');
   r = await rows();
   ok(!r.some((x) => x.endsWith('(kept)')) && r.slice(head(r, '完了')).some((x) => x.startsWith('✓牛乳を買う')), 'done the day before: in 完了', r.slice(0, 4));
   // ---- きょう's tile: one checked there fades and the next comes up

@@ -61,7 +61,7 @@ async function open(b, when, data = D.all(), o = {}) {
   ok(!(await p.isHidden("#td8GoalCard")), "④ on すべて");
   await p.locator("#todoTabs button", { hasText: "大学" }).click(); await p.waitForTimeout(400);
   ok(await p.isHidden("#td8GoalCard"), "④ not on a list's tab");
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
 
   await p.context().clock.setFixedTime(new Date("2026-11-11T08:40:00+09:00")); // (⑤ 5分だけ taken out, 2026-11-21: the clock as it had it)
 
@@ -76,7 +76,7 @@ async function open(b, when, data = D.all(), o = {}) {
   await p.click("#todoSettings"); await p.waitForTimeout(800);
   await p.click('#todoListRows li[data-id="l-job"] .td8-shelve'); await p.waitForTimeout(500);
   await p.click("#sheetDone"); await p.waitForTimeout(500);
-  ok((await W(p, "tab")) === "" && await p.evaluate(() => document.querySelector('#todoTabs [aria-pressed="true"]')?.textContent.startsWith("すべて")), "⑧ the tab showing put away: すべて");
+  ok((await W(p, "tab")) === "" && await p.evaluate(() => document.querySelector('#todoTabs [aria-pressed="true"]')?.textContent.startsWith("ぜんぶ")), "⑧ the tab showing put away: ぜんぶ");
   const al = await W(p, "alarms", at("2026-11-11", "08:40"));
   ok(!al.some((a) => /old2/.test(a.tag)) && (await W(p, "dueCount")) >= 0, "⑧ no お知らせ for one put away (前期の授業)");
   ok(!(await W(p, "nowList")).some((id) => id === "j1" || id === "old2"), "⑧ not in いまやるなら");

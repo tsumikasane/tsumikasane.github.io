@@ -61,7 +61,9 @@ async function open(b, when) {
   ok(await p.isVisible("#td7ListCard") && (await txt(p, "#td7ListCard .td-fc-n")) === "1/5" && (await txt(p, "#td7ListCard .td-fc-text")) === "12/20（日）まで、あと39日。のこり4件。この2週間に終えたものは、まだありません。", "② 大学's card", await txt(p, "#td7ListCard"));
   await p.click('#todoList [data-check="a"]'); await p.waitForTimeout(2000);
   ok((await txt(p, "#td7ListCard .td-fc-n")) === "2/5" && (await txt(p, "#td7ListCard .td-fc-text")).endsWith("このペースだと12/23（水）ごろになり、期限に間に合いません。") && !!(await p.$("#td7ListCard .td7-warn")), "② one done: the pace (3 left at 1 in 14 days), late, said", await txt(p, "#td7ListCard .td-fc-text"));
+  await p.click('#todoParts button[data-part="done"]'); await p.waitForTimeout(300); // (the done ones: 完了, the bar at the foot)
   await p.click('#todoList [data-check="a"]'); await p.waitForTimeout(1800);
+  await p.click('#todoParts button[data-part="open"]'); await p.waitForTimeout(300); // (大学 pressed again)
   await menu(p, "「大学」の期限を変える（12/20）");
   await p.fill("#todoMenuGroup input[type=date]", "2026-12-31"); await p.locator("#todoMenuGroup button", { hasText: "この日にする" }).click(); await p.waitForTimeout(500);
   ok((await ls(p, "todoLists")).find((l) => l.id === "l-uni").due === "2026-12-31" && (await txt(p, "#td7ListCard .td-fc-text")).startsWith("12/31（木）まで、あと50日。"), "② its 期限 changed from その他");
@@ -69,7 +71,7 @@ async function open(b, when) {
   ok((await ls(p, "todoLists")).find((l) => l.id === "l-uni").due === "2026-12-20", "② 元に戻す");
   const la = (await W(p, "alarms", at("2026-11-11", "08:30"))).filter((a) => a.tag.startsWith("td-list:"));
   ok(la.length === 2 && la[0].tag === "td-list:l-uni:7" && la[0].at === at("2026-12-13", "09:00") && la[0].title === "リスト「大学」" && la[0].body === "期限まで、あと7日です（12/20・1 / 5 完了）" && la[1].at === at("2026-12-19", "09:00"), "② told a week before and the day before", la);
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
   ok(await p.isHidden("#td7ListCard"), "② none under すべて");
 
   // ---- ⑤ サブタスクをToDoに, 1つにまとめる

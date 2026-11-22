@@ -20,14 +20,14 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   const tabs = () => p.evaluate(() => [...todoTabs.querySelectorAll('.td-tab:not(.add)')].map((x) => [x.querySelector('.td-tab-name').textContent, x.querySelector('.td-tab-n').textContent, x.getAttribute('aria-pressed')]));
   const rows = () => p.evaluate(() => [...todoList.querySelectorAll('li:has(> .check)')].map((li) => li.querySelector('.text, .row-link')?.textContent));
   let t = await tabs();
-  ok(JSON.stringify(t) === JSON.stringify([['すべて', '10', 'true'], ['やること', '1', 'false'], ['買い物', '2', 'false'], ['大学', '1', 'false']]), 'tabs: すべて and each label with how many are to do', t);
+  ok(JSON.stringify(t) === JSON.stringify([['ぜんぶ', '10', 'true'], ['やること', '1', 'false'], ['買い物', '2', 'false'], ['大学', '1', 'false']]), 'tabs: ぜんぶ and each label with how many are to do', t);
   ok(await p.evaluate(() => !!todoTabs.querySelector('.td-tab.add[aria-label="リストを追加"]')), 'a ＋ tab at the end');
   ok(await p.evaluate(() => !document.getElementById('clearDone') && !document.getElementById('todoTrashCard') && !document.querySelector('#sec-todo .title-row #todoSettings')), 'the foot\'s buttons and the gear by ＋ gone');
   ok(await p.evaluate(() => todoSettings.textContent.trim() === '編集' && todoMore.textContent.trim() === 'その他'), '編集 and その他 under the tabs');
   // rows: × only on done ones; tints on labelled ones still to do; a calendar's mark before a 期限
   const r = await p.evaluate(() => [...todoList.querySelectorAll('li:has(> .check)')].map((li) => ({ done: li.classList.contains('done'), del: !!li.querySelector(':scope > .del'), tint: li.classList.contains('tinted'), cal: !!li.querySelector('.td-cal'), t: li.querySelector('.row-link')?.textContent })));
-  ok(r.filter((x) => !x.done).every((x) => !x.del) && r.filter((x) => x.done).every((x) => x.del), '× on the done rows only', r.map((x) => [x.t, x.done, x.del]).slice(0, 3));
-  ok(r.filter((x) => x.tint).map((x) => x.t).join() === '請求書を送る,歯医者の予約をする,ゴミ出し（燃えるゴミ）,本を返す,洗濯', 'labelled rows in their colour, a done one too', r.filter((x) => x.tint).map((x) => x.t));
+  ok(r.every((x) => !x.done && !x.del), 'すべて: those to do, no ×, the done ones in 完了 (the bar at the foot)', r.map((x) => [x.t, x.done, x.del]).slice(0, 3));
+  ok(r.filter((x) => x.tint).map((x) => x.t).join() === '請求書を送る,歯医者の予約をする,ゴミ出し（燃えるゴミ）,本を返す', 'labelled rows in their colour', r.filter((x) => x.tint).map((x) => x.t));
   ok(r.find((x) => x.t === '請求書を送る').cal && r.find((x) => x.t === '家賃の振り込み').cal && !r.find((x) => x.t === '本を返す').cal, 'a calendar\'s mark before a 期限 (none without one)');
   await p.screenshot({ path: `${out}/td_all.png` });
   // a tab: its ToDos only, and kept
@@ -35,24 +35,32 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   t = await tabs();
   let rs = await rows();
   ok(t[2][2] === 'true' && t[0][2] === 'false', '買い物 pressed', t);
-  ok(rs.join() === '歯医者の予約をする,本を返す,洗濯' || rs.join() === '歯医者の予約をする,本を返す,' + rs[2], '買い物: its own ToDos only (a done one too)', rs);
+  ok(rs.join() === '歯医者の予約をする,本を返す', '買い物: its own ToDos only', rs);
   await p.screenshot({ path: `${out}/td_tab.png` });
   await p.reload(); await p.waitForTimeout(700);
   ok((await tabs())[2][2] === 'true' && (await rows()).length === rs.length, 'kept as the page opens again');
-  // その他 in a tab: 最近削除したToDo, and the tab's done ones deleted
+  // その他 in a tab: 最近削除したToDo (the done ones are in 完了, of every list)
   await p.tap('#todoMore'); await p.waitForTimeout(300);
   let menu = await p.evaluate(() => ({ open: todoMenu.open, msg: todoMenuMsg.textContent, items: [...todoMenuGroup.querySelectorAll('button')].map((x) => x.textContent) }));
-  ok(menu.open && menu.msg === 'ToDo（買い物）' && menu.items.join() === '最近削除したToDo,完了した 1 件を削除', 'その他 under 買い物: its done one only', menu);
+  ok(menu.open && menu.msg === 'ToDo（買い物）' && menu.items.includes('最近削除したToDo') && !menu.items.some((x) => /^完了した .+ 件を削除$/.test(x)), 'その他 under 買い物: no done ones to delete there', menu.items.slice(-3));
+  await p.evaluate(() => todoMenuNo.click()); await p.waitForTimeout(300);
+  // 完了 (the bar at the foot): every list's done ones, the tabs put away; その他 deletes them all
+  await p.evaluate(() => document.querySelector('#todoParts button[data-part="done"]').click()); await p.waitForTimeout(300);
+  rs = await rows();
+  ok(rs.length === 10 && await p.evaluate(() => getComputedStyle(todoTabs).display === 'none' && /ほか 4 件を見る/.test(todoList.textContent)), '完了: the last ten done of every list, the rest a press away, no tabs', rs.length);
+  ok(await p.evaluate(() => [...todoList.querySelectorAll('li.done')].every((li) => !!li.querySelector(':scope > .del')) && [...todoList.querySelectorAll('li.tinted')].some((li) => li.textContent.includes('洗濯'))), '完了: × on each, a labelled one in its colour');
+  await p.tap('#todoMore'); await p.waitForTimeout(300);
+  menu = await p.evaluate(() => ({ open: todoMenu.open, msg: todoMenuMsg.textContent, items: [...todoMenuGroup.querySelectorAll('button')].map((x) => x.textContent) }));
+  ok(menu.open && menu.msg === 'ToDo' && menu.items.includes('完了した 14 件を削除') && !menu.items.some((x) => x.includes('「買い物」')), 'その他 in 完了: all of them, nothing for a list (none showing)', [menu.msg, menu.items.filter((x) => /完了した|「買い物」/.test(x))]);
   await p.screenshot({ path: `${out}/td_more.png` });
   await p.tap('#todoMenuGroup .ask-btn.danger'); await p.waitForTimeout(500);
   const left = await p.evaluate((pre) => JSON.parse(localStorage.getItem(pre + 'todos')).filter((x) => x.done).length, pre);
-  ok(left === 13 && /完了したToDoを 1 件削除しました/.test(await p.evaluate(() => document.getElementById('status').textContent)), 'deleted: that one alone, said with 元に戻す', left);
-  // すべて: その他 counts them all; 最近削除したToDo opens its page
-  await p.evaluate(() => todoTabs.querySelector('.td-tab').click()); await p.waitForTimeout(300);
+  ok(left === 0 && /完了したToDoを 14 件削除しました/.test(await p.evaluate(() => document.getElementById('status').textContent)), 'deleted: all 14, said with 元に戻す', left);
+  // その他 counts those deleted; 最近削除したToDo opens its page
   await p.tap('#todoMore'); await p.waitForTimeout(300);
   menu = await p.evaluate(() => [...todoMenuGroup.querySelectorAll('button')].map((x) => x.textContent));
-  ok(menu.join() === '最近削除したToDo（1 件）,完了した 13 件を削除', 'その他 under すべて', menu);
-  await p.evaluate(() => todoMenuGroup.querySelector('.ask-btn').click()); await p.waitForTimeout(600);
+  ok(menu.includes('最近削除したToDo（14 件）') && !menu.some((x) => /^完了した .+ 件を削除$/.test(x)), 'その他 then: 最近削除したToDo with its count', menu.slice(-2));
+  await p.evaluate(() => [...todoMenuGroup.querySelectorAll('.ask-btn')].find((x) => x.textContent.startsWith('最近削除したToDo')).click()); await p.waitForTimeout(600);
   ok(await p.evaluate(() => document.documentElement.dataset.tab === 'trash'), '最近削除したToDo: its page');
   await p.goto(base + '#todo'); await p.reload(); await p.waitForTimeout(700);
   // 編集: the labels' settings
@@ -67,11 +75,11 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   await p.tap('#sheetDone'); await p.waitForTimeout(500);
   t = await tabs();
   ok(t.length === 5 && t[4][0] === 'バイト' && t[4][1] === '0', 'its tab, after the others', t);
-  // a tab whose list is deleted: すべて again
+  // a tab whose list is deleted: ぜんぶ again
   await p.evaluate(() => [...todoTabs.querySelectorAll('.td-tab')].find((x) => x.textContent.startsWith('大学')).click()); await p.waitForTimeout(200);
   await p.evaluate((pre) => { const L = JSON.parse(localStorage.getItem(pre + 'todoLists')).filter((l) => l.id !== 'c'); localStorage.setItem(pre + 'todoLists', JSON.stringify(L)); }, pre);
   await p.reload(); await p.waitForTimeout(700);
-  ok((await tabs())[0][2] === 'true' && !(await tabs()).some((x) => x[0] === '大学'), 'its list gone: すべて', await tabs());
+  ok((await tabs())[0][2] === 'true' && !(await tabs()).some((x) => x[0] === '大学'), 'its list gone: ぜんぶ', await tabs());
   // looking for words: within the tab
   await p.evaluate(() => [...todoTabs.querySelectorAll('.td-tab')].find((x) => x.textContent.startsWith('買い物')).click()); await p.waitForTimeout(200);
   await p.fill('#todoSearch', '歯医者'); await p.waitForTimeout(300);

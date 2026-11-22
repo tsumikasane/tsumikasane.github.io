@@ -97,7 +97,7 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
   await p.locator("#todoTabs button", { hasText: "持ち物" }).click(); await p.waitForTimeout(400);
   const its = await menuItems(p);
   ok(!its.some((x) => /完了した \d+ 件を削除/.test(x)) || its.some((x) => x === "完了した 1 件を削除"), "⑤ その他 in a checklist: its checks not offered to delete", its);
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
   const shownIds = await p.evaluate(() => [...document.querySelectorAll("#todoList [data-check]")].map((x) => x.dataset.check));
   ok(!shownIds.includes("p0") && shownIds.includes("p1"), "⑤ under すべて: the old check out, yesterday's in its place");
   // ⑤ only one item: no 「ぜんぶ」 words

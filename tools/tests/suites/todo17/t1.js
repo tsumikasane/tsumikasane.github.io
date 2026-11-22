@@ -70,7 +70,7 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
   await p.click("#sheetCancel"); await p.waitForTimeout(600);
   const kd = (await byText(p, "課題を出す"))[0];
   ok(kd && kd.listId === "l-uni" && kd.due === "2026-11-12" && kd.flag === true, "③ given what the list says", kd);
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
 
   // ---- ④ この1週間にやったこと
   const wt = await W(p, "weekText");
@@ -99,7 +99,7 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
   ok((await txt(p, "#tdPanelBody")).includes(`大学まだ${uni.open}件`), "⑥ shown", await txt(p, "#tdPanelBody"));
   await p.locator(".td17-stat-name", { hasText: "大学" }).click(); await p.waitForTimeout(600);
   ok((await p.evaluate(() => document.querySelector('#todoTabs [aria-pressed="true"]')?.textContent || "")).includes("大学"), "⑥ pressed: its tab");
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
 
   // ---- ⑦ いつかやるから1つ
   await W(p, "add", { id: "sd3", text: "陶芸をやってみる", someday: true, someAt: 5, createdAt: 5 }); await p.waitForTimeout(300);

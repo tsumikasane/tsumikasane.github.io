@@ -24,7 +24,7 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   const tabs = () => p.evaluate(() => [...todoTabs.querySelectorAll('.td-tab:not(.add)')].map((x) => [x.querySelector('.td-tab-name').textContent, x.querySelector('.td-tab-n').textContent, x.getAttribute('aria-pressed')]));
   const rows = () => p.evaluate(() => [...todoList.querySelectorAll('li:has(> .check)')].map((li) => li.querySelector('.row-link')?.textContent));
   const status = () => p.evaluate(() => [document.getElementById('sheetStatus'), document.getElementById('status')].find((x) => x.classList.contains('show'))?.textContent || '');
-  const tapTab = (name) => p.evaluate((name) => [...todoTabs.querySelectorAll('.td-tab')].find((x) => x.querySelector('.td-tab-name')?.textContent === name).click(), name);
+  const tapTab = (name) => p.evaluate((name) => [...todoTabs.querySelectorAll('.td-tab')].find((x) => x.querySelector('.td-tab-name')?.textContent === name)?.click(), name); // (?.: the page before had no ぜんぶ)
 
   // ---- the copy, once
   let L = await store('todoLists'), T = await store('todos'), S = await store('settings');
@@ -33,7 +33,7 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   ok(T.filter((t) => t.labelId).length === 5, 'their labels kept');
   ok(S.some((x) => x.id === 'todoListSplit'), 'a setting says it was done');
   let t = await tabs();
-  ok(JSON.stringify(t) === JSON.stringify([['すべて', '10', 'false'], ['やること', '1', 'false'], ['買い物', '2', 'true'], ['大学', '1', 'false']]), 'the tabs as they were, 買い物 still pressed', t);
+  ok(JSON.stringify(t) === JSON.stringify([['ぜんぶ', '10', 'false'], ['やること', '1', 'false'], ['買い物', '2', 'true'], ['大学', '1', 'false']]), 'the tabs as they were, 買い物 still pressed', t);
   ok(await p.evaluate(() => todoTabs.getAttribute('aria-label') === 'リストで分ける' && !!todoTabs.querySelector('.td-tab.add[aria-label="リストを追加"]') && todoSettings.getAttribute('aria-label') === 'リストとラベルを編集'), 'named for lists');
   ok(await p.evaluate(() => [...todoTabs.querySelectorAll('.td-tab')].every((x) => !x.getAttribute('style'))), 'the tabs have no label colour');
   // not again: a label made since with a ToDo on it doesn't become a list
@@ -46,8 +46,8 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   ok(L.length === 3 && !T.find((t) => t.id === 't10').listId, 'done once only: a new label stays a label', L.map((l) => l.name));
   t = await tabs();
   ok(t.length === 4 && !t.some((x) => x[0] === '生活'), 'no tab for the label 生活', t);
-  await tapTab('すべて'); await p.waitForTimeout(200);
-  ok((await rows()).includes('写真の整理'), '生活\'s ToDo under すべて');
+  await tapTab('ぜんぶ'); await p.waitForTimeout(200);
+  ok((await rows()).includes('写真の整理'), '生活\'s ToDo under ぜんぶ');
   await p.screenshot({ path: `${out}/ls_tabs.png` });
 
   // ---- 編集: リスト over ラベル, each its own
@@ -72,7 +72,7 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   ok(L.length === 4 && L[3].name === '勉強' && !('color' in L[3]) && (await store('todoLabels')).length === 5, 'リストを追加: a list only, without a colour', L[3]);
   await p.tap('#sheetDone'); await p.waitForTimeout(500);
   t = await tabs();
-  ok(t.map((x) => x[0]).join() === 'すべて,就活,買い物,大学,勉強', 'the tabs: the new list last, the label 趣味 not there', t.map((x) => x[0]));
+  ok(t.map((x) => x[0]).join() === 'ぜんぶ,就活,買い物,大学,勉強', 'the tabs: the new list last, the label 趣味 not there', t.map((x) => x[0]));
   // ＋ on the tabs: a new list, not a label
   await p.evaluate(() => todoTabs.querySelector('.td-tab.add').click()); await p.waitForTimeout(600);
   ok(await p.evaluate(() => daySheet.open && document.activeElement?.value === '新しいリスト' && todoListRows.contains(document.activeElement)), '＋: a new list, its name ready');
@@ -101,13 +101,13 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   await p.evaluate(() => [...todoListPick.querySelectorAll('label')].find((x) => x.textContent === 'なし').querySelector('input').click());
   await p.fill('#todoText', 'メモを整理'); await p.tap('#todoSave'); await p.waitForTimeout(500);
   nt = (await store('todos')).find((x) => x.text === 'メモを整理');
-  ok(nt && !nt.listId && /「すべて」に出ます/.test(await status()), 'no list from a tab: said it is under すべて', [nt?.listId, await status()]);
+  ok(nt && !nt.listId && /「ぜんぶ」に出ます/.test(await status()), 'no list from a tab: said it is under ぜんぶ', [nt?.listId, await status()]);
   await p.tap('#sheetCancel'); await p.waitForTimeout(500);
   ok((await rows()).includes('卵を買う') && !(await rows()).includes('レポートを出す'), '買い物 shows its new one only');
-  // under すべて the form starts with no list
-  await tapTab('すべて'); await p.waitForTimeout(200);
+  // under ぜんぶ the form starts with no list
+  await tapTab('ぜんぶ'); await p.waitForTimeout(200);
   await p.tap('#todoAdd'); await p.waitForTimeout(600);
-  ok(await p.evaluate(() => todoListPick.querySelector('input:checked')?.value === ''), 'under すべて: なし picked');
+  ok(await p.evaluate(() => todoListPick.querySelector('input:checked')?.value === ''), 'under ぜんぶ: なし picked');
   await p.tap('#sheetCancel'); await p.waitForTimeout(500);
 
   // ---- the edit form: its list, apart from its label
@@ -138,7 +138,7 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   await p.tap('#sheetCancel'); await p.waitForTimeout(500);
   if (await p.evaluate(() => daySheet.open)) { await p.tap('#sheetCancel'); await p.waitForTimeout(500); }
 
-  // ---- a list deleted: its tab goes, its ToDos stay (under すべて), labels untouched, 元に戻す brings it back
+  // ---- a list deleted: its tab goes, its ToDos stay (under ぜんぶ), labels untouched, 元に戻す brings it back
   await tapTab('大学'); await p.waitForTimeout(200);
   await p.tap('#todoSettings'); await p.waitForTimeout(500);
   await p.evaluate(() => todoListRows.querySelector('li[data-id="c"] .del').click()); await p.waitForTimeout(300);
@@ -148,8 +148,8 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   ok(!(await store('todoLists')).some((l) => l.id === 'c') && (await store('todoLabels')).some((l) => l.id === 'c'), 'the list gone, the label 大学 still there');
   await p.tap('#sheetDone'); await p.waitForTimeout(500);
   t = await tabs();
-  ok(t[0][2] === 'true' && !t.some((x) => x[0] === '大学'), 'its tab gone: すべて', t);
-  ok((await rows()).includes('レポートを出す'), 'its ToDos under すべて');
+  ok(t[0][2] === 'true' && !t.some((x) => x[0] === '大学'), 'its tab gone: ぜんぶ', t);
+  ok((await rows()).includes('レポートを出す'), 'its ToDos under ぜんぶ');
   // the label deleted: the tabs as they are
   await p.tap('#todoSettings'); await p.waitForTimeout(500);
   await p.evaluate(() => { todoLabelList.querySelector('li[data-id="b"] .del').click(); todoLabelList.querySelector('li[data-id="b"] .del').click(); }); await p.waitForTimeout(400);

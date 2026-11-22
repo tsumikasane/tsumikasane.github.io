@@ -104,7 +104,7 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
   await p.click(".td14-memo-field .ask-go"); await p.waitForTimeout(500);
   ok((await W(p, "lists")).find((l) => l.id === "l-uni").memo === "提出物は\nポータルから https://example.com/portal", "⑤ kept on the list");
   ok(await p.isVisible("#td14ListMemo") && (await p.evaluate(() => document.querySelector("#td14ListMemo a")?.href)) === "https://example.com/portal", "⑤ over its ToDos, its link a link");
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
   ok(!(await p.isVisible("#td14ListMemo")), "⑤ not under すべて");
 
   // ---- ⑥ やった時間を足す
@@ -163,6 +163,7 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
 
   // ---- ⑩ もう一度やる
   await p.click("#todoMore"); await p.waitForTimeout(300); await p.click("#todoMenuNo"); await p.waitForTimeout(300);
+  await p.click('#todoParts button[data-part="done"]'); await p.waitForTimeout(300); // (the done ones: 完了, the bar at the foot)
   await p.evaluate(() => { const b = [...document.querySelectorAll("#todoList .more-done button")][0]; b?.click(); }); await p.waitForTimeout(400);
   await hold(p, "w1");
   ok((await items(p)).includes("もう一度やる"), "⑩ in a done one's menu", await items(p));

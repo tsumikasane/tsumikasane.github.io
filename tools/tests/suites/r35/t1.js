@@ -154,7 +154,7 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
   ok(!(await ls(p, "todoLists")).find((l) => l.id === "l-uni").check, "⑤ back to a list");
 
   // ⑩ いつものセット by the days before a date: asked for, then from the 期限
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
   await p.click("#todoAdd"); await p.waitForTimeout(700);
   await p.fill("#todoDue", ""); await p.dispatchEvent("#todoDue", "change"); await p.waitForTimeout(200);
   const chips = await p.evaluate(() => [...document.querySelectorAll("#todoSetPick .chip-btn")].map((x) => x.textContent));

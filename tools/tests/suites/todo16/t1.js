@@ -109,7 +109,7 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
   ok((await status(p)).includes("「バイト」のToDoを、ぜんぶ終えました！") && (await status(p)).includes("リストをしまう"), "⑦ said, with しまう", await status(p));
   await p.locator("#status button:visible, #sheetStatus button:visible").first().click(); await p.waitForTimeout(500);
   ok((await W(p, "lists")).find((l) => l.id === "l-job").archived === true, "⑦ put away");
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
 
   // ---- ⑧ 雨の日 (銀行 on 11/20 now; back to 11/13 with 80%)
   await W(p, "update", "f", { due: "2026-11-13" }); await p.waitForTimeout(300);
@@ -131,8 +131,10 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
   ok((await todo(p, "c")).from === "店長" && (await rowSub(p, "c")).includes("店長から"), "⑩ who asked, on its row", await rowSub(p, "c"));
   await p.click('#todoList [data-check="c"]'); await p.waitForTimeout(1800);
   await p.evaluate(() => { window.__sent = []; navigator.share = async (x) => { window.__sent.push(x); }; });
+  await p.click('#todoParts button[data-part="done"]'); await p.waitForTimeout(300); // (the done ones: 完了, the bar at the foot)
   await hold(p, "c"); await press(p, "終わったと伝える（店長）");
   ok((await p.evaluate(() => window.__sent[0]?.text || "")) === "店長さん\n「メールに返信」、終わりました。", "⑩ said done", await p.evaluate(() => window.__sent[0]));
+  await p.click('#todoParts button[data-part="open"]'); await p.waitForTimeout(300);
   await hold(p, "g"); await press(p, "頼まれごとにする");
   ok((await items(p)).includes("店長"), "⑩ the name given before offered", await items(p));
   await p.click("#todoMenuNo"); await p.waitForTimeout(300);

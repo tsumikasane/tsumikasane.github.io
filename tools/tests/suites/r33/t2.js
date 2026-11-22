@@ -39,7 +39,7 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
   ok((await todo(p, "s3")).paid === true && !(await ls(p, "expenses")).length && (await status(p)).includes("買い物を終えました"), "⑥ 記録しないで終える: paid, nothing in 家計簿");
   await p.locator("#status button").click(); await p.waitForTimeout(500);
   ok(!(await todo(p, "s3")).paid, "⑥ 元に戻す");
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(300);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(300);
 
   // a filter kept as the app opens again; under きょうやるだけ, neither it nor its line
   await p.click("#td4View"); await p.waitForTimeout(500);

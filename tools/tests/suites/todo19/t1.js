@@ -104,13 +104,13 @@ const chip = async (p, words) => { await p.locator("#td19Chips button", { hasTex
   ok((await W(p, "lists")).find((l) => l.id === "l-uni").emo === "📚", "⑤ kept with the list");
   ok((await txt(p, '#todoTabs [data-list="l-uni"]')).startsWith("📚大学"), "⑤ on its tab", await txt(p, '#todoTabs [data-list="l-uni"]'));
   ok(!(await rowSub(p, "a")).includes("📚"), "⑤ not on a row in its own list", await rowSub(p, "a"));
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
   ok((await rowSub(p, "a")).includes("📚大学"), "⑤ on its rows under すべて", await rowSub(p, "a"));
   await p.locator("#todoTabs button", { hasText: "大学" }).click(); await p.waitForTimeout(400);
   ok((await moreItems(p)).includes("「大学」の絵文字を変える（いま📚）"), "⑤ and changed");
   await menu(p, "「大学」の絵文字を変える"); await press(p, "絵文字をはずす");
   ok(!(await W(p, "lists")).find((l) => l.id === "l-uni").emo && !(await txt(p, '#todoTabs [data-list="l-uni"]')).includes("📚"), "⑤ taken off");
-  await p.locator("#todoTabs button", { hasText: "すべて" }).click(); await p.waitForTimeout(400);
+  await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
 
   // ---- ⑥ 探す条件のボタン
   ok(await p.evaluate(() => !document.getElementById("td19Chips") || document.getElementById("td19Chips").hidden), "⑥ none at first");

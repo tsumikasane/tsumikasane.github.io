@@ -31,7 +31,7 @@ const jpeg = async (p) => Buffer.from(await p.evaluate(() => { const c = documen
   // ⑨ waiting for its 開始日: folded under あとで, not counted
   let list = await txt(p, "#todoList");
   ok(/あとで 表示する 1 件/.test(list) && !list.includes("年末調整"), "⑨ under あとで, folded", list);
-  ok(await p.evaluate(() => document.querySelector(".td-tab").textContent) === "すべて3", "⑨ not counted on the tab", await p.evaluate(() => document.querySelector(".td-tab").textContent));
+  ok(await p.evaluate(() => document.querySelector(".td-tab").textContent) === "ぜんぶ3", "⑨ not counted on the tab", await p.evaluate(() => document.querySelector(".td-tab").textContent));
   await p.locator("#todoList .dayhead-btn.later").click(); await p.waitForTimeout(200);
   list = await txt(p, "#todoList");
   ok(list.includes("年末調整") && list.includes("12/1（火）から") && !/本を読む 0/.test(list) && /あとで 隠す 1 件/.test(list), "⑨ opened: from when", list);
@@ -70,8 +70,10 @@ const jpeg = async (p) => Buffer.from(await p.evaluate(() => { const c = documen
   await p.locator("#todoList li", { hasText: "ゴミ出し" }).locator(".check").click(); await p.waitForTimeout(2200);
   const td = await ls(p, "todos"), was = td.find((t) => t.id === "c"), next = td.find((t) => t.id === was.next);
   ok(was.done && next && next.due === "2026-11-13" && next.time === "07:30" && next.remind === true && next.mins === 10 && next.steps.every((s) => !s.done) && next.steps.length === 2 && next.start === "2026-11-12", "repeat: the next turn carries them on", next);
-  // taken back: the fields back on it
+  // taken back (in 完了, the bar at the foot's other half): the fields back on it
+  await p.click('#todoParts button[data-part="done"]'); await p.waitForTimeout(300);
   await p.locator("#todoList li.done", { hasText: "ゴミ出し" }).locator(".check").click(); await p.waitForTimeout(600);
+  await p.click('#todoParts button[data-part="open"]'); await p.waitForTimeout(300);
   ok((await ls(p, "todos")).find((t) => t.id === "c").time === "07:30", "repeat taken back: the fields back on it");
 
   // the timer (going on, as 勉強's or 目標's would be; one without a ToDo): counting down over every page

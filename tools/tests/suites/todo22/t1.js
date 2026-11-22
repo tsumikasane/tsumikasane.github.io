@@ -145,7 +145,7 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   await p.click("#todoSettings"); await p.waitForTimeout(900);
   ok(!(await p.$("#td22ShopWake")) && !(await txt(p, "#todoLabelsGroup")).includes("画面を消さない"), "⑩ not in 編集");
   await closeSheet(p);
-  await tab(p, "すべて");
+  await tab(p, "ぜんぶ");
 
   // ---- ⑦ 寄るところを地図で
   ok((await moreItems(p)).includes("寄るところを地図で（3か所）"), "⑦ in その他, with how many places", await moreItems(p));

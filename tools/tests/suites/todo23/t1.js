@@ -105,7 +105,7 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   await W(p, "edit", "e"); await p.waitForTimeout(900);
   await p.fill("#reSec23", "レポート"); await saveSheet(p);
   ok((await todo(p, "e")).sec === "レポート", "③ from its sheet too", await todo(p, "e"));
-  await tab(p, "すべて");
+  await tab(p, "ぜんぶ");
   ok(!(await heads(p)).includes("レポート") && (await W(p, "group")) === "", "③ not on すべて", await heads(p));
 
   // ---- ⑤ 期間で見る

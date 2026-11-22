@@ -170,7 +170,7 @@ async function open(b, when, o = {}) {
   ok(bs.length === 7 && bs[3] === "苦手なところを洗い出す" && (await todo(p, "b")).steps[0].done, "⑥ some of a set, after those there (their checks kept)", bs);
 
   // ---- ⑦ 並べ替えと色, ⑧ しまう (ToDo's 編集)
-  ok((await tabs(p)).join() === "すべて,大学,持ち物,バイト", "⑦⑧ the tabs (not 前期の授業)", await tabs(p));
+  ok((await tabs(p)).join() === "ぜんぶ,大学,持ち物,バイト", "⑦⑧ the tabs (not 前期の授業)", await tabs(p));
   await p.click("#todoSettings"); await p.waitForTimeout(800);
   ok(await p.evaluate(() => [...document.querySelectorAll("#todoListRows li.td8-list-row")].map((li) => li.querySelector("input").value).join()) === "大学,持ち物,バイト"
     && (await txt(p, "#todoListRows .td8-shelf-head")) === "しまったリスト（1）", "⑦⑧ the lists in 編集");
@@ -183,7 +183,7 @@ async function open(b, when, o = {}) {
   await p.click('#todoListRows li[data-id="l-old"] .td8-unshelve'); await p.waitForTimeout(600);
   ok(!(await W(p, "lists")).find((l) => l.id === "l-old").archived, "⑧ 戻す");
   await p.click("#sheetDone"); await p.waitForTimeout(500);
-  ok((await tabs(p)).join() === "すべて,持ち物,大学,前期の授業", "⑦⑧ the tabs now", await tabs(p));
+  ok((await tabs(p)).join() === "ぜんぶ,持ち物,大学,前期の授業", "⑦⑧ the tabs now", await tabs(p));
   ok(await p.evaluate(() => !!document.querySelector("#todoTabs .td-tab-name .td8-dot")), "⑦ a dot on 大学's tab");
   ok((await rowSub(p, "a")).includes("大学") && await p.evaluate(() => !!document.querySelector('#todoList [data-check="a"]').closest("li").querySelector(".td8-list .td8-dot")), "⑦ under すべて, its list on its row", await rowSub(p, "a"));
   ok(!(await shown(p, "j1")) && await shown(p, "old2"), "⑧ バイト's gone from すべて, 前期の授業's back");
