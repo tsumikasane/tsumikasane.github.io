@@ -1,7 +1,7 @@
 // 天気 その6 ①〜⑩, through the hook build at 8808 and as a user would
 process.env.URL0 = process.env.URL0 || "http://localhost:8808/";
 const { chromium } = require("playwright");
-const { phone, seed } = require("./lib");
+const { P, phone, seed } = require("./lib");
 const D = require("./data");
 const out = process.argv[2] || __dirname + "/shots";
 let fails = 0;
@@ -63,15 +63,14 @@ const pick = async (p, n) => { await p.click(`.wx-days li:nth-child(${n}) button
   // (each row's time and words; その12 ⑩ puts a 止める button after them)
   const nexts = await p.$$eval("#wx6NextList li", (l) => l.map((x) => [...x.querySelectorAll(".wx6-nt, .wx6-nn")].map((y) => y.textContent).join("")).join("｜")).then(flat);
   ok(nexts.startsWith("あした7:00きょうの天気：晴れ16°/6°｜11/18（水）7:00きょうの天気：くもり14°/5°"), "⑨ the next, by when", nexts);
-  await p.fill("#wx6QuietUntil", "2026-11-18"); await p.waitForTimeout(400);
+  // ⑩ お知らせを休む: taken out (the user's call, 2026-11-22, tools/REMOVED.md): no day to pick; a pause kept from
+  // before (wxQuiet) is left as it is and pauses nothing
+  ok(!(await p.$("#wx6QuietUntil")) && !(await p.$("#wx6QuietOff")) && !(await p.$("#wx6QuietNote")) && !(await txt(p, "#wx6Box")).includes("休む"), "⑩ お知らせを休む: gone", await txt(p, "#wx6Box"));
+  await p.evaluate((P) => localStorage.setItem(P + "wxQuiet", JSON.stringify({ until: "2026-11-18" })), P);
   let al = await W(p, "alarms", T("10:00"));
-  ok(al.length === 4 && al[0].at === T("07:00", "2026-11-19") && (await txt(p, "#wx6NextSum")) === "これから届く天気のお知らせ（4件）" && (await txt(p, "#wx6QuietNote")) === "11/18（水）まで、この端末の天気のお知らせ（朝・夜・雨・体調）を休んでいます。",
-    "⑩ paused to 11/18: from 11/19", al.map((a) => a.tag));
-  ok(JSON.stringify((await W(p, "parts")).find((x) => x[0] === "wxQuiet")) === JSON.stringify(["wxQuiet", "2026-11-18"]), "⑩ in the push's signature");
+  ok(al.length === 6 && !(await W(p, "parts")).some((x) => x[0] === "wxQuiet") && (await p.evaluate((P) => localStorage.getItem(P + "wxQuiet"), P)) !== null, "⑩ a pause kept from before: all 6 still told, and it is left alone", al.map((a) => a.tag));
   await p.locator("#wx6Box").scrollIntoViewIfNeeded();
   await p.screenshot({ path: out + "/wx6-more.png" });
-  await p.click("#wx6QuietOff"); await p.waitForTimeout(400);
-  ok((await W(p, "alarms", T("10:00"))).length === 6 && (await p.isHidden("#wx6QuietOff")), "⑩ やめる: all 6 again");
   ok(!p.errs.length, "no page errors", p.errs);
   await p.close();
 

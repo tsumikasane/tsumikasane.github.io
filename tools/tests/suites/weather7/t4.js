@@ -67,20 +67,18 @@ async function open(b, when, more = {}) {
   await p.click("#wx10BackOn"); await p.waitForTimeout(300);
   al = (await W(p, "alarms", T("10:00"))).filter((a) => a.tag.startsWith("wx-back:"));
   ok(al.length === 1 && al[0].at === T("17:30", "2026-11-19") && al[0].title === "帰りは雨の予報です" && al[0].body === "18:00ごろの降水確率 80%。傘を持って帰ろう", "⑥ 30 minutes before 帰り on 11/19", al);
-  // ⑦ a trip to 大阪 on 11/20〜11/21
-  await p.locator("#wx10TripBox").scrollIntoViewIfNeeded();
-  await p.selectOption("#wx10TripPlace", "1"); await p.waitForTimeout(200);
-  await p.fill("#wx10TripFrom", "2026-11-20"); await p.fill("#wx10TripTo", "2026-11-21"); await p.waitForTimeout(200);
-  await p.click("#wx10TripOn"); await p.waitForTimeout(900);
+  // ⑦ a trip's place: taken out (the user's call, 2026-11-22, tools/REMOVED.md): no box; a trip kept from before
+  // (wxTrip) is left as it is and tells nothing
+  ok(!(await p.$("#wx10TripBox")) && !(await p.$("#wx10TripOn")), "⑦ 旅行先の天気のお知らせ: gone");
+  await p.evaluate((P) => localStorage.setItem(P + "wxTrip", JSON.stringify({ on: true, place: { name: "大阪", lat: 34.69, lon: 135.5 }, from: "2026-11-20", to: "2026-11-21" })), P);
   al = (await W(p, "alarms", T("10:00"))).filter((a) => a.tag.startsWith("wx-trip:"));
-  ok(al.length === 2 && al[0].at === T("07:00", "2026-11-20") && al[0].title === "大阪の天気：晴れ 13° / 5°" && al[1].title === "大阪の天気：晴れ 21° / 10°" && al[0].body === "降水確率 10%"
-    && (await txt(p, "#wx10TripNote")).startsWith("11/20（金）：晴れ13°/5°・10%"), "⑦ 大阪 on the mornings of 11/20 and 11/21", [al, await txt(p, "#wx10TripNote")]);
-  // ⑩ quiet hours: 6:00 to 8:00, the trip's mornings not sent
+  ok(!al.length && (await p.evaluate((P) => localStorage.getItem(P + "wxTrip"), P)) !== null, "⑦ a trip kept from before: nothing told, and it is left alone", al);
+  // ⑩ quiet hours: 11:00 to 13:00, the 12時 水分補給 not sent (14時's and 帰り's stay)
   await p.locator("#wx10CalmBox").scrollIntoViewIfNeeded();
   await p.click("#wx10CalmOn"); await p.waitForTimeout(200);
-  await p.fill("#wx10CalmFrom", "06:00"); await p.fill("#wx10CalmTo", "08:00"); await p.waitForTimeout(400);
+  await p.fill("#wx10CalmFrom", "11:00"); await p.fill("#wx10CalmTo", "13:00"); await p.waitForTimeout(400);
   const all = await W(p, "alarms", T("10:00"));
-  ok(!all.some((a) => a.tag.startsWith("wx-trip:")) && all.some((a) => a.tag.startsWith("wx-back:")), "⑩ none between 6:00 and 8:00 (帰り's stays)", all.map((a) => a.tag));
+  ok(!all.some((a) => a.tag === "wx-drink:2026-11-20:12") && all.some((a) => a.tag === "wx-drink:2026-11-20:14") && all.some((a) => a.tag.startsWith("wx-back:")), "⑩ none between 11:00 and 13:00 (14時's and 帰り's stay)", all.map((a) => a.tag));
   await p.screenshot({ path: out + "/wx10-more.png" });
   ok(!p.errs.length, "no page errors", p.errs);
   await p.close();

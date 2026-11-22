@@ -74,10 +74,11 @@ const ah = (rh) => { let s = 0, n = 0; for (let h = 7; h <= 21; h++) { const t =
   ok((await txt(p, "#wx11PastOut")) === flat("11月4日（水）　雨最高 15°・最低 6°・雨 5 mmきょうの予報（最高 15°）と同じくらいの日でした"), "⑩ a day this month, from その4's record", await txt(p, "#wx11PastOut"));
   await p.locator("#wx11Past").scrollIntoViewIfNeeded(); await p.evaluate(() => document.getElementById("daySheet").scrollBy(0, 120)); await p.waitForTimeout(200);
   await p.screenshot({ path: out + "/wx11-past.png" });
-  // ⑨ the user's own things: 水筒 always, レインブーツ on 11/19 (rain)
-  ok((await txt(p, "#wx8Take li")) === "日焼け止め｜羽織るもの｜水筒" && (await p.getAttribute("#wx8Take li:last-child", "class")) === "wx11-mine", "⑨ 水筒 every day, as the user's", await txt(p, "#wx8Take li"));
+  // ⑨ the user's own things: taken out (the user's call, 2026-11-22, tools/REMOVED.md): those kept (水筒 always,
+  // レインブーツ on a wet day) stay in the account's settings and aren't put in 持ち物
+  ok((await txt(p, "#wx8Take li")) === "日焼け止め｜羽織るもの" && !(await p.$("#wx8Take .wx11-mine, #wx11TakeAdd")), "⑨ 水筒 not in 持ち物", await txt(p, "#wx8Take li"));
   await p.click(".wx-days li:nth-child(4) button"); await p.waitForTimeout(400);
-  ok((await txt(p, "#wx8Take li")).endsWith("レインブーツ｜水筒"), "⑨ レインブーツ on a wet day", await txt(p, "#wx8Take li"));
+  ok(!/レインブーツ|水筒/.test(await txt(p, "#wx8Take li")), "⑨ nor レインブーツ on a wet day", await txt(p, "#wx8Take li"));
   await p.click(".wx-days li:nth-child(1) button"); await p.waitForTimeout(400);
 
   // ⑥ the order: 1週間 moved up past 朝焼け・夕焼け, then back
@@ -96,15 +97,9 @@ const ah = (rh) => { let s = 0, n = 0; for (let h = 7; h <= 21; h++) { const t =
   h = await heads(p);
   ok(h.indexOf("朝焼け・夕焼け") < h.indexOf("1週間") && !(await setting(p, "wxOrder")), "⑥ はじめの順番にもどす", h);
 
-  // ⑨ one added under the page (ネックウォーマー on a cold day), one taken out
-  await p.locator("#wx11ThingsBox").scrollIntoViewIfNeeded();
-  await p.fill("#wx11ThingName", "ネックウォーマー"); await p.selectOption("#wx11ThingWhen", "cold"); await p.click("#wx11ThingAdd"); await p.waitForTimeout(400);
-  let things = await setting(p, "wxMyThings");
-  ok(things && things.items.length === 3 && things.items[2].w === "ネックウォーマー" && things.items[2].when === "cold" && (await txt(p, "#wx11ThingList li")) === "レインブーツ（雨の日）｜水筒（いつも）｜ネックウォーマー（寒い日）" && (await p.inputValue("#wx11ThingName")) === "", "⑨ added", things);
-  await p.click('#wx11ThingList [aria-label="「水筒」（いつも）を消す"]'); await p.waitForTimeout(400);
-  things = await setting(p, "wxMyThings");
-  ok(things.items.map((x) => x.w).join() === "レインブーツ,ネックウォーマー" && (await txt(p, "#wx8Take li")) === "日焼け止め｜羽織るもの", "⑨ 水筒 taken out (today isn't cold: 7°)", [things, await txt(p, "#wx8Take li")]);
-  await p.screenshot({ path: out + "/wx11-things.png" });
+  // ⑨ under the page: no box to add to or take from; the list kept as it was
+  const things = await setting(p, "wxMyThings");
+  ok(!(await p.$("#wx11ThingsBox")) && !(await p.$("#wx11ThingName")) && things && things.items.map((x) => x.w).join() === "レインブーツ,水筒", "⑨ 自分の持ち物: gone from under the page, the list kept", things);
 
   // ① stormy hours: today's thunder at 15時 (told at 14:00), tomorrow's at 3時 (told at 21:00 tonight)
   await p.locator("#wx10NoteBox").scrollIntoViewIfNeeded();
@@ -112,15 +107,11 @@ const ah = (rh) => { let s = 0, n = 0; for (let h = 7; h <= 21; h++) { const t =
   let al = (await W(p, "alarms", T("10:00"))).filter((a) => a.tag.startsWith("wx-storm:"));
   ok(al.length === 2 && al[0].at === T("14:00") && al[0].title === "きょう15時ごろから、雷の予報です" && al[0].body === "雷が聞こえたら、すぐに建物の中へ"
     && al[1].at === T("21:00") && al[1].title === "あした3時ごろから、雷・強い雨・強い風の予報です" && al[1].body === "雷が聞こえたら、すぐに建物の中へ。雨は1時間に25mmほど。川や低い土地には近づかないで。風は22m/sほど。飛ばされやすい物は中へ", "① 14:00 today, 21:00 for tomorrow's small hours", al);
-  // ② the user's own: the lowest 0° and under, the highest 18° and over
-  await p.locator("#wx11RuleBox").scrollIntoViewIfNeeded();
-  await p.fill("#wx11Rule-lo", "0"); await p.dispatchEvent("#wx11Rule-lo", "change");
-  await p.fill("#wx11Rule-hi", "18"); await p.dispatchEvent("#wx11Rule-hi", "change");
-  await p.click("#wx11RuleOn"); await p.waitForTimeout(300);
+  // ② a notification on the user's own terms: taken out (the user's call, 2026-11-22, tools/REMOVED.md): no box; terms
+  // kept from before (wxMyAlert) are left as they are and tell nothing
+  await p.evaluate((P) => localStorage.setItem(P + "wxMyAlert", JSON.stringify({ on: true, lo: 0, hi: 18, at: "21:00" })), P);
   al = (await W(p, "alarms", T("10:00"))).filter((a) => a.tag.startsWith("wx-mine:"));
-  ok(al.length === 2 && al[0].at === T("21:00", "2026-11-18") && al[0].title === "あしたは最低 -1°の予報です" && al[0].body === "雨・最高 9°・最低 -1°・降水確率 80%（自分で決めたお知らせ）"
-    && al[1].at === T("21:00", "2026-11-20") && al[1].title === "あしたは最高 18°の予報です" && (await txt(p, "#wx11RuleNote")) === flat("いまの予報であてはまる日：11/19（木）（最低 -1°）　11/21（土）（最高 18°）"), "② 21:00 the evenings before 11/19 and 11/21", [al, await txt(p, "#wx11RuleNote")]);
-  await p.screenshot({ path: out + "/wx11-rule.png" });
+  ok(!(await p.$("#wx11RuleBox")) && !(await p.$("#wx11RuleOn")) && !al.length && (await p.evaluate((P) => localStorage.getItem(P + "wxMyAlert"), P)) !== null, "② 自分で決めるお知らせ: gone, nothing told, the terms left alone", al);
   // ⑦ the umbrella home on 11/18 (rain on the way there, none on the way back)
   await p.locator("#wx11UmbOn").scrollIntoViewIfNeeded();
   await p.click("#wx11UmbOn"); await p.waitForTimeout(300);

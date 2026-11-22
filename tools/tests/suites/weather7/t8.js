@@ -95,7 +95,7 @@ const setting = (p, id) => p.evaluate(({ P, id }) => (JSON.parse(localStorage.ge
   await p.locator("#wx14Notes summary").scrollIntoViewIfNeeded();
   await p.click("#wx14Notes summary"); await p.waitForTimeout(200);
   const ons = await p.$$eval("#wx14NoteList li.on .wx14-nl", (l) => l.map((x) => x.textContent));
-  ok((await txt(p, "#wx14NotesSum")) === flat("天気のお知らせの一覧（オン 4個）") && (await p.$$eval("#wx14NoteList li", (l) => l.length)) === 24 && JSON.stringify(ons) === JSON.stringify(["日の出", "日の入り", "週の天気", "季節の変わり目"]), "⑦ 4 on", [await txt(p, "#wx14NotesSum"), ons]);
+  ok((await txt(p, "#wx14NotesSum")) === flat("天気のお知らせの一覧（オン 4個）") && (await p.$$eval("#wx14NoteList li", (l) => l.length)) === 21 && !/旅行先の天気|自分で決めるお知らせ|^持ち物$/m.test((await p.$$eval("#wx14NoteList .wx14-nl", (l) => l.map((x) => x.textContent))).join("\n")) && JSON.stringify(ons) === JSON.stringify(["日の出", "日の入り", "週の天気", "季節の変わり目"]), "⑦ 4 on", [await txt(p, "#wx14NotesSum"), ons]);
   await p.screenshot({ path: out + "/wx14-notes.png" });
   await p.click('#wx14NoteList [aria-label="雪の設定へ"]'); await p.waitForTimeout(900);
   ok((await p.evaluate(() => document.activeElement && document.activeElement.id)) === "wx12SnowOn", "⑦ to 雪's switch");

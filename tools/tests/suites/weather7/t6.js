@@ -46,7 +46,7 @@ const setting = (p, id) => p.evaluate(({ P, id }) => (JSON.parse(localStorage.ge
 const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P + k)), { P, k });
 (async () => {
   const b = await chromium.launch();
-  const p = await open(b, "2026-11-16T10:00:00+09:00", { settings: [{ id: "wxCommute", on: true, go: "05:30", back: "18:00", weekdays: true, updatedAt: 1 }] });
+  const p = await open(b, "2026-11-16T10:00:00+09:00", { settings: [{ id: "wxCommute", on: true, go: "05:30", back: "18:00", weekdays: true, updatedAt: 1 }, { id: "wxUmbAt", at: 30, updatedAt: 1 }] }); // (③ 傘の基準 taken out, 2026-11-22: a 30% kept from before)
 
   // ① the 6 hours: 0〜6時 gone by, 12〜18時 60%
   ok((await p.$$eval("#wx12Six [role=listitem]", (l) => l.map((x) => x.getAttribute("aria-label") + (x.classList.contains("wet") ? "（wet）" : "")))).join("｜") === "0時から6時、過ぎました｜6時から12時、降水確率10%｜12時から18時、降水確率60%（wet）｜18時から24時、降水確率10%", "① 0〜6時 gone, 12〜18時 60%",
@@ -64,14 +64,10 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
     && JSON.stringify(await ls(p, "wxPacked")) === JSON.stringify({ "2026-11-16": ["折りたたみ傘"] }) && (await p.evaluate(() => document.activeElement && document.activeElement.dataset.pack)) === "折りたたみ傘", "⑤ 折りたたみ傘 packed (focus kept)", await ls(p, "wxPacked"));
   await p.click("#wx8Take li:first-child button"); await p.waitForTimeout(400);
   ok((await ls(p, "wxPacked")) === null, "⑤ and unpacked");
-  // ③ the umbrella's line: 30% (today's 40% a wet day: 傘), 70% (12〜18時 not wet), back to 50
-  await p.locator("#wx12UmbBox").scrollIntoViewIfNeeded();
-  await p.selectOption("#wx12UmbAt", "30"); await p.waitForTimeout(500);
-  ok((await txt(p, "#wx8Take li")).startsWith("傘｜") && JSON.stringify(await setting(p, "wxUmbAt")).includes('"at":30'), "③ 30%: today is wet (傘)", [await txt(p, "#wx8Take li"), await setting(p, "wxUmbAt")]);
-  await p.selectOption("#wx12UmbAt", "70"); await p.waitForTimeout(500);
-  ok(!(await p.$("#wx12Six .wet")) && (await txt(p, "#wx8Take li")).startsWith("折りたたみ傘"), "③ 70%: 12〜18時 not wet");
-  await p.selectOption("#wx12UmbAt", "50"); await p.waitForTimeout(500);
-  ok(!(await setting(p, "wxUmbAt")) && !!(await p.$("#wx12Six .wet")), "③ back to 50%: none kept");
+  // ③ the umbrella's line: taken out (the user's call, 2026-11-22, tools/REMOVED.md): no box; the 30% kept from before
+  // is left as it is and not used (today's 40% is no wet day: 折りたたみ傘, as at 50%)
+  ok(!(await p.$("#wx12UmbBox")) && !(await p.$("#wx12UmbAt")) && (await txt(p, "#wx8Take li")).startsWith("折りたたみ傘") && JSON.stringify(await setting(p, "wxUmbAt")).includes('"at":30'),
+    "③ 傘の基準: gone, 50% as before, the kept 30% left alone", [await txt(p, "#wx8Take li"), await setting(p, "wxUmbAt")]);
   // ⑧ snow tomorrow from 4時 (6 cm): told at 20:00 tonight
   await p.locator("#wx10NoteBox").scrollIntoViewIfNeeded();
   await p.click("#wx12SnowOn"); await p.waitForTimeout(300);

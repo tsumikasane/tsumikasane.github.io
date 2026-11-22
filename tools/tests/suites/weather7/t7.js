@@ -76,11 +76,11 @@ const rd = [["2026-11-14", ["r1", "r2"]], ["2026-11-09", ["r1"]], ["2026-11-10",
   const take17 = (await p.$$eval("#wx8Take li", (l) => l.map((x) => x.textContent.trim()))).join("・");
   await day(p, 1);
 
-  // ④ 持ち物 at 7:30 (no 行きと帰り): from tomorrow
-  await p.locator("#wx13TakeBox").scrollIntoViewIfNeeded();
-  await p.click("#wx13TakeOn"); await p.waitForTimeout(300);
+  // ④ 持ち物 told before going out: taken out (the user's call, 2026-11-22, tools/REMOVED.md): no box; a time kept from
+  // before (wxTakeAlert) is left as it is and tells nothing
+  await p.evaluate((P) => localStorage.setItem(P + "wxTakeAlert", JSON.stringify({ on: true, at: "07:30" })), P);
   let al = (await W(p, "alarms", T("10:00"))).filter((a) => a.tag.startsWith("wx-take:"));
-  ok(al.length >= 1 && al[0].at === T("07:30", "2026-11-17") && al[0].title === "きょうの持ち物" && al[0].body === take17, "④ 11/17 7:30, 持ち物 as the page shows them", [al[0], take17]);
+  ok(!(await p.$("#wx13TakeBox")) && !(await p.$("#wx13TakeOn")) && !al.length && take17.length > 0, "④ 持ち物のお知らせ: gone, nothing told (持ち物 itself still on the page)", [al, take17]);
   // ⑤ the 3連休 told at 20:00 on 11/20
   await p.locator("#wx10NoteBox").scrollIntoViewIfNeeded();
   await p.click("#wx13RestOn"); await p.waitForTimeout(300);
