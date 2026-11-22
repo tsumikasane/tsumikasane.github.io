@@ -6,13 +6,14 @@ before. Exits 1 with any NEW.
 
   python3 tools/tests/run.py              everything: the comparison tests and every suite (about 25 minutes)
   python3 tools/tests/run.py ToDo         a chat's suites and comparison tests (and those for every page)
-  python3 tools/tests/run.py ToDo --changed   before a release: of the chat's suites, those of the parts it changes
-                                          (a section 「ToDo その15」 → the suite about 「ToDo その15」; a part of the chat
-                                          with no suite of its own, as 「ToDo」 itself → all the chat's), the chat's
-                                          comparison tests, and any suite that mentions what this change takes away (an
-                                          id, a name, words on the page); it says too when the change touches the parts
-                                          every page shares, the time for everything (a line there that only called
-                                          what was taken away, or a comment, doesn't count)
+  python3 tools/tests/run.py --changed   before a release (the user's call, 2026-11-22: the tests of the parts changed
+                                          and of the features they touch, no more): the suites of the parts it changes
+                                          (a section 「ToDo その15」 → the suite about 「ToDo その15」), those of the
+                                          features it touches (a part that uses a name it touches, a suite that mentions
+                                          one: SMALL, FEW, MANY below), any suite that mentions what it takes away (an
+                                          id, a name, words on the page), the suites and comparison tests it changes
+                                          itself, and the comparison tests of the chats of those parts and of every
+                                          page; a chat named with it adds its comparison tests (as run.py ToDo --changed)
   python3 tools/tests/run.py r37 r38      those suites alone
   python3 tools/tests/run.py cmp          the comparison tests alone
   python3 tools/tests/run.py ToDo --changed --dry   what that would run, and no more
@@ -69,6 +70,15 @@ SHARED_SECTIONS = ("(shared", "storage", "この端末の記録を消す", "消�
 COMMENT = re.compile(r"<!--.*?-->|^[ \t]*/\*.*?\*/|(?<![:\w\"'\\/])//[^\n]*", re.S | re.M)
 IDENT = re.compile(r"[A-Za-z_$][\w$-]{3,}")  # (an id, a class, a function's or a setting's name: with a capital, a digit or a -)
 WORDS = re.compile(r"[ぁ-ゖァ-ヺー一-龯々〆]{3,}")  # (words on the page)
+# --changed, the features a change touches (README.md). A statement of the script (a line at two spaces and those under
+# it) no longer than SMALL lines that changed is one feature's, as a function or a table: every part of the page that
+# uses what it declares is related. A name the change touches (an id, a class, a function's: made up, with a capital, a
+# _ or a - after its first letter) that the page uses in FEW parts or fewer is one feature's too (in more: a helper, a
+# word of CSS or the DOM). A suite that mentions one of them is related, unless more than MANY suites mention it (or it
+# is what a changed statement declares)
+SMALL, FEW, MANY = 40, 3, 12
+TOKEN = re.compile(r"[A-Za-z_$][\w$-]*")
+HELPERS = "はじめの共通の部品（el・flash など）"
 
 
 def table(path):
@@ -183,10 +193,41 @@ def git(*args):
     return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
 
 
+def made_up(x):
+    """a name made up for the app (an id, a class, a function's), not a word: a capital, a _ or a - after its first letter
+    (not an aria-…, nor a data-… of a letter or two, as data-s: no feature's)"""
+    return len(x) >= 4 and bool(re.search(r"[A-Z_-]", x[1:])) and not x.endswith("-") and not re.match(r"aria-|data-.{1,2}$", x)
+
+
+def css_names(line):
+    """the names a line of the page's HTML or CSS gives: its selectors' ids and classes, its id, class and for"""
+    out = set(re.findall(r"[.#]([A-Za-z_][\w-]*)", line.split("{")[0])) if "{" in line else set()
+    for v in re.findall(r"\b(?:id|class|for)=\"([^\"]+)\"", line):
+        out |= set(v.split())
+    return out
+
+
+def declares(line):
+    """what a statement's first line declares: a function's name, a const's, a let's or a var's (and those in its { … })"""
+    m = re.match(r"\s*(?:async\s+)?function\*?\s+([\w$]+)|\s*(?:const|let|var)\s+([\w$]+)", line)
+    out = {x for x in (m.groups() if m else ()) if x}
+    m = re.match(r"\s*(?:const|let|var)\s+\{([^}]*)\}", line)
+    if m:
+        out |= {x.split(":")[-1].strip() for x in m.group(1).split(",") if x.strip()}
+    return out
+
+
+def short_name(heading):
+    """a section's name, without its notes: 「カレンダー その9 ①〜⑩ (the user's calls…) ----------」 → 「カレンダー その9 ①〜⑩」"""
+    return re.sub(r"\s*(\(.*|-+)$", "", heading.replace("// ----------", "", 1)).strip()
+
+
 def changes(base, all_suites, cmp_rows):
-    """--changed: what this change (the page before, base, against the working tree) takes away: ids, class and function
-    names, and words on the page that were there and are nowhere now (comments left out); the suites and comparison tests
-    that mention them, with what they mention. And what of the parts every page shares it touches"""
+    """--changed: what this change (the page before, base, against the working tree) touches and takes away.
+    why: the suites and comparison tests that mention what it takes away (ids, class and function names, words on the
+    page that were there and are nowhere now; comments left out), with what they mention. parts: the sections of
+    index.html it changes. related: the suites of the features it touches (SMALL, FEW, MANY), with the names that tie
+    them. shared: what of the parts every page shares it touches. tests, cmps: the suites and comparison tests it changes"""
     old, new = git("show", f"{base}:index.html"), (ROOT / "index.html").read_text(encoding="utf-8")
     o, n = COMMENT.sub(" ", old), COMMENT.sub(" ", new)
     gone_names = {x for x in set(IDENT.findall(o)) - set(IDENT.findall(n)) if re.search(r"[A-Z0-9-]", x)}  # (not a word as "opened")
@@ -196,26 +237,43 @@ def changes(base, all_suites, cmp_rows):
         found = sorted(set(IDENT.findall(text)) & gone_names)
         found += sorted(w for w in set(WORDS.findall(text)) if any(w in g for g in gone_words) and w not in n)
         return found
+    texts = {s["name"]: "\n".join(f.read_text(encoding="utf-8") for f in sorted((HERE / "suites" / s["name"]).glob("*.js"))) for s in all_suites}
     why = {}
     for s in all_suites:
-        hit = sorted({m for f in sorted((HERE / "suites" / s["name"]).glob("*.js")) for m in mentions(f.read_text(encoding="utf-8"))})
+        hit = mentions(texts[s["name"]])
         if hit:
             why[s["name"]] = hit
     for rel, _ in cmp_rows:
         hit = mentions((HERE / "cmp" / rel).read_text(encoding="utf-8"))
         if hit:
             why[rel] = hit
-    # the parts every page shares: their files; index.html's lines changed, by the sections they are in
+    # the files it changes: the parts every page shares; the tests themselves
     files = set(git("diff", "--name-only", base).split()) | {l[3:] for l in git("status", "--porcelain").splitlines() if l.startswith("??")}
     shared = sorted(f for f in files if f.startswith(SHARED_FILES))
+    tests = {f.split("/")[3] for f in files if f.startswith("tools/tests/suites/") and f.count("/") >= 4}
+    cmps = {f[len("tools/tests/cmp/"):] for f in files if f.startswith("tools/tests/cmp/") and f.endswith(".js")}
+    # index.html's lines changed, by the sections they are in; the names they touch, the statements they change
     lines = new.split("\n")
+    code = COMMENT.sub(lambda m: " " + "\n" * m.group(0).count("\n"), new).split("\n")  # (comments out, the lines where they were)
     script = next((i + 1 for i, l in enumerate(lines) if l.startswith("<script>")), 0)
     heads = [(i + 1, l.strip()) for i, l in enumerate(lines) if l.startswith("  // ---------- ")]
     at = [h for h, _ in heads]
-    touched, parts = set(), set()
+
+    def section(i):
+        if i < script:
+            return "HTML・CSS"
+        k = bisect.bisect_right(at, i) - 1
+        return short_name(heads[k][1]) if k >= 0 else HELPERS
+    tops = [i + 1 for i, l in enumerate(lines) if i + 1 > script and re.match(r"  [^ }\])/]", l)]  # (each statement's first line)
+    users = {}  # (a name → the sections whose code has it)
+    for i, l in enumerate(code):
+        for x in (TOKEN.findall(l) if i + 1 > script else css_names(l)):
+            users.setdefault(x, set()).add(section(i + 1))
+    touched, parts, names, small = set(), set(), set(), set()
     diff = git("diff", "-U0", base, "--", "index.html")
     for m in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@[^\n]*\n((?:[-+][^\n]*\n?)*)", diff, re.M):
-        start = int(m.group(1)); end = start + max(int(m.group(2) or 1), 1) - 1
+        start, count = int(m.group(1)), int(m.group(2) or 1)
+        end = start + max(count, 1) - 1
         gone = [COMMENT.sub(" ", l[1:]).strip() for l in m.group(3).splitlines() if l.startswith("-")]
         came = [COMMENT.sub(" ", l[1:]).strip() for l in m.group(3).splitlines() if l.startswith("+")]
         # (no more than a comment changed, or lines taken out that called what went, as 「out.push(...cal7StarAlarms(now))」:
@@ -228,18 +286,44 @@ def changes(base, all_suites, cmp_rows):
                 left.append(x)
                 break
         light = not left
+        if any("この画面の版" in section(i) for i in range(start, end + 1)):  # (APP_VERSION: make-test.py sets it each time)
+            continue
         if script and at and end >= script and start < at[0] and not light:
-            touched.add("はじめの共通の部品（el・flash など）")
+            touched.add(HELPERS)
         if start < script and any(came):  # (the page's HTML and CSS, more than taken out: not a part with a suite)
             parts.add("HTML・CSS")
         for h, name in heads[max(0, bisect.bisect_right(at, start) - 1):bisect.bisect_right(at, end)]:
-            short = re.sub(r"\s*(\(.*|-+)$", "", name.replace("// ----------", "", 1)).strip()  # (its name, without the notes)
             if any(k in name for k in SHARED_SECTIONS):
                 if not light:
-                    touched.add(short)
+                    touched.add(short_name(name))
             elif start >= script:
-                parts.add(short)
-    return why, shared + sorted(touched), sorted(parts)
+                parts.add(short_name(name))
+        if light:
+            continue
+        for x in gone + came:
+            names |= {y for y in (TOKEN.findall(x) if start > script else css_names(x)) if made_up(y)}
+        if start > script and m.group(2) != "0":  # (the statements the lines put in or changed are in; none for lines only taken out)
+            for k in range(max(0, bisect.bisect_right(tops, start) - 1), bisect.bisect_right(tops, end)):
+                first, last = tops[k], (tops[k + 1] - 1 if k + 1 < len(tops) else len(lines))
+                if last - first + 1 <= SMALL:
+                    small |= declares(lines[first - 1])
+    feature = small | {x for x in names if 0 < len(users.get(x, ())) <= FEW}
+    keys = {part_key(s["about"]): s["name"] for s in all_suites if part_key(s["about"])}
+    related = {}
+    for x in feature:  # (the parts that use them: their suites)
+        for sec in users.get(x, ()):
+            k = keys.get(part_key(sec))
+            if k:
+                related.setdefault(k, set()).add(x)
+    seen = {}
+    for s in all_suites:
+        seen[s["name"]] = set(TOKEN.findall(texts[s["name"]])) & feature
+    many = {x for x in feature if sum(x in v for v in seen.values()) > MANY and x not in small}
+    for k, xs in seen.items():  # (the suites that mention them)
+        if xs - many:
+            related.setdefault(k, set()).update(xs - many)
+    return {"why": why, "shared": shared + sorted(touched), "parts": sorted(parts), "related": {k: sorted(v) for k, v in related.items()},
+            "tests": tests, "cmps": cmps}
 
 
 def run_node(cwd, file, log):
@@ -297,44 +381,48 @@ def main(args):
         sys.exit(f"run.py: no such suite or chat: {' '.join(unknown)} (see --list)")
     chats = [a for a in args if a in CHATS]
     base = base_rev()
-    why, shared, parts = changes(base, all_suites, cmp_rows) if changed else ({}, [], [])
+    ch = changes(base, all_suites, cmp_rows) if changed else {"why": {}, "shared": [], "parts": [], "related": {}, "tests": set(), "cmps": set()}
+    why = ch["why"]
     everything = not args and not changed
-    whole, own = set(chats), set()  # (the chats whose suites all run; the suites of the parts changed)
-    if changed and chats:
-        # --changed with a chat: of its suites, those of the parts changed; a part with no suite of its own (as
-        # 「ToDo」 itself, or 「月・週・日」) runs all its chat's suites (the chat its name says, else those asked for).
-        # A part of another chat's is said, not run: that chat added to the chats asked for runs it
+    whole = set() if changed else set(chats)  # (a chat named without --changed: all its suites)
+    own, related, near = set(), {}, set(chats)  # (the suites of the parts changed, of the features they touch; the chats whose comparison tests run)
+    if changed:
+        # --changed (the user's call, 2026-11-22: the tests of the parts changed and of the features they touch): the
+        # suites of the parts it changes, those of the features it touches, and those that mention what it takes away,
+        # whichever chat's; a part with no suite of its own (as 「ToDo」 itself, or 「月・週・日」) is seen by those
+        # and by its chat's comparison tests (the chat its name says), not by all its chat's suites any more
         keys = {part_key(s["about"]): s for s in all_suites if part_key(s["about"])}
-        whole, other = set(), set()
-        for name in parts:
+        alone = []
+        for name in ch["parts"]:
             k = part_key(name)
             at = {c: min((name.find(w) for w in words if w in name), default=-1) for c, words in CHAT_WORDS.items()}
-            of = sorted((i, c) for c, i in at.items() if i >= 0)[:1]  # (the chat whose word comes first in the name)
-            of = [c for _, c in of] or chats
+            of = [c for _, c in sorted((i, c) for c, i in at.items() if i >= 0)[:1]]  # (the chat whose word comes first in the name)
             if k in keys:
-                if keys[k]["chat"] in chats:
-                    own.add(keys[k]["name"])
-                else:
-                    other.add(keys[k]["chat"])
-            elif of[0] in chats:
-                whole |= set(of)
+                own.add(keys[k]["name"])
+                near.add(keys[k]["chat"])
             else:
-                other |= set(of)
-        print("（変えたところ：" + ("、".join(parts) if parts else "なし") + "）", flush=True)
-        if whole:
-            print("（スイートのない部分が変わっているので、" + "・".join(sorted(whole)) + " のスイートをぜんぶ流します）", flush=True)
+                alone.append(name)
+                near |= set(of)
+        related = {k: v for k, v in ch["related"].items() if k not in own}
+        print("（変えたところ：" + ("、".join(ch["parts"]) if ch["parts"] else "なし") + "）", flush=True)
         if own:
             print("（その部分のスイート：" + "・".join(sorted(own, key=natural)) + "）", flush=True)
-        if other:
-            print("（ほかのチャットの部分も変わっています：" + "・".join(sorted(other)) + "。そのテストも流すときは、そのチャットも並べてください：run.py " + " ".join(chats + sorted(other)) + " --changed）", flush=True)
-    picked = [s for s in all_suites if everything or s["name"] in args or s["chat"] in whole or s["name"] in why or (changed and chats and s["name"] in own)]
-    cmps = [(rel, c) for rel, c in cmp_rows if everything or "cmp" in args or ((chats or changed) and c in chats + [EVERY]) or rel in why]
+        if alone:
+            print("（スイートのない部分：" + "、".join(alone) + "。関連する機能のスイートと、比べるテストで見ます）", flush=True)
+        print(("（関連する機能のスイート：" + "、".join(f"{k}（{'・'.join(v[:3])}{'…' if len(v) > 3 else ''}）" for k, v in sorted(related.items(), key=lambda kv: natural(kv[0]))) + "）")
+              if related else "（関連する機能のスイートはありません）", flush=True)
+        if ch["tests"] or ch["cmps"]:
+            print("（変えたテスト：" + "・".join(sorted(ch["tests"], key=natural) + [f"cmp/{c}" for c in sorted(ch["cmps"])]) + "）", flush=True)
+    picked = [s for s in all_suites if everything or s["name"] in args or s["chat"] in whole or s["name"] in why
+              or s["name"] in own or s["name"] in related or s["name"] in ch["tests"]]
+    cmps = [(rel, c) for rel, c in cmp_rows if everything or "cmp" in args or (chats and not changed and c in chats + [EVERY])
+            or (changed and c in near | {EVERY}) or rel in why or rel in ch["cmps"]]
     if changed:
         more = [f"{k}（{'・'.join(v[:3])}{'…' if len(v) > 3 else ''}）" for k, v in why.items()
-                if not any(s["name"] == k and s["chat"] in chats for s in all_suites) and not any(r == k and c in chats + [EVERY] for r, c in cmp_rows)]
+                if k not in own and k not in related and k not in ch["tests"] and not any(r == k and c in near | {EVERY} for r, c in cmp_rows)]
         print("（この変更で消えたものが出てくる、ほかのスイートも流します：" + "、".join(more) + "）" if more else "（この変更で消えたものが出てくる、ほかのスイートはありません）", flush=True)
-        if shared:
-            print("（共通の部分が変わっています：" + "、".join(shared) + "。出す前に、ぜんぶのテスト `run.py -j 3` を流してください）", flush=True)
+        if ch["shared"]:
+            print("（共通の部分も変わっています：" + "、".join(ch["shared"]) + "。それを使う機能のスイートは「関連する機能」に入っています）", flush=True)
     if dry:  # (--dry: what would run, and no more)
         print("（流すもの：" + "、".join([f"cmp/{rel}" for rel, _ in cmps] + [s["name"] for s in picked]) + f"。{len(cmps) + sum(len(s['tests']) for s in picked)} 件）")
         return 0
