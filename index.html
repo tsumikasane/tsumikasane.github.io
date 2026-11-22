@@ -14390,7 +14390,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ---------- バイト（家計簿） ----------
   // the user's jobs (バイトの設定): 名前, 時給, 交通費 a shift, 22時〜翌5時 at 1.25 times (night), 締め日 (cutoff; 0 the month's
-  // last day) and 給料日 (payday; 0 none), and the year's mark (wall)
+  // last day) and 給料日 (payday; 0 none), a second 締め日 and 給料日 for a month paid twice (cutoff2: none when not a
+  // number; payday2; the user's call, 2026-11-22: two of each), and the year's mark (wall)
   const jobSet = () => settings.get("jobs") || {};
   const jobList = () => (Array.isArray(jobSet().items) ? jobSet().items.filter((j) => j && typeof j.id === "string") : []);
   const jobOf = (id) => jobList().find((j) => j.id === id) || jobList()[0] || null;
@@ -14413,32 +14414,71 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const m = shiftMinutes(x), wage = bt5Wage(x, job); // (バイト その2 ④ its day's 時給, ⑤ 土日祝; その5 ① この回だけの時給)
     return (wage * (m.all - m.night)) / 60 + (wage * (job.night === false ? 1 : 1.25) * m.night) / 60 + bt12Fare(x, job) + bt4PayAdj(x, job, m, wage); // (バイト その4 ① 残業, ② 時間帯, ③ 引かれる額; その6 ③ 交通費が1か月ごとなら月に1回)
   }
-  // the days a month's pay is for, up to its 締め日 (a day past the month's end is its last day), and the day it is paid:
-  // that month's 給料日 when it comes after the 締め日, else the next month's
-  function payPeriod(job, ym) {
-    const cut = num(job.cutoff), prev = addMonths(ym, -1), endOf = (m) => `${m}-${pad(cut > 0 ? Math.min(cut, daysInMonth(m)) : daysInMonth(m))}`;
-    const start = cut > 0 ? addDays(endOf(prev), 1) : `${ym}-01`, end = endOf(ym), pd = num(job.payday);
-    const pm = cut > 0 && pd > cut ? ym : addMonths(ym, 1);
-    return { start, end, payday: pd > 0 ? bt7PayShift(job, `${pm}-${pad(Math.min(pd, daysInMonth(pm)))}`) : null }; // (バイト その7 ⑦ 土日祝なら前か後の平日)
+  // a job's 締め日 and 給料日 as pairs, in the order of their 締め日 in the month: the first (cutoff, payday) alone, or with a
+  // second (cutoff2, payday2) when the month is paid twice; each pair then a part of the month, n its number (1, 2)
+  const cutRank = (c) => (c > 0 ? c : 99); // (0: the month's last day, after any other)
+  function jobPairs(job) {
+    const one = { n: 1, cut: num(job.cutoff), pay: num(job.payday) }, c2 = job && job.cutoff2;
+    const two = c2 === null || c2 === undefined || c2 === "" || !Number.isFinite(Number(c2)) ? null : { n: 2, cut: Math.max(0, Math.min(28, Math.round(Number(c2)))), pay: num(job.payday2) };
+    return two && cutRank(two.cut) !== cutRank(one.cut) ? [one, two].sort((a, b) => cutRank(a.cut) - cutRank(b.cut)) : [one];
   }
-  // the month whose pay a day's shift is in
-  const periodMonthOf = (job, day) => { const cut = num(job.cutoff), m = monthOf(day); return cut > 0 && Number(day.slice(8)) > Math.min(cut, daysInMonth(m)) ? addMonths(m, 1) : m; };
+  const twoPays = (job) => jobPairs(job).length > 1;
+  // the days a month's pay is for, up to its 締め日 (a day past the month's end is its last day), and the day it is paid:
+  // that month's 給料日 when it comes after the 締め日, else the next month's. A month paid twice: part n's days from the
+  // day after the 締め日 before it, paid as its own pair says; the month's (n 0) from its first part's start to its last's
+  // end, paid on the last's 給料日
+  function payPeriod(job, ym, n = 0) {
+    const pairs = jobPairs(job), endOf = (m, c) => `${m}-${pad(c > 0 ? Math.min(c, daysInMonth(m)) : daysInMonth(m))}`;
+    const at = n ? Math.max(0, pairs.findIndex((x) => x.n === n)) : pairs.length - 1, me = pairs[at];
+    const start = addDays(n && at > 0 ? endOf(ym, pairs[at - 1].cut) : endOf(addMonths(ym, -1), pairs[pairs.length - 1].cut), 1), end = endOf(ym, me.cut);
+    const pm = me.cut > 0 && me.pay > me.cut ? ym : addMonths(ym, 1);
+    return { start, end, payday: me.pay > 0 ? bt7PayShift(job, `${pm}-${pad(Math.min(me.pay, daysInMonth(pm)))}`) : null }; // (バイト その7 ⑦ 土日祝なら前か後の平日)
+  }
+  // the month whose pay a day's shift is in, and its part (n 0 when the month is paid once)
+  function periodOf(job, day) {
+    const pairs = jobPairs(job), m = monthOf(day), d = Number(day.slice(8)), two = pairs.length > 1;
+    for (const x of pairs) if (d <= (x.cut > 0 ? Math.min(x.cut, daysInMonth(m)) : daysInMonth(m))) return { ym: m, n: two ? x.n : 0 };
+    return { ym: addMonths(m, 1), n: two ? pairs[0].n : 0 };
+  }
+  const periodMonthOf = (job, day) => periodOf(job, day).ym;
   const jobShifts = (job) => { const first = jobList()[0]?.id; return shifts.items.filter((x) => (jobList().some((j) => j.id === x.jobId) ? x.jobId : first) === job.id); };
-  function paySummary(job, ym) {
-    const p = payPeriod(job, ym), list = jobShifts(job).filter((x) => x.date >= p.start && x.date <= p.end);
+  // a month's pay (n 0), or a part's when it is paid twice: its shifts, hours and amount. What is a month's once (交通費
+  // 1か月分, 手当・ボーナス, 交通費の上限) goes in its last part, of all its shifts; a month paid twice is its parts together
+  function paySummary(job, ym, n = 0) {
+    const pairs = jobPairs(job), two = pairs.length > 1;
+    if (two && !n) {
+      const parts = pairs.map((x) => paySummary(job, ym, x.n)), last = parts[parts.length - 1], m = payPeriod(job, ym);
+      return { ...m, list: parts.flatMap((x) => x.list), mins: sum(parts, (x) => x.mins), night: sum(parts, (x) => x.night), leave: bt5LeaveIn(job, m.start, m.end),
+        fareMonth: last.fareMonth, extra: last.extra, fareCut: last.fareCut, amount: sum(parts, (x) => x.amount), parts };
+    }
+    const p = payPeriod(job, ym, two ? n : 0), list = jobShifts(job).filter((x) => x.date >= p.start && x.date <= p.end);
     let mins = 0, night = 0, pay = 0;
     for (const x of list) { const m = shiftMinutes(x); mins += m.all; night += m.night; pay += shiftPay(x, job); }
     const leave = bt5LeaveIn(job, p.start, p.end); // (バイト その5 ② 有給を使った日の分)
-    const fareMonth = job.fareMode === "month" && list.length ? num(job.fare) : 0; // (バイト その6 ③ 1か月ごとの交通費)
-    const extra = bt7ExtraSum(job, ym, list); // (バイト その7 ⑥ 手当・ボーナス)
-    const fareCut = bt14FareCut(job, list); // (バイト その14 ② 交通費の上限)
-    return { ...p, list, mins, night, leave, fareMonth, extra, fareCut, amount: Math.round(pay + leave.pay + fareMonth + extra.sum - fareCut) };
+    const last = !two || n === pairs[pairs.length - 1].n, mp = two && last ? payPeriod(job, ym) : null;
+    const all = !two ? list : last ? jobShifts(job).filter((x) => x.date >= mp.start && x.date <= mp.end) : [];
+    const fareMonth = job.fareMode === "month" && all.length ? num(job.fare) : 0; // (バイト その6 ③ 1か月ごとの交通費)
+    const extra = last ? bt7ExtraSum(job, ym, all) : { allow: 0, mine: [], sum: 0 }; // (バイト その7 ⑥ 手当・ボーナス)
+    const fareCut = last ? bt14FareCut(job, all) : 0; // (バイト その14 ② 交通費の上限)
+    return { ...p, list, mins, night, leave, fareMonth, extra, fareCut, amount: Math.round(pay + leave.pay + fareMonth + extra.sum - fareCut), ...(two ? { n } : {}) };
   }
-  // the year's pay: each month's that is paid in it (by its 締め日 when it has no 給料日)
+  // a month's pay as it is paid: the month's own when paid once, else each part's in their order, with its key in 家計簿
+  // (収入に入れる and the rest: the job and the month, |2 for the second pair's) and whether it is the month's last part
+  const payKey = (job, ym, n = 0) => `${job.id}|${ym}${n === 2 ? "|2" : ""}`;
+  function payParts(job, ym) {
+    const pairs = jobPairs(job);
+    if (pairs.length < 2) return [{ ...paySummary(job, ym), ym, n: 0, key: payKey(job, ym), last: true }];
+    return pairs.map((x, i) => ({ ...paySummary(job, ym, x.n), ym, n: x.n, key: payKey(job, ym, x.n), last: i === pairs.length - 1 }));
+  }
+  // 前払い (その4 ⑦) are a month's: taken from its last part's pay
+  function payAdvOf(job, key) {
+    const [, ym, k] = String(key).split("|"), pairs = jobPairs(job);
+    return pairs.length < 2 || pairs[pairs.length - 1].n === (k === "2" ? 2 : 1) ? bt4AdvSum(job, ym) : 0;
+  }
+  // the year's pay: each month's that is paid in it (by its 締め日 when it has no 給料日; a month paid twice, each part's)
   function yearPay(y) {
     let total = 0;
-    for (const job of jobList()) for (let i = 0; i < 14; i++) {
-      const ym = addMonths(`${y - 1}-11`, i), p = paySummary(job, ym);
+    for (const job of jobList()) for (let i = 0; i < 14; i++) for (const p of payParts(job, addMonths(`${y - 1}-11`, i))) {
       if ((p.payday || p.end).slice(0, 4) === String(y)) total += p.amount;
     }
     return total;
@@ -14489,11 +14529,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       if ($("shiftRest").value === "" && num(last.rest) > 0) $("shiftRest").value = last.rest;
     }
     const sums = jobs.map((j) => [j, paySummary(j, viewMonth)]).filter(([j, p]) => !bt9Hide(j, p)); // (バイト その9 ⑦ やめたあとの月は出さない)
-    setChildren($("jobSum"), sums.map(([j, p]) => {
-      const key = `${j.id}|${viewMonth}`, inBook = expenses.items.some((e) => e.pay === key);
-      return el("div", { class: "job-block" + (bt11Key(j) ? " bt11-c" : ""), style: bt11Style(j) }, // (バイト その11 ⑨ 色)
+    // (a block a pay: the month's, or each part's when it is paid twice, 1回目 and 2回目)
+    setChildren($("jobSum"), sums.flatMap(([j]) => payParts(j, viewMonth).map((p, i, all) => [j, p, all.length > 1 ? `・${i + 1}回目` : ""])).map(([j, p, nth]) => {
+      const key = p.key, inBook = expenses.items.some((e) => e.pay === key);
+      return el("div", { class: "job-block" + (bt11Key(j) ? " bt11-c" : ""), style: bt11Style(j), "data-pay": key }, // (バイト その11 ⑨ 色)
         many ? el("div", { class: "job-name" }, j.name || "バイト先") : null,
-        el("div", { class: "job-period" }, `${mo}（${fmtMD(p.start)}〜${fmtMD(p.end)}）の見込み`),
+        el("div", { class: "job-period" }, `${mo}${nth}（${fmtMD(p.start)}〜${fmtMD(p.end)}）の見込み`),
         el("div", { class: "job-pay" }, fmtN(p.amount), el("small", {}, "円")),
         el("div", { class: "sub" }, dotParts([`${p.list.length} 回`, durText(p.mins), p.night ? `うち深夜 ${durText(p.night)}` : null, p.payday ? `給料日 ${fmtMDW(p.payday)}` : null])),
         bt3Notes(j, p, key, inBook), // (バイト その3 ⑥⑦⑩, ③ 連勤)
@@ -14506,7 +14547,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         bt17Notes(j, p), // (バイト その17 ⑧ 消費の目安, ① シフトのアプリ)
         bt9Notes(j, p), // (バイト その9 ⑨ 給料の内訳)
         bt8Notes(j, p, key, inBook), // (バイト その8 ⑤ 予定とのちがい, ⑧ 手取りの見込み)
-        bt7Notes(j, p, key), // (バイト その7 ⑥ 手当・ボーナス)
+        p.last ? bt7Notes(j, p, payKey(j, viewMonth)) : null, // (バイト その7 ⑥ 手当・ボーナス: the month's, in its last part)
         bt6Notes(j, p, key), // (バイト その6 ③ 交通費, ⑧ 仮)
         bt4Notes(j, p, key, inBook), // (バイト その4 ①②③ 内わけ, ⑥ 自動で収入, ⑦ 前払い)
         !(num(j.wage) > 0) ? el("button", { type: "button", class: "link-btn job-act", onclick: (ev) => openSettings(ev.detail === 0, "job", $("jobForms").querySelector(`[data-job="${j.id}"] [data-f="wage"]`)) }, "時給を決める")
@@ -14534,7 +14575,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("p", { class: "sub" + (left < 0 ? " warn" : "") }, el("span", { class: "phrase" }, `目安の ${fmtYen(wall)} `), el("span", { class: "phrase" }, left >= 0 ? `まで、あと ${fmtYen(left)}` : `を ${fmtYen(-left)} こえています`)));
     } else parts.push(el("button", { type: "button", class: "link-btn", onclick: (ev) => openSettings(ev.detail === 0, "job", $("jobWall")) }, "1年の目安を決める"));
     parts.push(el("p", { class: "sub" }, el("span", { class: "phrase" }, `給料日が${y}年にある月の分を足しています。`),
-      jobs.some((j) => !(num(j.payday) > 0)) ? el("span", { class: "phrase" }, "給料日を決めていないバイト先は、締め日で数えています。") : null));
+      jobs.some((j) => jobPairs(j).some((x) => !(x.pay > 0))) ? el("span", { class: "phrase" }, "給料日を決めていないバイト先は、締め日で数えています。") : null));
     parts.splice(parts.length - 1, 0, ...bt6WallParts(total), ...bt9CapParts(y), ...bt17YearParts(y)); // (その17 ⑦ 去年のこの時期まで) // (その9 ③ 月いくらまで) // (バイト その6 ⑤ もう1つの目安)
     setChildren($("jobYear"), parts);
   }
@@ -14557,7 +14598,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const inn = document.querySelector('input[name="exKind"][value="in"]');
     inn.checked = true; syncExCats();
     if (exCats("in").includes("給与")) { exCat.value = "給与"; exCatPick.in = "給与"; }
-    $("exAmount").value = p.amount - bt4AdvSum(job, key.split("|")[1]); // (バイト その4 ⑦ 前払いの分をのぞく)
+    $("exAmount").value = p.amount - payAdvOf(job, key); // (バイト その4 ⑦ 前払いの分をのぞく)
     exDate.value = p.payday || todayKey;
     $("exMemo").value = `${job.name ? job.name + "の" : "バイトの"}給料（${fmtMD(p.start)}〜${fmtMD(p.end)}）`;
     exFromPay = { key, amount: Number($("exAmount").value) };
@@ -14572,11 +14613,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const jobFromForm = (f, j) => {
     const v = (k) => f.querySelector(`[data-f="${k}"]`);
     return { ...j, name: v("name").value.trim(), wage: Math.max(0, Math.round(num(v("wage").value))), fare: Math.max(0, Math.round(num(v("fare").value))),
-      night: v("night").checked, cutoff: clampTo(Math.round(num(v("cutoff").value)), 0, 28), payday: clampTo(Math.round(num(v("payday").value)), 0, 31), plusHol: v("plusHol") ? clampTo(Math.round(num(v("plusHol").value)), 0, 10000) : num(j.plusHol), ...bt4FromForm(f, j), ...bt5FromForm(f, j), ...bt6FromForm(f, j), ...bt7FromForm(f, j), ...bt10FromForm(f, j), ...bt11FromForm(f), ...bt12FromForm(f), ...bt14FromForm(f), ...bt15FromForm(f), ...bt16FromForm(f), ...bt17FromForm(f) }; // (バイト その2 ⑤, その4 ①②③⑥, その5 ④⑤)
+      night: v("night").checked, cutoff: clampTo(Math.round(num(v("cutoff").value)), 0, 28), payday: clampTo(Math.round(num(v("payday").value)), 0, 31), ...jobPayTwo(v), plusHol: v("plusHol") ? clampTo(Math.round(num(v("plusHol").value)), 0, 10000) : num(j.plusHol), ...bt4FromForm(f, j), ...bt5FromForm(f, j), ...bt6FromForm(f, j), ...bt7FromForm(f, j), ...bt10FromForm(f, j), ...bt11FromForm(f), ...bt12FromForm(f), ...bt14FromForm(f), ...bt15FromForm(f), ...bt16FromForm(f), ...bt17FromForm(f) }; // (バイト その2 ⑤, その4 ①②③⑥, その5 ④⑤)
   };
+  // the second 締め日 and 給料日 from the form: none (neither kept) unless a 締め日 is picked
+  const jobPayTwo = (v) => { const c = v("cutoff2"), d = v("payday2"); return !c || c.value === "" ? { cutoff2: undefined, payday2: undefined } : { cutoff2: clampTo(Math.round(num(c.value)), 0, 28), payday2: d ? clampTo(Math.round(num(d.value)), 0, 31) : 0 }; };
   function jobWhen(j) {
-    const ym = periodMonthOf(j, todayKey), p = payPeriod(j, ym), mo = `${Number(ym.slice(5))}月分`, ph = (w) => el("span", { class: "phrase" }, w);
-    return p.payday ? [ph(`${mo}（${fmtMD(p.start)}〜${fmtMD(p.end)}）は、`), ph(`${fmtMDW(p.payday)}に入ります。`)] : [ph(`${mo}は、`), ph(`${fmtMD(p.start)}〜${fmtMD(p.end)}に働いた分です。`)];
+    const ym = periodMonthOf(j, todayKey), mo = `${Number(ym.slice(5))}月分`, ph = (w) => el("span", { class: "phrase" }, w), pairs = jobPairs(j);
+    return pairs.flatMap((x, i) => {
+      const p = payPeriod(j, ym, pairs.length > 1 ? x.n : 0), w = pairs.length > 1 ? `${mo}・${i + 1}回目` : mo;
+      return p.payday ? [ph(`${w}（${fmtMD(p.start)}〜${fmtMD(p.end)}）は、`), ph(`${fmtMDW(p.payday)}に入ります。`)] : [ph(`${w}は、`), ph(`${fmtMD(p.start)}〜${fmtMD(p.end)}に働いた分です。`)];
+    });
   }
   function renderJobForms() {
     const jobs = jobList(), many = jobs.length > 1, days = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => el("option", { value: from + i }, `${from + i}日`));
@@ -14585,6 +14631,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const cut = el("select", { id: id("Cut"), "data-f": "cutoff" }, el("option", { value: 0 }, "末日"), days(1, 28));
       const pay = el("select", { id: id("Pay"), "data-f": "payday" }, el("option", { value: 0 }, "決めない"), days(1, 31));
       cut.value = String(num(j.cutoff)); pay.value = String(num(j.payday));
+      // (a month paid twice: the second 締め日 and its 給料日, the user's call 2026-11-22)
+      const cut2 = el("select", { id: id("Cut2"), "data-f": "cutoff2" }, el("option", { value: "" }, "なし"), el("option", { value: 0 }, "末日"), days(1, 28));
+      const pay2 = el("select", { id: id("Pay2"), "data-f": "payday2" }, el("option", { value: 0 }, "決めない"), days(1, 31));
+      const has2 = j.cutoff2 !== null && j.cutoff2 !== undefined && j.cutoff2 !== "" && Number.isFinite(Number(j.cutoff2));
+      cut2.value = has2 ? String(num(j.cutoff2)) : ""; pay2.value = String(num(j.payday2));
       return el("div", { class: "job-edit", "data-job": j.id },
         el("h3", { class: "group-head" }, many ? j.name || "バイト先" : "バイト先"),
         el("form", { class: "add", autocomplete: "off", onsubmit: (ev) => { ev.preventDefault(); saveJobs(); } },
@@ -14605,7 +14656,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           bt16JobRows(j, id), // (バイト その16 ⑤ 早めに着く, ③ 定期券の期限)
           bt17JobRows(j, id), // (バイト その17 ① シフトのアプリ, ② 担当, ③ 時給アップ, ⑧ 働き方)
           recRow("締め日", cut),
-          recRow("給料日", pay)),
+          recRow("給料日", pay),
+          recRow("2回目の締め日", cut2, { opt: true }),
+          recRow("2回目の給料日", pay2, { opt: true })),
         el("p", { class: "group-foot job-when" }, jobWhen(j)),
         el("div", { class: "label-tools" }, bt9EndButton(j), el("button", { type: "button", class: "link-btn danger", onclick: () => dropJob(j.id) }, many ? `「${j.name || "バイト先"}」を削除` : "このバイト先を削除")));
     }));
@@ -16647,7 +16700,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const cats = (settings.get("budget") || {}).cats || {}, names = [...new Set([...exCats("out"), ...Object.keys(cats)])];
     setChildren($("catBudgetForm"), names.flatMap((c, i) => recRow(c, el("input", { type: "number", id: `catBudget${i}`, "data-cat": c, value: num(cats[c]) > 0 ? cats[c] : "", min: 0, max: 99999999, step: 1, placeholder: "未設定", inputmode: "numeric" }), { unit: "円" })));
     // (給料日から only when a job has a 給料日)
-    const pay = $("budgetStart").querySelector('option[value="pay"]'), hasPay = jobList().some((j) => num(j.payday) > 0);
+    const pay = $("budgetStart").querySelector('option[value="pay"]'), hasPay = jobList().some((j) => jobPairs(j).some((x) => x.pay > 0));
     pay.disabled = !hasPay && $("budgetStart").value !== "pay";
     pay.textContent = hasPay ? "給料日から" : "給料日から（バイトの給料日を決めると選べます）";
   }
@@ -16656,7 +16709,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑧ the jobs' paydays (バイトの給料日): the last one up to today and the next after today
   function paydays() {
     const days = new Set();
-    for (const j of jobList()) if (num(j.payday) > 0) for (let i = -2; i <= 2; i++) { const d = payPeriod(j, addMonths(monthOf(todayKey), i)).payday; if (d) days.add(d); }
+    for (const j of jobList()) for (let i = -2; i <= 2; i++) for (const p of payParts(j, addMonths(monthOf(todayKey), i))) if (p.payday) days.add(p.payday); // (a month paid twice: both)
     const list = [...days].sort();
     return { last: [...list].reverse().find((d) => d <= todayKey) || null, next: list.find((d) => d > todayKey) || null };
   }
@@ -25057,7 +25110,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月22日 19:34"; // 18c267e3 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月22日 22:08"; // 68bef701 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -63894,8 +63947,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // come lighter. This year's: at the pace of the last 3 months with pay, where the year ends and when the mark is passed
   function bt2MonthPays(y) {
     const by = Array(12).fill(0);
-    for (const job of jobList()) for (let i = 0; i < 14; i++) {
-      const ym = addMonths(`${y - 1}-11`, i), p = paySummary(job, ym), k = p.payday || p.end;
+    for (const job of jobList()) for (let i = 0; i < 14; i++) for (const p of payParts(job, addMonths(`${y - 1}-11`, i))) { // (a month paid twice: each part by its own)
+      const k = p.payday || p.end;
       if (k.slice(0, 4) === String(y)) by[Number(k.slice(5, 7)) - 1] += p.amount;
     }
     return by;
@@ -65181,12 +65234,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function bt3Notes(j, p, key, inBook) {
     const out = [], fare = j.fareMode === "month" ? (p.list.length ? num(j.fare) : 0) : sum(p.list, (x) => bt12Fare(x, j)) - num(p.fareCut); // (その12 ⑧ この回の交通費, その14 ② 上限)
     if (inBook) {
-      const got = sum(expenses.items.filter((e) => e.pay === key), (e) => e.amount), d = got - (p.amount - bt4AdvSum(j, key.split("|")[1])); // (その4 ⑦ 前払いの分をのぞく)
+      const got = sum(expenses.items.filter((e) => e.pay === key), (e) => e.amount), d = got - (p.amount - payAdvOf(j, key)); // (その4 ⑦ 前払いの分をのぞく)
       out.push(el("p", {}, bt3Ph(`実際の給料 ${fmtYen(got)}`), d === 0 ? bt3Ph("（見込みどおり）") : el("span", { class: "phrase" + (d < 0 ? " warn" : "") }, keepUnits(`（見込みより ${d > 0 ? "+" : "−"}${fmtYen(Math.abs(d))}）`))));
     }
     const worked = p.amount - (p.leave ? p.leave.pay : 0) - (p.extra ? p.extra.sum : 0); // (その5 ② 有給の分, その7 ⑥ 手当・ボーナスはのぞく)
     if (p.mins > 0 && worked > 0) out.push(el("p", {}, bt3Ph(`1時間あたり ${fmtYen(worked / (p.mins / 60))}`, fare > 0 ? `（交通費をのぞくと ${fmtYen((worked - fare) / (p.mins / 60))}）` : "")));
-    const q = paySummary(j, addMonths(viewMonth, -1));
+    const q = paySummary(j, addMonths(viewMonth, -1), p.n || 0); // (a part: the same part of the month before)
     if (q.list.length && p.list.length) {
       const dn = p.list.length - q.list.length, dm = p.mins - q.mins, da = p.amount - q.amount, sg = (v, f) => (v === 0 ? "±0" : (v > 0 ? "+" : "−") + f(Math.abs(v)));
       out.push(el("p", {}, bt3Ph(`先月より ${sg(dn, (v) => v + " 回")}・${sg(dm, bt3Hours)}・${sg(da, fmtYen)}`)));
@@ -65211,9 +65264,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑨ 給料日のお知らせ: on each job's 給料日 (the next ones within the days sent ahead), at the time set, with the estimate
   function bt3Paydays() {
     const out = [];
-    for (const job of jobList()) for (let i = -1; i <= 2; i++) {
-      const ym = addMonths(periodMonthOf(job, todayKey), i), p = paySummary(job, ym);
-      if (p.payday && p.payday >= todayKey && p.payday <= addDays(todayKey, PUSH_AHEAD)) out.push({ job, ym, day: p.payday, amount: p.amount });
+    for (const job of jobList()) for (let i = -1; i <= 2; i++) for (const p of payParts(job, addMonths(periodMonthOf(job, todayKey), i))) { // (a month paid twice: each 給料日)
+      if (p.payday && p.payday >= todayKey && p.payday <= addDays(todayKey, PUSH_AHEAD)) out.push({ job, ym: p.ym, day: p.payday, amount: p.amount });
     }
     return out;
   }
@@ -65619,10 +65671,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const adds = [], cats = exCats("in");
     for (const job of jobList()) {
       if (!isDay(job.autoIn || "")) continue;
-      for (let i = -3; i <= 1; i++) {
-        const ym = addMonths(monthOf(todayKey), i), p = paySummary(job, ym), key = `${job.id}|${ym}`, id = `pay-${job.id}-${ym}`;
+      for (let i = -3; i <= 1; i++) for (const p of payParts(job, addMonths(monthOf(todayKey), i))) { // (a month paid twice: each part, its own id)
+        const ym = p.ym, key = p.key, id = `pay-${job.id}-${ym}${p.n === 2 ? "-2" : ""}`;
         if (!p.payday || p.payday > todayKey || p.payday < job.autoIn) continue;
-        const amount = Math.round(p.amount - bt4AdvSum(job, ym));
+        const amount = Math.round(p.amount - payAdvOf(job, key));
         if (!(amount > 0) || expenses.items.some((e) => e.pay === key) || expenses.get(id) || deleted.get("expenses/" + id)) continue;
         adds.push({ id, date: p.payday, kind: "in", category: cats.includes("給与") ? "給与" : cats[0] || "給与", amount, memo: `${job.name ? job.name + "の" : "バイトの"}給料（${fmtMD(p.start)}〜${fmtMD(p.end)}）`, pay: key, createdAt: Date.now() });
       }
@@ -65682,14 +65734,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (ot > 0) out.push(el("p", {}, ph("8時間をこえた分：", `${bt4Hours(ot)}・+${fmtYen(otYen)}`)));
     if (band > 0) { const b = bt4Band(j); out.push(el("p", {}, ph(`${hm(b.from)}〜${hm(b.to)}の時給アップ：`, `${bt4Hours(band)}・+${fmtYen(bandYen)}`))); }
     if (num(j.deduct) > 0 && list.length) out.push(el("p", {}, ph("引かれる額：", `−${fmtYen(num(j.deduct) * list.length)}（${list.length} 回）`)));
-    const advs = bt4Advs().filter((x) => x.jobId === j.id && x.ym === ym).sort((a, b) => String(a.date).localeCompare(String(b.date))), adv = sum(advs, (x) => x.amount);
+    const advs = payAdvOf(j, key) ? bt4Advs().filter((x) => x.jobId === j.id && x.ym === ym).sort((a, b) => String(a.date).localeCompare(String(b.date))) : [], adv = sum(advs, (x) => x.amount); // (a month paid twice: in its last part)
     if (advs.length) {
       out.push(el("div", { class: "bt4-advs" }, advs.map((x) => el("span", { class: "bt4-adv" }, keepUnits(`前払い ${fmtMD(x.date)} ${fmtYen(x.amount)}`),
         el("button", { type: "button", class: "icon-btn bt4-adv-x", "aria-label": `${fmtMD(x.date)}の前払い ${fmtYen(x.amount)}を削除`, onclick: () => bt4AdvDrop(x.id) }, icon("close", 16))))));
       if (!inBook) out.push(el("p", {}, ph(p.payday ? `給料日（${fmtMD(p.payday)}）に入るのは` : "あとで入るのは", `約 ${fmtYen(Math.max(0, p.amount - adv))}`)));
     }
     if (isDay(j.autoIn || "") && !inBook && p.payday && p.payday > todayKey) out.push(el("p", {}, ph(`${fmtMD(p.payday)} に、自動で収入に入ります`)));
-    if (!inBook && p.amount > 0) {
+    if (!inBook && p.amount > 0 && p.last !== false) { // (前払い: a month's, from its last part)
       const open = bt4AdvOpen === key;
       out.push(el("button", { type: "button", class: "link-btn bt4-adv-open", "aria-expanded": String(open), onclick: () => { bt4AdvOpen = open ? "" : key; renderMoney(); if (!open) $("jobSum").querySelector(`[data-adv="${CSS.escape(key)}"] [data-a='amount']`)?.focus(); } }, "前払いを記録"));
       if (open) {
@@ -67681,8 +67733,8 @@ ${parts.join("\n")}
     if (y !== Number(todayKey.slice(0, 4))) return [];
     let paid = 0;
     const left = new Map();
-    for (const job of jobList()) for (let i = 0; i < 14; i++) {
-      const ym = addMonths(`${y - 1}-11`, i), p = paySummary(job, ym), d = p.payday || p.end;
+    for (const job of jobList()) for (let i = 0; i < 14; i++) for (const p of payParts(job, addMonths(`${y - 1}-11`, i))) { // (a month paid twice: each part)
+      const ym = p.ym, d = p.payday || p.end;
       if (d.slice(0, 4) !== String(y)) continue;
       if (d <= todayKey) paid += p.amount; else left.set(ym, (left.get(ym) || 0) + p.amount);
     }
@@ -68165,9 +68217,8 @@ ${parts.join("\n")}
     const out = [];
     for (const j of bt9Active(jobList())) {
       let best = null;
-      for (let i = -2; i <= 2; i++) {
-        const ym = addMonths(periodMonthOf(j, todayKey), i), p = paySummary(j, ym);
-        if (p.payday && p.payday >= todayKey && (!best || p.payday < best.day)) best = { j, ym, day: p.payday, amount: Math.max(0, p.amount - bt4AdvSum(j, ym)) };
+      for (let i = -2; i <= 2; i++) for (const p of payParts(j, addMonths(periodMonthOf(j, todayKey), i))) { // (a month paid twice: each 給料日)
+        if (p.payday && p.payday >= todayKey && (!best || p.payday < best.day)) best = { j, ym: p.ym, day: p.payday, amount: Math.max(0, p.amount - payAdvOf(j, p.key)) };
       }
       if (best && best.amount > 0) out.push(best);
     }
@@ -68816,8 +68867,8 @@ ${parts.join("\n")}
   function bt12CutAlarms(now) {
     const s = bt12Set(), out = [];
     if (!s.cutOn) return out;
-    for (const j of bt9Active(jobList())) for (let i = 0; i <= 2; i++) {
-      const ym = addMonths(periodMonthOf(j, todayKey), i), p = paySummary(j, ym), at = dayAt(p.end, s.cutAt);
+    for (const j of bt9Active(jobList())) for (let i = 0; i <= 2; i++) for (const p of payParts(j, addMonths(periodMonthOf(j, todayKey), i))) { // (a month paid twice: each 締め日)
+      const ym = p.ym, at = dayAt(p.end, s.cutAt);
       if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5) continue;
       out.push({ at, title: `きょうは${j.name ? j.name + "の" : ""}締め日です`,
         body: `${Number(ym.slice(5))}月分（${fmtMD(p.start)}〜${fmtMD(p.end)}）は ${p.list.length} 回・${durText(p.mins)}・見込み 約 ${fmtN(Math.round(p.amount))}円。入れ忘れた勤務はありませんか？`,
@@ -68828,7 +68879,7 @@ ${parts.join("\n")}
   function bt12Push() {
     const s = bt12Set();
     if (!s.cutOn) return [];
-    return [["bt12Cut", s.cutAt, bt9Active(jobList()).map((j) => [j.id, j.name || "", num(j.wage), num(j.cutoff)]),
+    return [["bt12Cut", s.cutAt, bt9Active(jobList()).map((j) => [j.id, j.name || "", num(j.wage), num(j.cutoff), ...(twoPays(j) ? [num(j.cutoff2)] : [])]),
       shifts.items.filter((x) => isDay(x.date || "") && x.date >= addDays(todayKey, -62) && x.date <= addDays(todayKey, PUSH_AHEAD)).map((x) => [x.id, x.date, x.start, x.end, x.jobId || "", num(x.rest), num(x.wage), num(x.dayPay), x.fare == null ? "" : num(x.fare)])]];
   }
   function renderBt12Settings() {
@@ -69788,8 +69839,8 @@ ${parts.join("\n")}
   // ③ 給料の入金のたしかめ: the day after a 給料日 at 9:00, while its pay isn't in 家計簿 (nor on its way there itself, その4 ⑥)
   function bt14PayAlarms(now) {
     const out = [];
-    for (const j of jobList()) for (let i = -1; i <= 2; i++) {
-      const ym = addMonths(periodMonthOf(j, todayKey), i), p = paySummary(j, ym), key = `${j.id}|${ym}`;
+    for (const j of jobList()) for (let i = -1; i <= 2; i++) for (const p of payParts(j, addMonths(periodMonthOf(j, todayKey), i))) { // (a month paid twice: each part)
+      const ym = p.ym, key = p.key;
       if (!p.payday || !(p.amount > 0) || expenses.items.some((e) => e.pay === key) || (isDay(j.autoIn || "") && j.autoIn <= p.payday)) continue;
       const at = dayAt(addDays(p.payday, 1), "09:00");
       if (at > now + 5000 && at <= now + PUSH_AHEAD * 864e5) out.push({ at, title: "給料は入りましたか？", body: `${j.name ? j.name + "の" : ""}${Number(ym.slice(5))}月分（見込み 約 ${fmtN(p.amount)}円）。入っていたら、家計簿の収入に入れましょう`, tag: `bt14-pay:${key}`, url: "./#job" });
@@ -69820,7 +69871,7 @@ ${parts.join("\n")}
   function bt14Push() {
     const s = bt14Set();
     if (!s.payChk && !s.wallChk) return [];
-    const pays = s.payChk ? jobList().flatMap((j) => [-1, 0, 1, 2].map((i) => { const ym = addMonths(periodMonthOf(j, todayKey), i), p = paySummary(j, ym); return [j.id, ym, p.payday || "", Math.round(p.amount), expenses.items.some((e) => e.pay === `${j.id}|${ym}`)]; })) : 0;
+    const pays = s.payChk ? jobList().flatMap((j) => [-1, 0, 1, 2].flatMap((i) => payParts(j, addMonths(periodMonthOf(j, todayKey), i)).map((p) => [j.id, p.ym, p.payday || "", Math.round(p.amount), expenses.items.some((e) => e.pay === p.key)]))) : 0;
     return [["bt14", s.payChk, s.wallChk, pays, s.wallChk ? [num(jobSet().wall), Math.round(yearPay(Number(todayKey.slice(0, 4))))] : 0]];
   }
   function renderBt14Settings() {
@@ -69864,13 +69915,15 @@ ${parts.join("\n")}
 
   // ⑧ やめたあとにすること: a job left in the last 4 months: its last 給料日 (in 家計簿 yet?) (things lent, その10 ⑨, and the
   // 源泉徴収票, その9 ②, taken off 2026-11-18)
+  // the pay a job's last day is in (its part, when the month is paid twice)
+  function bt14LastPay(j) { const at = periodOf(j, j.ended); return { ...paySummary(j, at.ym, at.n), ym: at.ym, key: payKey(j, at.ym, at.n) }; }
   function renderBt14Left() {
-    const box = $("bt14Left"), jobs = jobList().filter((j) => isDay(j.ended || "") && j.ended <= todayKey && j.ended >= addDays(todayKey, -122) && paySummary(j, periodMonthOf(j, j.ended)).payday);
+    const box = $("bt14Left"), jobs = jobList().filter((j) => isDay(j.ended || "") && j.ended <= todayKey && j.ended >= addDays(todayKey, -122) && bt14LastPay(j).payday);
     box.hidden = !jobs.length;
     if (!jobs.length) { box.replaceChildren(); return; }
     const item = (ok, w, more) => el("li", { class: ok ? "ok" : "" }, el("span", { class: "bt14-mark", "aria-hidden": "true" }, ok ? "✓" : "・"), el("span", {}, el("span", {}, w), more ? el("small", { class: "sub" }, more) : null));
     setChildren(box, el("strong", { class: "bt2-head" }, "やめたあとにすること"), jobs.map((j) => {
-      const ym = periodMonthOf(j, j.ended), p = paySummary(j, ym), inBook = expenses.items.some((e) => e.pay === `${j.id}|${ym}`);
+      const p = bt14LastPay(j), ym = p.ym, inBook = expenses.items.some((e) => e.pay === p.key);
       return el("div", { class: "bt14-left-job", "data-job": j.id }, el("p", { class: "bt9-cmp-name" }, `${j.name || "バイト先"}（${bt4Ymd(j.ended)}にやめた）`),
         el("ul", { class: "bt14-left" },
           p.payday ? item(inBook, `最後の給料日 ${fmtMDW(p.payday)}（${Number(ym.slice(5))}月分 約 ${fmtYen(p.amount)}）`, inBook ? "家計簿に入れました" : p.payday < todayKey ? "入った額を、月の欄の「収入に入れる」で家計簿に入れましょう" : `あと ${daysBetween(todayKey, p.payday)} 日`) : null));
@@ -70095,9 +70148,8 @@ ${parts.join("\n")}
   // before the next one, and so what a day there is to spend until it; while 家計簿 has income since that day
   function bt15Paydays() {
     const out = [];
-    for (const j of jobList()) for (let i = -3; i <= 3; i++) {
-      const ym = addMonths(periodMonthOf(j, todayKey), i), p = paySummary(j, ym);
-      if (p.payday && p.amount > 0) out.push({ j, ym, day: p.payday, amount: p.amount });
+    for (const j of jobList()) for (let i = -3; i <= 3; i++) for (const p of payParts(j, addMonths(periodMonthOf(j, todayKey), i))) { // (a month paid twice: each 給料日)
+      if (p.payday && p.amount > 0) out.push({ j, ym: p.ym, day: p.payday, amount: p.amount });
     }
     return out;
   }
@@ -70388,7 +70440,7 @@ ${parts.join("\n")}
 
   // ⑥ 去年の同じ月: the month's shifts, hours and pay against the same month a year before, when it had shifts
   function bt16Notes(j, p, key) {
-    const ym = String(key).split("|")[1] || "", q = /^\d{4}-\d{2}$/.test(ym) ? paySummary(j, addMonths(ym, -12)) : null;
+    const ym = String(key).split("|")[1] || "", q = /^\d{4}-\d{2}$/.test(ym) ? paySummary(j, addMonths(ym, -12), p.n || 0) : null;
     if (!q || !q.list.length) return null;
     const sign = (v, f) => `${v >= 0 ? "+" : "−"}${f(Math.abs(v))}`;
     return el("div", { class: "bt3-notes bt16-notes" }, el("p", {}, bt4Ph(`去年の${Number(ym.slice(5))}月分より`, `${sign(p.list.length - q.list.length, (v) => `${v} 回`)}・${sign(p.mins - q.mins, bt4Hours)}・${sign(p.amount - q.amount, fmtYen)}`)));
@@ -71137,7 +71189,7 @@ ${parts.join("\n")}
   // ⑤ 給料の使いみち: the next 給料日's pay (every job's paid that day) shared out as the user set it (貯金 30% …)
   function bt17NextPay() {
     const ps = [];
-    for (const j of jobList()) for (let i = -1; i <= 3; i++) { const ym = addMonths(periodMonthOf(j, todayKey), i), p = paySummary(j, ym); if (p.payday && p.payday >= todayKey && p.amount > 0) ps.push({ j, day: p.payday, amount: p.amount }); }
+    for (const j of jobList()) for (let i = -1; i <= 3; i++) for (const p of payParts(j, addMonths(periodMonthOf(j, todayKey), i))) { if (p.payday && p.payday >= todayKey && p.amount > 0) ps.push({ j, day: p.payday, amount: p.amount }); } // (a month paid twice: each 給料日)
     ps.sort((a, b) => a.day.localeCompare(b.day));
     if (!ps.length) return null;
     const day = ps[0].day, list = ps.filter((x) => x.day === day);
@@ -71195,7 +71247,7 @@ ${parts.join("\n")}
   // ⑦ 去年のこの時期まで: the pay paid so far this year (by each month's 給料日, or its 締め日) against the same days last year
   function bt17PaidTo(y, to) {
     let total = 0;
-    for (const j of jobList()) for (let i = 0; i < 14; i++) { const ym = addMonths(`${y - 1}-11`, i), p = paySummary(j, ym), d = p.payday || p.end; if (d.slice(0, 4) === String(y) && d <= to) total += p.amount; }
+    for (const j of jobList()) for (let i = 0; i < 14; i++) for (const p of payParts(j, addMonths(`${y - 1}-11`, i))) { const d = p.payday || p.end; if (d.slice(0, 4) === String(y) && d <= to) total += p.amount; } // (a month paid twice: each part)
     return total;
   }
   function bt17YearParts(y) {
