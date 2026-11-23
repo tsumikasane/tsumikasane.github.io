@@ -17,10 +17,15 @@ const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(
   await seed(p, D.all(), "home"); await p.waitForTimeout(1000);
   const keys = await p.$$eval("#homeTiles > .tile", (l) => l.map((t) => t.dataset.tile));
   ok(["h3now", "h3line", "h3recs", "h3spend", "h3time", "h3streak", "h3week"].every((k) => keys.includes(k)) && !keys.includes("h3theme") && !keys.includes("h3water"), "the new tiles on きょう (② and ③ taken out)", keys);
-  // ① time
+  // ① time: the year alone, as a ring (きょう・今週・今月 taken out at the user's call, 2026-11-23, tools/REMOVED.md)
   const pr = await H(p, "prog", "2026-11-14T12:00:00+09:00");
-  ok(pr.day === 50 && pr.month === 45 && pr.yearLeft === 47, "① the day, the month, the days left in the year", pr);
-  ok((await tileTxt(p, "h3time")).includes("きょう") && (await tileTxt(p, "h3time")).includes("ことしはあと47日"), "① its tile", await tileTxt(p, "h3time"));
+  ok(pr.y === 2026 && pr.year === 86 && pr.yearLeft === 47 && Math.abs(pr.f - 317.5 / 365) < 1e-9 && !("day" in pr) && !("week" in pr) && !("month" in pr), "① the year gone and the days left in it (no day, week or month)", pr);
+  const tt = await tileTxt(p, "h3time");
+  ok(tt === "時間の進み87%2026年あと47日", "① its tile: the year's ring alone", tt);
+  const rg = await p.$eval('.tile[data-tile="h3time"]', (t) => { const r = t.querySelector(".h3-ring"), d = (r?.querySelector(".arc")?.getAttribute("stroke-dasharray") || "0 1").split(" ").map(Number); return { v: r?.getAttribute("aria-valuenow"), l: r?.getAttribute("aria-label"), f: d[0] / d[1], rows: t.querySelectorAll("li, .h3-bar").length }; });
+  ok(rg.v === "87" && rg.l === "2026年" && Math.abs(rg.f - 317.5625 / 365) < 1e-4 && rg.rows === 0, "① the ring as far as the year has gone, no bars", rg);
+  const ends = [await H(p, "timeTile", "2026-12-31T22:00:00+09:00"), await H(p, "timeTile", "2027-01-01T00:00:00+09:00")];
+  ok(ends[0].t === "時間の進み99%2026年きょうが最後の日" && ends[0].arc && ends[1].t === "時間の進み0%2027年あと364日" && !ends[1].arc, "① the year's last day, and its first moment (no arc)", ends);
   // ② 水分 and ③ きょうのテーマ: taken out at the user's call (2026-11-20, tools/REMOVED.md)
   ok(!(await p.$('.tile[data-tile="h3water"]')) && !(await p.$('.tile[data-tile="h3theme"]')) && !(await p.$(".h3-theme-in")) && !(await p.$(".h3-plus")), "②③ gone");
   // ④ streaks
