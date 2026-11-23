@@ -74,18 +74,12 @@ const mmss = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 
   ok((await txt(p, "#dt18LOut")) === "2 個で 360 kcal" && (await p.textContent("#dt18LUnit")) === "個", "② by the 袋", await txt(p, "#dt18LOut"));
   await p.evaluate(() => { for (const id of ["mealKcal", "mealP", "mealF", "mealC"]) document.getElementById(id).value = ""; });
   await unrec(p);
-  // ③ がまんできたもの: the chips (ポテトチップス, チョコ, then ケーキ, アイス), ケーキ pressed, ドーナツ 300 typed; one out and back
-  const chips = await W(p, "chips");
-  ok(JSON.stringify(chips) === '[["ポテトチップス",330],["チョコ",250],["ケーキ",400],["アイス",250]]', "③ the chips", chips);
-  await p.click('#dt18Resist button[aria-label="「ケーキ」をがまんできた（400 kcal）"]'); await p.waitForTimeout(400);
-  await p.fill("#dt18Resist .dt18-g-what", "ドーナツ"); await p.fill("#dt18Resist .dt18-g-kcal", "300"); await p.click('#dt18Resist button:has-text("残す")'); await p.waitForTimeout(400);
-  let gs = (await setting(p, "resisted"))?.list || [];
-  r = await txt(p, "#dt18Resist");
-  ok(gs.length === 2 && gs[1].text === "ドーナツ" && gs[1].kcal === 300 && gs[0].kcal === 400 && gs.every((x) => x.date === D.DAY) && /^がまんできたもの 11月 700 kcal /.test(r) && r.includes("11月は 2 回・700 kcal。体重にすると 約 0.10 kg 分です。"), "③ two kept", [gs, r]);
-  await p.click('#dt18Resist button[aria-label="「ケーキ」を消す"]'); await p.waitForTimeout(400);
-  ok(((await setting(p, "resisted"))?.list || []).length === 1 && /11月 300 kcal/.test(await txt(p, "#dt18Resist")), "③ one out");
-  await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
-  ok(((await setting(p, "resisted"))?.list || []).length === 2, "③ back");
+  // ③ がまんできたもの: taken out at the user's call (2026-11-23, tools/REMOVED.md): no card, nor its もくじ's line; what was
+  // put in (settings resisted) kept
+  await p.evaluate(({ P }) => { const k = P + "settings", l = JSON.parse(localStorage.getItem(k) || "[]"); l.push({ id: "resisted", list: [{ id: "g1", date: "2026-11-15", text: "ケーキ", kcal: 400, at: 1 }], updatedAt: 1 }); localStorage.setItem(k, JSON.stringify(l)); }, { P });
+  await part(p, "meal");
+  const toc18 = await p.evaluate(() => document.getElementById("dt16Toc-meal")?.textContent || "");
+  ok(!(await p.$("#dt18Resist")) && !(await p.$(".dt18-g-what")) && !/がまんできた/.test(toc18) && ((await setting(p, "resisted"))?.list || []).length === 1, "③ がまんできたもの gone, what was put in kept", toc18);
   // ④ 食べる予定の前に: ランチ tomorrow and 忘年会 on Thursday (焼肉 called off, 歯医者 and 新年会 not)
   const ps = await W(p, "parties");
   r = await txt(p, "#dt18Party");
@@ -152,7 +146,7 @@ const mmss = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 
   await seed(p, { settings: [] }, "diet");
   for (const k of ["meal", "workout", "weight"]) {
     await part(p, k);
-    const shown = await p.evaluate(() => ["dt18Resist", "dt18Party", "dt18Gym", "dt18Course", "dt18Rpe", "dt18Plan", "dt18Noise"].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }));
+    const shown = await p.evaluate(() => ["dt18Party", "dt18Gym", "dt18Course", "dt18Rpe", "dt18Plan", "dt18Noise"].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }));
     ok(!shown.length, `nothing but the tools on a new account (${k})`, shown);
   }
   ok(!p.errs.length, "no errors on a new account", p.errs);

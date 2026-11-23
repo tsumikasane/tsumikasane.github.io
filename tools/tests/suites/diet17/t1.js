@@ -23,23 +23,15 @@ const avg7 = (ws, d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.add
   await seed(p, base(), "diet");
   await part(p, "meal");
 
-  // ① 食後の満足度: the 30 days, then トースト 食べすぎた and taken off again
-  let r = await txt(p, "#dt17Full");
-  ok(/^食後の満足度 きょう 朝食 トースト 足りない ちょうど 食べすぎ 朝食 ゆで卵 足りない ちょうど 食べすぎ この30日 10 回・物足りない 2・ちょうど 5・食べすぎた 3 食べすぎた食事は平均 900 kcal、ちょうどの食事は 700 kcal でした。 食べすぎたことが多いのは ラーメン（3 回）$/.test(r), "① the 30 days", r);
-  const toast = '#dt17Full [aria-label="「トースト」の満足度"] button[aria-label="食べすぎた"]';
-  await p.click(toast); await p.waitForTimeout(400);
-  let m = (await ls(p, "meals")).find((x) => x.text === "トースト" && x.date === D.DAY);
-  ok(m.full === 3 && (await p.getAttribute(toast, "aria-pressed")) === "true" && /この30日 11 回・物足りない 2・ちょうど 5・食べすぎた 4/.test(await txt(p, "#dt17Full")), "① 食べすぎた pressed", [m, await txt(p, "#dt17Full")]);
-  await p.click(toast); await p.waitForTimeout(400);
-  m = (await ls(p, "meals")).find((x) => x.text === "トースト" && x.date === D.DAY);
-  ok(!("full" in m) && m.kcal === 300 && (await p.getAttribute(toast, "aria-pressed")) === "false" && /この30日 10 回/.test(await txt(p, "#dt17Full")), "① taken off", m);
-  // ② 主食・主菜・副菜: the breakfasts without 副菜, then みそ汁 added to today's
-  r = await txt(p, "#dt17Bal");
-  ok(/^主食・主菜・副菜 そろった食事 12 \/ 19 区分 主食 主菜 副菜 朝食 ◯ ◯ — 昼食 まだ 夕食 まだ この7日の朝・昼・夕 19 食のうち、3つそろったのは 12 食・いちばん抜けやすいのは副菜（7 食） サラダやみそ汁、野菜の小鉢を1品足しましょう。$/.test(r), "② the 7 days", r);
+  // ① 食後の満足度 and ② 主食・主菜・副菜: taken out at the user's call (2026-11-23, tools/REMOVED.md): no cards, nor their
+  // もくじ's lines; the full put in (1〜3) kept
+  let r;
+  const fulls = (await ls(p, "meals")).filter((m) => [1, 2, 3].includes(m.full)).length, toc17 = await p.evaluate(() => document.getElementById("dt16Toc-meal")?.textContent || "");
+  ok(!(await p.$("#dt17Full")) && !(await p.$("#dt17Bal")) && !(await p.$(".dt17-full-btn")) && !/食後の満足度|主食・主菜・副菜/.test(toc17) && fulls > 0 && fulls === D.meals().filter((m) => m.full).length, "①② gone, the full put in kept", [fulls, toc17]);
+  // (the みそ汁 ② added to today's, kept: ⑨'s week counts it)
   await put(p, "meals", [...(await ls(p, "meals")), { id: "miso", date: D.DAY, slot: "朝食", text: "みそ汁", kcal: 40, createdAt: D.T(D.DAY, 8) }]);
   await part(p, "meal");
-  r = await txt(p, "#dt17Bal");
-  ok(/そろった食事 13 \/ 19 .* 朝食 ◯ ◯ ◯ /.test(r) && (await p.locator("#dt17Bal td.yes").count()) === 3, "② みそ汁 added", r);
+  ok(!(await p.$("#dt17Full")) && !(await p.$("#dt17Bal")), "①② not drawn after a 食事 is added either");
   // ③ 揚げ物・甘い飲みもの: 4 and 3 these 7 days, 1 and 1 the 7 before
   r = await txt(p, "#dt17Fry");
   ok(/^揚げ物・甘い飲みもの この7日 揚げ物 4 回 1,400 kcal・前の7日は 1 回・週2回までにすると、カロリーと脂質をおさえられます 甘い飲みもの 3 回 525 kcal・前の7日は 1 回・お茶や無糖のものにかえると、それだけで減らせます 食べたものの名前から数えています。$/.test(r) && (await p.locator("#dt17Fry .num.over").count()) === 2, "③ the 7 days", r);
@@ -109,7 +101,7 @@ const avg7 = (ws, d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.add
   await seed(p, { settings: [] }, "diet");
   for (const k of ["meal", "workout", "weight"]) {
     await part(p, k);
-    const shown = await p.evaluate(() => ["dt17Full", "dt17Bal", "dt17Fry", "dt17Ladder", "dt17Zones", "dt17Pulse", "dt17LastYear", "dt17Review", "dt17Nsv"].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }));
+    const shown = await p.evaluate(() => ["dt17Fry", "dt17Ladder", "dt17Zones", "dt17Pulse", "dt17LastYear", "dt17Review", "dt17Nsv"].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }));
     ok(!shown.length, `nothing shown on a new account (${k})`, shown);
   }
   ok(!p.errs.length, "no errors on a new account", p.errs);
