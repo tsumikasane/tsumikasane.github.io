@@ -1366,6 +1366,9 @@ ul.list.jn6-toc > li { padding: 0; }
 .stat .k { font-size: var(--t-sub); line-height: 1.35; font-weight: 600; color: var(--muted); }
 .stat .v { font-family: var(--font-round); font-size: var(--t-title2); line-height: 1.25; font-weight: 700; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .stat .d { font-size: var(--t-foot); line-height: 1.35; color: var(--muted); }
+/* (からだ, the user's call 2026-11-23) 体脂肪率の目標: a stat that is a button, 決める or 変える at a press */
+button.card.stat { width: 100%; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.stat .d .stat-go { color: var(--accent); font-weight: 600; }
 
 /* weight chart */
 .chart-head { padding: 12px 12px 0; }
@@ -16070,10 +16073,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return stat("体脂肪率", `${fmtFat(last.fat)}%`, inRange.length > 1 && inRange.includes(last)
       ? `${rangeLabel()}で ${signed(num(last.fat) - num(first.fat))}%` : `${relLabel(last.id) || fmtShort(last.id)}の記録`);
   }
-  // 目標体脂肪率, once set and a 体脂肪率 recorded: how far the latest is from it, as 目標まで is for the weight
+  // 目標体脂肪率, once set and a 体脂肪率 recorded: how far the latest is from it, as 目標まで is for the weight. The card is
+  // a button (the user's call, 2026-11-23: to be set from the page, not only under the gear): 変える; none set yet, with a
+  // 体脂肪率 recorded, 体脂肪率の目標 未設定 and 目標を決める. Either opens the settings at 目標体脂肪率
   function fatTargetStat(all) {
     const goal = fatTarget(), last = all.filter((r) => num(r.fat) > 0).pop();
-    return goal > 0 && last ? stat([el("span", { class: "phrase" }, "体脂肪率の"), el("span", { class: "phrase" }, "目標まで")], targetText(num(last.fat), goal, "%"), `目標 ${fmtFat(goal)}%`) : null;
+    if (!last && !(goal > 0)) return null;
+    const card = (k, v, d) => el("button", { type: "button", class: "card stat", "aria-haspopup": "dialog", onclick: (ev) => openSettings(ev.detail === 0, "weight", fatTargetInput) },
+      el("span", { class: "k" }, k), el("span", { class: "v" }, v), el("span", { class: "d" }, d));
+    if (!(goal > 0)) return card("体脂肪率の目標", "未設定", el("span", { class: "stat-go" }, "目標を決める"));
+    return card([el("span", { class: "phrase" }, "体脂肪率の"), el("span", { class: "phrase" }, "目標まで")], last ? targetText(num(last.fat), goal, "%") : "—",
+      [`目標 ${fmtFat(goal)}%・`, el("span", { class: "stat-go" }, "変える")]);
   }
   function stat(k, v, d) {
     return el("div", { class: "card stat" }, el("span", { class: "k" }, k), el("span", { class: "v" }, v), d ? el("span", { class: "d" }, d) : null);
@@ -25154,7 +25164,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月23日 4:48"; // 45dfae63 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月23日 9:17"; // 1e27ca50 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
