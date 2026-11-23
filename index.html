@@ -4303,13 +4303,6 @@ ul.td-week > li.none { color: var(--muted); }
 .cal3-many-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .cal3-many-chips:empty { display: none; }
 .cal3-many-chip { display: inline-flex; align-items: center; gap: 4px; padding: 0 10px 0 12px; background: var(--fill); box-shadow: none; color: var(--fg); font-variant-numeric: tabular-nums; }
-/* ⑤ 予定: これから or 繰り返しの予定, and a repeat ended from its row (twice, the second in red) */
-.cal3-find-seg { max-width: none; }
-.cal3-find-seg[hidden] { display: none; }
-ul.list > li.cal3-rep-row { gap: 0; }
-.cal3-rep-row .row-btn { flex: 1 1 auto; width: auto; min-width: 0; }
-.cal3-end { flex: none; min-width: 64px; min-height: 44px; margin-inline-end: 8px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--fill); color: var(--accent); font: inherit; font-size: var(--t-sub); font-weight: 600; cursor: pointer; }
-.cal3-end.armed { background: color-mix(in srgb, var(--warn) 14%, var(--surface)); color: var(--warn); }
 /* ⑦ 週 and 日 at the hours picked: the plans out of sight above or below, counted at that end of their day */
 .cal3-out { position: absolute; left: 50%; z-index: 3; min-width: 26px; height: 18px; margin-top: 2px; padding: 0 5px; transform: translateX(-50%); border: 0; border-radius: 999px; background: var(--accent-fill); color: var(--accent-ink); font: inherit; font-size: 11px; font-weight: 700; line-height: 18px; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; }
 .cal3-out::after { content: ""; position: absolute; inset: -13px -9px; }  /* a 44px reach */
@@ -4457,15 +4450,13 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
 .cal7-sets-save .btn { flex: none; white-space: nowrap; }
 .cal7-sets-list { margin: 0; background: var(--surface); border-radius: 10px; }
 .cal7-sets-list .sub { overflow-wrap: anywhere; }
-/* ⑦ 重なっている予定, ⑧ ふりかえり: in 予定 */
-.cal7-clash .sub, .cal7-notes .sub { overflow-wrap: anywhere; }
-.cal7-notes-sum { margin: 0 0 8px; padding: 0 var(--space-2); color: var(--muted); font-size: var(--t-sub); }
+/* ⑦ 重なっている予定: in 予定 (⑧ ふりかえり's list there taken off 2026-11-23) */
+.cal7-clash .sub { overflow-wrap: anywhere; }
 /* ⑩ 予定のアイコン: the marks to pick, in the forms, across them */
 .cal7-marks-row { display: grid; gap: 6px; }
 .cal7-marks-head { font-size: var(--t-body, 17px); }
 .cal7-marks { display: flex; flex-wrap: wrap; gap: 2px; }
 .cal7-off-label { flex: none; width: 3.5em; color: var(--muted); font-size: var(--t-sub); }
-.cal3-find-seg button { white-space: nowrap; }
 .cal7-mark { display: inline-grid; place-items: center; min-width: 36px; min-height: 36px; padding: 0 4px; border: 0; border-radius: 10px; background: transparent; color: var(--fg); font-size: 20px; line-height: 1; cursor: pointer; }
 /* (2026-11-23) a plan's icon before its name: Lucide's, the words' size and colour */
 .cal7-ico { vertical-align: -0.14em; margin-inline-end: 0.12em; }
@@ -19177,7 +19168,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function openFind(byKey) {
     if (sheetEl.open) return;
     resetSheet();
-    findOpen = true; findPages = 1; $("findText").value = ""; $("findClear").hidden = true; cal3FindRep = false; // (カレンダー その3 ⑤ これから first)
+    findOpen = true; findPages = 1; $("findText").value = ""; $("findClear").hidden = true;
     renderFind(); syncSheetHead();
     presentSheet(byKey, "find");
   }
@@ -19197,8 +19188,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const anyAfter = (d) => dueItems().some((x) => x.date > d) || events.items.some((e) => turnStarts(e, addDays(d, 1), addDays(d, 1830)).some((s) => s > d));
   function renderFind() {
     renderCal6FindChips(); // (カレンダー その6 ⑥ ラベルで絞り込む)
-    if (calSeven && cal7FindHook()) return; // (カレンダー その7 ⑧ ふりかえり)
-    if (calThree && cal3FindHook()) return; // (カレンダー その3 ⑤ 繰り返しの予定)
     const q = foldText($("findText").value.trim()), groups = [];
     const dayHead = (d) => el("h3", { class: "group-head" }, (relLabel(d) ? relLabel(d) + "・" : "") + fmtMDW(d));
     // a day's rows: its plans, then its deadlines
@@ -25161,7 +25150,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月23日 10:01"; // 7506558b (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月23日 10:28"; // fb69b2bb (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -33839,12 +33828,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   calTwo = true;
   // ---------- カレンダー その3 ①〜⑩ (the user's calls, 2026-11-13): a weekly plan on the weekdays picked and a monthly one on
   // the month's last day or last weekday (①), a repeat ended after a number of turns, each turn saying which it is (②), a
-  // repeat's turns on a holiday left out (③), one plan on several days at once (④), the repeating plans in one list (⑤),
+  // repeat's turns on a holiday left out (③), one plan on several days at once (④), the repeating plans in one list (⑤,
+  // taken off 2026-11-23),
   // the 通知アラーム a new plan starts with (⑥), the hours 週 and 日 show (⑦), a class's attendance (⑧), the year's
   // holidays and long weekends (⑨), and a plan's place on the map (⑩) ----------
   // (what was there calls in here; before this part has run, as the page opens, the drawing parts do nothing. A plan's
   // turns (①③) are read from the start: turnStarts calls the first few, which need nothing set up)
-  var calThree = false, cal3FindRep = false, cal3AlarmAuto = true, cal3AlarmSet = "", cal3ScopeWas = "one", cal3ManyOpen = false, cal3ManyMonth = null;
+  var calThree = false, cal3AlarmAuto = true, cal3AlarmSet = "", cal3ScopeWas = "one", cal3ManyOpen = false, cal3ManyMonth = null;
   var cal3DayWas = { plan: null, ed: null };
 
   // ① a weekly plan's own weekdays (repeatDays, kept as a weekly ToDo keeps them: 0 for Sunday), when other than its first
@@ -34093,65 +34083,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     flash(`${fmtMDW(item.date)}と、ほか ${more.length} 日に入れました`, () => { takeBack(events, [id, ...ids]); flash("元に戻しました"); }, 8000);
   }
 
-  // ⑤ 繰り返しの予定 (the user's call): in 予定 (the magnifier), beside これから, every plan that repeats: those going on by
-  // their next turn, then those over by their last. Each says how it repeats, its next turn and its end (あと何回), and
-  // opens its day there (戻る comes back); 終える (twice) makes today its last day, with 元に戻す
-  $("findView").querySelector(".rec-search").after(el("div", { class: "seg full cal3-find-seg", role: "group", "aria-label": "予定の見方", id: "cal3FindSeg" },
-    el("button", { type: "button", "data-k": "coming", "aria-pressed": "true", onclick: () => { cal3FindRep = false; renderFind(); } }, "これから"),
-    el("button", { type: "button", "data-k": "rep", "aria-pressed": "false", "aria-label": "繰り返しの予定", onclick: () => { cal3FindRep = true; renderFind(); } }, "繰り返し"))); // (shorter since その7 ⑧ put ふりかえり beside it)
-  // (renderFind asks first: true when the list is this one, drawn)
-  function cal3FindHook() {
-    const q = $("findText").value.trim(), seg = $("cal3FindSeg");
-    seg.hidden = !!q;
-    for (const b of seg.children) b.setAttribute("aria-pressed", String(b.dataset.k === (cal3FindRep ? "rep" : "coming"))); // (その7 ⑧'s third, ふりかえり, not pressed here)
-    if (q || !cal3FindRep) return false;
-    setChildren($("findList"), cal3RepList());
-    return true;
-  }
-  let cal3EndArm = null, cal3EndTimer = null;
-  function cal3RepList() {
-    const going = [], over = [];
-    for (const e of events.items) {
-      if (!e.repeat || !isDay(e.date || "") || typeof e.title !== "string") continue;
-      const next = turnStarts(e, todayKey, addDays(todayKey, 3660)).find((d) => d >= todayKey) || null, prev = next ? null : turnStarts(e, e.date, todayKey).pop() || null;
-      (next ? going : over).push({ e, next, prev });
-    }
-    going.sort((a, b) => a.next.localeCompare(b.next) || String(a.e.time || "").localeCompare(String(b.e.time || "")));
-    over.sort((a, b) => String(b.prev || "").localeCompare(String(a.prev || "")));
-    const row = ({ e, next, prev }) => {
-      const l = labelOf(e), left = next && e.repeatUntil ? turnStarts(e, next, e.repeatUntil).length : null;
-      const how = [l ? l.name : "", cal10RepName(e), e.noHol ? "祝日休み" : ""];
-      const short = (d) => (d.slice(0, 4) === todayKey.slice(0, 4) ? fmtMD(d) : `${Number(d.slice(0, 4))}/${fmtMD(d)}`); // (1/31, 2027/1/31)
-      const when = [next ? `次は${fmtDay(next)}` : prev ? `最後は${fmtDay(prev)}` : "", e.repeatUntil ? `${short(e.repeatUntil)}まで` : next ? "ずっと" : "", left ? `あと${left}回` : ""];
-      const armed = cal3EndArm === e.id, ends = !!next && e.date <= todayKey && !e.cls; // (a class ends with the timetable's term, or by taking it off there)
-      return el("li", { class: "btn-row cal3-rep-row", style: labelStyle(l) },
-        el("button", { type: "button", class: "row-btn nav", "aria-label": `「${e.title}」の日を開く（${[...how, ...when].filter(Boolean).join("・")}）`, onclick: () => openDayFromFind(next || prev || e.date) },
-          el("span", { class: "chip when", style: "--chip-c: var(--lc)" }, e.time || "終日"),
-          el("span", { class: "body" }, el("span", { class: "text" }, e.title), el("span", { class: "sub" + (l ? " ev-label" : "") }, phrasesOf(how)), el("span", { class: "sub" }, phrasesOf(when))),
-          ends ? null : el("span", { class: "chev" }, icon("next", 16))), // (the room for 終える instead)
-        ends ? el("button", { type: "button", class: "cal3-end" + (armed ? " armed" : ""), "data-k": "end-" + e.id,
-          "aria-label": armed ? `もう一度押すと、「${e.title}」の繰り返しをきょうで終えます` : `「${e.title}」の繰り返しをきょうで終える`, onclick: () => cal3EndRepeat(e.id) }, armed ? "もう一度" : "終える") : null);
-    };
-    if (!going.length && !over.length) return el("div", { class: "card empty" }, "繰り返しの予定はありません。");
-    return [...(going.length ? [el("h3", { class: "group-head" }, `続いている繰り返し（${going.length}）`), el("ul", { class: "list card" }, going.map(row))] : []),
-      ...(over.length ? [el("h3", { class: "group-head" }, `終わった繰り返し（${over.length}）`), el("ul", { class: "list card" }, over.map(row))] : []),
-      el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "「終える」を2回押すと、その繰り返しはきょうが最後になります。"), el("span", { class: "phrase" }, "これまでの回はそのまま残ります。"))];
-  }
-  function cal3EndRepeat(id) {
-    const e = events.get(id), refocus = () => $("findList").querySelector(`[data-k="end-${CSS.escape(id)}"]`)?.focus();
-    clearTimeout(cal3EndTimer);
-    if (!e) return;
-    if (cal3EndArm !== id) {
-      cal3EndArm = id; renderFind(); refocus();
-      cal3EndTimer = setTimeout(() => { cal3EndArm = null; if (findOpen && cal3FindRep) { const had = $("findList").contains(document.activeElement); renderFind(); if (had) refocus(); } }, 4000);
-      return;
-    }
-    cal3EndArm = null;
-    const before = JSON.parse(JSON.stringify(e));
-    act(() => events.update(e.id, { repeatUntil: todayKey, repeatCount: undefined }));
-    renderFind();
-    flash(`「${clip(e.title, 20)}」の繰り返しを、きょうで終えました`, () => act(async () => { await events.set(before.id, before); if (findOpen) renderFind(); flash("元に戻しました"); }));
-  }
+  // ⑤ 繰り返しの予定 (予定's 繰り返し: the plans that repeat in a list, each ended there by 終える): taken off 2026-11-23
+  // (the user's call: 予定検索の繰り返しを削除). A plan's own repeat, in the forms, stays as it was
 
   // ⑥ いつもの通知アラーム (the user's call): one for a plan with a time and one for an all-day plan, kept with the account; a
   // new plan's form starts with it, and switches to the other's as 終日予定 goes on or off while it is still the one it
@@ -35046,17 +34979,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("planTitle").addEventListener("input", () => renderCal6Same());
 
   // ⑥ 予定 narrowed to a label: its chips under the field (すべて, then each label), the plans there alone, coming or
-  // found (the ToDo's and goals' 期限 and the shifts left out while one is picked). Not in 繰り返しの予定
+  // found (the ToDo's and goals' 期限 and the shifts left out while one is picked)
   const cal6FindChips = el("div", { class: "cal6-find-labels", id: "cal6FindLabels", role: "group", "aria-label": "ラベルで絞り込む", hidden: true });
-  $("cal3FindSeg").after(cal6FindChips);
+  $("findView").querySelector(".rec-search").after(cal6FindChips);
   function cal6FindOk(e) { return !calSix || !cal6FindLabel || e?.labelId === cal6FindLabel; }
   const cal6FindOn = () => calSix && !!cal6FindLabel;
   function renderCal6FindChips() {
     if (!calSix) return;
     if (!sheetEl.open) { cal6FindLabel = ""; cal5FreeLen = 0; } // (予定 opened afresh: all of it, and その5 ⑦ asking nothing)
-    const ls = sortedLabels(), q = $("findText").value.trim();
+    const ls = sortedLabels();
     if (cal6FindLabel && !labels.get(cal6FindLabel)) cal6FindLabel = "";
-    cal6FindChips.hidden = !ls.length || (!q && cal3FindRep);
+    cal6FindChips.hidden = !ls.length;
     if (cal6FindChips.hidden) { cal6FindChips.replaceChildren(); return; }
     const had = cal6FindChips.contains(document.activeElement) ? document.activeElement.dataset.l : null;
     const chip = (id, name, l) => el("button", { type: "button", class: "chip-btn cal6-find-chip", "data-l": id, "aria-pressed": String(cal6FindLabel === id), style: l ? labelStyle(l) : null,
@@ -35187,11 +35120,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ---------- カレンダー その7 ①〜⑩ (the user's calls, 2026-11-14): days off of one's own (①), the next time at the usual
   // gap (②), a label's own 通知アラーム (③), the evening before a 大事な予定 (④), a day's plans read out (⑤), sets of 持ち物
-  // (⑥), the plans running into each other (⑦), ふりかえり in a list (⑧), a month's plans as words (⑨), and a plan's mark
+  // (⑥), the plans running into each other (⑦), ふりかえり in a list (⑧, taken off 2026-11-23), a month's plans as words
+  // (⑨), and a plan's mark
   // (⑩) ----------
   // (what was there calls in here; before this part has run, as the page opens, these do nothing: those it calls are
   // function declarations, there from the start)
-  var calSeven = false, cal7Notes = false;
+  var calSeven = false;
 
   // ① 自分の休みの日 (休校日, 会社の休み, 夏休み): a name and a day or a run of days, in the gear. They show as a holiday does
   // (red, its name in the month, 週・日 and 年), and the repeats that rest on holidays (祝日はお休み, the timetable's classes
@@ -35394,38 +35328,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("span", { class: "chev" }, icon("next", 16))))))];
   }
 
-  // ⑧ ふりかえり (予定's third view): every plan's word on how it went, the latest first (a label picked: its plans alone),
-  // the last three months' よかった・ふつう・いまいち counted; pressed, its day
-  const cal7NotesBtn = el("button", { type: "button", "data-k": "notes", "aria-pressed": "false", onclick: () => { cal7Notes = true; cal3FindRep = false; renderFind(); } }, "ふりかえり");
-  $("cal3FindSeg").append(cal7NotesBtn);
-  $("cal3FindSeg").addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (b && b.dataset.k !== "notes") cal7Notes = false; }, true);
-  function cal7FindHook() {
-    if (!calSeven) return false;
-    if (!sheetEl.open) cal7Notes = false; // (予定 opened afresh: これから)
-    const q = $("findText").value.trim(), seg = $("cal3FindSeg");
-    if (q || !cal7Notes) return false;
-    seg.hidden = false;
-    for (const b of seg.children) b.setAttribute("aria-pressed", String(b.dataset.k === "notes"));
-    setChildren($("findList"), cal7NotesList());
-    return true;
-  }
-  function cal7NotesList() {
-    const xs = [];
-    for (const e of events.items) {
-      if (!cal6FindOk(e)) continue;
-      for (const [d, n] of Object.entries(e.notes || {})) if (isDay(d) && n && (n.mood || n.text)) xs.push({ e, d, n });
-    }
-    if (!xs.length) return el("div", { class: "card empty" }, "まだふりかえりはありません。終わった予定を開くと書けます。");
-    xs.sort((a, b) => b.d.localeCompare(a.d) || num(b.n.at) - num(a.n.at));
-    const since = addDays(todayKey, -91), recent = xs.filter((x) => x.d >= since);
-    return [el("p", { class: "sub cal7-notes-sum" }, "この3か月：" + CAL_MOODS.map(([k, w]) => `${w} ${recent.filter((x) => x.n.mood === k).length}`).join("・")),
-      el("ul", { class: "list card cal7-notes" }, xs.slice(0, 100).map((x) => el("li", { class: "btn-row" },
-        el("button", { type: "button", class: "row-btn nav", "aria-label": `${fmtMDW(x.d)}の「${x.e.title}」のふりかえり（${[calMoodWord(x.n.mood), x.n.text].filter(Boolean).join("、")}）。この日を開く`, onclick: () => openDayFromFind(x.d) },
-          el("span", { class: "chip", style: "--chip-c: var(--c-cal)" }, fmtShort(x.d)),
-          el("span", { class: "body" }, el("span", { class: "text" }, oneLine(x.e.title)),
-            el("span", { class: "sub cal-note-line" }, x.n.mood ? el("span", { class: "cal-mood m-" + x.n.mood }, calMoodWord(x.n.mood)) : null, x.n.text ? el("span", {}, (x.n.mood ? " " : "") + x.n.text) : null)),
-          el("span", { class: "chev" }, icon("next", 16))))))];
-  }
+  // ⑧ ふりかえり (予定's third view: every plan's ふりかえり in a list): taken off 2026-11-23 (the user's call: 予定検索の
+  // ふりかえり機能を削除). A plan's own ふりかえり (その2 ⑩), written in it once over, stays, and 予定を探す still finds its
+  // words
 
   // ⑨ 文字で送る: the month's plans too (the day's month), a day a few lines, as この週の予定 has them
   function cal7ShareMonth(d) {

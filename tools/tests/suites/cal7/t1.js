@@ -113,19 +113,37 @@ let b;
   ok(!(await ev(p, "e7")).mark, "⑩ taken off");
   await closeSheet(p);
 
-  // ⑦ 重なっている予定 and ⑧ ふりかえり, in 予定
+  // ⑦ 重なっている予定, in 予定; ⑧ ふりかえり (予定's third view) taken off 2026-11-23, the user's call, with その3 ⑤'s
+  // 繰り返し beside it: no 見方 to switch, これから at once, the label chips under the field; the plans' ふりかえり kept,
+  // and found by their words
   p = await open();
   await p.click("#calFind"); await p.waitForTimeout(700);
   ok(nos(await txt(p, ".cal7-clash")).includes("面接と歯医者") && nos(await txt(p, ".cal7-clash")).includes("11/17（火）"), "⑦ 面接 runs into 歯医者", await txt(p, ".cal7-clash"));
-  await p.click('#cal3FindSeg [data-k="notes"]'); await p.waitForTimeout(400);
-  const notes = await p.evaluate(() => [...document.querySelectorAll(".cal7-notes li")].map((x) => x.innerText.replace(/\s+/g, "")));
-  ok(notes.length === 2 && notes[0].includes("発表") && notes[0].includes("いまいち") && notes[1].includes("サークル") && notes[1].includes("楽しかった"), "⑧ the latest first", notes);
-  ok(nos(await txt(p, ".cal7-notes-sum")) === "この3か月：よかった1・ふつう0・いまいち1", "⑧ counted", await txt(p, ".cal7-notes-sum"));
-  ok((await p.getAttribute('#cal3FindSeg [data-k="notes"]', "aria-pressed")) === "true" && (await p.getAttribute('#cal3FindSeg [data-k="coming"]', "aria-pressed")) === "false", "⑧ its button pressed");
-  await p.click('#cal3FindSeg [data-k="coming"]'); await p.waitForTimeout(400);
-  ok((await p.getAttribute('#cal3FindSeg [data-k="notes"]', "aria-pressed")) === "false" && (await txt(p, "#findList")).includes("これからの予定"), "⑧ これから again");
-  await p.click('#cal3FindSeg [data-k="rep"]'); await p.waitForTimeout(400);
-  ok((await p.getAttribute('#cal3FindSeg [data-k="rep"]', "aria-pressed")) === "true" && (await p.getAttribute('#cal3FindSeg [data-k="notes"]', "aria-pressed")) === "false", "⑧ 繰り返しの予定 as it was");
+  const view = await p.evaluate(() => ({
+    seg: !!document.querySelector("#cal3FindSeg, .cal3-find-seg"),
+    tabs: [...document.querySelectorAll("#findView button")].map((x) => x.textContent.trim()).filter((t) => /^(これから|繰り返し|ふりかえり)$/.test(t)),
+    notes: !!document.querySelector(".cal7-notes, .cal7-notes-sum"),
+    order: [...document.getElementById("findView").children].filter((x) => !x.hidden).map((x) => x.id || x.className),
+  }));
+  ok(!view.seg && !view.tabs.length && !view.notes, "⑧ gone: no これから・繰り返し・ふりかえり to switch, no list of ふりかえり", view);
+  ok(view.order.join(",") === "rec-search,cal6FindLabels,findList", "the label chips right under the field", view.order);
+  ok((await txt(p, "#findList")).includes("これからの予定"), "これから at once");
+  const e8 = await ev(p, "e8"), e9 = await ev(p, "e9");
+  ok(e8?.notes?.["2026-11-10"]?.text === "楽しかった" && e9?.notes?.["2026-11-12"]?.mood === "bad", "the plans' ふりかえり kept as they were", [e8?.notes, e9?.notes]);
+  await p.fill("#findText", "楽しかった"); await p.waitForTimeout(500);
+  ok(nos(await txt(p, "#findList")).includes("サークル"), "a ふりかえり's words still find its plan", await txt(p, "#findList"));
+  await closeSheet(p);
+  // a plan's own 繰り返し stays (the user's call: 予定を追加における繰り返しの機能はそのまま): picked in 新しい予定, kept;
+  // in the plan opened, there too
+  await p.click("#calAdd"); await p.waitForTimeout(800);
+  ok(await p.evaluate(() => { const r = document.getElementById("planRepeat"); return !!r && !!r.offsetParent && [...r.options].some((o) => o.value === "weekly"); }), "新しい予定: 繰り返し still there");
+  await p.fill("#planTitle", "英会話"); await p.selectOption("#planRepeat", "weekly");
+  await p.click("#planSave"); await p.waitForTimeout(700);
+  const eng = (await ls(p, "events")).find((e) => e.title === "英会話");
+  ok(eng && eng.repeat === "weekly", "and kept: 毎週", eng);
+  await closeSheet(p);
+  await openPlan(p, "11月16日", "ゼミ");
+  ok(await p.evaluate(() => { const r = document.getElementById("edRepeat"); return !!r && !!r.offsetParent; }), "the plan opened: 繰り返し there too");
   await closeSheet(p);
 
   ok(!p.errs.length, "no error on the way", p.errs);
