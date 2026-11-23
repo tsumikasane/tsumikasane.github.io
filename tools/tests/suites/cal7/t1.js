@@ -28,8 +28,9 @@ let b;
   ok(c && c.red && c.hol === "創立記念日" && !c.bars.includes("英会話"), "① 創立記念日 as a holiday, 英会話 resting", c);
   ok((await cell(p, "11月25日")).bars.includes("英会話"), "① the other turns as they were");
   let al = await p.evaluate(() => window.__cal7.alarms(Date.now()));
-  // ⑩ a mark before its name
-  ok((await cell(p, "11月16日")).bars.includes("🎓ゼミ"), "⑩ the mark before its name in the month", await cell(p, "11月16日"));
+  // ⑩ a mark before its name: Lucide's icon (the user's call, 2026-11-23), named for VoiceOver
+  const mk = await p.evaluate(() => { const c = [...document.querySelectorAll(".cal-day")].find((x) => x.getAttribute("aria-label").startsWith("11月16日")); const b = c && [...c.querySelectorAll(".bar")].find((x) => x.textContent.endsWith("ゼミ")); const v = b?.querySelector("svg.lc"); return b ? { text: b.textContent, href: v?.querySelector("use")?.getAttribute("href"), name: v?.getAttribute("aria-label"), first: b.firstChild === v || b.firstElementChild === v } : null; });
+  ok(mk && mk.text === "ゼミ" && mk.href === "#lc-graduation-cap" && mk.name === "学校", "⑩ the mark before its name in the month: its icon", mk);
   // ① in the gear: one more, a run of days, then deleted
   await p.click("#calSettings"); await p.waitForTimeout(700);
   ok((await txt(p, ".cal7-offs")).includes("創立記念日"), "① listed in the gear");
@@ -97,6 +98,9 @@ let b;
   await p.fill("#planSetName", "合宿"); await p.click('#planSets [data-k="set-save"]'); await p.waitForTimeout(400);
   const sets = (await setting(p, "calendar")).checkSets;
   ok(sets.length === 2 && sets[1].name === "合宿" && sets[1].items.join() === "充電器,歯ブラシ,寝袋", "⑥ the list kept as 合宿", sets);
+  // ⑩ the picker: the sixteen as Lucide's icons, each named (🍽️ its own, the rest as the stamps)
+  const pk = await p.evaluate(() => [...document.querySelectorAll("#planMarks button[data-mark]")].filter((x) => x.dataset.mark).map((x) => [x.dataset.mark, x.querySelector("use")?.getAttribute("href"), x.getAttribute("aria-label"), x.textContent.trim()]));
+  ok(pk.length === 16 && pk.every(([, h, , t]) => /^#lc-/.test(h || "") && t === "") && JSON.stringify(pk.find((x) => x[0] === "🍽️")) === JSON.stringify(["🍽️", "#lc-utensils", "アイコン 食事", ""]) && pk.find((x) => x[0] === "🍻")[2] === "アイコン 飲み会", "⑩ the picker: sixteen icons, named", pk.slice(0, 5));
   await p.click('#planMarks [data-mark="🍻"]'); await p.waitForTimeout(150);
   await p.click("#planSave"); await p.waitForTimeout(700);
   const made = (await ls(p, "events")).find((e) => e.title === "ゼミ合宿");
