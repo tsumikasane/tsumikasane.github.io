@@ -107,11 +107,12 @@ let b;
   ok(s1 && s1.text.startsWith("予定のない日（11/16〜11/29）\n") && s1.text.includes("11/19（木）"), "① 予定のない日", s1);
   await closeSheet(p);
 
-  // ⑧ by voice
+  // (⑧ by voice taken out: the user's call, 2026-11-23)
   await p.click("#calAdd"); await p.waitForTimeout(700);
   ok((await p.getAttribute("#planSay", "placeholder")) === "お知らせのひとこと", "(その11 ② the field's name alone)");
-  await p.evaluate(() => { window.webkitSpeechRecognition = window.SpeechRecognition = class { start() { setTimeout(() => { this.onresult({ results: [[{ transcript: "あした15時 歯医者" }]] }); this.onend(); }, 50); } stop() {} }; });
-  await p.click("#cal12Mic"); await p.waitForTimeout(400);
+  ok(!(await p.$("#cal12Mic")) && !(await p.$(".cal12-title")), "⑧ no 声で入れる by the name (taken out)");
+  await p.fill("#planTitle", "あした15時 歯医者"); await p.waitForTimeout(300);
+  await p.evaluate(() => document.querySelector("#planParse button, .plan-parse button")?.click()); await p.waitForTimeout(300);
   ok((await p.inputValue("#planTitle")) === "歯医者" && (await p.inputValue("#planDate")) === "2026-11-17" && (await p.inputValue("#planTime")) === "15:00" && (await p.inputValue("#planEndTime")) === "16:00", "⑧ heard and put in", [await p.inputValue("#planTitle"), await p.inputValue("#planDate"), await p.inputValue("#planTime")]);
   // ⑦ in a new plan's form, ③ saved
   await setVal(p, "planDate", today); await setVal(p, "planTime", "17:00"); await p.waitForTimeout(150);

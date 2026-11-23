@@ -25,7 +25,7 @@ let b;
 
   // ①③④② in the month
   let c = await cell(p, "11月16日");
-  ok(c && c.bars.includes("★ゼミ") && c.stamp === "cake" && c.label.includes("スタンプ 誕生日"), "① ★ before a 大事な予定, ④ its stamp in the corner (Lucide's cake, named in words)", c);
+  ok(c && c.bars.includes("ゼミ") && !c.bars.some((x) => x.includes("★")) && c.stamp === "cake" && c.label.includes("スタンプ 誕生日"), "① ★ taken out (2026-11-23): the name alone, ④ its stamp in the corner (Lucide's cake, named in words)", c);
   c = await cell(p, "11月18日");
   ok(c && c.bars.includes("英会話#cx"), "② a turn called off is struck through", c);
   c = await cell(p, "11月25日");
@@ -68,7 +68,7 @@ let b;
 
   // ② 中止 from the plan, and back with 元に戻す
   await openPlan(p, "11月16日", "ゼミ");
-  ok((await p.$eval("#edStar", (x) => x.checked)) && (await p.inputValue("#edWith")) === "田中さん", "①⑥ the form holds ★ and いっしょの人");
+  ok(!(await p.$("#edStar")) && !(await txt(p, "#evEdit")).includes("大事な予定") && (await p.inputValue("#edWith")) === "田中さん", "① no 大事な予定 in the form (taken out), ⑥ いっしょの人 there");
   await p.click('.cal4-plan [data-k="cx"]'); await p.waitForTimeout(600);
   ok(JSON.stringify((await ev(p, "e1")).cancel) === '["2026-11-16"]', "② called off", (await ev(p, "e1")).cancel);
   ok((await txt(p, '.cal4-plan [data-k="cx"]')) === "中止をやめる", "② the button now takes it back");
@@ -86,12 +86,12 @@ let b;
   let e1 = await ev(p, "e1");
   ok(e1.time === "11:00" && e1.endTime === "12:30", "⑨ 1時間後", e1);
   await closeSheet(p);
-  // ① off in the form, saved
+  // saved again: the ★ kept from before stays (the data is not taken off with 大事な予定)
   await openPlan(p, "11月16日", "ゼミ");
-  await p.click("#edStar"); await p.waitForTimeout(150);
+  await p.fill("#edWith", "田中さん・山田さん");
   await p.click("#sheetSave"); await p.waitForTimeout(700);
   e1 = await ev(p, "e1");
-  ok(!e1.star && e1.with === "田中さん", "① ★ taken off, ⑥ the rest kept", e1);
+  ok(e1.star === true && e1.with === "田中さん・山田さん", "① its star kept as it was, ⑥ the change saved", e1);
   await closeSheet(p);
 
   // a new plan: ①⑤⑥⑦ and ③
@@ -104,17 +104,16 @@ let b;
   ok(await p.$eval("#planEndNote", (x) => x.disabled), "⑤ 終わったらお知らせ: not for an all-day plan");
   await setVal(p, "planTime", "13:00"); await p.waitForTimeout(200);
   ok(!(await p.$eval("#planEndNote", (x) => x.disabled)), "⑤ there once it has a time");
-  await p.click("#planStar"); await p.click("#planEndNote"); await p.fill("#planWith", "佐藤さん");
+  ok(!(await p.$("#planStar")), "① no 大事な予定 in the new plan's form");
+  await p.click("#planEndNote"); await p.fill("#planWith", "佐藤さん");
   await p.click("#planSave"); await p.waitForTimeout(700);
   const made = (await ls(p, "events")).find((e) => e.title === "打ち合わせ");
-  ok(made && made.star === true && made.endNote === true && made.with === "佐藤さん", "①⑤⑥ saved with them", made);
+  ok(made && !("star" in made) && made.endNote === true && made.with === "佐藤さん", "⑤⑥ saved with them (no star)", made);
   ok((await p.evaluate(() => window.__cal4.sig())) !== sig0, "⑤ the notifications sent again");
-  // 予定を探す: by who it is with, and ★
+  // 予定を探す: by who it is with (★ no longer: 大事な予定 taken out)
   await p.click("#calFind"); await p.waitForTimeout(600);
   await p.fill("#findText", "佐藤"); await p.waitForTimeout(400);
-  ok((await txt(p, "#findList")).includes("★打ち合わせ") && (await txt(p, "#findList")).includes("いっしょ：佐藤さん"), "⑥ found by who it is with", await txt(p, "#findList"));
-  await p.fill("#findText", "★"); await p.waitForTimeout(400);
-  ok((await txt(p, "#findList")).includes("打ち合わせ") && !(await txt(p, "#findList")).includes("美容院"), "① ★ finds the 大事な予定", await txt(p, "#findList"));
+  ok((await txt(p, "#findList")).includes("打ち合わせ") && !(await txt(p, "#findList")).includes("★") && (await txt(p, "#findList")).includes("いっしょ：佐藤さん"), "⑥ found by who it is with", await txt(p, "#findList"));
   await closeSheet(p);
   // ③ はじまりの年 while it is 毎年
   await p.click("#calAdd"); await p.waitForTimeout(700);
@@ -128,7 +127,7 @@ let b;
   const dad = (await ls(p, "events")).find((e) => e.title === "父の誕生日");
   ok(dad && dad.repeat === "yearly" && dad.fromYear === 1968, "③ saved", dad);
 
-  // 週 shows ★ and 中止 too
+  // 週 shows 中止 too
   await p.evaluate(() => window.__cal4 && 0);
   ok(!p.errs.length, "no error on the way", p.errs);
   await b.close();

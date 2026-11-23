@@ -32,16 +32,16 @@ let b;
   ok(d0 && iso(d0) === "2026-11-17T00:00:00.000Z" && d0.title === "きょうは支払いの締め切り", "① that morning", d0);
   // ⑩ the secret one's notification
   const sec = al.find((a) => a.tag === "e2:2026-11-16");
-  ok(sec && sec.title === "予定のお知らせ" && sec.body === "きょう 14:00〜15:00", "⑩ its name and place kept out", sec);
+  ok(sec && sec.title !== "予定のお知らせ" && /面接/.test(sec.title + sec.body), "⑩ ひみつ taken out (2026-11-23): its name as any plan's", sec);
 
   // ⑩ the month, a day's list, きょう's tile
   const bars = await p.evaluate(() => [...[...document.querySelectorAll(".cal-day")].find((x) => x.getAttribute("aria-label").startsWith("11月16日")).querySelectorAll(".bar")].map((x) => x.textContent));
-  ok(bars.includes("ひみつの予定") && !bars.some((x) => x.includes("面接")), "⑩ in the month", bars);
+  ok(bars.includes("面接") && !bars.some((x) => x.includes("ひみつの予定")), "⑩ in the month: its name (ひみつ taken out)", bars);
   await openDayOf(p, "11月16日");
-  const row = nos(await p.locator("#calDayList li", { hasText: "ひみつの予定" }).first().innerText());
-  ok(row.includes("ひみつの予定") && !row.includes("面接") && !row.includes("本社") && !row.includes("社名"), "⑩ in a day's list: no name, place or memo", row);
-  await p.locator("#calDayList .row-btn", { hasText: "ひみつの予定" }).first().click(); await p.waitForTimeout(700);
-  ok((await p.inputValue("#edTitle")) === "面接" && await p.isChecked("#edSecret"), "⑩ opened: there, ひみつ on");
+  const row = nos(await p.locator("#calDayList li", { hasText: "面接" }).first().innerText());
+  ok(row.includes("面接") && row.includes("本社") && row.includes("社名") && !row.includes("ひみつの予定"), "⑩ in a day's list: its name, place and memo", row);
+  await p.locator("#calDayList .row-btn", { hasText: "面接" }).first().click(); await p.waitForTimeout(700);
+  ok((await p.inputValue("#edTitle")) === "面接" && !(await p.$("#edSecret")), "⑩ opened: no ひみつ in the form");
   await closeSheet(p);
 
   // ④ from ゼミ on, 30 minutes later (線形代数 at 9:00 before it stays)
@@ -79,10 +79,11 @@ let b;
   await p.evaluate(() => document.querySelector('#planLabels input[value="l2"]').click()); await p.fill("#planTitle", "ゼミの発表"); await p.waitForTimeout(300);
   ok(await p.evaluate(() => document.querySelector('#planLabels input[value="l2"]').checked), "③ one picked by hand stays");
   // ① and ⑩ kept with a new plan
-  await p.selectOption("#planDueKind", "cancel"); await p.fill("#planDueDay", "2026-11-18"); await p.check("#planSecret");
+  await p.selectOption("#planDueKind", "cancel"); await p.fill("#planDueDay", "2026-11-18");
+  ok(!(await p.$("#planSecret")), "⑩ no ひみつ in the new plan's form");
   await p.click("#planSave"); await p.waitForTimeout(800);
   const made = (await ls(p, "events")).find((e) => e.title === "ゼミの発表");
-  ok(made && JSON.stringify(made.due18) === '{"k":"cancel","d":"2026-11-18"}' && made.secret === true && made.labelId === "l2", "①⑩ kept", made);
+  ok(made && JSON.stringify(made.due18) === '{"k":"cancel","d":"2026-11-18"}' && !("secret" in made) && made.labelId === "l2", "① kept (no secret)", made);
   await closeSheet(p);
 
   await p.click("#calAdd"); await p.waitForTimeout(700);

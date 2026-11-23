@@ -64,13 +64,13 @@ let b;
   await setVal(p, "edMeet", "17:30"); await p.waitForTimeout(200);
   await closeSheet(p);
 
-  // ⑦⑧ online, a phone
+  // ⑧ a phone (⑦ オンライン taken out: the user's call, 2026-11-23; its online kept on the plan does nothing)
   await openDayOf(p, "11月19日");
-  ok(nos(await txt(p, "#calDayList")).includes("オンライン"), "⑦ オンライン in the day's list");
+  ok(!(await p.evaluate(() => [...document.querySelectorAll("#calDayList .cal-more")].some((x) => x.textContent.includes("オンライン")))), "⑦ no オンライン under its name (taken out)");
   await p.locator("#calDayList .row-btn", { hasText: "オンライン面談" }).first().click(); await p.waitForTimeout(700);
   const join = await p.evaluate(() => document.querySelector('.cal11-quick [data-k="join"]')?.getAttribute("href")), tel = await p.evaluate(() => document.querySelector('.cal11-quick [data-k="tel"]')?.getAttribute("href"));
-  ok(join === "https://meet.example.com/abc" && tel === "tel:0312345678", "⑦⑧ 参加する and 電話をかける at the top", [join, tel]);
-  ok(await p.isChecked("#edOnline") && (await p.inputValue("#edTel")) === "03-1234-5678" && await p.isHidden("#edSayRow"), "⑦⑧ in the form (no alarm: no word)");
+  ok(!join && tel === "tel:0312345678", "⑧ 電話をかける at the top (⑦ 参加する taken out)", [join, tel]);
+  ok(!(await p.$("#edOnline")) && (await p.inputValue("#edTel")) === "03-1234-5678" && await p.isHidden("#edSayRow"), "⑧ in the form, no オンライン (no alarm: no word)");
   await closeSheet(p);
 
   // ③ the class put in 勉強
@@ -114,9 +114,7 @@ let b;
   ok(await p.isVisible("#planSayRow"), "② the word once there is one");
   await p.fill("#planSay", "ゴミ袋を買う");
   await p.selectOption("#planTravel", "15"); await p.waitForTimeout(150);
-  await p.click("#planOnline"); await p.waitForTimeout(200);
-  ok((await p.inputValue("#planTravel")) === "0", "⑦ オンライン: no way there", await p.inputValue("#planTravel"));
-  await p.click("#planOnline"); await p.waitForTimeout(150);
+  ok(!(await p.$("#planOnline")), "⑦ no オンライン in the new plan's form (taken out)");
   await p.fill("#planTel", "090-0000-1111");
   await setVal(p, "planMeet", "13:45"); await p.fill("#planMeetPlace", "駅");
   await p.click("#planSave"); await p.waitForTimeout(800);

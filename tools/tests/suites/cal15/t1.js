@@ -33,14 +33,9 @@ let b;
   const pushed = await p.evaluate(() => window.__cal15.push());
   ok(pushed[0]?.[0] === "cal15Clock" && JSON.stringify(pushed).includes('[{"k":1,"at":"21:00"},{"k":0,"at":"07:30"}]'), "① what the server is sent has them", pushed);
 
-  // ⑨ the year's 大事な予定
+  // ⑨ the year's 大事な予定: taken out with 大事な予定 (the user's call, 2026-11-23)
   await p.click('#calViews [data-view="year"]'); await p.waitForTimeout(700);
-  const stars = await txts(p, ".cal15-stars li");
-  ok(JSON.stringify(stars.map(nos)) === '["3/1★発表会終日","11/16★面接14:00〜15:00きょう","12/10★試験09:00〜12:00あと24日"]', "⑨ the ★ ones by day (the birthday in its own list)", stars);
-  ok(await p.evaluate(() => { const li = [...document.querySelectorAll(".cal15-stars li")]; return li[0].classList.contains("past") && li[1].classList.contains("next") && document.querySelector(".cal15-stars").compareDocumentPosition(document.querySelector(".cal3-hols:not(.cal15-stars)")) & 4; }), "⑨ gone by paler, the next bold, over the holidays");
-  await p.locator(".cal15-stars .row-btn", { hasText: "試験" }).click(); await p.waitForTimeout(700);
-  ok((await p.evaluate(() => window.__cal15.day())) === "2026-12-10" && await p.evaluate(() => document.getElementById("daySheet").open), "⑨ pressed, its day");
-  await closeSheet(p);
+  ok(!(await p.$(".cal15-stars")) && !(await txt(p, "#calYear")).includes("大事な予定"), "⑨ the year's 大事な予定: gone (taken out)");
   await p.click('#calViews [data-view="month"]'); await p.waitForTimeout(700);
 
   // ② the plans as a table
@@ -55,10 +50,11 @@ let b;
   // ④ a new plan at the next free time (ゼミ till 12:00, 面接 at 14:00 with 30 minutes to get there)
   await p.click("#calAdd"); await p.waitForTimeout(700);
   ok(await p.evaluate(() => document.getElementById("planForm").contains(document.getElementById("planClock"))), "① kept in the form (a draft has it)");
-  ok((await txt(p, '[data-start="free"]')) === "次の空き 12:00", "④ the chip", await txt(p, '[data-start="free"]'));
+  ok(!(await p.$('[data-start="free"]')), "④ 次の空き: gone (taken out, 2026-11-23)");
   await p.fill("#planTitle", "美容院");
-  await p.click('[data-start="free"]'); await p.waitForTimeout(300);
-  ok((await p.inputValue("#planDate")) === today && (await p.inputValue("#planTime")) === "12:00" && (await p.inputValue("#planEndTime")) === "13:00", "④ 12:00〜13:00", [await p.inputValue("#planTime"), await p.inputValue("#planEndTime")]);
+  await p.evaluate(() => { for (const [id, v] of [["planTime", "12:00"], ["planEndTime", "13:00"]]) { const t = document.getElementById(id); t.value = v; t.dispatchEvent(new Event("input", { bubbles: true })); t.dispatchEvent(new Event("change", { bubbles: true })); } });
+  await p.waitForTimeout(200);
+  ok((await p.inputValue("#planDate")) === today && (await p.inputValue("#planTime")) === "12:00" && (await p.inputValue("#planEndTime")) === "13:00", "(12:00〜13:00, typed: the free time as it was)", [await p.inputValue("#planTime"), await p.inputValue("#planEndTime")]);
   // ① set on the 通知アラーム page
   await p.click("#planAlarmBtn"); await p.waitForTimeout(500);
   ok(await p.isVisible("#cal15ClockBox") && (await p.inputValue("#cal15ClockDay")) === "1" && (await p.inputValue("#cal15ClockAt")) === "21:00", "① 時刻で決める, 前の日 21:00 at first");
@@ -82,7 +78,7 @@ let b;
   await openPlan(p, "11月17日", "歯医者");
   ok((await txt(p, "#edAlarmText")) === "前の日 21:00、当日 07:30" && await p.isVisible("#edSayRow"), "① the row, and ひとこと offered", await txt(p, "#edAlarmText"));
   const prev = nos(await txt(p, ".cal15-nav-prev")), next = nos(await txt(p, ".cal15-nav-next"));
-  ok(prev === "‹前の予定★面接11/16（月）14:00〜15:00" && next === "次の予定›会議11/18（水）10:00〜11:00", "⑥ before and after", [prev, next]);
+  ok(prev === "‹前の予定面接11/16（月）14:00〜15:00" && next === "次の予定›会議11/18（水）10:00〜11:00", "⑥ before and after", [prev, next]);
   await p.click('[data-k="nav-next"]'); await p.waitForTimeout(700);
   ok((await p.inputValue("#edTitle")) === "会議" && (await p.inputValue("#edDate")) === "2026-11-18" && (await p.evaluate(() => window.__cal15.day())) === "2026-11-18", "⑥ 会議 opened, on its day");
   await p.fill("#edTitle", "会議2");

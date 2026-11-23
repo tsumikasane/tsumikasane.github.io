@@ -101,11 +101,8 @@ let b;
   await p.keyboard.press("n"); await p.waitForTimeout(800);
   ok(await p.isVisible("#planView"), "⑦ N: a new plan");
 
-  // ⑩ the start at a press (its length kept)
-  await p.click('#planStarts [data-start="1時間後"]'); await p.waitForTimeout(200);
-  ok((await p.inputValue("#planDate")) === today && (await p.inputValue("#planTime")) === "11:30" && (await p.inputValue("#planEndTime")) === "12:30", "⑩ 1時間後: 11:30〜12:30", [await p.inputValue("#planDate"), await p.inputValue("#planTime"), await p.inputValue("#planEndTime")]);
-  await p.click('#planStarts [data-start="あしたの朝 9:00"]'); await p.waitForTimeout(200);
-  ok((await p.inputValue("#planDate")) === "2026-11-15" && (await p.inputValue("#planTime")) === "09:00" && (await p.inputValue("#planEndTime")) === "10:00", "⑩ あしたの朝", [await p.inputValue("#planDate"), await p.inputValue("#planTime"), await p.inputValue("#planEndTime")]);
+  // ⑩ the start at a press: いまから〜あしたの朝 (and その15's 次の空き) taken out, the user's call, 2026-11-23
+  ok(!(await p.$("#planStarts [data-start]")) && !(await txt(p, "#planView")).includes("いまから"), "⑩ the start's buttons: gone (taken out)");
   await closeSheet(p);
   ok(!p.errs.length, "no error on the way", p.errs);
 

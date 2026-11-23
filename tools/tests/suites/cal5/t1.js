@@ -68,13 +68,8 @@ let b;
   await p.click("#calAdd"); await p.waitForTimeout(700);
   await p.fill("#planTitle", "勉強会");
   await setVal(p, "planTime", "10:00"); await p.waitForTimeout(200);
-  ok(await p.isVisible("#planLens"), "① the lengths under 開始 and 終了");
-  await p.click('#planLens [data-len="90"]'); await p.waitForTimeout(200);
-  ok((await p.inputValue("#planEndTime")) === "11:30" && (await p.getAttribute('#planLens [data-len="90"]', "aria-pressed")) === "true", "① 1時間30分: ends 11:30, lit");
-  await setVal(p, "planTime", "23:00"); await p.waitForTimeout(200);
-  await p.click('#planLens [data-len="60"]'); await p.waitForTimeout(200);
-  const d0 = await p.inputValue("#planDate"), d1 = await p.evaluate((d) => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate() + 1); return x.toISOString().slice(0, 10); }, d0);
-  ok((await p.inputValue("#planEndTime")) === "00:00" && (await p.inputValue("#planEndDate")) === d1, "① past midnight: the next day", [d0, await p.inputValue("#planEndDate"), await p.inputValue("#planEndTime")]);
+  // (① 長さのボタン, 30分〜3時間, taken out: the user's call, 2026-11-23)
+  ok(!(await p.$("#planLens")) && !(await p.$("#edLens")) && !(await p.$('[data-len="90"]')), "① the lengths' buttons: gone (taken out)");
   await closeSheet(p);
   if (await p.evaluate(() => document.getElementById("daySheet").open)) await closeSheet(p);
 
