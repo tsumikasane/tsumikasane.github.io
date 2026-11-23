@@ -52,19 +52,19 @@ const at = (s) => Date.parse(`${s}+09:00`);
   await closeSheet(p);
 
   // ---- ② 保存した探し方
-  await p.focus("#todoSearch"); await p.fill("#todoSearch", "! @大学"); await p.waitForTimeout(400);
+  await p.focus("#todoSearch"); await p.fill("#todoSearch", "@大学"); await p.waitForTimeout(400);
   ok(await p.locator("#td19Chips .td20-save").isVisible(), "② ＋ この探し方を保存 among the buttons");
   await p.locator("#td19Chips .td20-save").click(); await p.waitForTimeout(400);
-  ok((await p.inputValue("#todoMenuGroup .ask-field input")) === "! @大学", "② its words as its name at first");
-  await p.fill("#todoMenuGroup .ask-field input", "大学の重要"); await p.locator("#todoMenuGroup .ask-go").click(); await p.waitForTimeout(500);
+  ok((await p.inputValue("#todoMenuGroup .ask-field input")) === "@大学", "② its words as its name at first");
+  await p.fill("#todoMenuGroup .ask-field input", "大学のToDo"); await p.locator("#todoMenuGroup .ask-go").click(); await p.waitForTimeout(500);
   let set = await W(p, "set");
-  ok(set.views.length === 1 && set.views[0].name === "大学の重要" && set.views[0].q === "! @大学", "② kept with the account", set.views);
+  ok(set.views.length === 1 && set.views[0].name === "大学のToDo" && set.views[0].q === "@大学", "② kept with the account", set.views);
   await p.fill("#todoSearch", ""); await p.focus("#todoSearch"); await p.waitForTimeout(300);
-  ok((await p.locator("#td19Chips button").first().textContent()) === "★ 大学の重要", "② first among the buttons");
+  ok((await p.locator("#td19Chips button").first().textContent()) === "★ 大学のToDo", "② first among the buttons");
   await p.locator("#td19Chips .td20-view").click(); await p.waitForTimeout(400);
-  ok((await p.inputValue("#todoSearch")) === "! @大学 " && (await shown(p)) === "a,b,e,g", "② pressed: its words looked for", [await p.inputValue("#todoSearch"), await shown(p)]);
+  ok((await p.inputValue("#todoSearch")) === "@大学 " && (await shown(p)) === "a,b,e,g,old1", "② pressed: its words looked for", [await p.inputValue("#todoSearch"), await shown(p)]);
   await p.fill("#todoSearch", ""); await p.click("#todoMore"); await p.waitForTimeout(300); await p.keyboard.press("Escape"); await p.waitForTimeout(400);
-  await menu(p, "保存した探し方を消す"); await press(p, "大学の重要");
+  await menu(p, "保存した探し方を消す"); await press(p, "大学のToDo");
   ok((await W(p, "set")).views.length === 0, "② taken off");
   await undo(p);
   ok((await W(p, "set")).views.length === 1, "② 元に戻す");

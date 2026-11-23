@@ -115,13 +115,14 @@ const chip = async (p, words) => { await p.locator("#td19Chips button", { hasTex
   // ---- ⑥ 探す条件のボタン
   ok(await p.evaluate(() => !document.getElementById("td19Chips") || document.getElementById("td19Chips").hidden), "⑥ none at first");
   await p.focus("#todoSearch"); await p.waitForTimeout(300);
-  ok(!(await p.evaluate(() => document.getElementById("td19Chips").hidden)) && (await p.locator("#td19Chips button").count()) >= 13, "⑥ the conditions as the field is pressed");
-  await chip(p, "重要");
-  ok((await p.inputValue("#todoSearch")) === "! " && (await shown(p)) === "a,b,e,g", "⑥ one pressed: put in", [await p.inputValue("#todoSearch"), await shown(p)]);
-  ok((await p.locator('#td19Chips button[data-op="!"]').getAttribute("aria-pressed")) === "true" && (await p.evaluate(() => document.activeElement?.id)) === "todoSearch", "⑥ said pressed, the field still in use");
+  ok(!(await p.evaluate(() => document.getElementById("td19Chips").hidden)) && (await p.locator("#td19Chips button").count()) >= 12, "⑥ the conditions as the field is pressed");
+  ok(!(await p.locator('#td19Chips button[data-op="!"]').count()) && !(await p.locator("#td19Chips button", { hasText: "重要" }).count()), "⑥ no 重要 (taken off with it, 2026-11-23)");
+  await chip(p, "期限切れ");
+  ok((await p.inputValue("#todoSearch")) === "期限:切れ " && (await shown(p)) === "e", "⑥ one pressed: put in", [await p.inputValue("#todoSearch"), await shown(p)]);
+  ok((await p.locator('#td19Chips button[data-op="期限:切れ"]').getAttribute("aria-pressed")) === "true" && (await p.evaluate(() => document.activeElement?.id)) === "todoSearch", "⑥ said pressed, the field still in use");
   await chip(p, "来週");
-  ok((await shown(p)) === "b" && (await txt(p, "#td18OpsLine")) === "条件：重要・期限が来週", "⑥ another with it (期限:来週)", [await shown(p), await txt(p, "#td18OpsLine")]);
-  await chip(p, "重要");
+  ok((await shown(p)) === "" && (await txt(p, "#td18OpsLine")) === "条件：期限が切れている・期限が来週", "⑥ another with it (期限:来週)", [await shown(p), await txt(p, "#td18OpsLine")]);
+  await chip(p, "期限切れ");
   ok((await p.inputValue("#todoSearch")).trim() === "期限:来週" && (await shown(p)) === "b,j1", "⑥ pressed again: taken out", [await p.inputValue("#todoSearch"), await shown(p)]);
   await p.fill("#todoSearch", "繰り返し:あり"); await p.waitForTimeout(400);
   ok((await shown(p)) === "r1,ra10,rp3", "⑥ 繰り返し:あり", await shown(p));

@@ -49,15 +49,16 @@ async function open(b, when, o = {}) {
   const r1n = (await byText(p, "ゴミ出し")).find((t) => !t.done);
   ok(r1n && r1n.pin === true && r1n.id !== "r1", "① a repeat's next turn pinned too", r1n);
 
-  // ---- ② 自動で振り分け: a rule in 編集, a new ToDo put by it
+  // ---- ② 自動で振り分け: a rule in 編集, a new ToDo put by it (a rule's 重要, kept from before, put on nothing now: taken
+  // off with 重要, 2026-11-23)
   await W(p, "setting", "td12", { rules: [{ w: "買う", list: "l-job", label: "", flag: true }], carry: false, updatedAt: Date.now() }); await p.waitForTimeout(300);
   await p.click("#todoAdd"); await p.waitForTimeout(700);
   await p.fill("#todoText", "電池を買う"); await p.dispatchEvent("#todoText", "input");
   await p.click("#todoSave"); await p.waitForTimeout(700);
-  ok((await status(p)).includes("振り分け：「バイト」・重要"), "② said where it went", await status(p));
+  ok((await status(p)).includes("振り分け：「バイト」）") , "② said where it went (no 重要)", await status(p));
   await p.click("#sheetCancel"); await p.waitForTimeout(600);
   const nb = (await byText(p, "電池を買う"))[0];
-  ok(nb && nb.listId === "l-job" && nb.flag === true, "② put in the list, 重要", nb);
+  ok(nb && nb.listId === "l-job" && !nb.flag, "② put in the list (not 重要)", nb);
   // a list picked in the form stays
   await W(p, "tab", "l-uni"); await p.waitForTimeout(300);
   await p.click("#todoAdd"); await p.waitForTimeout(700);
@@ -65,7 +66,7 @@ async function open(b, when, o = {}) {
   await p.click("#todoSave"); await p.waitForTimeout(700);
   await p.click("#sheetCancel"); await p.waitForTimeout(600);
   const nb2 = (await byText(p, "本を買う"))[0];
-  ok(nb2 && nb2.listId === "l-uni" && nb2.flag === true, "② the list picked stays (重要 still put)", nb2);
+  ok(nb2 && nb2.listId === "l-uni" && !nb2.flag, "② the list picked stays", nb2);
   await W(p, "tab", ""); await p.waitForTimeout(300);
   // the rules in 編集
   await p.click("#todoSettings"); await p.waitForTimeout(800);

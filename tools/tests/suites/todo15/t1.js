@@ -119,7 +119,7 @@ const T = (d, hm) => Date.parse(`${d}T${hm}:00+09:00`);
   // ---- ⑥ おすすめ順
   await W(p, "view", { sort: "rec" }); await p.waitForTimeout(400);
   const first = await p.evaluate(() => [...document.querySelectorAll("#todoList li:not(.done) [data-check]")].slice(0, 3).map((x) => x.dataset.check));
-  ok(JSON.stringify(first) === '["e","g","a"]', "⑥ 期限切れの重要, then the ones begun and due tomorrow", first);
+  ok(JSON.stringify(first) === '["e","c","g"]', "⑥ 期限切れ, then today's, then the one begun and due tomorrow (重要 counts no more, 2026-11-23)", first);
   ok((await heads(p)).some((h) => h.startsWith("おすすめ順")), "⑥ its heading", await heads(p));
   await W(p, "view", { sort: "" }); await p.waitForTimeout(300);
 

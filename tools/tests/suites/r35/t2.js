@@ -1,5 +1,6 @@
 // ToDo その5: the edges — nothing yet (no boxes offered, no card, an empty month), no classes nor plans to pick, a 期限
-// picked and let go in its own sheet, 再通知 without お知らせ and with no time, a repeat taking 再通知 and 場所 on, Apple's
+// picked and let go in its own sheet, no お知らせ nor 再通知 to pick (off the forms, 2026-11-23), one kept with no time, a repeat
+// taking 再通知 and 場所 on, Apple's
 // map, a checklist's checks not deleted with the done ones, a card put away yesterday, the ones 間に合うか leaves out,
 // すっきり while picking, the calendar's other months, ⑨ under five, sets' words, and older data with none of these
 process.env.URL0 = process.env.URL0 || "http://localhost:8780/";
@@ -36,18 +37,16 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
   ok((await txt(e, ".td5-cal-sum")) === "この月に期限のToDoはありません" && (await e.$$(".td5-cal-c")).length === 0, "⑧ an empty month");
   await e.click("#sheetDone"); await e.waitForTimeout(400);
   await e.click("#todoAdd"); await e.waitForTimeout(600);
-  await e.locator("#todoByBox button", { hasText: "授業・予定から選ぶ" }).click(); await e.waitForTimeout(300);
+  await e.locator("#todoByBox button", { hasText: "予定から選ぶ" }).click(); await e.waitForTimeout(300);
   ok((await txt(e, "#todoByList")).startsWith("30日先までに、授業や予定がありません。"), "② nothing to pick: said so", await txt(e, "#todoByList"));
-  await e.locator("#todoByBox button", { hasText: "授業・予定から選ぶ" }).click(); await e.waitForTimeout(200);
+  await e.locator("#todoByBox button", { hasText: "予定から選ぶ" }).click(); await e.waitForTimeout(200);
   ok(await e.isHidden("#todoByList"), "② closed again");
-  // ③ 再通知 picked, then お知らせ off: not kept
+  // ③ お知らせ and 再通知, off the forms since 2026-11-23 (the user's call): one added has neither
   await e.fill("#todoText", "ゴミを出す"); await e.fill("#todoDue", "2026-11-12"); await e.dispatchEvent("#todoDue", "change");
-  await e.click("#todoRemind"); await e.waitForTimeout(200);
-  await e.selectOption("#todoNag", "60"); await e.click("#todoRemind"); await e.waitForTimeout(200);
-  ok(await e.isHidden("#todoNagRow"), "③ お知らせ off: 再通知 hidden");
+  ok(!(await e.$("#todoRemind")) && !(await e.$("#todoNag")), "③ no お知らせ nor 再通知 to pick");
   await e.click("#todoSave"); await e.waitForTimeout(500);
   const g0 = (await byText(e, "ゴミを出す"))[0];
-  ok(g0 && !("nag" in g0) && !g0.remind, "③ not kept without お知らせ", g0);
+  ok(g0 && !("nag" in g0) && !g0.remind, "③ added with neither", g0);
   await e.click("#sheetCancel"); await e.waitForTimeout(500);
   // ⑨ under five
   await menu(e, "完了のふりかえり");
@@ -59,7 +58,7 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
   await seed(p, D.all(), "todo"); await p.waitForTimeout(1200);
   await p.click('#todoList [data-edit="c"]'); await p.waitForTimeout(700);
   ok(!!(await p.$("#reByBox")) && !!(await p.$("#rePlace")), "② ④ in its own sheet");
-  await p.locator("#reByBox button", { hasText: "授業・予定から選ぶ" }).click(); await p.waitForTimeout(300);
+  await p.locator("#reByBox button", { hasText: "予定から選ぶ" }).click(); await p.waitForTimeout(300);
   await p.locator("#reByList .td5-by-opt", { hasText: "面接" }).click(); await p.waitForTimeout(300);
   ok((await p.inputValue("#reDue")) === "2026-11-18" && (await p.inputValue("#reTime")) === "14:00" && (await p.inputValue("#rePlace")) === "本社ビル 5階", "② picked there: its day, time, place");
   await p.click("#recSave"); await p.waitForTimeout(600);
@@ -71,23 +70,23 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
   await p.click("#recSave"); await p.waitForTimeout(600);
   c = await todo(p, "c");
   ok(!c.by && c.due === "2026-11-17", "② its 期限 changed: let go", c);
-  // ③ no time: from the time ToDos are told (9:00), every 30 minutes
-  await p.click('#todoList [data-edit="d"]'); await p.waitForTimeout(700);
-  await p.fill("#reDue", "2026-11-11"); await p.dispatchEvent("#reDue", "change"); await p.click("#reRemind"); await p.waitForTimeout(300);
-  ok(await p.isVisible("#reNagRow"), "③ お知らせ on there: 再通知 shown");
-  await p.selectOption("#reNag", "30"); await p.click("#recSave"); await p.waitForTimeout(600);
+  // ③ one kept with no time (お知らせ and 再通知 put on before they left the forms, 2026-11-23): from the time ToDos are
+  // told (9:00), every 30 minutes
+  await p.evaluate((P) => { const td = JSON.parse(localStorage.getItem(P + "todos")), d = td.find((x) => x.id === "d"); Object.assign(d, { due: "2026-11-11", remind: true, nag: 30 }); delete d.time; localStorage.setItem(P + "todos", JSON.stringify(td)); }, P);
+  await p.reload(); await p.waitForTimeout(1000);
   const dn = (await W(p, "nag", WHEN.getTime())).filter((a) => a.tag.startsWith("todo-nag:d:")).map((a) => new Date(a.at).toISOString().slice(11, 16));
   ok(JSON.stringify(dn) === '["00:30","01:00","01:30","02:00","02:30"]', "③ no time: after 9:00 (JST 9:30〜11:30)", dn);
-  // ③④ a repeat's next turn takes them on (お知らせ by its switch, 場所 from its own sheet: 時刻 and 場所 left the new
-  // form, the user's call of 2026-11-19)
+  // ③④ a repeat's next turn takes them on (場所 from its own sheet: 時刻 and 場所 left the new form, the user's call of
+  // 2026-11-19; お知らせ and 再通知 kept from before they left the forms, 2026-11-23)
   await p.click("#todoAdd"); await p.waitForTimeout(700);
   await p.fill("#todoText", "植木に水"); await p.fill("#todoDue", "2026-11-11"); await p.dispatchEvent("#todoDue", "change");
-  await p.selectOption("#todoRepeat", "daily"); await p.click("#todoRemind"); await p.waitForTimeout(200);
-  await p.selectOption("#todoNag", "10"); await p.click("#todoSave"); await p.waitForTimeout(600);
+  await p.selectOption("#todoRepeat", "daily"); await p.click("#todoSave"); await p.waitForTimeout(600);
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
   let w0 = (await byText(p, "植木に水"))[0];
   await p.click(`#todoList [data-edit="${w0.id}"]`); await p.waitForTimeout(700);
   await p.fill("#rePlace", "ベランダ"); await p.click("#recSave"); await p.waitForTimeout(600);
+  await p.evaluate(({ P, id }) => { const td = JSON.parse(localStorage.getItem(P + "todos")); Object.assign(td.find((x) => x.id === id), { remind: true, nag: 10 }); localStorage.setItem(P + "todos", JSON.stringify(td)); }, { P, id: w0.id });
+  await p.reload(); await p.waitForTimeout(1000);
   w0 = await todo(p, w0.id);
   await p.click(`#todoList [data-check="${w0.id}"]`); await p.waitForTimeout(1800);
   const w1 = (await byText(p, "植木に水")).find((x) => !x.done);

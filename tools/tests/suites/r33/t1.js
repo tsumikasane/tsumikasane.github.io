@@ -24,17 +24,19 @@ const base = () => ({ todos: D.todos(), todoLists: D.lists(), events: D.events()
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
   await seed(p, base(), "todo"); await p.waitForTimeout(1000);
 
-  // ① 絞り込み: 重要だけ, then かかる時間が短い順; the line over the list; each taken off there
+  // ① 絞り込み: きょうまで, then かかる時間が短い順; the line over the list; each taken off there (重要だけ and 重要を先に:
+  // taken off with 重要, 2026-11-23)
   await p.click("#td4View"); await p.waitForTimeout(600);
   ok((await txt(p, "#sheetTitle")) === "絞り込みと並べ方", "① its sheet");
-  await p.locator("#tdPanelBody .td4-opt", { hasText: "重要だけ" }).click(); await p.waitForTimeout(400);
-  ok((await rows(p)).join(",") === "f,a", "① 重要だけ: 銀行で振込, レポートを書く", await rows(p));
+  ok(!(await p.locator("#tdPanelBody .td4-opt", { hasText: "重要" }).count()), "① no 重要だけ nor 重要を先に");
+  await p.locator("#tdPanelBody .td4-opt", { hasText: "きょうまで" }).click(); await p.waitForTimeout(400);
+  ok((await rows(p)).slice().sort().join(",") === "b,e,f,h", "① きょうまで: 洗濯, 英単語, 銀行で振込, 図書館の本", await rows(p));
   ok(await p.evaluate(() => document.getElementById("td4RepCard").hidden), "① narrowed: the repeat's card put away");
   await p.locator("#tdPanelBody .td4-opt", { hasText: "かかる時間が短い順" }).click(); await p.waitForTimeout(400);
-  ok((await rows(p)).join(",") === "a,f" && (await heads(p))[0] === "かかる時間が短い順", "① in the order picked, under its name (none set last)", [await rows(p), await heads(p)]);
+  ok((await rows(p)).slice(0, 2).join(",") === "h,e" && (await rows(p)).length === 4 && (await heads(p))[0] === "かかる時間が短い順", "① in the order picked, under its name (none set last)", [await rows(p), await heads(p)]);
   await done(p);
-  ok((await txt(p, "#td4ViewBar")) === "絞り込み：重要だけ 並べ方：かかる時間が短い順" && (await p.getAttribute("#td4View", "aria-pressed")) === "true", "① said over the list; its button lit", await txt(p, "#td4ViewBar"));
-  await p.locator("#td4ViewBar button", { hasText: "重要だけ" }).click(); await p.waitForTimeout(300);
+  ok((await txt(p, "#td4ViewBar")) === "絞り込み：きょうまで 並べ方：かかる時間が短い順" && (await p.getAttribute("#td4View", "aria-pressed")) === "true", "① said over the list; its button lit", await txt(p, "#td4ViewBar"));
+  await p.locator("#td4ViewBar button", { hasText: "きょうまで" }).click(); await p.waitForTimeout(300);
   await p.locator("#td4ViewBar button", { hasText: "かかる時間" }).click(); await p.waitForTimeout(300);
   ok(await p.evaluate(() => document.getElementById("td4ViewBar").hidden) && (await p.getAttribute("#td4View", "aria-pressed")) === "false" && (await heads(p))[0] === "期限切れ", "① taken off: as it was");
   await p.click("#td4View"); await p.waitForTimeout(500);

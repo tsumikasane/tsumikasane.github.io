@@ -28,11 +28,11 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00"), WK = "2026-11-08";
 
   // ---- ① いまやるなら: the best five, the card, ほかの候補, ×, and off in 編集
   const now = await W(p, "now");
-  ok(now.map((x) => x.id).join(",") === "e,a,g,c,r1", "① the five, best first (not 薬を飲む at 20:00, nor one put aside or a checklist's)", now);
-  ok(JSON.stringify(now[0].why) === JSON.stringify(["期限切れ", "重要", "40%まで進んでいる"]) && now[0].left === 72, "① why, and what is left of it (2時間, 40% done)", now[0]);
-  ok(await p.isVisible("#td6NowCard") && (await txt(p, "#td6NowCard .td6-now-name")) === "資料を読む" && (await p.evaluate(() => [...document.querySelectorAll("#td6NowCard .td6-now-why .phrase")].map((x) => x.textContent.replace(/[\s\u00a0\u2009\u202f]+/g, "")).join("・"))) === "期限切れ・重要・40%まで進んでいる・のこり1時間12分", "① the card", await txt(p, "#td6NowCard"));
+  ok(now.map((x) => x.id).join(",") === "e,c,a,g,r1", "① the five, best first (not 薬を飲む at 20:00, nor one put aside or a checklist's; 重要 counts no more, 2026-11-23)", now);
+  ok(JSON.stringify(now[0].why) === JSON.stringify(["期限切れ", "40%まで進んでいる"]) && now[0].left === 72, "① why, and what is left of it (2時間, 40% done)", now[0]);
+  ok(await p.isVisible("#td6NowCard") && (await txt(p, "#td6NowCard .td6-now-name")) === "資料を読む" && (await p.evaluate(() => [...document.querySelectorAll("#td6NowCard .td6-now-why .phrase")].map((x) => x.textContent.replace(/[\s\u00a0\u2009\u202f]+/g, "")).join("・"))) === "期限切れ・40%まで進んでいる・のこり1時間12分", "① the card", await txt(p, "#td6NowCard"));
   await p.click("#td6NowCard .td6-now-next"); await p.waitForTimeout(300);
-  ok((await txt(p, "#td6NowCard .td6-now-name")) === "レポートを書く" && (await txt(p, "#td6NowCard .td6-now-next")) === "ほかの候補（2/5）" && (await p.evaluate(() => document.activeElement?.classList.contains("td6-now-next"))), "① ほかの候補: the next, the press kept on it");
+  ok((await txt(p, "#td6NowCard .td6-now-name")) === "メールに返信" && (await txt(p, "#td6NowCard .td6-now-next")) === "ほかの候補（2/5）" && (await p.evaluate(() => document.activeElement?.classList.contains("td6-now-next"))), "① ほかの候補: the next, the press kept on it");
   for (let i = 0; i < 4; i++) { await p.click("#td6NowCard .td6-now-next"); await p.waitForTimeout(150); }
   ok((await txt(p, "#td6NowCard .td6-now-name")) === "資料を読む", "① round to the first again");
   await p.click("#td6NowCard .td6-now-name"); await p.waitForTimeout(700);
@@ -261,13 +261,13 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00"), WK = "2026-11-08";
     && (await status(p)).includes("ToDoを4件取り込みました（「大学」）") && !(await p.evaluate(() => document.getElementById("daySheet").open)), "⑩ 4 in 大学 (the repeat as one), said", got);
   await undo(p);
   ok(!(await ls(p, "todos")).some((t) => t.text === "図書館に本を返す"), "⑩ 元に戻す");
-  // a CSV with its heading: a comma and a line break inside quotes, 重要
+  // a CSV with its heading: a comma and a line break inside quotes (a 重要 column read for nothing: 重要 taken off, 2026-11-23)
   await menu(p, "ほかのアプリから取り込む");
   await p.fill(".td6-imp-ta", 'タイトル,期限,メモ,重要\n"報告書, 第2版",2026/11/25,"1行目\n2行目",1\n発表練習,11/18,,\n'); await p.waitForTimeout(300);
   ok((await txt(p, ".td6-imp-out .td-pick-count")) === "2件を読みました（期限つき2件）" && (await txt(p, ".td6-imp-out .group-foot")) === "CSVの表として読みました。", "⑩ a CSV with its heading", await txt(p, ".td6-imp-out .td-pick-count"));
   await p.locator(".td6-imp-out button", { hasText: "2 件を追加" }).click(); await p.waitForTimeout(700);
   const rep = (await byText(p, "報告書, 第2版"))[0];
-  ok(rep && rep.due === "2026-11-25" && rep.memo === "1行目\n2行目" && rep.flag === true && (await byText(p, "発表練習"))[0]?.due === "2026-11-18" && !rep.listId, "⑩ its name, 期限, memo and 重要", rep);
+  ok(rep && rep.due === "2026-11-25" && rep.memo === "1行目\n2行目" && !rep.flag && (await byText(p, "発表練習"))[0]?.due === "2026-11-18" && !rep.listId, "⑩ its name, 期限 and memo (not 重要)", rep);
   // Todoist's: TYPE, CONTENT, DESCRIPTION, PRIORITY, DATE; a section left out; from a file
   await menu(p, "ほかのアプリから取り込む");
   await p.setInputFiles(".td6-imp-box input[type=file]", { name: "todoist.csv", mimeType: "text/csv", buffer: Buffer.from("﻿TYPE,CONTENT,DESCRIPTION,PRIORITY,INDENT,AUTHOR,RESPONSIBLE,DATE,DATE_LANG,TIMEZONE\nsection,大学,,,,,,,,\ntask,課題を出す,第3章,1,1,,,2026-11-20,ja,Asia/Tokyo\ntask,洗剤を買う,,4,1,,,,ja,Asia/Tokyo\n", "utf-8") });
@@ -275,7 +275,7 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00"), WK = "2026-11-08";
   ok((await p.inputValue(".td6-imp-ta")).includes("課題を出す") && (await txt(p, ".td6-imp-out .td-pick-count")) === "2件を読みました（期限つき1件）" && (await txt(p, ".td6-imp-out .group-foot")) === "CSVの表として読みました。", "⑩ Todoist's, from a file", await txt(p, ".td6-imp-out .td-pick-count"));
   await p.locator(".td6-imp-out button", { hasText: "2 件を追加" }).click(); await p.waitForTimeout(700);
   const kd = (await byText(p, "課題を出す"))[0];
-  ok(kd && kd.due === "2026-11-20" && kd.memo === "第3章" && kd.flag === true && !(await byText(p, "洗剤を買う"))[0]?.flag && !(await byText(p, "大学")).length, "⑩ its task rows (p1 as 重要), not the section", kd);
+  ok(kd && kd.due === "2026-11-20" && kd.memo === "第3章" && !kd.flag && !(await byText(p, "洗剤を買う"))[0]?.flag && !(await byText(p, "大学")).length, "⑩ its task rows (p1 as nothing now), not the section", kd);
 
   // ---- ① 始める (taken out with ToDo's 集中, 2026-11-21); the card still goes while a timer runs (勉強's, 目標's)
   await p.evaluate(({ P }) => { localStorage.removeItem(P + "td6Now"); }, { P });

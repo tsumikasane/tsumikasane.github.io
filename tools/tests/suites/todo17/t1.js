@@ -60,16 +60,16 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
   await p.locator("#todoTabs button", { hasText: "大学" }).click(); await p.waitForTimeout(400);
   await menu(p, "「大学」の新しいToDoの決まり");
   await p.selectOption("#td17DefDue", "1"); await p.waitForTimeout(200);
-  await p.locator("#td17DefFlag").click({ force: true }); await p.waitForTimeout(200);
-  ok(JSON.stringify((await W(p, "lists")).find((l) => l.id === "l-uni").def) === '{"due":"1","flag":true,"label":""}', "③ kept on the list", (await W(p, "lists")).find((l) => l.id === "l-uni").def);
+  ok(!(await p.$("#td17DefFlag")), "③ no 重要 to give (taken off with it, 2026-11-23)");
+  ok(JSON.stringify((await W(p, "lists")).find((l) => l.id === "l-uni").def) === '{"due":"1","flag":false,"label":""}', "③ kept on the list", (await W(p, "lists")).find((l) => l.id === "l-uni").def);
   await closeSheet(p);
   await p.click("#todoAdd"); await p.waitForTimeout(700);
-  ok((await txt(p, "#td17DefNote")).includes("「大学」の決まり：期限はあした・重要"), "③ said in the new form", await txt(p, "#td17DefNote"));
+  ok((await txt(p, "#td17DefNote")).includes("「大学」の決まり：期限はあした（"), "③ said in the new form", await txt(p, "#td17DefNote"));
   await p.fill("#todoText", "課題を出す"); await p.dispatchEvent("#todoText", "input");
   await p.click("#todoSave"); await p.waitForTimeout(700);
   await p.click("#sheetCancel"); await p.waitForTimeout(600);
   const kd = (await byText(p, "課題を出す"))[0];
-  ok(kd && kd.listId === "l-uni" && kd.due === "2026-11-12" && kd.flag === true, "③ given what the list says", kd);
+  ok(kd && kd.listId === "l-uni" && kd.due === "2026-11-12" && !kd.flag, "③ given what the list says", kd);
   await p.locator("#todoTabs button", { hasText: "ぜんぶ" }).click(); await p.waitForTimeout(400);
 
   // ---- ④ この1週間にやったこと

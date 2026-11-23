@@ -76,7 +76,7 @@ const editRow = async (p, text) => { await p.locator("#todoList li", { hasText: 
   await p.click(".toast.show .toast-undo"); await p.waitForTimeout(400);
   td = await ls(p, "todos");
   ok(td.find((t) => t.id === "b").due === today && td.find((t) => t.id === "c").moved === 1, "⑤ 元に戻す");
-  // into a list, 重要, checked off, deleted
+  // into a list, checked off, deleted (重要: taken off, 2026-11-23)
   await p.click("#todoMore"); await p.waitForTimeout(300); await pressMenu(p, "選択して");
   await p.click("#tdSelAll");
   ok(await txt(p, "#tdSelN") === "5 件を選択" && await txt(p, "#tdSelAll") === "選択を外す", "⑤ すべて選択");
@@ -89,9 +89,9 @@ const editRow = async (p, text) => { await p.locator("#todoList li", { hasText: 
   await p.click("#todoMore"); await p.waitForTimeout(300); await pressMenu(p, "選択して");
   for (const n of ["本を読む", "申込書"]) await p.locator("#todoList li", { hasText: n }).locator(".check").click();
   await p.click("#tdSelMore"); await p.waitForTimeout(300);
-  await pressMenu(p, "重要にする");
-  td = await ls(p, "todos");
-  ok(td.find((t) => t.id === "e").flag && td.find((t) => t.id === "d").flag, "⑤ 重要");
+  ok(await p.locator("#todoMenuGroup .ask-btn", { hasText: "ラベルを付ける" }).count() === 1 && !(await p.locator("#todoMenuGroup .ask-btn", { hasText: "重要" }).count()), "⑤ その他: no 重要 (taken off with it, 2026-11-23)");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(400);
+  if (await p.isVisible("#tdSelDone")) { await p.click("#tdSelDone"); await p.waitForTimeout(300); }
   await p.click("#todoMore"); await p.waitForTimeout(300); await pressMenu(p, "選択して");
   for (const n of ["本を読む", "申込書"]) await p.locator("#todoList li", { hasText: n }).locator(".check").click();
   await p.click("#tdSelCheck"); await p.waitForTimeout(500);

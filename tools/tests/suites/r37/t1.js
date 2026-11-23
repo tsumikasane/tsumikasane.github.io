@@ -34,7 +34,7 @@ async function open(b, when) {
   // ---- ① ボード: three columns; 始める, まだに戻す, 完了, 戻す; やっている on a row and from a row's menu
   await menu(p, "ボードで見る");
   let c = await cols(p);
-  ok((await title(p)) === "ボード" && c.todo === "h,c,a,r1,b,f,lw" && c.doing === "e,g" && c.done === "w1,z3,z9,z6", "① the three columns (begun: 40% and doing; one put aside not shown; a checklist's not)", c);
+  ok((await title(p)) === "ボード" && c.todo === "h,c,r1,a,f,lw,b" && c.doing === "e,g" && c.done === "w1,z3,z9,z6", "① the three columns (begun: 40% and doing; one put aside not shown; a checklist's not; 重要 first no more, 2026-11-23)", c);
   ok(flat(await txt(p, ".td7-col.c-doing .td7-col-head")) === "やっている2" && (await txt(p, '.td7-card[data-card="e"] .td7-card-sub')) === "期限切れ（11/10（火））・40%・1時間12分・大学", "① a column's count, a card's words", await txt(p, '.td7-card[data-card="e"] .td7-card-sub'));
   await p.locator('.td7-card[data-card="c"] .td7-move', { hasText: "始める" }).click(); await p.waitForTimeout(500);
   c = await cols(p);

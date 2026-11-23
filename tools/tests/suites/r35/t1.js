@@ -21,28 +21,21 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
   await seed(p, D.all(), "todo"); await p.waitForTimeout(1200);
 
-  // ① 重要と急ぎ: four boxes; the flag pressed moves one, 元に戻す puts it back
-  await menu(p, "重要と急ぎで分けて見る");
-  const q = await W(p, "quads");
-  ok((await title(p)) === "重要と急ぎ" && JSON.stringify(q) === JSON.stringify({ do: ["e", "a", "g"], plan: ["b"], quick: ["h", "c", "f"], drop: ["d"] }), "① the four boxes", q);
-  const boxText = await p.evaluate(() => [...document.querySelectorAll(".td5-quad")].map((s) => s.querySelector("h3").textContent + ":" + [...s.querySelectorAll(".td5-quad-name")].map((x) => x.textContent).join("/")));
-  ok(boxText.join(" ") === "重要・急ぎ:資料を読む/レポートを書く/プレゼン準備 重要・急がない:英単語を覚える 急ぎ・重要でない:薬を飲む/メールに返信/銀行で振り込み どちらでもない:部屋の片付け", "① drawn in the sheet", boxText);
-  await p.click('.td5-quad.q-quick .td5-flag[aria-label*="メールに返信"]'); await p.waitForTimeout(500);
-  ok((await todo(p, "c")).flag === true && (await W(p, "quads")).do.includes("c") && (await p.$('.td5-quad.q-do .td5-flag[aria-label*="メールに返信"]')), "① flag on: into 重要・急ぎ, at once");
-  await undo(p);
-  ok(!(await todo(p, "c")).flag && (await W(p, "quads")).quick.includes("c"), "① 元に戻す");
-  await p.click('.td5-quad-name:text("部屋の片付け")'); await p.waitForTimeout(700);
-  ok((await p.inputValue("#reText")) === "部屋の片付け", "① a name opens it");
-  await p.click("#sheetCancel"); await p.waitForTimeout(500);
+  // ① 重要と急ぎ (four boxes): taken off with 重要 (the user's call, 2026-11-23): not in その他, 間に合うかチェック there
+  await p.click("#todoMore"); await p.waitForTimeout(300);
+  ok(!(await p.locator("#todoMenuGroup button", { hasText: "重要と急ぎ" }).count()) && (await p.locator("#todoMenuGroup button", { hasText: "間に合うかチェック" }).count()) === 1, "① no 重要と急ぎ in その他");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(400);
+  ok(!(await p.$(".td5-quad, .td5-flag")), "① no boxes, no flags");
 
-  // ② 授業・予定: 英語's next class (tomorrow 10:40) puts in the 期限, its time and its room; 前日にする; kept, said on the row
+  // ② 予定から選ぶ (授業・予定から選ぶ till 2026-11-23): 英語's next class (tomorrow 10:40) puts in the 期限, its time and its
+  // room; 前日にする; kept, said on the row
   await p.click("#todoAdd"); await p.waitForTimeout(700);
-  await p.locator("#todoByBox button", { hasText: "授業・予定から選ぶ" }).click(); await p.waitForTimeout(300);
+  await p.locator("#todoByBox button", { hasText: "予定から選ぶ" }).click(); await p.waitForTimeout(300);
   const opts = await p.evaluate(() => [...document.querySelectorAll("#todoByList .td5-by-opt")].map((x) => x.innerText.replace(/\s+/g, " ").trim()));
   ok(opts[0] === "英語 あした 10:40" && opts.includes("ゼミ 11/18（水） 08:00") && opts.includes("面接 11/18（水） 14:00") && !opts.some((x) => x.startsWith("ゼミ きょう")), "② the next classes, then plans (today's ゼミ begun)", opts);
   await p.locator("#todoByList .td5-by-opt", { hasText: "英語" }).click(); await p.waitForTimeout(300);
-  ok((await p.inputValue("#todoDue")) === "2026-11-12" && (await p.inputValue("#todoTime")) === "10:40" && (await p.inputValue("#todoPlace")) === "3号館201" && !(await p.isChecked("#todoRemind")),
-    "② its day, time and room (お知らせ left as it was)", [await p.inputValue("#todoDue"), await p.inputValue("#todoTime"), await p.inputValue("#todoPlace")]);
+  ok((await p.inputValue("#todoDue")) === "2026-11-12" && (await p.inputValue("#todoTime")) === "10:40" && (await p.inputValue("#todoPlace")) === "3号館201" && (await txt(p, "#todoByLabel")) === "予定 任意",
+    "② its day, time and room; the row called 予定", [await p.inputValue("#todoDue"), await p.inputValue("#todoTime"), await p.inputValue("#todoPlace")]);
   ok((await txt(p, "#todoByBox .td5-by-now")) === "授業「英語」（11/12（木） 10:40）まで", "② said", await txt(p, "#todoByBox .td5-by-now"));
   await p.locator("#todoByBox button", { hasText: "前日にする" }).click(); await p.waitForTimeout(300);
   ok((await p.inputValue("#todoDue")) === "2026-11-11" && (await p.inputValue("#todoTime")) === "" && (await txt(p, "#todoByBox .td5-by-now")) === "授業「英語」の前日（11/11（水））まで", "② 前日にする");
@@ -51,7 +44,7 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
   ok(JSON.stringify(t?.by) === JSON.stringify({ k: "cls", n: "英語", d: "2026-11-12", time: "10:40", pre: 1, due: "2026-11-11" }) && t.place === "3号館201", "② kept with it", t);
   ok(!(await p.$("#todoByBox .td5-by-now")) && (await p.inputValue("#todoPlace")) === "", "② the form cleared for the next");
   // a plan: 面接, its time and place
-  await p.locator("#todoByBox button", { hasText: "授業・予定から選ぶ" }).click(); await p.waitForTimeout(300);
+  await p.locator("#todoByBox button", { hasText: "予定から選ぶ" }).click(); await p.waitForTimeout(300);
   await p.locator("#todoByList .td5-by-opt", { hasText: "面接" }).click(); await p.waitForTimeout(300);
   ok((await p.inputValue("#todoDue")) === "2026-11-18" && (await p.inputValue("#todoTime")) === "14:00" && (await p.inputValue("#todoPlace")) === "本社ビル 5階", "② a plan: its day, time and place");
   // its 期限 changed by hand: let go
@@ -61,26 +54,17 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
   const row = await p.evaluate(() => { const b = [...document.querySelectorAll("#todoList [data-edit]")].find((x) => x.textContent === "英語の課題を出す"); return b?.closest("li").querySelector(".td5-by-chip")?.textContent || null; });
   ok(row === "授業「英語」の前日まで", "② on its row", row);
 
-  // ③ 再通知: shown with お知らせ; 10分ごと kept; five more after; its own sheet; done, they stop
+  // ③ 再通知 (and お知らせ): off the forms since 2026-11-23 (the user's call; the user's answer: the fields alone). One kept
+  // (h: お知らせ, 30分ごと) is told as before, five more after; its sheet saved keeps it; done, they stop
   await p.click("#todoAdd"); await p.waitForTimeout(700);
-  ok(await p.isHidden("#todoNagRow"), "③ no お知らせ: no 再通知");
-  await p.fill("#todoText", "洗濯物を取りこむ"); await p.fill("#todoDue", "2026-11-11"); await p.dispatchEvent("#todoDue", "change");
-  await p.click("#todoRemind"); await p.waitForTimeout(300);
-  ok((await p.isChecked("#todoRemind")) && (await p.isVisible("#todoNagRow")), "③ お知らせ on: 再通知 shown");
-  await p.selectOption("#todoNag", "10"); await p.click("#todoSave"); await p.waitForTimeout(600);
-  t = (await byText(p, "洗濯物を取りこむ"))[0];
+  ok(!(await p.$("#todoNagRow")) && !(await p.$("#todoNag")) && !(await p.$("#todoRemind")), "③ no お知らせ nor 再通知 in the new form");
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
-  // (its time from its own sheet: 時刻 left the new form, the user's call of 2026-11-19)
-  await p.click(`#todoList [data-edit="${t.id}"]`); await p.waitForTimeout(700);
-  await p.fill("#reTime", "18:00"); await p.dispatchEvent("#reTime", "change"); await p.click("#recSave"); await p.waitForTimeout(600);
-  t = await todo(p, t.id);
-  const nags = (await W(p, "nag", WHEN.getTime())).filter((a) => a.tag.startsWith(`todo-nag:${t.id}:`)).map((a) => new Date(a.at).toISOString().slice(11, 16));
-  ok(t.nag === 10 && t.remind && t.time === "18:00" && JSON.stringify(nags) === '["09:10","09:20","09:30","09:40","09:50"]', "③ kept; 18:10〜18:50 (JST)", { nag: t.nag, time: t.time, nags });
+  const nh = (await W(p, "nag", WHEN.getTime())).filter((a) => a.tag.startsWith("todo-nag:h:"));
+  ok(nh.length === 5, "③ h's kept: five more after its お知らせ", nh.map((a) => new Date(a.at).toISOString().slice(11, 16)));
   await p.click('#todoList [data-edit="h"]'); await p.waitForTimeout(700);
-  ok((await p.inputValue("#reNag")) === "30" && (await p.isVisible("#reNagRow")), "③ in its own sheet");
-  const sig0 = await W(p, "sig");
-  await p.selectOption("#reNag", "60"); await p.click("#recSave"); await p.waitForTimeout(600);
-  ok((await todo(p, "h")).nag === 60 && (await W(p, "sig")) !== sig0, "③ changed there: what's sent changes");
+  ok(!(await p.$("#reNag")) && !(await p.$("#reRemind")), "③ none in its own sheet");
+  await p.fill("#reText", (await p.inputValue("#reText")) + "（2回目）"); await p.click("#recSave"); await p.waitForTimeout(600);
+  ok((await todo(p, "h")).nag === 30 && (await todo(p, "h")).remind === true, "③ saved there: kept as it was", await todo(p, "h"));
   await p.click('#todoList [data-check="h"]'); await p.waitForTimeout(1800);
   ok(!(await W(p, "nag", WHEN.getTime())).some((a) => a.tag.startsWith("todo-nag:h:")), "③ done: they stop");
 
@@ -90,7 +74,7 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00");
 
   // ⑥ 間に合うか: the card, its sheet, put away for the day
   // (5 to begin with; 2 added above for today, 30 minutes each, and 薬を飲む done: 6, 9時間45分)
-  ok((await txt(p, "#td5RiskCard")).replace(/\s/g, "").includes("あしたまでのToDo6件で、9時間45分ほどかかります。それまでの空き時間は8時間です（予定・バイトを除く）。"), "⑥ over the list", await txt(p, "#td5RiskCard"));
+  ok((await txt(p, "#td5RiskCard")).replace(/\s/g, "").includes("あしたまでのToDo5件で、9時間15分ほどかかります。それまでの空き時間は8時間です（予定・バイトを除く）。"), "⑥ over the list (5: ③ adds none now, お知らせ off the form)", await txt(p, "#td5RiskCard"));
   await p.locator("#td5RiskCard button", { hasText: "くわしく" }).click(); await p.waitForTimeout(700);
   const rk = await p.evaluate(() => [...document.querySelectorAll(".td5-risk > li")].map((li) => li.innerText.replace(/\s+/g, "")));
   ok((await title(p)) === "間に合うかチェック" && rk.length === 4 && rk[1].includes("たりません") && rk[1].startsWith("あした11/12（木）"), "⑥ its sheet, each 期限", rk);

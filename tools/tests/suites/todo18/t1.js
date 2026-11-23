@@ -127,10 +127,9 @@ const find = async (p, q) => { await p.fill("#todoSearch", q); await p.waitForTi
   await closeSheet(p);
 
   // ---- ⑦ 探す条件
-  ok((await find(p, "!")) === "a,b,e,g", "⑦ ! for 重要", await shown(p));
-  ok((await txt(p, "#td18OpsLine")) === "条件：重要", "⑦ said under the field", await txt(p, "#td18OpsLine"));
-  ok((await find(p, "! @大学 期限:あした")) === "a,g", "⑦ conditions together", await shown(p));
-  ok((await txt(p, "#td18OpsLine")) === "条件：重要・リスト「大学」・期限があした", "⑦ each said", await txt(p, "#td18OpsLine"));
+  ok((await find(p, "!")) === "" && await p.evaluate(() => document.getElementById("td18OpsLine").hidden), "⑦ ! a word as any (for 重要 till it was taken off, 2026-11-23)", await shown(p));
+  ok((await find(p, "@大学 期限:あした")) === "a,g", "⑦ conditions together", await shown(p));
+  ok((await txt(p, "#td18OpsLine")) === "条件：リスト「大学」・期限があした", "⑦ each said, under the field", await txt(p, "#td18OpsLine"));
   ok((await find(p, "時間:30")) === "c", "⑦ 時間:30", await shown(p));
   ok((await find(p, "メール 期限:きょう")) === "c", "⑦ with words", await shown(p));
   ok((await find(p, "期限:切れ")) === "e", "⑦ 期限:切れ", await shown(p));

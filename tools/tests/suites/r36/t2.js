@@ -153,7 +153,7 @@ async function open(b, when, more = {}, hash = "todo") {
     const r5 = await W(p, "read", "請求書を送る,2026/11/19\n資料を印刷,11/20,カラーで\n");
     ok(r5.table && r5.items.length === 2 && r5.items[1].due === "2026-11-20" && r5.items[1].memo === "カラーで", "⑩ 名前,期限,メモ with no heading", r5);
     const r6 = await W(p, "read", "1. 予約を取る\n2) 電話する 金曜\n* メモを書く !\n");
-    ok(r6.items.map((x) => x.text).join("|") === "予約を取る|電話する|メモを書く" && r6.items[1].due === "2026-11-13" && r6.items[2].flag === true, "⑩ numbers and marks taken off; 金曜, ! read", r6.items);
+    ok(r6.items.map((x) => x.text).join("|") === "予約を取る|電話する|メモを書く !" && r6.items[1].due === "2026-11-13" && !r6.items[2].flag, "⑩ numbers and marks taken off; 金曜 read (! a word now, 重要 taken off)", r6.items);
     await menu(p, "ほかのアプリから取り込む");
     await p.fill(".td6-imp-ta", Array.from({ length: 520 }, (_, i) => `たくさん${i + 1}`).join("\n")); await p.waitForTimeout(500);
     ok((await txt(p, ".td6-imp-out .td-pick-count")) === "500件を読みました" && (await txt(p, ".td6-imp-out .group-foot")).includes("500件をこえる20件"), "⑩ 500 at most, said", [await txt(p, ".td6-imp-out .td-pick-count"), await txt(p, ".td6-imp-out .group-foot")]);

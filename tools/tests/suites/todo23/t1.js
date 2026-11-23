@@ -113,7 +113,7 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   ok((await sheetTitle(p)) === "期間で見る" && (await p.locator(".td23-span-row").count()) >= 5, "⑤ the ToDos of the four weeks", await p.locator(".td23-span-row").count());
   const bar = await p.evaluate(() => [...document.querySelectorAll(".td23-span-row")].find((r) => r.textContent.includes("中間発表の準備")));
   const st = await p.evaluate(() => { const r = [...document.querySelectorAll(".td23-span-row")].find((x) => x.textContent.includes("中間発表の準備")); return [r.querySelector(".td23-span-bar").getAttribute("style"), r.querySelector(".td23-span-bar").className, r.querySelector(".td23-span-dot")?.getAttribute("style")]; });
-  ok(flat(st[0]) === "left:7.14%;width:42.86%;" && st[1].includes("flag") && flat(st[2]) === "left:26.79%;", "⑤ its bar from 開始日 to 期限, the step's 期限 a dot", st);
+  ok(flat(st[0]) === "left:7.14%;width:42.86%;" && !st[1].includes("flag") && flat(st[2]) === "left:26.79%;", "⑤ its bar from 開始日 to 期限, the step's 期限 a dot (重要 in red no more, 2026-11-23)", st);
   ok(bar !== null, "⑤ found");
   await p.locator(".td23-span-row", { hasText: "中間発表の準備" }).click(); await p.waitForTimeout(900);
   ok((await sheetTitle(p)) === "ToDoを編集" && (await p.inputValue("#reText")) === "中間発表の準備", "⑤ pressed: its sheet");

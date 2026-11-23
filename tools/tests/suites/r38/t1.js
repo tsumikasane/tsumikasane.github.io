@@ -196,13 +196,14 @@ async function open(b, when, o = {}) {
   // ---- ⑨ 自分の絞り込み
   await p.click("#td4View"); await p.waitForTimeout(700);
   await p.locator("#tdPanelBody button", { hasText: "新しい絞り込みを作る" }).click(); await p.waitForTimeout(400);
-  await p.fill("#td8ViewName", "大学の急ぎ"); await p.selectOption("#td8ViewList", "l-uni"); await p.check("#td8ViewFlag"); await p.selectOption("#td8ViewDue", "3d");
+  await p.fill("#td8ViewName", "大学の急ぎ"); await p.selectOption("#td8ViewList", "l-uni"); await p.selectOption("#td8ViewDue", "3d");
+  ok(!(await p.$("#td8ViewFlag")), "⑨ no 重要だけ to pick (taken off with 重要, 2026-11-23)");
   await p.locator(".td8-view-form button[type=submit]").click(); await p.waitForTimeout(700);
   await p.click("#sheetDone"); await p.waitForTimeout(500);
   let ids = await p.evaluate(() => [...document.querySelectorAll("#todoList [data-check]")].map((x) => x.dataset.check));
   ok(ids.sort().join() === "a,e,g" && (await txt(p, "#td4ViewBar")).includes("絞り込み：大学の急ぎ"), "⑨ made and picked: those it fits", [ids, await txt(p, "#td4ViewBar")]);
   await p.click("#td4View"); await p.waitForTimeout(700);
-  ok((await txt(p, ".td8-views .td8-view-sub")) === "大学・重要・3日以内", "⑨ said in its row", await txt(p, ".td8-views .td8-view-sub"));
+  ok((await txt(p, ".td8-views .td8-view-sub")) === "大学・3日以内", "⑨ said in its row", await txt(p, ".td8-views .td8-view-sub"));
   await p.locator(".td8-view-edit").click(); await p.waitForTimeout(300);
   await p.selectOption("#td8ViewDue", ""); await p.locator(".td8-view-form button[type=submit]").click(); await p.waitForTimeout(700);
   await p.click("#sheetDone"); await p.waitForTimeout(500);
@@ -232,7 +233,7 @@ async function open(b, when, o = {}) {
   await p.keyboard.press("f"); await p.waitForTimeout(500);
   const fl = await todo(p, second);
   await p.keyboard.press("t"); await p.waitForTimeout(500);
-  ok(fl.flag && (await todo(p, second)).due === "2026-11-11", "⑩ F 重要, T きょう", [second, fl.flag, (await todo(p, second)).due]);
+  ok(!!fl.flag === !!D.todos().find((x) => x.id === second)?.flag && (await todo(p, second)).due === "2026-11-11", "⑩ F nothing now (重要 taken off, 2026-11-23), T きょう", [second, fl.flag, (await todo(p, second)).due]);
   await p.evaluate(() => document.querySelector('#todoList [data-check="f"]').focus());
   await p.keyboard.press("m"); await p.waitForTimeout(500);
   ok((await todo(p, "f")).due === "2026-11-12", "⑩ M あした", (await todo(p, "f")).due);
@@ -248,7 +249,7 @@ async function open(b, when, o = {}) {
   ok(!(await p.evaluate(() => document.getElementById("daySheet").open)) && (await p.inputValue("#todoSearch")) === "n", "⑩ not while typing");
   await p.fill("#todoSearch", ""); await p.dispatchEvent("#todoSearch", "input"); await p.evaluate(() => document.activeElement.blur());
   await p.keyboard.press("?"); await p.waitForTimeout(400);
-  ok((await txt(p, "#todoMenuMsg")) === "キーボードの操作（ToDoのページ）" && (await p.$$(".td8-keys dt")).length === 11, "⑩ ? the list (5 5分だけ taken out, 2026-11-21)", await txt(p, "#todoMenuMsg"));
+  ok((await txt(p, "#todoMenuMsg")) === "キーボードの操作（ToDoのページ）" && (await p.$$(".td8-keys dt")).length === 10 && !(await txt(p, ".td8-keys")).includes("重要"), "⑩ ? the list (5 5分だけ taken out, 2026-11-21; F 重要, 2026-11-23)", await txt(p, "#todoMenuMsg"));
   await p.keyboard.press("Escape"); await p.waitForTimeout(300);
   await p.keyboard.press("]"); await p.waitForTimeout(300);
   ok((await W(p, "tab")) === "l-uni", "⑩ ] the next tab", await W(p, "tab"));

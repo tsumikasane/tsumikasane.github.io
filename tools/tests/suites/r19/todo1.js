@@ -28,7 +28,7 @@ const todoBy = async (p, text) => (await ls(p, "todos")).find((t) => t.text === 
   r = await pt("毎週月・木 ゴミ出し");
   ok(r && r.repeat === "weekly" && JSON.stringify(r.repeatDays) === "[1,4]" && r.date === "2026-11-12" && r.title === "ゴミ出し", "③ 毎週月・木: from the next of them", r);
   r = await pt("金曜までに 申込書を出す !");
-  ok(r && r.date === "2026-11-13" && r.flag && r.title === "申込書を出す", "③ 金曜までに … !", r);
+  ok(r && r.date === "2026-11-13" && !r.flag && r.title === "申込書を出す !", "③ 金曜までに … (! a word now: 重要 taken off, 2026-11-23)", r);
   r = await pt("毎月第2土曜 部屋の掃除");
   ok(r && r.repeat === "monthlyNth" && r.date === "2026-11-14" && r.title === "部屋の掃除", "③ 毎月第2土曜", r);
   r = await pt("毎月25日 家賃を払う");
@@ -40,7 +40,7 @@ const todoBy = async (p, text) => (await ls(p, "todos")).find((t) => t.text === 
   r = await pt("平日 薬を飲む");
   ok(r && r.repeat === "weekdays" && r.date === today, "③ 平日 (today a weekday)", r);
   r = await pt("【重要】ゼミの資料");
-  ok(r && r.flag && !r.date && r.title === "ゼミの資料", "③ 【重要】 alone", r);
+  ok(r === null, "③ 【重要】 alone: nothing to read now (重要 taken off, 2026-11-23)", r);
   r = await pt("重要書類を出す");
   ok(r === null, "③ 重要 inside a word is a name", r);
   r = await pt("牛乳を買う");
@@ -57,15 +57,16 @@ const todoBy = async (p, text) => (await ls(p, "todos")).find((t) => t.text === 
   const gomi = await todoBy(p, "ゴミ出し");
   ok(gomi && gomi.repeat === "weekly" && JSON.stringify(gomi.repeatDays) === "[1,4]" && gomi.due === "2026-11-12", "③ saved so", gomi);
 
-  // ① a time with no 期限: today, お知らせ on. 時刻 and ④ かかる時間 left the new form (the user's call of 2026-11-19): the time
+  // ① a time with no 期限: today (お知らせ, turned on by it, left the forms 2026-11-23: the user's call). 時刻 and ④ かかる時間
+  // left the new form (the user's call of 2026-11-19): the time
   // from the words (③), how long from 「30分」 at their end (その24 ①)
   await p.click("#todoDueClear").catch(() => {});
   await p.evaluate(() => { const d = document.getElementById("todoDue"); d.value = ""; d.dispatchEvent(new Event("change", { bubbles: true })); });
   ok(await p.isHidden("#todoTime") && await p.isHidden("#todoMins"), "① ④ (taken out) no 時刻 nor かかる時間 in the new form");
   await p.fill("#todoText", "18:30 電話する 30分"); await p.waitForTimeout(200);
   await p.click("#todoParse button");
-  ok(await p.inputValue("#todoText") === "電話する" && await p.inputValue("#todoDue") === today && await p.isChecked("#todoRemind") && await p.isVisible("#todoRemindNote"), "① a time in the words: 期限 today, お知らせ on");
-  ok((await txt(p, "#todoRemindNote")).length > 5, "① what お知らせ will do, said", await txt(p, "#todoRemindNote"));
+  ok(await p.inputValue("#todoText") === "電話する" && await p.inputValue("#todoDue") === today && await p.inputValue("#todoTime") === "18:30", "① a time in the words: 期限 today, its time");
+  ok(!(await p.$("#todoRemind")) && !(await p.$("#todoRemindNote")) && !(await p.$("#todoNag")) && !(await p.$("#todoPre")), "① no お知らせ, 再通知 nor 前もって in the new form (2026-11-23)");
   // ② steps: 改行 makes the next one
   await p.locator("#todoSteps .link-btn", { hasText: "サブタスクを追加" }).click(); // (its first link-btn is その10's 並べ替える, hidden with no steps)
   await p.locator("#todoSteps .td-step-name").last().fill("番号を調べる");
@@ -75,12 +76,12 @@ const todoBy = async (p, text) => (await ls(p, "todos")).find((t) => t.text === 
   // ④ how long: the 30分 written at the end of the words
   await p.click("#todoSave"); await p.waitForTimeout(400);
   let tel = await todoBy(p, "電話する");
-  ok(tel && tel.due === today && tel.time === "18:30" && tel.remind === true && tel.mins === 30 && tel.steps?.map((s) => s.text).join(",") === "番号を調べる,かける", "① ② ④ saved", tel);
-  ok(await p.inputValue("#todoTime") === "" && !(await p.isChecked("#todoRemind")) && await p.locator("#todoSteps li").count() === 0 && await p.inputValue("#todoMins") === "", "the form cleared for the next (its 期限 kept)");
-  // 期限 emptied: the time and お知らせ go (the time from the words)
+  ok(tel && tel.due === today && tel.time === "18:30" && !tel.remind && tel.mins === 30 && tel.steps?.map((s) => s.text).join(",") === "番号を調べる,かける", "① ② ④ saved", tel);
+  ok(await p.inputValue("#todoTime") === "" && await p.locator("#todoSteps li").count() === 0 && await p.inputValue("#todoMins") === "", "the form cleared for the next (its 期限 kept)");
+  // 期限 emptied: the time goes (the time from the words)
   await p.fill("#todoText", "9時 掃除"); await p.waitForTimeout(200); await p.click("#todoParse button");
   await p.click("#todoDueClear");
-  ok(await p.inputValue("#todoTime") === "" && !(await p.isChecked("#todoRemind")), "① 期限なし takes the time and お知らせ");
+  ok(await p.inputValue("#todoTime") === "", "① 期限なし takes the time");
   // ② the first line the name, the rest steps
   await p.fill("#todoText", "旅行の準備\n切符\n宿\n着替え");
   ok(await p.isVisible("#todoAsSteps"), "② the lines note offers steps");
@@ -125,7 +126,7 @@ const todoBy = async (p, text) => (await ls(p, "todos")).find((t) => t.text === 
   // the link opens the ToDo
   await p.evaluate(() => { location.hash = ""; });
   await p.goto(URL0 + "#todo:m3"); await p.reload(); await p.waitForTimeout(900);
-  ok(await p.evaluate(() => document.getElementById("daySheet").open) && await p.inputValue("#reText") === "課題" && await p.inputValue("#reTime") === "21:00" && await p.isChecked("#reRemind"), "① a notification pressed: its ToDo, open");
+  ok(await p.evaluate(() => document.getElementById("daySheet").open) && await p.inputValue("#reText") === "課題" && await p.inputValue("#reTime") === "21:00" && !(await p.$("#reRemind")), "① a notification pressed: its ToDo, open (its お知らせ kept, no switch for it)");
   ok(!p.errs.length, "no errors: " + p.errs.join(" | "));
   await b.close();
   console.log(fails ? `${fails} FAILED` : "ALL OK");

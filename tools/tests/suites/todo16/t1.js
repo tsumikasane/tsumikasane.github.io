@@ -50,20 +50,17 @@ const closeSheet = async (p) => { await p.evaluate(() => { const b = ["sheetDone
   await undo(p);
   ok((await todo(p, "f")).dueLog.length === 1, "① 元に戻す takes it back with it");
 
-  // ---- ② まとめてサブタスク
+  // ---- ② まとめてサブタスク: メモの行をサブタスクにする (まとめて書く under the steps: taken off, the user's call 2026-11-23)
   await p.click('#todoList [data-edit="a"]'); await p.waitForTimeout(800);
-  await p.click("#recForm .td16-bulk-open"); await p.waitForTimeout(200);
-  await p.fill("#recForm .td16-bulk-in", "資料を集める\n構成を決める\n・書く"); 
-  await p.locator("#recForm .td16-bulk button", { hasText: "サブタスクにする" }).click(); await p.waitForTimeout(300);
-  ok(JSON.stringify(await p.evaluate(() => [...document.querySelectorAll("#reSteps .td-step-name")].map((x) => x.value))) === '["資料を集める","構成を決める","書く"]', "② the lines its steps", await p.evaluate(() => [...document.querySelectorAll("#reSteps .td-step-name")].map((x) => x.value)));
+  ok(!(await p.$("#recForm .td16-bulk-open, #recForm .td16-bulk-in")) && !(await p.locator("#recForm button", { hasText: "まとめて書く" }).count()), "② まとめて書く: taken off (2026-11-23)");
   ok(!(await p.isVisible("#recForm .td16-memo-steps")), "② one line of memo: not offered");
   await p.fill("#reMemo", "買うもの\n・ノート\n・ペン"); await p.dispatchEvent("#reMemo", "input"); await p.waitForTimeout(100);
   ok(await p.isVisible("#recForm .td16-memo-steps"), "② two lines and more: offered");
   await p.click("#recForm .td16-memo-steps"); await p.waitForTimeout(300);
-  ok((await p.inputValue("#reMemo")) === "" && (await p.evaluate(() => document.querySelectorAll("#reSteps .td-step-name").length)) === 6, "② the memo's lines steps, the memo empty");
+  ok((await p.inputValue("#reMemo")) === "" && (await p.evaluate(() => document.querySelectorAll("#reSteps .td-step-name").length)) === 3, "② the memo's lines steps, the memo empty");
   await p.click("#recSave"); await p.waitForTimeout(700);
   const a = await todo(p, "a");
-  ok(a.steps.length === 6 && a.steps[5].text === "ペン" && !a.memo, "② saved", a.steps?.map((s) => s.text));
+  ok(a.steps.length === 3 && a.steps[2].text === "ペン" && !a.memo, "② saved", a.steps?.map((s) => s.text));
 
   // ---- ③ 次のバイトの前に
   ok((await W(p, "shifts")).length === 2, "③ the next shifts", await W(p, "shifts"));
