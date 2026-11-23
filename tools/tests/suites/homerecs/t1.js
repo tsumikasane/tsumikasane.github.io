@@ -100,6 +100,31 @@ const reload = async (p) => { await p.reload(); await p.waitForTimeout(800); };
   await seed(p, { settings: [{ id: "recRemind", on: true, kinds: ["journal"], times: ["21:00"], updatedAt: 1 }], todos: [{ id: "x", text: "むかしの", today: "2026-10-01", createdAt: T }] }, "home");
   ok(JSON.stringify((await rows(p)).map((x) => x.k)) === '["journal"]', "きょうやる not in use lately: not put in");
   ok(!p.errs.length, "no page errors (3)", p.errs);
+
+  // ---- 目標 and 睡眠 (the user's call, 2026-11-23): in the list while in use lately; 開く for 目標, 記録する for 睡眠 (からだ's
+  // day at the time still to put in); 進めました, 記録しました ----
+  const G = (mandala) => [{ id: "g1", title: "英語", depth: 1, mandala, createdAt: T - 30 * 864e5 }];
+  await seed(p, { settings: [{ id: "recRemind", on: true, kinds: ["journal"], times: ["21:00"], updatedAt: 1 }], goals: G([{ t: "単語", d: true, at: T - 864e5 }, { t: "音読" }]),
+    bodyDays: [{ id: day, date: day, bed: "23:30", createdAt: T - 864e5 }] }, "home");
+  r = await rows(p);
+  ok(JSON.stringify(r.map((x) => x.k)) === '["journal","goal","sleep"]' && !r[1].ok && !r[2].ok, "in use lately: 目標 and 睡眠 put in, not yet", r.map((x) => x.k));
+  ok((await p.evaluate(() => document.querySelector('.h3-check-go[data-k="goal"]')?.textContent)) === "開く" && (await p.evaluate(() => document.querySelector('li[data-k="sleep"] .h3-check-w small')?.textContent)) === "起きた時刻がまだです",
+    "目標: 開く; 睡眠: 起きた時刻がまだです");
+  await p.click('.h3-check-go[data-k="sleep"]'); await p.waitForTimeout(900);
+  ok(await p.evaluate(() => location.hash === "#diet" && document.activeElement?.id === "bd2Wake"), "睡眠's 記録する: からだ, at 起きた時刻");
+  await p.goto(URL0 + "#home"); await reload(p);
+  await p.click('.h3-check-go[data-k="goal"]'); await p.waitForTimeout(800);
+  ok(await p.evaluate(() => location.hash) === "#goal", "目標's 開く: 目標");
+  await put(p, "goals", G([{ t: "単語", d: true, at: T - 864e5 }, { t: "音読", d: true, at: T + 3600e3 }]));
+  await put(p, "bodyDays", [{ id: day, date: day, bed: "23:30", wake: "07:00", createdAt: T - 864e5 }]);
+  await p.goto(URL0 + "#home"); await reload(p);
+  r = await rows(p);
+  ok(r.find((x) => x.k === "goal")?.note === "進めました" && r.find((x) => x.k === "sleep")?.note === "記録しました", "in: 進めました, 記録しました", r);
+  // not in use lately: not put in
+  await seed(p, { settings: [{ id: "recRemind", on: true, kinds: ["journal"], times: ["21:00"], updatedAt: 1 }], goals: G([{ t: "単語", d: true, at: Date.parse("2026-10-01T09:00:00+09:00") }]),
+    bodyDays: [{ id: "2026-10-01", date: "2026-10-01", bed: "23:00", wake: "07:00", createdAt: T }] }, "home");
+  ok(JSON.stringify((await rows(p)).map((x) => x.k)) === '["journal"]', "目標 and 睡眠 not in use lately: not put in");
+  ok(!p.errs.length, "no page errors (4)", p.errs);
   await b.close();
   console.log(fails ? `${fails} FAILED` : "ALL OK");
   process.exit(fails ? 1 : 0);

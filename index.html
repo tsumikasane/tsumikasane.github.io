@@ -23715,12 +23715,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // they kept stays, and till this one is set it starts from them (on if one of them was, with the kinds of those that
   // were on and 積み忘れ's time)
   const REC_REMIND_ID = "recRemind", REC_REMIND_MAX = 3;
-  const REC_KINDS = [["journal", "日記"], ["weight", "からだ"], ["meal", "食事"], ["workout", "運動"], ["study", "勉強"], ["routine", "ルーティーン"], ["money", "家計簿"], ["todo", "きょうやるToDo"]]; // (きょうやるToDo: 2026-11-23, the user's call)
-  const REC_PAGES = { journal: "journal", weight: "weight", meal: "meal", workout: "workout", study: "study", routine: "routine", money: "book", todo: "todo:pick" };
+  const REC_KINDS = [["journal", "日記"], ["weight", "からだ"], ["meal", "食事"], ["workout", "運動"], ["study", "勉強"], ["routine", "ルーティーン"], ["money", "家計簿"], ["todo", "きょうやるToDo"], ["goal", "目標"], ["sleep", "睡眠"]]; // (きょうやるToDo, 目標, 睡眠: 2026-11-23, the user's calls)
+  const REC_PAGES = { journal: "journal", weight: "weight", meal: "meal", workout: "workout", study: "study", routine: "routine", money: "book", todo: "todo:pick", goal: "goal", sleep: "weight" };
   // the kinds there when the list was set (a list kept before `known` was: those before きょうやるToDo); one added since is
-  // in it while its page is in use (きょうやるToDo: ToDos picked as きょうやる in the last 14 days), till the list is set again
+  // in it while its page is in use in the last 14 days (きょうやるToDo: ToDos picked as きょうやる; 目標: a goal moved; 睡眠:
+  // a bed or wake put in), till the list is set again
   const REC_KINDS_FIRST = ["journal", "weight", "meal", "workout", "study", "routine", "money"];
-  function recKindNew(k) { return k === "todo" && todos.items.some((t) => isDay(t.today || "") && t.today >= addDays(todayKey, -14)); }
+  function recKindNew(k) {
+    const from = addDays(todayKey, -14);
+    if (k === "todo") return todos.items.some((t) => isDay(t.today || "") && t.today >= from);
+    if (k === "goal") return goals.items.some((g) => { for (const d of moveDays(g).keys()) if (d >= from) return true; return false; });
+    if (k === "sleep") return bodyDays.items.some((x) => String(x.date || x.id) >= from && (recHm(x.bed) || recHm(x.wake)));
+    return false;
+  }
   function recHm(s) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(s || ""); }
   function recKindName(k) { return (REC_KINDS.find(([x]) => x === k) || ["", k])[1]; }
   // their names joined: 日記と食事, 日記、食事と家計簿
@@ -23749,6 +23756,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (k === "study") return study.items.some((s) => s.date === d);
     if (k === "routine") return rtItemsOn(d).every((r) => rtDoneOn(r, d));
     if (k === "money") return mo2ZeroDays().has(d) || expenses.items.some((e) => e.date === d && !e.fixed);
+    if (k === "goal") return goals.items.some((g) => moveDays(g).has(d)); // (目標: a goal moved that day, as 進めた日 counts)
+    if (k === "sleep") { const x = bodyDays.get(d); return !!x && recHm(x.bed) && recHm(x.wake); } // (睡眠: the night before's bed and the morning's wake)
     if (k === "todo") { // (きょうやるToDo: those picked for the day, やめた aside, all done; none picked: not yet)
       if (d === todayKey) { const st = tdTodayStats(); return st.n > 0 && !st.left; }
       const all = todos.items.filter((t) => typeof t.text === "string" && t.today === d && !t.cancelled && !(t.done && doneDay(t) !== d));
@@ -23817,7 +23826,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       switchEl({ id: "recKind_" + k, checked: r.kinds.includes(k), onchange: (ev) => recRemindPut({ kinds: [...recRemind().kinds.filter((x) => x !== k), ...(ev.target.checked ? [k] : [])] }) }))));
     else for (const [k] of REC_KINDS) { const x = $("recKind_" + k); if (x) x.checked = r.kinds.includes(k); }
     const notes = [r.kinds.includes("routine") ? "ルーティーンは、その日の項目がぜんぶできるまで「まだ」です。" : "", r.kinds.includes("money") ? "家計簿は、使わなかった日に家計簿のページで「きょうは使っていない」を押すと、その日はお知らせしません。" : "",
-      r.kinds.includes("todo") ? "きょうやるToDoは、その日に選んだものがぜんぶ終わるまで「まだ」です（選んでいない日も）。" : ""].filter(Boolean).join("");
+      r.kinds.includes("todo") ? "きょうやるToDoは、その日に選んだものがぜんぶ終わるまで「まだ」です（選んでいない日も）。" : "",
+      r.kinds.includes("goal") ? "目標は、その日にマスを1つでも進める（チェック・数える・取り組んだ時間）と記録したことになります。" : "",
+      r.kinds.includes("sleep") ? "睡眠は、ゆうべ寝た時刻とけさ起きた時刻の両方で記録したことになります。" : ""].filter(Boolean).join("");
     $("recRemindFoot").textContent = !r.on ? "決めた時刻に、毎日記録するもののうち、その日まだ記録していないものを1つの通知でお知らせします（「きょうは日記と食事の記録がまだです」のように）。お休みの日は届きません。"
       : !r.kinds.length ? "毎日記録するものを選んでください。"
       : st === "on" ? `毎日 ${r.times.join("・")} に、${r.kinds.length > 1 ? `${recNames(r.kinds)}のうち、その日まだ記録していないものがあれば` : `その日の${recNames(r.kinds)}の記録がまだなら`}、この端末に届きます。お休みの日は届きません。` + notes
@@ -25126,7 +25137,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月23日 13:35"; // 2bffcce3 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月23日 13:46"; // 93bd21f5 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -31020,7 +31031,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return { usual: hm(p80), at: hm(at), atMin: at };
   }
   function renderTsumiRemindTip() {
-    const tip = $("tsumiRemindTip"), r = recRemind(), ks = r.kinds.filter((k) => k !== "todo"), sg = r.on && ks.length && r.times.length === 1 ? tsRemindSuggest(ks) : null; // (きょうやるToDo aside)
+    const tip = $("tsumiRemindTip"), r = recRemind(), ks = r.kinds.filter((k) => k !== "todo" && k !== "sleep"), sg = r.on && ks.length && r.times.length === 1 ? tsRemindSuggest(ks) : null; // (きょうやるToDo and 睡眠, with no blocks of their own, aside)
     const [h, mi] = r.times[0].split(":").map(Number), off = !sg || Math.abs(h * 60 + mi - sg.atMin) < 30;
     tip.hidden = off;
     if (off) return;
@@ -58009,10 +58020,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // today), each done or to record now
   function h3Mine() {
     return recRemind().kinds.map((k) => {
-      const done = recHas(k, todayKey), rts = k === "routine" ? rtItemsOn(todayKey) : null, td = k === "todo" ? tdTodayStats() : null;
-      const note = !done ? "" : td ? "ぜんぶ終えました" : rts ? (rts.length ? "ぜんぶできました" : "きょうはありません") : k === "money" && mo2ZeroDays().has(todayKey) && !expenses.items.some((e) => e.date === todayKey && !e.fixed) ? "使っていない日" : "記録しました";
-      // (きょうやるToDo: how far, and 選ぶ while none are picked, else 開く)
-      return { k, name: recKindName(k), done, note, sub: td && !done ? (td.n ? `${td.n} 件中 ${td.done} 件` : "まだ選んでいません") : "", go: td ? (td.n ? "開く" : "選ぶ") : "記録する", mine: true };
+      const done = recHas(k, todayKey), rts = k === "routine" ? rtItemsOn(todayKey) : null, td = k === "todo" ? tdTodayStats() : null, sl = k === "sleep" ? bodyDays.get(todayKey) : null;
+      const note = !done ? "" : td ? "ぜんぶ終えました" : k === "goal" ? "進めました" : rts ? (rts.length ? "ぜんぶできました" : "きょうはありません") : k === "money" && mo2ZeroDays().has(todayKey) && !expenses.items.some((e) => e.date === todayKey && !e.fixed) ? "使っていない日" : "記録しました";
+      // (きょうやるToDo: how far, and 選ぶ while none are picked, else 開く; 目標: 開く; 睡眠: which of the two is still to come)
+      const sub = done ? "" : td ? (td.n ? `${td.n} 件中 ${td.done} 件` : "まだ選んでいません") : sl && recHm(sl.bed) ? "起きた時刻がまだです" : sl && recHm(sl.wake) ? "寝た時刻がまだです" : "";
+      return { k, name: recKindName(k), done, note, sub, go: td ? (td.n ? "開く" : "選ぶ") : k === "goal" ? "開く" : "記録する", mine: true };
     });
   }
   function h3Recs() {
@@ -58027,6 +58039,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function h3RecGo(k, byKey) {
     homeReturn = `.h3-rec[data-k="${k}"], .h3-check-go[data-k="${k}"]`;
     if (k === "todo") { openFromHome("todo"); tdMorningOpen(); return; } // (きょうやるToDo: the pick sheet, or きょうやるだけ表示)
+    if (k === "goal") { openFromHome("goal"); return; } // (目標: its page)
+    if (k === "sleep") { // (睡眠: からだ's day, at the time still to put in)
+      const x = bodyDays.get(todayKey);
+      openFromHome("diet", "weight");
+      setTimeout(() => { const f = $(x && recHm(x.bed) ? "bd2Wake" : "bd2Bed"); if (f) { f.scrollIntoView({ block: "center" }); f.focus({ preventScroll: true }); } }, 120);
+      return;
+    }
     if (k === "journal" || k === "routine") openFromHome(k);
     else if (k === "weight" && weights.get(todayKey)) openRecEdit("weight", todayKey, byKey);
     else openRecNew(k, byKey);

@@ -38,7 +38,7 @@ const OLD = [
   ok(await p.evaluate(() => [...document.querySelectorAll("#tsumiToc button")].find((x) => x.textContent === "お知らせ")?.dataset.to) === "recRemindHead", "its お知らせ in the gear's contents leads to it");
   let st = await state(p);
   ok(st.on && JSON.stringify(st.times) === '["21:30"]' && JSON.stringify(st.kinds) === '["journal","meal"]' && st.add && !st.off, "started from the five: on, 21:30, 日記 and 食事", st);
-  ok(JSON.stringify(st.names) === JSON.stringify(["日記", "からだ", "食事", "運動", "勉強", "ルーティーン", "家計簿", "きょうやるToDo"]), "the kinds: the seven record pages and きょうやるToDo (2026-11-23)", st.names);
+  ok(JSON.stringify(st.names) === JSON.stringify(["日記", "からだ", "食事", "運動", "勉強", "ルーティーン", "家計簿", "きょうやるToDo", "目標", "睡眠"]), "the kinds: the seven record pages, きょうやるToDo, 目標 and 睡眠 (2026-11-23)", st.names);
   ok(!(await setting(p, "recRemind")), "nothing of its own saved till it is changed");
   let a = await alarms(p);
   ok(a.length === 40 && new Date(a[0].at).toISOString() === "2026-11-23T12:30:00.000Z" && a[0].title === "記録のお知らせ" && a[0].body === "きょうは日記の記録がまだです" && a[0].url === "./#journal" && a[0].tag === "rec-remind:" + today,
@@ -100,6 +100,20 @@ const OLD = [
   await put(p, "todos", [{ id: "t1", text: "レポート", today, createdAt: T(today), done: true, doneAt: T(today, "12:00") }, { id: "t2", text: "買い物", today, createdAt: T(today), done: true, doneAt: T(today, "10:00") }]);
   await reload(p);
   ok(!(await alarms(p)).some((x) => x.tag.endsWith(today)), "きょうやる all done: none today");
+  // 目標 and 睡眠 (2026-11-23): a goal moved that day; the night before's bed and the morning's wake
+  await put(p, "settings", [{ id: "recRemind", on: true, kinds: ["goal", "sleep"], times: ["21:00"], known: ["journal", "weight", "meal", "workout", "study", "routine", "money", "todo", "goal", "sleep"], updatedAt: 1 }]);
+  await put(p, "goals", [{ id: "g1", title: "英語", depth: 1, mandala: [{ t: "単語", d: true, at: T("2026-11-22", "20:00") }, { t: "音読" }], createdAt: T("2026-11-01") }]);
+  await put(p, "bodyDays", [{ id: today, date: today, bed: "23:30", createdAt: T("2026-11-22", "23:30") }]);
+  await reload(p);
+  a = await alarms(p);
+  ok(a[0].body === "きょうは目標と睡眠の記録がまだです" && a[0].url === "./#home", "目標 and 睡眠 not in (a goal moved yesterday, today's bed alone)", a[0]);
+  await put(p, "bodyDays", [{ id: today, date: today, bed: "23:30", wake: "07:00", createdAt: T("2026-11-22", "23:30") }]);
+  await reload(p);
+  a = await alarms(p);
+  ok(a[0].body === "きょうは目標の記録がまだです" && a[0].url === "./#goal", "睡眠 in (bed and wake): 目標 alone, its page", a[0]);
+  await put(p, "goals", [{ id: "g1", title: "英語", depth: 1, mandala: [{ t: "単語", d: true, at: T("2026-11-22", "20:00") }, { t: "音読", d: true, at: T(today, "11:00") }], createdAt: T("2026-11-01") }]);
+  await reload(p);
+  ok(!(await alarms(p)).some((x) => x.tag.endsWith(today)), "a goal moved today: none today");
 
   // ---- 3 what counts as in: a weight, a 運動, a 勉強, every ルーティーン done, a 家計簿 not a 固定費 (or きょうは使っていない) ----
   const ALL = { id: "recRemind", on: true, kinds: ["journal", "weight", "meal", "workout", "study", "routine", "money"], times: ["21:00"], updatedAt: 1 };
