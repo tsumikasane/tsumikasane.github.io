@@ -1894,6 +1894,18 @@ ul.wx-days > li { padding: 0; }
 /* きょう その4 */
 /* (what can be pressed on a tile, over its head's whole-tile button: その3's and その4's) */
 .tile .h3-btns, .tile .h3-recs, .tile .h3-nowbtn, .tile .h4-week, .tile .h4-memo-form { position: relative; z-index: 1; }
+/* ⑩ きょうの記録 as a checklist of 毎日記録するもの (the user's call, 2026-11-23): as からだ's はじめにやること, an empty circle
+   till it is in, then a check; 記録する till then */
+.tile .h3-checks-bar { flex: none; display: block; height: 6px; margin-top: 6px; }
+.h3-checks-bar i { background: var(--accent); }
+.tile ul.h3-checks { position: relative; z-index: 1; margin: 6px 0 0; display: grid; gap: 2px; }
+.tile ul.h3-checks li { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 10px; min-height: 44px; overflow: visible; white-space: normal; line-height: 1.3; }
+.tile ul.h3-checks li::before { content: none; }
+.h3-check-mark { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--separator); color: #fff; }
+.h3-checks li.ok .h3-check-mark { background: var(--accent); box-shadow: none; }
+.h3-checks li.ok .h3-check-w { color: var(--muted); }
+.h3-check-note { font-size: var(--t-sub); color: var(--muted); white-space: nowrap; }
+.tile .h3-recs-set { position: relative; z-index: 1; display: block; margin-top: 4px; padding-inline: 0; }
 .h4-memo-in { -webkit-user-select: text; user-select: text; }
 .h4-memo-text { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 8; -webkit-box-orient: vertical; overflow: hidden; }
 .h4-memo-form { margin-top: 6px; }
@@ -25096,7 +25108,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月23日 13:02"; // 1129313e (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月23日 13:12"; // 53e0ac92 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -57973,8 +57985,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return tile("h3now", null, null, null, el("button", { type: "button", class: "h3-nowbtn", onclick: n.go }, el("strong", {}, n.what), el("span", {}, n.why), icon("next", 16)));
   }
 
-  // ⑩ the records of today: the kinds kept in the last 14 days (and ルーティーン with items today), each done or to record now
+  // ⑩ the records of today: those picked as 毎日記録するもの (つみかさね's 毎日の記録のお知らせ: the user's call, 2026-11-23),
+  // each in as its お知らせ counts it, in a list as からだ's はじめにやること has (an empty circle till it is in, then a
+  // check; 記録する till then); with none picked, as before: the kinds kept in the last 14 days (and ルーティーン with items
+  // today), each done or to record now
+  function h3Mine() {
+    return recRemind().kinds.map((k) => {
+      const done = recHas(k, todayKey), rts = k === "routine" ? rtItemsOn(todayKey) : null;
+      const note = !done ? "" : rts ? (rts.length ? "ぜんぶできました" : "きょうはありません") : k === "money" && mo2ZeroDays().has(todayKey) && !expenses.items.some((e) => e.date === todayKey && !e.fixed) ? "使っていない日" : "記録しました";
+      return { k, name: recKindName(k), done, note, mine: true };
+    });
+  }
   function h3Recs() {
+    const mine = h3Mine();
+    if (mine.length) return mine;
     const from = addDays(todayKey, -14), seen = (k) => { for (let d = from; d < todayKey; d = addDays(d, 1)) if (h3Has(k, d)) return true; return false; };
     const l = H3_KINDS.filter(([k]) => k !== "money" && (seen(k) || h3Has(k, todayKey))).map(([k, name]) => ({ k, name, done: h3Has(k, todayKey) }));
     const rts = rtItemsOn(todayKey);
@@ -57982,17 +58006,27 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return l;
   }
   function h3RecGo(k, byKey) {
-    homeReturn = `.h3-rec[data-k="${k}"]`;
+    homeReturn = `.h3-rec[data-k="${k}"], .h3-check-go[data-k="${k}"]`;
     if (k === "journal" || k === "routine") openFromHome(k);
     else if (k === "weight" && weights.get(todayKey)) openRecEdit("weight", todayKey, byKey);
     else openRecNew(k, byKey);
   }
+  // つみかさね's settings opened at 毎日記録するもの
+  const h3RecsSetBtn = (words) => el("button", { type: "button", class: "link-btn h3-recs-set", onclick: (ev) => tsGearAt(ev, "recRemindKindsHead") }, words);
   function h3RecsTile() {
     const l = h3Recs();
-    if (!l.length) return tile("h3recs", null, null, "記録をはじめると、きょうの分が済んだかどうかがここに出ます");
-    const done = l.filter((x) => x.done).length;
-    return tile("h3recs", String(done), `/ ${l.length}`, done === l.length ? "きょうの記録はぜんぶ済みました" : null, el("div", { class: "h3-recs" }, l.map((x) => el("button", { type: "button", class: "h3-rec" + (x.done ? " done" : ""), "data-k": x.k,
-      "aria-label": `${x.name}${x.done ? "（済み）" : "を記録"}`, onclick: (ev) => h3RecGo(x.k, ev.detail === 0) }, x.done ? icon("check", 14) : icon("plus", 14), x.name))));
+    if (!l.length) return tile("h3recs", null, null, "記録をはじめると、きょうの分が済んだかどうかがここに出ます", h3RecsSetBtn("毎日記録するものを選ぶ"));
+    const done = l.filter((x) => x.done).length, all = done === l.length ? "きょうの記録はぜんぶ済みました" : null;
+    if (l[0].mine) return tile("h3recs", String(done), `/ ${l.length}`, all, [
+      el("span", { class: "bar-track h3-checks-bar", role: "img", "aria-label": `${l.length} のうち ${done} 記録しました` }, el("i", { style: `width:${Math.round((done / l.length) * 100)}%` })),
+      el("ul", { class: "h3-checks" }, l.map((x) => el("li", { class: x.done ? "ok" : "", "data-k": x.k },
+        el("span", { class: "h3-check-mark", "aria-hidden": "true" }, x.done ? icon("check", 14) : null),
+        el("span", { class: "h3-check-w" }, x.name, el("span", { class: "sr-only" }, x.done ? `（${x.note}）` : "（まだ）")),
+        x.done ? el("span", { class: "h3-check-note", "aria-hidden": "true" }, x.note)
+          : el("button", { type: "button", class: "btn sm h3-check-go", "data-k": x.k, "aria-label": `${x.name}を記録する`, onclick: (ev) => h3RecGo(x.k, ev.detail === 0) }, "記録する")))),
+      h3RecsSetBtn("毎日記録するものを変える")]);
+    return tile("h3recs", String(done), `/ ${l.length}`, all, [el("div", { class: "h3-recs" }, l.map((x) => el("button", { type: "button", class: "h3-rec" + (x.done ? " done" : ""), "data-k": x.k,
+      "aria-label": `${x.name}${x.done ? "（済み）" : "を記録"}`, onclick: (ev) => h3RecGo(x.k, ev.detail === 0) }, x.done ? icon("check", 14) : icon("plus", 14), x.name))), h3RecsSetBtn("毎日記録するものを選ぶ")]);
   }
 
   // the tiles, with ③ of その2's marks on those done today (every record)
@@ -58478,7 +58512,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     routine: "きょうのルーティーン。その場でチェック", money: "今月の収支", job: "今月の給料の見込みと、次のシフト",
     tsumi: "積んだブロックの段", goal: "期限のいちばん近い目標と、あと何日",
     h3now: "1時間以内の予定、期限のToDo、ルーティーンの残りから、いまする1つ",
-    h3line: "予定・バイト・時刻のあるToDoを時間の順に、いまの線つき", h3recs: "ふだんつけている記録が、きょう済んだか。まだのものは押して記録",
+    h3line: "予定・バイト・時刻のあるToDoを時間の順に、いまの線つき", h3recs: "毎日記録するもの（選んでいないときは、ふだんつけている記録）が、きょう済んだか。まだのものは押して記録",
     h3spend: "家計簿の予算の残り。今月あといくら使えるか（給料日からの予算なら、次の給料日まで）", h3time: "きょう・今週・今月・今年が何%過ぎたか",
     h3streak: "記録が何日続いているか", h3week: "勉強・運動・ToDo・支出を、先週の同じ曜日までとくらべる",
     h4week: "7日分の予定・ToDo・バイト・天気。日を押すとカレンダーのその日",
