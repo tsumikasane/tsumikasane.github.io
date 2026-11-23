@@ -98,12 +98,11 @@ const DATA = {
   await p.locator("#wtSettings").click(); await p.waitForTimeout(600);
   ok(await p.isVisible("#mealSetGroup") && (await p.getAttribute("#proteinGoal", "placeholder")) === "96" && (await txt(p, "#proteinFoot")).includes("96 g"), "⑤ settings: the goal's 目安 from the weight");
   await p.fill("#proteinGoal", "100"); await p.fill("#mealKcalGoal", "2200");
-  await p.locator("#mealRemindOn").check(); await p.waitForTimeout(300);
-  ok((await p.inputValue("#mealRemindB")) === "" && (await p.inputValue("#mealRemindL")) === "14:00" && (await p.inputValue("#mealRemindD")) === "21:00", "⑩ the times at first");
-  await p.fill("#mealRemindB", "09:30"); await p.locator("#mealRemindB").dispatchEvent("change"); await p.waitForTimeout(200);
+  // ⑩ 記録し忘れのお知らせ: in つみかさね's 毎日の記録のお知らせ since 2026-11-23 (the user's call; suites/recremind): none here
+  ok(!(await p.$("#mealRemindOn, #mealRemindB")) && !(await txt(p, "#mealSetGroup")).includes("記録し忘れのお知らせ"), "⑩ (in 毎日の記録のお知らせ) no 記録し忘れのお知らせ here");
   await p.locator("#sheetDone").click(); await p.waitForTimeout(600);
   const st = await ls(p, "settings");
-  ok(st.find((x) => x.id === "pfcGoal")?.p === 100 && st.find((x) => x.id === "kcalGoal")?.target === 2200 && JSON.stringify(st.find((x) => x.id === "mealRemind")?.at) === JSON.stringify({ 朝食: "09:30", 昼食: "14:00", 夕食: "21:00" }) && st.find((x) => x.id === "mealRemind")?.on === true, "⑤⑩ kept: " + JSON.stringify(st.filter((x) => /pfc|kcal|meal/.test(x.id))));
+  ok(st.find((x) => x.id === "pfcGoal")?.p === 100 && st.find((x) => x.id === "kcalGoal")?.target === 2200 && !st.some((x) => x.id === "mealRemind"), "⑤ kept (⑩ none made): " + JSON.stringify(st.filter((x) => /pfc|kcal|meal/.test(x.id))));
   g = await txt(p, "#mealGoalCard");
   ok(g.includes("/ 2,200 kcal") && g.includes("たんぱく質 22 g / 100 g"), "④⑤ with the goals: " + g);
   // ⑦ the week (11/4〜11/10)

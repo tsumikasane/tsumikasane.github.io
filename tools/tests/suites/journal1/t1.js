@@ -59,12 +59,8 @@ async function open(b, when) {
   ok(!(await p.$("#jnTplSample")), "③ (taken out) no 例を入れる");
   await p.fill("#jnTpl", "よかったこと：\nがんばったこと：\nあしたやりたいこと：\n"); await p.dispatchEvent("#jnTpl", "change"); await p.waitForTimeout(300);
   ok((await ls(p, "settings")).find((s) => s.id === "jnTemplate")?.text.startsWith("よかったこと："), "③ kept", await ls(p, "settings"));
-  // ⑨ the reminder: on, its time
-  await p.click("#jnRemindOn"); await p.waitForTimeout(300);
-  await p.fill("#jnRemindAt", "22:15"); await p.dispatchEvent("#jnRemindAt", "change"); await p.waitForTimeout(300);
-  const rm = (await ls(p, "settings")).find((s) => s.id === "jnRemind");
-  ok(rm?.on === true && rm.at === "22:15", "⑨ on at 22:15", rm);
-  ok((await txt(p, "#jnRemindFoot")).length > 5, "⑨ its foot says", await txt(p, "#jnRemindFoot"));
+  // ⑨ 書く時間のお知らせ: in つみかさね's 毎日の記録のお知らせ since 2026-11-23 (the user's call; suites/recremind): none here
+  ok(!(await p.$("#jnRemindOn, #jnRemindAt")) && !(await txt(p, "#jnSetGroup")).includes("書く時間のお知らせ"), "⑨ (in 毎日の記録のお知らせ) no 書く時間のお知らせ here");
   // ①'s switch: taken out with it
   ok(!(await p.$("#jnAskOn")), "① (taken out) no switch for the questions");
   await p.click("#sheetDone"); await p.waitForTimeout(800);
@@ -93,7 +89,7 @@ async function open(b, when) {
   ok((await txt(p, "#jnCalNav")).includes("2026年10月"), "⑧ ‹: the month before", await txt(p, "#jnCalNav"));
   await p.screenshot({ path: "journal1-cards.png", fullPage: true });
 
-  // ⑨ the alarms: today's while it isn't written, then not (another day, today written)
+  // ⑨ (its alarms: 毎日の記録のお知らせ's since 2026-11-23, suites/recremind) a 日記 written today, its old setting kept
   await p.close();
   const q = await open(b, "2026-11-13T20:00:00+09:00");
   await q.evaluate((P) => { const s = JSON.parse(localStorage.getItem(P + "settings") || "[]"); s.push({ id: "jnRemind", on: true, at: "21:30", updatedAt: 1 }); localStorage.setItem(P + "settings", JSON.stringify(s)); }, P);

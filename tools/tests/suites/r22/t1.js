@@ -53,7 +53,7 @@ async function addMeal(p, text = "おにぎり") {
   const left = ["未来の自分への手紙", "高さくらべ", "このペースなら", "今月の目標", "ことしの目標", "きょうの目標", "つみねこの名前", "なかよし度", "つみねこの日記", "着せかえ", "おすすめ："].filter((w) => gear.includes(w));
   ok(!left.length, "the gear: none of the ten", left);
   const toc = await p.evaluate(() => [...document.querySelectorAll("#tsumiToc button")].map((x) => `${x.textContent}:${x.dataset.to}`));
-  ok(JSON.stringify(toc) === JSON.stringify(["探す:tsumiFindHead", "記録:tsumiKindsHead", "ふりかえり:tsumiYearsHead tsumiMemoryHead", "記念:tsumiMemoHead", "写真:tsumiAlbumHead", "送る:ts6SendHead", "クイズ:ts7QuizHead", "目標:ts8AimHead", "見え方:tsumiLookHead", "お知らせ:tsumiRemindHead"]), "the gear's contents: no 手紙, no つみねこ; 目標 at きょう・あしたのめあて", toc);
+  ok(JSON.stringify(toc) === JSON.stringify(["探す:tsumiFindHead", "記録:tsumiKindsHead", "ふりかえり:tsumiYearsHead tsumiMemoryHead", "記念:tsumiMemoHead", "写真:tsumiAlbumHead", "送る:ts6SendHead", "クイズ:ts7QuizHead", "目標:ts8AimHead", "見え方:tsumiLookHead", "お知らせ:recRemindHead"]), "the gear's contents: no 手紙, no つみねこ; 目標 at きょう・あしたのめあて", toc);
   await p.locator("#tsumiToc button", { hasText: "目標" }).click(); // (a smooth scroll, a long way: about a second and a half)
   ok(await p.waitForFunction(() => { const r = document.getElementById("ts8AimHead").getBoundingClientRect(); return r.top >= 0 && r.top < 400; }, null, { timeout: 5000 }).then(() => true, () => false), "目標 pressed: at きょう・あしたのめあて");
   // ⑤ 記念

@@ -88,14 +88,11 @@ const fmtN = (n) => n.toLocaleString("en-US");
 
   // ②⑧ a 期限 set under the gear
   await p.locator("#wtSettings").click(); await p.waitForTimeout(500);
-  ok(!(await p.isHidden("#wtRemindForm")) && await p.inputValue("#wtRemindAt") === "08:00" && !(await p.isChecked("#wtRemindOn")), "⑥ the お知らせ there, off, 08:00");
+  // ⑥ 測り忘れのお知らせ: in つみかさね's 毎日の記録のお知らせ since 2026-11-23 (the user's call; suites/recremind): none here
+  ok(!(await p.$("#wtRemindForm, #wtRemindOn, #wtRemindAt")) && !(await txt(p, "#bodyGroup")).includes("測り忘れのお知らせ"), "⑥ (in 毎日の記録のお知らせ) no 測り忘れのお知らせ here");
   await p.fill("#wtBy", "2027-01-31"); await p.locator("#wtBy").dispatchEvent("change"); await p.waitForTimeout(200);
-  // ⑥ on: kept
-  await p.locator("#wtRemindOn").click({ force: true }); await p.waitForTimeout(200);
-  await p.fill("#wtRemindAt", "07:30"); await p.locator("#wtRemindAt").dispatchEvent("change"); await p.waitForTimeout(200);
   let set = await ls(p, "settings");
   ok(set.find((x) => x.id === "weightBy")?.date === "2027-01-31", "②⑧ the 期限 kept", set.find((x) => x.id === "weightBy"));
-  ok(set.find((x) => x.id === "weightRemind")?.on === true && set.find((x) => x.id === "weightRemind")?.at === "07:30", "⑥ kept: on at 07:30", set.find((x) => x.id === "weightRemind"));
   await p.locator("#sheetDone").click(); await p.waitForTimeout(500);
   plan = await txt(p, "#wtPlan");
   const daysLeft = between(today, "2027-01-31"), need = (-(last.kg - 62) / daysLeft) * 7;

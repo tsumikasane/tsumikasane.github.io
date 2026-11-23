@@ -3633,6 +3633,19 @@ ul.list li.rec8-cmp::before { display: none; }
 #todoMenuGroup .td9-more { color: var(--muted); }
 ul.list > li.td9-show-row { align-items: center; gap: 12px; }
 .td9-show-name { flex: 1; min-width: 0; }
+/* 毎日の記録のお知らせ (the user's call, 2026-11-23): its times side by side, each with its × while two or more, then
+   時刻を追加; 毎日記録するもの with a switch each */
+.rec-remind-times { flex-wrap: wrap; gap: 8px 14px; }
+.rec-remind-time { display: inline-flex; align-items: center; gap: 2px; }
+.ffield .rec-remind-time > input[type="time"] { flex: none; width: 10em; }
+.rec-remind-time > .icon-btn { width: 40px; height: 40px; margin: 0; color: var(--muted); }
+.rec-remind-time > .icon-btn:disabled, .rec-remind-add:disabled { opacity: .4; cursor: default; }
+.rec-remind-add { display: inline-flex; align-items: center; gap: 4px; }
+#recRemindKinds input.switch { -webkit-appearance: none; appearance: none; position: relative; flex: none; width: 51px; height: 31px; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 999px; background: var(--fill-press); cursor: pointer; transition: background-color .2s; }
+#recRemindKinds input.switch::before { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #ffffff; box-shadow: 0 3px 8px rgba(0, 0, 0, .15), 0 1px 1px rgba(0, 0, 0, .16); transition: transform .2s; }
+#recRemindKinds input.switch:checked { background: var(--accent-fill); }
+#recRemindKinds input.switch:checked::before { transform: translateX(20px); }
+#recRemindKinds input.switch:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 /* ④ one of the same name */
 .td9-dup { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; color: var(--warn); }
 /* ⑤ a step's 期限: the date in its row, a calendar mark until it has one; on the ToDo's row, the next step's */
@@ -9657,7 +9670,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <button type="button" data-to="ts7QuizHead">クイズ</button>
           <button type="button" data-to="ts8AimHead">目標</button>
           <button type="button" data-to="tsumiLookHead">見え方</button>
-          <button type="button" data-to="tsumiRemindHead">お知らせ</button>
+          <button type="button" data-to="recRemindHead">お知らせ</button>
         </nav>
         <!-- ことばで探す (the user's call): the blocks with the words typed, newest first; one pressed is shown on the stairs -->
         <h3 class="group-head" id="tsumiFindHead">ことばで探す</h3>
@@ -9872,19 +9885,23 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- お休みの日 (the user's call): the same days as ルーティーン's お休み -->
         <h3 class="group-head">お休みの日</h3>
         <ul class="list card" id="tsumiRestList"></ul>
-        <p class="group-foot">お休みの日は、積み忘れのお知らせもアイコンのしるしも来ません。ルーティーンのお休みと同じ日になり、ルーティーンの連続も途切れません。</p>
+        <p class="group-foot">お休みの日は、毎日の記録のお知らせもアイコンのしるしも来ません。ルーティーンのお休みと同じ日になり、ルーティーンの連続も途切れません。</p>
         <!-- その10 6 お休みの日のふりかえり (the user's call, 2026-11-14) -->
         <h3 class="group-head" id="ts10RestHead" hidden>お休みの日のふりかえり</h3>
         <ul class="list card ts10-rest" id="ts10Rest" hidden></ul>
-        <!-- 積み忘れのお知らせ (the user's call): each day at the time set, a day with no block yet gets a notification -->
-        <h3 class="group-head" id="tsumiRemindHead">積み忘れのお知らせ</h3>
-        <form class="add" id="tsumiRemindForm" autocomplete="off" onsubmit="return false">
-          <label class="flabel" for="tsumiRemindOn">お知らせ</label>
-          <div class="ffield"><input type="checkbox" id="tsumiRemindOn" class="switch" role="switch"></div>
-          <label class="flabel" for="tsumiRemindAt">時刻</label>
-          <div class="ffield"><input type="time" id="tsumiRemindAt" value="21:00"></div>
+        <!-- 毎日の記録のお知らせ (the user's call, 2026-11-23): what is to be recorded each day and the times to be told; at
+             each, those not in yet that day in one notification. In the place of 積み忘れのお知らせ, and of 食事's, からだ's,
+             家計簿's and 日記's own -->
+        <h3 class="group-head" id="recRemindHead">毎日の記録のお知らせ</h3>
+        <form class="add" id="recRemindForm" autocomplete="off" onsubmit="return false">
+          <label class="flabel" for="recRemindOn">お知らせ</label>
+          <div class="ffield"><input type="checkbox" id="recRemindOn" class="switch" role="switch"></div>
+          <span class="flabel" id="recRemindTimesName">時刻</span>
+          <div class="ffield below rec-remind-times" id="recRemindTimes" role="group" aria-labelledby="recRemindTimesName"></div>
         </form>
-        <p class="group-foot" id="tsumiRemindFoot"></p>
+        <h3 class="group-head" id="recRemindKindsHead">毎日記録するもの</h3>
+        <ul class="list card" id="recRemindKinds" aria-labelledby="recRemindKindsHead"></ul>
+        <p class="group-foot" id="recRemindFoot"></p>
         <!-- お知らせの時刻のおすすめ (the user's call) -->
         <p class="group-foot" id="tsumiRemindTip" hidden><span id="tsumiRemindTipText"></span> <button type="button" class="link-btn" id="tsumiRemindTipBtn"></button></p>
         <p class="group-foot">きょうまだ積んでいない日は、ホーム画面のアイコンに「1」のしるしが付きます（通知を受け取っている iPhone などで）。</p>
@@ -9936,7 +9953,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </form>
         <p class="group-foot" id="rtRemindFoot"></p>
       </div>
-      <!-- 日記の設定 (its gear): ③ テンプレート, ⑨ 書く時間のお知らせ (① 問いかけ, その6 ⑧⑨, その2 ⑨⑩ taken out, 2026-11-19) -->
+      <!-- 日記の設定 (its gear): ③ テンプレート (① 問いかけ, その6 ⑧⑨, その2 ⑨⑩ taken out, 2026-11-19; ⑨ 書く時間のお知らせ in つみかさね's 毎日の記録のお知らせ, 2026-11-23) -->
       <div class="sheet-view" id="jnSetGroup" hidden>
         <h3 class="group-head">テンプレート</h3>
         <div class="card pad">
@@ -9945,14 +9962,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="row-between"><span class="muted small" id="jnTplState"></span></div>
         </div>
         <p class="group-foot">日記の下の「テンプレート」を押すと、ここに書いた文が入ります。</p>
-        <h3 class="group-head">書く時間のお知らせ</h3>
-        <form class="add" id="jnRemindForm" autocomplete="off" onsubmit="return false">
-          <label class="flabel" for="jnRemindOn">お知らせ</label>
-          <div class="ffield"><input type="checkbox" id="jnRemindOn" class="switch" role="switch"></div>
-          <label class="flabel" for="jnRemindAt">時刻</label>
-          <div class="ffield"><input type="time" id="jnRemindAt" value="21:30"></div>
-        </form>
-        <p class="group-foot" id="jnRemindFoot"></p>
+        <!-- (⑨ 書く時間のお知らせ: in つみかさね's 毎日の記録のお知らせ since 2026-11-23, the user's call) -->
         <!-- (日記 その6 ⑩ 週のふりかえりのお知らせ) -->
         <h3 class="group-head">週のふりかえりのお知らせ</h3>
         <form class="add" autocomplete="off" onsubmit="return false">
@@ -10055,18 +10065,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield"><input type="number" id="proteinGoal" step="1" min="1" max="500" inputmode="numeric"><span class="unit">g</span><button class="btn ghost sm" type="submit">保存</button></div>
         </form>
         <p class="group-foot" id="proteinFoot"></p>
-        <h3 class="group-head">記録し忘れのお知らせ</h3>
-        <form class="add" id="mealRemindForm" autocomplete="off" onsubmit="return false">
-          <label class="flabel" for="mealRemindOn">お知らせ</label>
-          <div class="ffield"><input type="checkbox" id="mealRemindOn" class="switch" role="switch"></div>
-          <label class="flabel" for="mealRemindB">朝食</label>
-          <div class="ffield"><input type="time" id="mealRemindB"></div>
-          <label class="flabel" for="mealRemindL">昼食</label>
-          <div class="ffield"><input type="time" id="mealRemindL"></div>
-          <label class="flabel" for="mealRemindD">夕食</label>
-          <div class="ffield"><input type="time" id="mealRemindD"></div>
-        </form>
-        <p class="group-foot" id="mealRemindFoot"></p>
+        <!-- (⑩ 記録し忘れのお知らせ: in つみかさね's 毎日の記録のお知らせ since 2026-11-23, the user's call) -->
         <!-- (ダイエット その4 ②) いつもの組み合わせ: made from a 区分 of the day shown, put in at a press on 食事 -->
         <h3 class="group-head" id="dt4SetHead" tabindex="-1">いつもの組み合わせ</h3>
         <ul class="list card" id="dt4SetList" hidden></ul>
@@ -10227,15 +10226,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div id="saveForms"></div>
         <div class="label-tools"><button type="button" class="link-btn" id="saveAdd"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>貯金の目標を追加</button></div>
         <p class="group-foot"><span class="phrase">始める月からの毎月の収支（収入−支出）を足して、</span><span class="phrase">どこまで貯まったかを出します。</span><span class="phrase">いまある貯金は「はじめの額」に入れてください。</span></p>
-        <!-- (家計簿 その2 ⑥) つけ忘れのお知らせ -->
-        <h3 class="group-head">つけ忘れのお知らせ</h3>
-        <form class="add" id="mo2RemindForm" autocomplete="off" onsubmit="return false">
-          <label class="flabel" for="mo2RemindOn">お知らせ</label>
-          <div class="ffield"><input type="checkbox" id="mo2RemindOn" class="switch" role="switch"></div>
-          <label class="flabel" for="mo2RemindAt">時刻</label>
-          <div class="ffield"><input type="time" id="mo2RemindAt" value="21:00"></div>
-        </form>
-        <p class="group-foot" id="mo2RemindFoot"></p>
+        <!-- (家計簿 その2 ⑥ つけ忘れのお知らせ: in つみかさね's 毎日の記録のお知らせ since 2026-11-23, the user's call) -->
       </div>
       <!-- バイトの設定 (家計簿's gear with バイト showing): each job's 時給 and days, and the year's mark -->
       <div class="sheet-view" id="jobGroup" hidden>
@@ -10473,15 +10464,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield"><input type="text" id="bd3PartName" maxlength="12"><button class="btn ghost sm" type="submit">追加</button></div>
         </form>
         <p class="group-foot">ウエスト・胸囲・ヒップ・二の腕・太もものほかに、測りたいところを足せます。体重の記録の「サイズ」とサイズのグラフに出ます。</p>
-        <!-- ⑥ 測り忘れのお知らせ (the user's call, 2026-11-10) -->
-        <h3 class="group-head">測り忘れのお知らせ</h3>
-        <form class="add" id="wtRemindForm" autocomplete="off" onsubmit="return false">
-          <label class="flabel" for="wtRemindOn">お知らせ</label>
-          <div class="ffield"><input type="checkbox" id="wtRemindOn" class="switch" role="switch"></div>
-          <label class="flabel" for="wtRemindAt">時刻</label>
-          <div class="ffield"><input type="time" id="wtRemindAt"></div>
-        </form>
-        <p class="group-foot" id="wtRemindFoot"></p>
+        <!-- (⑥ 測り忘れのお知らせ: in つみかさね's 毎日の記録のお知らせ since 2026-11-23, the user's call) -->
         <!-- (からだ その2 ⑨) each Monday, the week before's -->
         <h3 class="group-head">週のまとめのお知らせ</h3>
         <form class="add" id="bd2WeekForm" autocomplete="off" onsubmit="return false">
@@ -13686,33 +13669,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     act(async () => { await meals.removeMany([m.id]); await expenses.removeMany([ex.id]); });
     flash("食事を削除しました。家計簿の食費も消しました", () => act(async () => { await meals.putBack([mb]); await expenses.putBack([eb]); flash("元に戻しました"); }));
   }
-  // ⑩ 記録し忘れのお知らせ (the user's call): on or off and a time for 朝食・昼食・夕食 each (none: not that one), kept with the
-  // account; each day at that time, a 区分 with nothing yet comes to the devices that get 通知, as plans' alarms do
-  const MEAL_REMIND_ID = "mealRemind", MEAL_REMIND_AT = { 朝食: "", 昼食: "14:00", 夕食: "21:00" };
-  function mealRemind() {
-    const v = settings.get(MEAL_REMIND_ID) || {}, at = {};
-    for (const s of ["朝食", "昼食", "夕食"]) at[s] = typeof v.at?.[s] === "string" ? (/^\d\d:\d\d$/.test(v.at[s]) ? v.at[s] : "") : MEAL_REMIND_AT[s];
-    return { on: !!v.on, at };
-  }
+  // (⑩ 記録し忘れのお知らせ, settings mealRemind: in つみかさね's 毎日の記録のお知らせ since 2026-11-23, the user's call;
+  // what it kept stays)
   function renderMealSettings() {
-    const r = mealRemind(), st = pushState();
     if (document.activeElement !== $("mealKcalGoal")) $("mealKcalGoal").value = num((settings.get("kcalGoal") || {}).target) || "";
     const kg = bodyKgOn(todayKey);
     if (document.activeElement !== $("proteinGoal")) $("proteinGoal").value = proteinGoal() || "";
     $("proteinGoal").placeholder = kg > 0 ? String(Math.round(kg * 1.6)) : "未設定";
     $("proteinFoot").textContent = kg > 0 ? `筋トレをしている人の目安は、体重 1 kg あたり 1.6 g ほど（${fmtN(Math.round(kg * 1.6))} g）です。` : "体重を記録すると、目安が出ます。";
-    $("mealRemindOn").checked = r.on;
-    for (const [s, id] of [["朝食", "mealRemindB"], ["昼食", "mealRemindL"], ["夕食", "mealRemindD"]]) { const f = $(id); if (document.activeElement !== f) f.value = r.at[s]; f.disabled = !r.on; }
-    $("mealRemindFoot").textContent = !r.on ? "決めた時刻になっても、その区分の食事がまだなら、通知でお知らせします。空にした区分はお知らせしません。"
-      : st === "on" ? `その区分の食事がまだなら、${["朝食", "昼食", "夕食"].filter((s) => r.at[s]).map((s) => `${s}は ${r.at[s]}`).join("、") || "（時刻なし）"} にこの端末に届きます。` : pushWords(st).replace("通知アラーム", "お知らせ");
   }
-  function saveMealRemind(patch) { act(() => settings.set(MEAL_REMIND_ID, { ...mealRemind(), ...patch, updatedAt: Date.now() })); renderMealSettings(); }
-  $("mealRemindOn").addEventListener("change", (ev) => { saveMealRemind({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderMealSettings); });
-  for (const [s, id] of [["朝食", "mealRemindB"], ["昼食", "mealRemindL"], ["夕食", "mealRemindD"]]) $(id).addEventListener("change", (ev) => {
-    const v = ev.target.value;
-    if (v !== "" && !/^\d\d:\d\d$/.test(v)) return;
-    saveMealRemind({ at: { ...mealRemind().at, [s]: v } });
-  });
   function saveMealGoals() {
     saveBodyTarget("kcalGoal", $("mealKcalGoal"), 500, 9999);
     const raw = $("proteinGoal").value, v = raw === "" ? 0 : Math.round(Number(raw));
@@ -15971,7 +15936,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       );
     }
     renderWeightChart();
-    draw(renderWtPlan); draw(renderWtReview); draw(renderWtRemind);
+    draw(renderWtPlan); draw(renderWtReview);
     if (bodyTwo) { renderBodyTwo(); draw(renderBd2Week); draw(renderBd2SizeGoals); } // (からだ その2)
     draw(renderBd3); // (からだ その3)
     if (dietFour) draw(renderDt4Body); // (ダイエット その4)
@@ -16207,7 +16172,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ---------- からだ ①〜⑩ (the user's calls, 2026-11-10): the 7日平均 and the pace (①), when the goal comes (②), BMI (③),
-  // 除脂肪体重 and 体脂肪量 (④), サイズ (⑤), 測り忘れのお知らせ (⑥), the メンテナンスカロリー the records say (⑦), a day's
+  // 除脂肪体重 and 体脂肪量 (④), サイズ (⑤), 測り忘れのお知らせ (⑥, in 毎日の記録のお知らせ since 2026-11-23), the
+  // メンテナンスカロリー the records say (⑦), a day's
   // 摂取カロリー for the goal by its 期限 (⑧), weeks and months looked back on (⑨) and photos side by side (⑩) ----------
   const KCAL_PER_KG = 7200; // a kg of the body gained or lost, in kcal (脂肪 1 kg ≈ 7,200 kcal)
   // a few words joined with ・ (or a space), each kept whole on its line
@@ -16325,24 +16291,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       inRange.length > 1 && inRange.includes(last) ? `${rangeLabel()}で ${signed(num(last[sizeKey]) - num(first[sizeKey]))} cm` : null, bodyTwo ? bd2SizeNote(sizeKey, last) : null])); // (その2 ⑥)
   }
 
-  // ⑥ 測り忘れのお知らせ: on or off and a time (08:00 at first), kept with the account; each day at that time, while the day
-  // has no weight, it comes to the devices that get 通知, as plans' alarms do (alarmTimes)
-  const WT_REMIND_ID = "weightRemind";
-  function wtRemind() {
-    const v = settings.get(WT_REMIND_ID) || {};
-    return { on: !!v.on, at: /^\d\d:\d\d$/.test(v.at || "") ? v.at : "08:00" };
-  }
-  function renderWtRemind() {
-    const r = wtRemind(), st = pushState(), f = $("wtRemindAt");
-    $("wtRemindOn").checked = r.on;
-    if (document.activeElement !== f) f.value = r.at;
-    f.disabled = !r.on;
-    $("wtRemindFoot").textContent = !r.on ? "決めた時刻になっても、その日の体重がまだなら、通知でお知らせします。"
-      : st === "on" ? `その日の体重がまだなら、毎日 ${r.at} にこの端末に届きます。` : pushWords(st).replace("通知アラーム", "お知らせ");
-  }
-  function saveWtRemind(patch) { act(() => settings.set(WT_REMIND_ID, { ...wtRemind(), ...patch, updatedAt: Date.now() })); renderWtRemind(); }
-  $("wtRemindOn").addEventListener("change", (ev) => { saveWtRemind({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderWtRemind); });
-  $("wtRemindAt").addEventListener("change", (ev) => { if (/^\d\d:\d\d$/.test(ev.target.value)) saveWtRemind({ at: ev.target.value }); });
+  // (⑥ 測り忘れのお知らせ, settings weightRemind: in つみかさね's 毎日の記録のお知らせ since 2026-11-23, the user's call;
+  // what it kept stays)
 
   // ⑦ the メンテナンスカロリー the records say: the mean of the days' intake over the 4 weeks before today (the 摂取カロリー
   // typed with a day's weight, else its 食事 kcal added up; a day under 800 kcal left out as not all recorded) less what the
@@ -18109,17 +18059,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         if (at > now + 5000 && at <= now + PUSH_AHEAD * 864e5) out.push({ at, title: oneLine(g.title).slice(0, 100), body: words, tag: `goal:${g.id}:${days}`, url: `./#goal:${g.id}` });
       }
     }
-    // 積み忘れのお知らせ (the user's call): each day at the time set, but today's not once a block is on (sent again then,
-    // pushSig), opening きょう to record
-    const rm = tsumiRemind();
-    if (rm.on) {
-      const [h, mi] = rm.at.split(":").map(Number), todayHas = tsumiBlocks(false, "tally").today > 0;
-      for (let i = 0; i <= PUSH_AHEAD; i++) {
-        const d = addDays(todayKey, i), p = parseYmd(d), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
-        if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5 || (i === 0 && todayHas) || rtRest(d)) continue; // (none on an お休みの日)
-        out.push({ at, title: "つみかさね", body: "きょうはまだ積んでないよ", tag: (tdBadgeOn() ? "tsumi-remind-x:" : "tsumi-remind:") + d, url: "./#home" }); // (ToDo's number on the icon: no しるし from it)
-      }
-    }
+    out.push(...recRemindAlarms(now)); // 毎日の記録のお知らせ (the user's call, 2026-11-23: 積み忘れ's and the four pages' own in one)
     // ⑥ ルーティーンのお知らせ (the user's call): each day at the time set, but today's not once its items are all done or it
     // is お休み (sent again then, pushSig); today's says what is left. Pressed, ルーティーン
     const rr = rtRemind();
@@ -18129,29 +18069,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const d = addDays(todayKey, i), p = parseYmd(d), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
         if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5 || (i === 0 && !left.length) || rtRest(d)) continue; // (none on an お休みの日, その3 ② お休みの予定's too)
         out.push({ at, title: "ルーティーン", body: i === 0 ? `まだの項目：${left.map((r) => oneLine(r.name)).join("・")}`.slice(0, 280) : "きょうのルーティーンは、ぜんぶできましたか？", tag: `rt-remind:${d}`, url: "./#routine" });
-      }
-    }
-    // ⑩ 食事の記録し忘れのお知らせ (the user's call): each 区分 with a time, each day, today's not once that 区分 has one;
-    // pressed, 食事
-    const mr = mealRemind();
-    if (mr.on) for (const s of ["朝食", "昼食", "夕食"]) {
-      if (!mr.at[s]) continue;
-      const [h, mi] = mr.at[s].split(":").map(Number), has = meals.items.some((m) => m.date === todayKey && m.slot === s);
-      for (let i = 0; i <= PUSH_AHEAD; i++) {
-        const d = addDays(todayKey, i), p = parseYmd(d), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
-        if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5 || (i === 0 && has)) continue;
-        out.push({ at, title: "食事", body: `${s}の記録がまだです`, tag: `meal-remind:${s}:${d}`, url: "./#meal" });
-      }
-    }
-    // ⑥ からだの測り忘れのお知らせ (the user's call): each day at its time, today's not once the day has a weight; pressed,
-    // からだ
-    const wr = wtRemind();
-    if (wr.on) {
-      const [h, mi] = wr.at.split(":").map(Number), has = !!weights.get(todayKey);
-      for (let i = 0; i <= PUSH_AHEAD; i++) {
-        const d = addDays(todayKey, i), p = parseYmd(d), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
-        if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5 || (i === 0 && has)) continue;
-        out.push({ at, title: "からだ", body: "きょうの体重がまだです", tag: `weight-remind:${d}`, url: "./#weight" });
       }
     }
     // ⑨ 朝の予定のお知らせ (the user's call): each morning with plans or shifts, the day's in a line; pressed, the day
@@ -18199,7 +18116,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...bd3Alarms(now)); // (からだ その3 ④ 寝る時刻, ⑤ 水分)
     if (dietSeven) out.push(...dt7Alarms(now)); // (ダイエット その7 ⑧ 運動のお知らせ)
     if (dietEleven) out.push(...dt11Alarms(now)); // (ダイエット その11 ⑦ サイズと体型写真のお知らせ)
-    out.push(...bt2Alarms(now), ...mo2Alarms(now)); // (バイト その2 ② 出勤前, ⑨ シフト希望; 家計簿 その2 ⑥ つけ忘れ)
+    out.push(...bt2Alarms(now)); // (バイト その2 ② 出勤前, ⑨ シフト希望)
     out.push(...bt3Alarms(now)); // (バイト その3 ⑨ 給料日)
     out.push(...bt7Alarms(now)); // (バイト その7 ① 家を出る時刻, ⑧ 前の晩)
     out.push(...bt10Alarms(now)); // (バイト その10 ⑧ 契約の更新日)
@@ -18221,7 +18138,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...goalElevenAlarms(now)); // (目標 その11 ⑧ 期限のお知らせを増やす)
     out.push(...goalSixteenAlarms(now)); // (目標 その16 ③ 再開の日)
     out.push(...goalEighteenAlarms(now)); // (目標 その18 ④ 連続を守るお知らせ)
-    out.push(...jnAlarms(now)); // (日記 ⑨ 書く時間のお知らせ)
     out.push(...jn6Alarms(now)); // (日記 その6 ⑩ 週のふりかえりのお知らせ)
     out.push(...rt2Alarms(now)); // (ルーティーン その2 ③ 時刻の目安のお知らせ)
     out.push(...rt3Alarms(now)); // (ルーティーン その3 ⑨ 週のまとめ)
@@ -18241,14 +18157,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // what the alarms are made from, short: when it changes (or the day turns, or half a day has gone by) they go again
   function pushSig() {
-    const parts = [todayKey], rm = tsumiRemind();
-    if (rm.on) parts.push(["remind", rm.at, tsumiBlocks(false, "tally").today > 0, routineDays.items.filter((x) => x.rest && x.date >= todayKey).map((x) => x.date)]); // (today's goes once a block is on; お休みの日)
+    const parts = [todayKey];
+    parts.push(...recRemindParts()); // (毎日の記録のお知らせ: today's says what is still to be recorded; お休みの日)
     const rr = rtRemind(); // (ルーティーン's: today's goes once all are done or it is お休み, and says what is left)
     if (rr.on) parts.push(["rtRemind", rr.at, rtRest(todayKey), rtItemsOn(todayKey).filter((r) => !rtDoneOn(r, todayKey)).map((r) => r.name), routineDays.items.filter((x) => x.rest && x.date > todayKey).map((x) => x.date)]); // (その3 ② お休みの予定)
-    const mr = mealRemind(); // (食事's: a 区分's today goes once it has one)
-    if (mr.on) parts.push(["mealRemind", mr.at, SLOTS.map((s) => meals.items.some((m) => m.date === todayKey && m.slot === s))]);
-    const wr = wtRemind(); // (からだ's: today's goes once the day has a weight)
-    if (wr.on) parts.push(["weightRemind", wr.at, !!weights.get(todayKey)]);
     const cm = calMorning(); // (the calendar's morning: what each day's says)
     if (cm.on) { const last = addDays(todayKey, PUSH_AHEAD), tb = turnsByDay(todayKey, last), sb = shiftsByDay(todayKey, last); parts.push(["calMorning", cm.at, [...new Set([...tb.keys(), ...sb.keys()])].sort().map((d) => d + dayAgenda(tb.get(d) || [], sb.get(d) || []).join("|"))]); }
     for (const g of goals.items) if (!g.done && !g.pausedAt && g.deadline) parts.push(["goal", g.id, g.title, g.deadline]); // (目標の期限の通知)
@@ -18276,7 +18188,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...bd3Push()); // (からだ その3 ④⑤)
     if (dietSeven) parts.push(...dt7Push()); // (ダイエット その7 ⑧)
     if (dietEleven) parts.push(...dt11Push()); // (ダイエット その11 ⑦)
-    parts.push(...bt2Push(), ...mo2Push()); // (バイト その2 ②⑨, 家計簿 その2 ⑥)
+    parts.push(...bt2Push()); // (バイト その2 ②⑨)
     parts.push(...bt3Push()); // (バイト その3 ⑨)
     parts.push(...bt7Push()); // (バイト その7 ①⑧)
     parts.push(...bt10Push()); // (バイト その10 ⑧)
@@ -18298,7 +18210,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...goalElevenParts()); // (目標 その11 ⑧)
     parts.push(...goalSixteenParts()); // (目標 その16 ③)
     parts.push(...goalEighteenParts()); // (目標 その18 ④)
-    parts.push(...jnPushParts()); // (日記 ⑨)
     parts.push(...jn6PushParts()); // (日記 その6 ⑩)
     parts.push(...rt2PushParts()); // (ルーティーン その2 ③)
     parts.push(...rt3PushParts()); // (ルーティーン その3 ⑨)
@@ -18399,7 +18310,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren($("pushRows"), rows);
     $("pushRows").hidden = !rows.length;
     $("pushFoot").textContent = st === "off" ? "オンにすると、予定の通知アラームがこの端末に届きます。" : pushWords(st);
-    renderTsumiRemind(); // (つみかさね's お知らせ says whether they come here)
+    renderRecRemind(); // (つみかさね's 毎日の記録のお知らせ says whether they come here)
     renderGoalAlarmFoot(); // (and 目標の期限の通知)
   }
   // 目標の期限の通知, under the 新しい目標 sheet: when they come, and whether to this device (they need no switch of their
@@ -18415,7 +18326,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (/#weather$/.test(String(url || ""))) { if (sheetEl.open) closeSheet(true); setTab("home"); draw(() => wxOpenPage(false)); return true; } // (天気 その1 ⑩: its page)
     const mp = /#(job|book)$/.exec(String(url || ""))?.[1]; // (バイト その2 ②⑨: バイト; 家計簿 その2 ⑥: 家計簿; drawn so, as setTab draws nothing)
     if (mp) { if (sheetEl.open) closeSheet(true); moneyPart = mp; lsPut(MONEY_PART_KEY, mp); setTab("money"); draw(renderMoney); return true; }
-    if (/#home$/.test(String(url || ""))) { if (sheetEl.open) closeSheet(true); setTab("home"); return true; } // 積み忘れのお知らせ: きょう, to record
+    if (/#home$/.test(String(url || ""))) { if (sheetEl.open) closeSheet(true); setTab("home"); return true; } // 毎日の記録のお知らせ for two or more: きょう, to record
     // a page's own (ルーティーン's and 食事's お知らせ): that page, 食事 and the like in ダイエット
     const pg = /#([a-z]+)$/.exec(String(url || ""))?.[1];
     if (pg && (isDietPart(pg) || PAGES.some((x) => x.key === pg))) { if (sheetEl.open) closeSheet(true); if (isDietPart(pg)) { setDietPart(pg); setTab("diet"); } else setTab(pg); return true; }
@@ -19236,12 +19147,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (scope === "records") { draw(renderUsage); draw(renderRecSettings); } // 記録's バックアップ, the amount used as it is now; ⑧⑨⑩
     if (scope === "tsumi") { $("tsumiFind").value = ""; renderTsumiFind(); if (tsumiPaletteFor) { tsumiPaletteFor = null; renderTsumiKinds(tsumiShown); } renderTsumiGear(true); } // ことばで探す empty, the colours shut, each time
     if (scope === "woMenu") { woDraft = null; renderWoEdit(); }
-    if (scope === "money") { renderCatBudgets(); renderCatEditor(); renderFixedForms(); renderSaveForms(); renderMo2Settings(); } // 家計簿's 費目ごとの予算, 費目, 固定費 and 貯金の目標 (その2 ③ 支払い方法, ⑥ お知らせ)
+    if (scope === "money") { renderCatBudgets(); renderCatEditor(); renderFixedForms(); renderSaveForms(); renderMo2Settings(); } // 家計簿's 費目ごとの予算, 費目, 固定費 and 貯金の目標 (その2 ③ 支払い方法)
     if (scope === "routine") { renderRtOrder(); renderRtRemind(); renderRt2Settings(); renderRt3Settings(); renderRt4Settings(); renderRt5Settings(); renderRt6Settings(); } // ルーティーン's order (④), its お知らせ (⑥), (その2 ⑧) できた項目を下へ and (その3) ⑨ 週のまとめ, ② お休みの予定
     if (scope === "workout") renderWoSettings(); // 運動's month's goal (⑧) and rest (⑨)
-    if (scope === "meal") renderMealSettings(); // 食事's 目安, protein goal (⑤) and お知らせ (⑩)
+    if (scope === "meal") renderMealSettings(); // 食事's 目安 and protein goal (⑤)
     if (scope === "goal") renderGoalSettings(); // 目標's ⑤ 見直しのお知らせ
-    if (scope === "journal") { renderJnSettings(); renderJn3Settings(); renderJn5Settings(); renderJn6Settings(); } // (日記 ③⑨, その3 ⑧⑤, その5 ⑧⑥, その6 ⑩)
+    if (scope === "journal") { renderJnSettings(); renderJn3Settings(); renderJn5Settings(); renderJn6Settings(); } // (日記 ③, その3 ⑧⑤, その5 ⑧⑥, その6 ⑩)
     if (scope === "todo") { renderTd9Settings(); renderTdMorning(); renderTdEvening(); renderTdBadge(); if (todoSix) renderTd6Quiet(); if (todoSeven) renderTd7Settings(); if (todoEight) renderTd8Settings(); } // (ToDo その2 ① 朝のまとめのお知らせ, その3 ③④)
     // (バイト: one blank job to fill in when there is none yet, its 時給 ready to type)
     if (scope === "job") {
@@ -22958,7 +22869,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // the kind pressed wasn't said)
     $("tsumiCanvas").setAttribute("aria-label", n ? `これまでの記録 ${nf(n)} こが、${k} 段の階段に積みあがっています。${v ? `${onlyLabel()}のブロック ${nf(mine.length)} こだけに色を付けています。` : ""}つぎの段まであと ${left} こ。${!v && today ? `きょうは ${today} こ積みました。` : ""}${!v && (endText || pastText) ? (endText || pastText) + "。" : ""}前と次のボタンや左右の矢印キーで1つずつ、PageUp と PageDown で月ごとに見られます。Enter キーで、見ているブロックの記録が開きます。` : "まだブロックがありません。");
     $("tsumiPrev").hidden = $("tsumiNext").hidden = n < 2;
-    renderTsumiPast(); renderTsumiFlagLine(); renderTsumiFoot(); renderTsumiRemind();
+    renderTsumiPast(); renderTsumiFlagLine(); renderTsumiFoot(); renderRecRemind();
     // opened with blocks gone on since the last look: the newest (of the kind pressed), where they drop in; else as it was
     if (opening) {
       tsGhostKey = null; tsumiHoverAt = null; tsumiNeko = null; // (つみねこ where the stairs have it, or where they had it at the last look)
@@ -23782,29 +23693,114 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     btn.textContent = `${words}のきょうは ${fmtN(count(day))} こ積んでいました`;
     btn.onclick = () => { if (tsumiCal) setTsumiCal(false, false); goTsumiDay(day); };
   }
-  // 積み忘れのお知らせ (the user's call): on or off and its time (21:00 at first), kept with the account; it comes to the
-  // devices that get 通知, as plans' alarms do (alarmTimes). Turned on where they don't come yet, this press asks for them
-  const REMIND_ID = "tsumiRemind";
-  function tsumiRemind() { const v = settings.get(REMIND_ID); return { on: !!v?.on, at: /^\d\d:\d\d$/.test(v?.at || "") ? v.at : "21:00" }; }
-  function renderTsumiRemind() {
-    const r = tsumiRemind(), st = pushState(), at = $("tsumiRemindAt");
-    $("tsumiRemindOn").checked = r.on;
-    if (document.activeElement !== at) at.value = r.at;
-    at.disabled = !r.on;
-    $("tsumiRemindFoot").textContent = !r.on ? "決めた時刻になっても、その日のブロックがまだ 0 こなら、通知でお知らせします。"
-      : st === "on" ? `毎日 ${r.at} になっても、その日のブロックがまだ 0 こなら、この端末に「きょうはまだ積んでないよ」と届きます。`
+  // (積み忘れのお知らせ, settings tsumiRemind: in 毎日の記録のお知らせ, below, since 2026-11-23, the user's call; what it kept stays)
+  // 毎日の記録のお知らせ (the user's call, 2026-11-23: ① 毎日記録するものをあらかじめ決めておく ② 通知の時刻を決めておく
+  // ③ その時刻に、まだ記録していないものを「きょうは〇〇と〇〇の記録がまだです」と知らせる; 散らばっていた記録し忘れの
+  // お知らせを1つに): the kinds picked (日記・からだ・食事・運動・勉強・ルーティーン・家計簿) and up to three times a day, kept
+  // with the account; at each time, those of them not in yet that day in one notification (none on an お休みの日, nor once
+  // all are in: sent again as records go in, pushSig), coming to the devices that get 通知 as plans' alarms do. It took the
+  // place of つみかさね's 積み忘れ, 食事's 記録し忘れ, からだ's 測り忘れ, 家計簿's つけ忘れ and 日記's 書く時間 お知らせ: what
+  // they kept stays, and till this one is set it starts from them (on if one of them was, with the kinds of those that
+  // were on and 積み忘れ's time)
+  const REC_REMIND_ID = "recRemind", REC_REMIND_MAX = 3;
+  const REC_KINDS = [["journal", "日記"], ["weight", "からだ"], ["meal", "食事"], ["workout", "運動"], ["study", "勉強"], ["routine", "ルーティーン"], ["money", "家計簿"]];
+  const REC_PAGES = { journal: "journal", weight: "weight", meal: "meal", workout: "workout", study: "study", routine: "routine", money: "book" };
+  function recHm(s) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(s || ""); }
+  function recKindName(k) { return (REC_KINDS.find(([x]) => x === k) || ["", k])[1]; }
+  // their names joined: 日記と食事, 日記、食事と家計簿
+  function recNames(kinds) { const n = kinds.map(recKindName); return n.length <= 2 ? n.join("と") : `${n.slice(0, -1).join("、")}と${n[n.length - 1]}`; }
+  function recRemindBefore() {
+    const was = (id) => !!settings.get(id)?.on, t = settings.get("tsumiRemind");
+    const kinds = [["journal", "jnRemind"], ["weight", "weightRemind"], ["meal", "mealRemind"], ["money", "moRemind"]].filter(([, id]) => was(id)).map(([k]) => k);
+    return { on: kinds.length > 0 || was("tsumiRemind"), kinds: REC_KINDS.map(([k]) => k).filter((k) => kinds.includes(k)), times: [t?.on && recHm(t.at) ? t.at : "21:00"] };
+  }
+  function recRemind() {
+    const v = settings.get(REC_REMIND_ID);
+    if (!v) return recRemindBefore();
+    const kinds = REC_KINDS.map(([k]) => k).filter((k) => Array.isArray(v.kinds) && v.kinds.includes(k));
+    const times = [...new Set((Array.isArray(v.times) ? v.times : []).filter(recHm))].sort().slice(0, REC_REMIND_MAX);
+    return { on: !!v.on, kinds, times: times.length ? times : ["21:00"] };
+  }
+  function recRemindOn(k) { const r = recRemind(); return r.on && r.kinds.includes(k); }
+  // a kind with something that day: 日記 written, a weight, a 食事 (or one marked 食べなかった), a 運動, a 勉強, every one of
+  // the day's ルーティーン done (none asked of it: done), a 家計簿 that isn't a 固定費 (or the day said to be きょうは使っていない)
+  function recHas(k, d) {
+    if (k === "journal") return !!(journal.get(d)?.text || "").trim();
+    if (k === "weight") return !!weights.get(d);
+    if (k === "meal") return meals.items.some((m) => m.date === d) || mealSkips(d).length > 0;
+    if (k === "workout") return workouts.items.some((w) => w.date === d);
+    if (k === "study") return study.items.some((s) => s.date === d);
+    if (k === "routine") return rtItemsOn(d).every((r) => rtDoneOn(r, d));
+    if (k === "money") return mo2ZeroDays().has(d) || expenses.items.some((e) => e.date === d && !e.fixed);
+    return true;
+  }
+  function recMissing(d, r = recRemind()) { return r.kinds.filter((k) => !recHas(k, d)); }
+  // the notifications: each day at each time, the kinds not in yet (today's as they are now, a day to come all of them);
+  // pressed, the page of the one, or きょう for two or more. One a day on the device (the later in the place of the
+  // earlier); on a day with no block yet, the 1 on the app's icon comes with it as 積み忘れ's did (its tag; not while
+  // ToDo's number is there instead)
+  function recRemindAlarms(now) {
+    const r = recRemind(), out = [];
+    if (!r.on || !r.kinds.length) return out;
+    const todayMiss = recMissing(todayKey, r), noBlock = tsumiBlocks(false, "tally").today === 0, badge = !tdBadgeOn();
+    for (let i = 0; i <= PUSH_AHEAD; i++) {
+      const d = addDays(todayKey, i), miss = i === 0 ? todayMiss : r.kinds, p = parseYmd(d);
+      if (!miss.length || rtRest(d)) continue; // (none on an お休みの日)
+      for (const t of r.times) {
+        const [h, mi] = t.split(":").map(Number), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
+        if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5) continue;
+        out.push({ at, title: "記録のお知らせ", body: `きょうは${recNames(miss)}の記録がまだです`, tag: (badge && (i > 0 || noBlock) ? "tsumi-remind:" : "rec-remind:") + d,
+          url: miss.length === 1 ? "./#" + REC_PAGES[miss[0]] : "./#home" });
+      }
+    }
+    return out;
+  }
+  // what they are made from (pushSig): when it changes, they go again
+  function recRemindParts() {
+    const r = recRemind();
+    return r.on && r.kinds.length ? [["recRemind", r.kinds, r.times, recMissing(todayKey, r), tsumiBlocks(false, "tally").today > 0, tdBadgeOn(), routineDays.items.filter((x) => x.rest && x.date >= todayKey).map((x) => x.date)]] : [];
+  }
+  // saved (the times sorted, each once) and drawn again; with force, the times too, though one of them has the focus
+  function recRemindPut(patch, force = false) {
+    const v = { ...recRemind(), ...patch };
+    act(() => settings.set(REC_REMIND_ID, { on: !!v.on, kinds: v.kinds, times: [...new Set(v.times.filter(recHm))].sort().slice(0, REC_REMIND_MAX), updatedAt: Date.now() }));
+    renderRecRemind(force); renderTsumiRemindTip();
+  }
+  function recTimesIn() { return [...$("recRemindTimes").querySelectorAll('input[type="time"]')]; }
+  // 時刻を追加: the first of these not there yet, given the focus; × : that one taken away, the focus on 時刻を追加
+  function recTimeAdd() {
+    const ts = recTimesIn().map((x) => x.value).filter(recHm), t = ["21:00", "12:00", "18:00", "08:00", "22:00", "20:00"].find((x) => !ts.includes(x));
+    recRemindPut({ times: [...ts, t] }, true);
+    recTimesIn().find((x) => x.value === t)?.focus();
+  }
+  function recTimeDel(inp) {
+    recRemindPut({ times: recTimesIn().filter((x) => x !== inp).map((x) => x.value) }, true);
+    ($("recRemindTimes").querySelector(".rec-remind-add") || recTimesIn()[0])?.focus();
+  }
+  // in つみかさね's settings: お知らせ, the times (each with its × while there are two or more; 時刻を追加 up to three) and
+  // 毎日記録するもの, a switch for each; under them, what comes when (and whether to this device)
+  function renderRecRemind(force = false) {
+    const r = recRemind(), st = pushState(), box = $("recRemindTimes"), list = $("recRemindKinds");
+    $("recRemindOn").checked = r.on;
+    if (force || !box.contains(document.activeElement)) setChildren(box, r.times.map((t, i) => el("span", { class: "rec-remind-time" },
+        el("input", { type: "time", value: t, "aria-label": `お知らせする時刻（${i + 1}）`, disabled: !r.on, onchange: (ev) => { if (recHm(ev.target.value)) recRemindPut({ times: recTimesIn().map((x) => x.value) }); } }),
+        r.times.length > 1 ? el("button", { type: "button", class: "icon-btn", "aria-label": `${t} のお知らせをやめる`, disabled: !r.on, onclick: (ev) => recTimeDel(ev.currentTarget.previousElementSibling) }, icon("close", 18)) : null)),
+      r.times.length < REC_REMIND_MAX ? el("button", { type: "button", class: "link-btn rec-remind-add", disabled: !r.on, onclick: recTimeAdd }, icon("plus", 18), "時刻を追加") : null);
+    if (!list.children.length) setChildren(list, REC_KINDS.map(([k, name]) => el("li", { class: "td9-show-row" }, el("label", { class: "td9-show-name", for: "recKind_" + k }, name),
+      switchEl({ id: "recKind_" + k, checked: r.kinds.includes(k), onchange: (ev) => recRemindPut({ kinds: [...recRemind().kinds.filter((x) => x !== k), ...(ev.target.checked ? [k] : [])] }) }))));
+    else for (const [k] of REC_KINDS) { const x = $("recKind_" + k); if (x) x.checked = r.kinds.includes(k); }
+    const notes = [r.kinds.includes("routine") ? "ルーティーンは、その日の項目がぜんぶできるまで「まだ」です。" : "", r.kinds.includes("money") ? "家計簿は、使わなかった日に家計簿のページで「きょうは使っていない」を押すと、その日はお知らせしません。" : ""].filter(Boolean).join("");
+    $("recRemindFoot").textContent = !r.on ? "決めた時刻に、毎日記録するもののうち、その日まだ記録していないものを1つの通知でお知らせします（「きょうは日記と食事の記録がまだです」のように）。お休みの日は届きません。"
+      : !r.kinds.length ? "毎日記録するものを選んでください。"
+      : st === "on" ? `毎日 ${r.times.join("・")} に、${r.kinds.length > 1 ? `${recNames(r.kinds)}のうち、その日まだ記録していないものがあれば` : `その日の${recNames(r.kinds)}の記録がまだなら`}、この端末に届きます。お休みの日は届きません。` + notes
       : pushWords(st).replace("通知アラーム", "お知らせ");
   }
-  $("tsumiRemindOn").addEventListener("change", (ev) => {
+  $("recRemindOn").addEventListener("change", (ev) => {
     const on = ev.target.checked;
-    act(() => settings.set(REMIND_ID, { ...tsumiRemind(), on, updatedAt: Date.now() }));
-    if (on && pushState() === "off") pushEnable().then(renderTsumiRemind);
-    renderTsumiRemind();
+    recRemindPut({ on }, true);
+    if (on && pushState() === "off") pushEnable().then(() => renderRecRemind());
   });
-  $("tsumiRemindAt").addEventListener("change", (ev) => {
-    if (!/^\d\d:\d\d$/.test(ev.target.value)) return;
-    act(() => settings.set(REMIND_ID, { ...tsumiRemind(), at: ev.target.value, updatedAt: Date.now() }));
-  });
+  $("recRemindTimes").addEventListener("focusout", () => setTimeout(() => renderRecRemind())); // (a time changed: the times in order once it is left)
   // ことばで探す (the user's call): the blocks with every word typed, in their words or their kind's name, newest first, the
   // first 50 listed; 日記's own words count, though its block says none. One pressed: the sheet goes and the block is
   // shown on the stairs, lit
@@ -25102,7 +25098,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月23日 11:38"; // 17090708 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月23日 12:38"; // 132a7a86 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -30468,7 +30464,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // ---------- つみかさね, ten more (the user's calls, 2026-11-10) ----------
   // 1 アイコンのしるし: while today has no block yet and isn't お休み, a 1 on the app's icon on the home screen, gone once
-  // one is on (the service worker puts it there too, as 積み忘れのお知らせ comes). Where the browser can't, or 通知 isn't
+  // one is on (the service worker puts it there too, as 毎日の記録のお知らせ comes on such a day). Where the browser can't, or 通知 isn't
   // allowed, nothing
   let tsBadge = null;
   function syncTsumiBadge() {
@@ -30758,7 +30754,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("tsumiDayOn").checked = r.on;
     if (document.activeElement !== f) f.value = r.at;
     f.disabled = !r.on;
-    $("tsumiDayFoot").textContent = !r.on ? "毎晩決めた時刻に、その日に積んだ数と種類を通知でお知らせします（積んだ日だけ。0 この日は積み忘れのお知らせです）。"
+    $("tsumiDayFoot").textContent = !r.on ? "毎晩決めた時刻に、その日に積んだ数と種類を通知でお知らせします（積んだ日だけ。記録がまだのものは、毎日の記録のお知らせで届きます）。"
       : st === "on" ? `毎晩 ${r.at} に、その日に積んでいれば、この端末に届きます。` : pushWords(st).replace("通知アラーム", "お知らせ");
   }
   function saveTsDaySum(patch) { act(() => settings.set(DAYSUM_ID, { ...tsDaySum(), ...patch, updatedAt: Date.now() })); renderTsumiDaySum(); }
@@ -30978,28 +30974,31 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function saveTsMonthSum(patch) { act(() => settings.set(MSUM_ID, { ...tsMonthSumSet(), ...patch, updatedAt: Date.now() })); renderTsumiMonthSum(); }
   $("tsumiMonthSumOn").addEventListener("change", (ev) => { saveTsMonthSum({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderTsumiMonthSum); });
   $("tsumiMonthSumAt").addEventListener("change", (ev) => { if (/^\d\d:\d\d$/.test(ev.target.value)) saveTsMonthSum({ at: ev.target.value }); });
-  // 9 お知らせの時刻のおすすめ: by when the day's first block went on in the last 30 days (a time it was made), the time
-  // eight days in ten are under, and half an hour after it on the half hour, for 積み忘れのお知らせ; said when 30 minutes off
-  function tsRemindSuggest() {
-    const from = addDays(todayKey, -30), firsts = new Map();
+  // 9 お知らせの時刻のおすすめ: by when, in the last 30 days, the kinds picked for 毎日の記録のお知らせ were in (on a day with
+  // each of them, the time the last of their first blocks was made), the time eight days in ten are under, and half an
+  // hour after it on the half hour; said while it has one time, 30 minutes or more off it
+  function tsRemindSuggest(kinds) {
+    const from = addDays(todayKey, -30), firsts = new Map(), days = new Map();
     for (const b of tsumiList()) {
-      if (b.gone || b.day < from || b.day >= todayKey || !realT(b)) continue;
-      const t = new Date(b.t), m = t.getHours() * 60 + t.getMinutes();
-      if (!firsts.has(b.day) || m < firsts.get(b.day)) firsts.set(b.day, m);
+      if (b.gone || b.day < from || b.day >= todayKey || !kinds.includes(b.kind) || !realT(b)) continue;
+      const t = new Date(b.t), m = t.getHours() * 60 + t.getMinutes(), k = b.day + " " + b.kind;
+      if (!firsts.has(k) || m < firsts.get(k)) firsts.set(k, m);
     }
-    if (firsts.size < 7) return null;
-    const ms = [...firsts.values()].sort((a, b) => a - b), p80 = ms[Math.min(ms.length - 1, Math.floor(ms.length * 0.8))], at = Math.min(23 * 60 + 30, Math.ceil((p80 + 30) / 30) * 30);
+    for (const [k, m] of firsts) { const d = k.split(" ")[0], x = days.get(d) || { n: 0, m: 0 }; days.set(d, { n: x.n + 1, m: Math.max(x.m, m) }); }
+    const ms = [...days.values()].filter((x) => x.n === kinds.length).map((x) => x.m).sort((a, b) => a - b);
+    if (ms.length < 7) return null;
+    const p80 = ms[Math.min(ms.length - 1, Math.floor(ms.length * 0.8))], at = Math.min(23 * 60 + 30, Math.ceil((p80 + 30) / 30) * 30);
     const hm = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
     return { usual: hm(p80), at: hm(at), atMin: at };
   }
   function renderTsumiRemindTip() {
-    const tip = $("tsumiRemindTip"), sg = tsRemindSuggest(), r = tsumiRemind(), [h, mi] = r.at.split(":").map(Number);
-    const off = !sg || Math.abs(h * 60 + mi - sg.atMin) < 30;
+    const tip = $("tsumiRemindTip"), r = recRemind(), sg = r.on && r.kinds.length && r.times.length === 1 ? tsRemindSuggest(r.kinds) : null;
+    const [h, mi] = r.times[0].split(":").map(Number), off = !sg || Math.abs(h * 60 + mi - sg.atMin) < 30;
     tip.hidden = off;
     if (off) return;
-    $("tsumiRemindTipText").textContent = `この30日は、たいてい ${sg.usual} ごろまでに積んでいます。`;
+    $("tsumiRemindTipText").textContent = `この30日は、たいてい ${sg.usual} ごろまでに${recNames(r.kinds)}を記録しています。`;
     $("tsumiRemindTipBtn").textContent = `お知らせを ${sg.at} にする`;
-    $("tsumiRemindTipBtn").onclick = () => { const was = tsumiRemind(); act(() => settings.set(REMIND_ID, { ...was, at: sg.at, updatedAt: Date.now() })); flash(`積み忘れのお知らせを ${sg.at} にしました`, () => act(() => settings.set(REMIND_ID, { ...was, updatedAt: Date.now() }))); renderTsumiRemind(); renderTsumiRemindTip(); };
+    $("tsumiRemindTipBtn").onclick = () => { const was = recRemind().times; recRemindPut({ times: [sg.at] }, true); flash(`毎日の記録のお知らせを ${sg.at} にしました`, () => recRemindPut({ times: was }, true)); };
   }
   // 10 記念日: a name and a day of the year (settings tsumiAnniv: items [{ id, name, md }]); that day つみねこ wears a party
   // hat, says おめでとう, and confetti goes up once
@@ -31353,15 +31352,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return () => { if (tab === "tsumi" && document.visibilityState === "visible" && !sheetEl.open) showNekoSay(words); };
   }
 
-  // 10 これから届くお知らせ: つみかさね's notifications in the next 7 days (積み忘れ, まとめ), as they are set now, in
+  // 10 これから届くお知らせ: つみかさね's notifications in the next 7 days (毎日の記録, まとめ), as they are set now, in
   // time order, and whether they come to this device
   function renderTsumiBell() {
-    const now = Date.now(), list = alarmTimes(now).filter((a) => /^tsumi/.test(a.tag || "") && a.at <= now + 7 * 864e5).sort((a, b) => a.at - b.at), st = pushState();
+    const now = Date.now(), list = alarmTimes(now).filter((a) => /^(?:tsumi|rec-remind)/.test(a.tag || "") && a.at <= now + 7 * 864e5).sort((a, b) => a.at - b.at), st = pushState();
     setChildren($("tsumiBell"), list.length ? list.slice(0, 30).map((a) => {
       const d = new Date(a.at);
       return el("li", { class: "ts-bell" }, el("span", { class: "ts-bell-when" }, `${fmtMDW(ymd(d))} ${d.getHours()}:${pad(d.getMinutes())}`), el("span", { class: "ts-bell-what" }, el("strong", {}, oneLine(a.title)), " ", oneLine(a.body)));
     }) : el("li", { class: "ts-bell none" }, "この先7日に届くお知らせはありません。"));
-    $("tsumiBellFoot").textContent = !list.length ? "積み忘れ・1日・週・月のまとめのお知らせをオンにすると、ここに並びます。"
+    $("tsumiBellFoot").textContent = !list.length ? "毎日の記録・1日・週・月のまとめのお知らせをオンにすると、ここに並びます。"
       : st === "on" ? "記録や設定が変わると、その都度つくり直されます。" : pushWords(st).replace("通知アラーム", "お知らせ");
   }
 
@@ -64005,7 +64004,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     flash(`支払い方法に「${name}」を追加しました`);
   });
   // 家計簿's settings as the sheet opens (③ the ways of paying, ⑥ its お知らせ)
-  function renderMo2Settings() { renderMo2PayEditor(); renderMo2Remind(); }
+  function renderMo2Settings() { renderMo2PayEditor(); }
 
   // ① ひとことで追加 (the user's call): a line of メモ and amount put in as it is. A day may come first (きょう, きのう,
   // おととい, 11/12); a 費目's or a way of paying's name among the words is taken as that; + first, or words of pay, make it
@@ -64232,40 +64231,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren(box, ph(head + (vs ? "。" : "")), vs);
   }
 
-  // ⑥ つけ忘れのお知らせ (the user's call): each day at its time, with the account, today's not once the day has a record
-  // (固定費 aside) or is said to be one with nothing spent (きょうは使っていない, kept 2 months); pressed, 家計簿
-  function mo2Remind() { const v = settings.get("moRemind") || {}; return { on: !!v.on, at: isHm(v.at || "") ? v.at : "21:00" }; }
+  // ⑥ つけ忘れのお知らせ (settings moRemind): in つみかさね's 毎日の記録のお知らせ since 2026-11-23 (the user's call; what it
+  // kept stays). What it read is that one's: a day with a record (固定費 aside) or said to be one with nothing spent
+  // (きょうは使っていない, kept 2 months), offered on 家計簿 while that one is on with 家計簿 among its kinds
   function mo2ZeroDays() { const v = settings.get("moZero"); return new Set(v && Array.isArray(v.days) ? v.days.filter((d) => isDay(d)) : []); }
   function mo2HasToday() { return mo2ZeroDays().has(todayKey) || expenses.items.some((e) => e.date === todayKey && !e.fixed); }
-  function mo2Alarms(now) {
-    const r = mo2Remind(), out = [];
-    if (!r.on) return out;
-    const has = mo2HasToday();
-    for (let i = 0; i <= PUSH_AHEAD; i++) {
-      const d = addDays(todayKey, i), at = dayAt(d, r.at);
-      if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5 || (i === 0 && has)) continue;
-      out.push({ at, title: "家計簿", body: "きょうの家計簿がまだです", tag: `mo2-remind:${d}`, url: "./#book" });
-    }
-    return out;
-  }
-  function mo2Push() { const r = mo2Remind(); return r.on ? [["mo2Remind", r.at, mo2HasToday()]] : []; }
-  function renderMo2Remind() {
-    const r = mo2Remind(), st = pushState();
-    $("mo2RemindOn").checked = r.on;
-    if (document.activeElement !== $("mo2RemindAt")) $("mo2RemindAt").value = r.at;
-    $("mo2RemindAt").disabled = !r.on;
-    $("mo2RemindFoot").textContent = !r.on ? "決めた時刻になっても、その日の家計簿に何も入っていなければ、通知でお知らせします。"
-      : st === "on" ? `その日の記録がまだなら、毎日 ${r.at} にこの端末に届きます。使わなかった日は、家計簿のページの「きょうは使っていない」を押すと届きません。` : pushWords(st).replace("通知アラーム", "お知らせ");
-  }
-  function mo2SaveRemind(patch) {
-    act(() => settings.set("moRemind", { ...mo2Remind(), ...patch, updatedAt: Date.now() }));
-    renderMo2Remind();
-    if (patch.on && pushState() === "off") pushEnable().then(renderMo2Remind);
-  }
-  $("mo2RemindOn").addEventListener("change", (ev) => mo2SaveRemind({ on: ev.target.checked }));
-  $("mo2RemindAt").addEventListener("change", (ev) => { if (isHm(ev.target.value)) mo2SaveRemind({ at: ev.target.value }); });
   function renderMo2Zero() {
-    const box = $("mo2Zero"), show = mo2Remind().on && viewMonth === monthOf(todayKey) && !mo2HasToday();
+    const box = $("mo2Zero"), show = recRemindOn("money") && viewMonth === monthOf(todayKey) && !mo2HasToday();
     box.hidden = !show;
     if (!show) { box.replaceChildren(); return; }
     setChildren(box, el("span", { class: "sub" }, "きょうはまだ記録がありません。"), el("button", { type: "button", class: "link-btn", onclick: mo2ZeroToday }, "きょうは使っていない"));
@@ -64731,36 +64703,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     draw(renderJnTools); draw(renderJnLive);
     draw(() => renderJnStreak(days)); draw(() => renderJnBack(days)); draw(() => renderJnCal(days)); draw(() => renderJnTagCard(days));
   }
-  // ⑨ 書く時間のお知らせ: on or off and its time (21:30 at first), kept with the account, coming to the devices that get
-  // 通知 as plans' alarms do: each day at that time while the day has no 日記; pressed, 日記
-  const JN_REMIND_ID = "jnRemind";
-  function jnRemind() { const v = settings.get(JN_REMIND_ID) || {}; return { on: !!v.on, at: /^\d\d:\d\d$/.test(v.at || "") ? v.at : "21:30" }; }
-  function jnAlarms(now) {
-    const r = jnRemind(), out = [];
-    if (!r.on) return out;
-    const [h, mi] = r.at.split(":").map(Number), has = !!(journal.get(todayKey)?.text || "").trim();
-    for (let i = 0; i <= PUSH_AHEAD; i++) {
-      const d = addDays(todayKey, i), p = parseYmd(d), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
-      if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5 || (i === 0 && has)) continue;
-      out.push({ at, title: "日記", body: "きょうの日記がまだです。", tag: `jn-remind:${d}`, url: "./#journal" });
-    }
-    return out;
-  }
-  function jnPushParts() { const r = jnRemind(); return r.on ? [["jnRemind", r.at, !!(journal.get(todayKey)?.text || "").trim()]] : []; }
+  // (⑨ 書く時間のお知らせ, settings jnRemind: in つみかさね's 毎日の記録のお知らせ since 2026-11-23, the user's call; what
+  // it kept stays)
   function renderJnSettings() {
     const f = $("jnTpl");
     if (document.activeElement !== f) f.value = settings.get("jnTemplate")?.text || "";
     $("jnTplState").textContent = "";
-    const r = jnRemind(), st = pushState(), at = $("jnRemindAt");
-    $("jnRemindOn").checked = r.on;
-    if (document.activeElement !== at) at.value = r.at;
-    at.disabled = !r.on;
-    $("jnRemindFoot").textContent = !r.on ? "決めた時刻になっても、その日の日記がまだなら、通知でお知らせします。"
-      : st === "on" ? `その日の日記がまだなら、毎日 ${r.at} にこの端末に届きます。` : pushWords(st).replace("通知アラーム", "お知らせ");
   }
-  function saveJnRemind(patch) { act(() => settings.set(JN_REMIND_ID, { ...jnRemind(), ...patch, updatedAt: Date.now() })); renderJnSettings(); }
-  $("jnRemindOn").addEventListener("change", (ev) => { saveJnRemind({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderJnSettings); });
-  $("jnRemindAt").addEventListener("change", (ev) => { if (/^\d\d:\d\d$/.test(ev.target.value)) saveJnRemind({ at: ev.target.value }); });
   $("jnSettings").addEventListener("click", (ev) => openSettings(ev.detail === 0, "journal"));
 
   // ---------- 勉強 その2 ①〜⑩ (the user's calls, 2026-11-14; still no timer and no goal a day): the time from 始め and 終わり
