@@ -5175,13 +5175,13 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
 #dt4SetForm[hidden] { display: none; }
 #dt4SetHead:focus { outline: none; }
 #dt4SetForm .btn { flex: none; white-space: nowrap; }
-.dt4-fast .bar-track, .dt4-steps .bar-track { flex: none; }
+.dt4-steps .bar-track { flex: none; }
 .dt4-fast-now { display: grid; gap: 6px; }
 .dt4-fast .card-head { padding: 0; }
 .dt4-fast .sub { margin: 0; }
 .dt4-fast-live { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
 .dt4-fast-live strong { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.dt4-fast-bar i.done, .dt4-step-bar i.done { background: var(--accent); }
+.dt4-step-bar i.done { background: var(--accent); }
 .dt4-fast-rows { display: grid; gap: 6px; margin: 0; }
 .dt4-fast-rows div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; }
 .dt4-fast-rows dt { font-size: var(--t-sub); color: var(--muted); }
@@ -10077,13 +10077,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield"><input type="text" id="dt4SetName" maxlength="20"><button class="btn ghost sm" type="submit">つくる</button></div>
         </form>
         <p class="group-foot" id="dt4SetFoot"></p>
-        <!-- (ダイエット その4 ③) 食事の間隔's aim for the night -->
-        <h3 class="group-head">食事の間隔</h3>
-        <form class="add" id="dt4FastForm" autocomplete="off" onsubmit="return false">
-          <label class="flabel" for="dt4FastGoal">夜のあいだの目標</label>
-          <div class="ffield"><select id="dt4FastGoal"><option value="0">決めない</option><option value="12">12時間</option><option value="13">13時間</option><option value="14">14時間</option><option value="15">15時間</option><option value="16">16時間</option></select></div>
-        </form>
-        <p class="group-foot"><span class="phrase">前の日の最後の食事から、</span><span class="phrase">その日の最初の食事までの時間の目標です。</span><span class="phrase">食事に時刻を入れておくと、</span><span class="phrase">食事のページに出ます。</span></p>
+        <!-- (ダイエット その4 ③ 食事の間隔's 夜のあいだの目標: taken off 2026-11-23, the user's call) -->
       </div>
       <!-- 目標's 設定 (its gear): ⑤ 見直しのお知らせ, once a week (the user's call, 2026-11-10) -->
       <div class="sheet-view" id="goalSetGroup" hidden>
@@ -25108,7 +25102,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月23日 11:27"; // f7ee8871 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月23日 11:38"; // 17090708 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -59161,7 +59155,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("dt4SetForm").hidden = !slots.length;
     $("dt4SetFoot").textContent = slots.length ? "表示している日の食事を、区分ごとにひとまとめにします。食事のページの「いつもの」を押すと、選んでいる区分にまとめて入ります。"
       : "食事を記録した日を表示しているときに、その日の食事を区分ごとにひとまとめにできます。";
-    if (document.activeElement !== $("dt4FastGoal")) $("dt4FastGoal").value = String(dt4FastGoal());
   }
   $("dt4SetForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
@@ -59184,10 +59177,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ③ the hours between meals, from the times put in: the day's first to its last, the night before it (the day before's
-  // last to its first) and, today, the time since the last one, against an aim for the night (settings mealFast: 12〜16
-  // hours, or none). A 夕食 or 間食 before 4:00 was eaten that night, after midnight (as 21時以降 counts it)
-  function dt4FastGoal() { const v = num(settings.get("mealFast")?.hours); return [12, 13, 14, 15, 16].includes(v) ? v : 0; }
-  $("dt4FastGoal").addEventListener("change", (ev) => { const v = Number(ev.target.value); act(() => (v ? settings.set("mealFast", { hours: v, updatedAt: Date.now() }) : settings.remove("mealFast"))); });
+  // last to its first) and, today, the time since the last one. A 夕食 or 間食 before 4:00 was eaten that night, after
+  // midnight (as 21時以降 counts it). (Its aim for the night, settings mealFast 12〜16 hours, with a bar to it and the
+  // nights that reached it: taken off 2026-11-23, the user's call; one kept stays, unused)
   function dt4MealTime(m) {
     const at = mealAt(m);
     if (!at || !isDay(m.date || "")) return 0;
@@ -59200,22 +59192,20 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderDt4Fast() {
     let box = $("dt4Fast");
     if (!box) { box = el("div", { class: "card pad dt4-fast", id: "dt4Fast", hidden: true }); $("mealTotal").after(box); }
-    const d = viewDate, week = Array.from({ length: 7 }, (_, i) => addDays(d, i - 6)), goal = dt4FastGoal(), gms = goal * 3600e3, now = Date.now();
+    const d = viewDate, week = Array.from({ length: 7 }, (_, i) => addDays(d, i - 6)), now = Date.now();
     if (![addDays(d, -7), ...week].some((x) => dt4DayTimes(x).length)) { box.hidden = true; box.replaceChildren(); return; }
     box.hidden = false;
     const ts = dt4DayTimes(d).filter((t) => d !== todayKey || t <= now), night = dt4Night(d), untimed = meals.items.filter((m) => m.date === d && !mealAt(m)).length;
     let since = 0;
     if (d === todayKey) { const last = [...dt4DayTimes(addDays(d, -1)), ...ts].filter((t) => t <= now).pop(); if (last && now - last < 36 * 3600e3) since = now - last; }
-    const pct = goal ? Math.min(100, Math.round((since / gms) * 100)) : 0, row = (k, v) => el("div", {}, el("dt", {}, k), el("dd", {}, v));
-    setChildren(box, el("div", { class: "card-head row-between" }, el("span", {}, "食事の間隔"), goal ? el("span", { class: "muted small" }, `夜のあいだの目標 ${goal}時間`) : null),
-      since ? el("div", { class: "dt4-fast-now" }, el("div", { class: "dt4-fast-live" }, el("strong", {}, dt4Hm(since)), el("span", { class: "sub" }, "最後に食べてから")),
-        goal ? el("span", { class: "bar-track dt4-fast-bar", role: "img", "aria-label": `目標の ${pct}%` }, el("i", { class: since >= gms ? "done" : "", style: `width:${pct}%` })) : null,
-        goal ? el("p", { class: "sub" }, since >= gms ? `${goal}時間たちました` : phrases([`${goal}時間まで あと ${dt4Hm(gms - since)}`, `${dt4Clock(now + gms - since)}ごろ`])) : null) : null,
+    const row = (k, v) => el("div", {}, el("dt", {}, k), el("dd", {}, v));
+    setChildren(box, el("div", { class: "card-head row-between" }, el("span", {}, "食事の間隔")),
+      since ? el("div", { class: "dt4-fast-now" }, el("div", { class: "dt4-fast-live" }, el("strong", {}, dt4Hm(since)), el("span", { class: "sub" }, "最後に食べてから"))) : null,
       el("dl", { class: "dt4-fast-rows" },
         row(d === todayKey ? "きょう食べた時間帯" : `${fmtMD(d)}に食べた時間帯`, ts.length >= 2 ? `${dt4Clock(ts[0])}〜${dt4Clock(ts[ts.length - 1])}（${dt4Hm(ts[ts.length - 1] - ts[0])}）` : ts.length ? `${dt4Clock(ts[0])} の1回` : "—"),
         row("その前の夜のあいだ", night ? `${dt4Hm(night.ms)}（${dt4Clock(night.from)} → ${dt4Clock(night.to)}）` : "—")),
       el("p", { class: "sub" }, "この7日の夜のあいだ（時間）"),
-      el("div", { class: "bd3-week dt4-fast-week" }, week.map((x) => { const n = dt4Night(x), h = n ? n.ms / 3600e3 : 0; return el("span", { class: "bd3-day" + (goal && h >= goal ? " ok" : "") + (x === d ? " today" : "") },
+      el("div", { class: "bd3-week dt4-fast-week" }, week.map((x) => { const n = dt4Night(x), h = n ? n.ms / 3600e3 : 0; return el("span", { class: "bd3-day" + (x === d ? " today" : "") },
         el("small", { "aria-hidden": "true" }, WD[parseYmd(x).getDay()]), el("b", { "aria-hidden": "true" }, h ? h.toFixed(1) : "—"), el("span", { class: "sr-only" }, `${fmtMDW(x)} ${n ? dt4Hm(n.ms) : "記録なし"}`)); })),
       untimed ? el("p", { class: "sub" }, `時刻のない食事（${untimed} 件）は数えていません。`) : null);
   }
