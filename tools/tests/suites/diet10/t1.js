@@ -95,6 +95,13 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   r = await txt(p, "#dt10Line .dt10-l-list");
   const times = await p.evaluate(() => [...document.querySelectorAll("#dt10Line .dt10-l-list:not(.loose) .dt10-l-t")].map((x) => x.textContent));
   ok(/^06:30 起きた 睡眠 7 時間 07:00 体重 \d\d\.\d kg 体脂肪率 \d\d\.\d% 07:30 朝食 トースト 300 kcal/.test(r) && /18:00 ランニング 5 km・30 分/.test(r) && /21:30 夕食 ごはん 600 kcal$/.test(r) && times.every((t, i) => !i || times[i - 1] <= t), "⑩ in order", r);
+  // ⑧ 野菜を5皿: taken out at the user's call (2026-11-23, tools/REMOVED.md): not among the picks; one begun before not
+  // shown (the picks instead), kept in the settings
+  const picks = await p.evaluate(() => [...document.querySelectorAll("#dt10Ch .dt10-ch-pick")].map((x) => x.textContent));
+  ok(picks.length === 7 && !picks.includes("野菜を5皿") && picks.includes("歩数の目標"), "⑧ 野菜を5皿 not among the picks", picks);
+  await p.evaluate(({ P, s }) => { const all = JSON.parse(localStorage.getItem(P + "settings")).filter((x) => x.id !== "dietChallenge"); all.push({ id: "dietChallenge", kind: "veg", start: s, updatedAt: 1 }); localStorage.setItem(P + "settings", JSON.stringify(all)); }, { P, s: D.addDays(D.DAY, -3) });
+  await p.reload(); await p.waitForTimeout(1000);
+  ok((await p.locator("#dt10Ch .dt10-ch-pick").count()) === 7 && !/野菜/.test(await txt(p, "#dt10Ch")) && (await setting(p, "dietChallenge"))?.kind === "veg", "⑧ a 野菜を5皿 begun before: not shown, kept", await txt(p, "#dt10Ch"));
   // ⑧ 30日チャレンジ: 歩数の目標, from 9 days ago: the days at 8,000 met
   await p.click('#dt10Ch button:has-text("歩数の目標")'); await p.waitForTimeout(300);
   ok((await setting(p, "dietChallenge"))?.kind === "steps" && /1 日目/.test(await txt(p, "#dt10Ch")), "⑧ begun", await txt(p, "#dt10Ch"));

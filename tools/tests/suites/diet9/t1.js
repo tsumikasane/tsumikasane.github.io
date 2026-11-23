@@ -35,8 +35,9 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   r = await txt(p, "#dt9Badges");
   const bs = await W(p, "badges");
   const has = (id) => bs.find((x) => x.id === id)?.ok;
-  ok(has("w30") && has("l3") && !has("l5") && has("run100") && has("veg") && !has("st10") && !has("goal"), "⑩ earned from the records", bs.filter((x) => x.ok).map((x) => x.id));
-  ok(new RegExp(`バッジ ${bs.filter((x) => x.ok).length} / ${bs.length}`).test(r), "⑩ the count", r);
+  ok(has("w30") && has("l3") && !has("l5") && has("run100") && !bs.some((x) => x.id === "veg") && !has("st10") && !has("goal"), "⑩ earned from the records (野菜たっぷり taken out, 2026-11-23)", bs.filter((x) => x.ok).map((x) => x.id));
+  ok(new RegExp(`バッジ ${bs.filter((x) => x.ok).length} / ${bs.length}`).test(r) && bs.length === 16, "⑩ the count", r);
+  ok(!/野菜/.test(r), "⑩ 野菜たっぷり not among them (taken out at the user's call, 2026-11-23, tools/REMOVED.md)", r);
   await p.waitForTimeout(400);
   ok(!(await flashes(p)).some((t) => /バッジ/.test(t)) && ((await setting(p, "dietBadgesSeen"))?.ids || []).length === bs.filter((x) => x.ok).length, "⑩ none said the first time, kept as seen", await flashes(p));
   // ⑧ the month's report: built for print, the rest hidden in print, gone after

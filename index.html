@@ -25118,7 +25118,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月23日 18:03"; // 2b109e0e (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月23日 18:32"; // 598857b3 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -59816,8 +59816,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ① 野菜の皿数 (a 皿 a 小鉢, against 5 a day, and the 7 days): taken out at the user's call (2026-11-23,
-  // tools/REMOVED.md). The 皿 put in (bodyDays' veg) kept as they are, and read still (記録's day, 食事の先月とくらべる,
-  // the badge 野菜たっぷり, the 30日チャレンジ 野菜を5皿)
+  // tools/REMOVED.md). The 皿 put in (bodyDays' veg) kept as they are, and read still (記録's day, 食事の先月とくらべる;
+  // the badge 野菜たっぷり and the 30日チャレンジ 野菜を5皿 were taken out after it, the same day)
 
   // ② 飲みもの: お酒 (杯: a beer can, a glass of wine…) with the week's 休肝日, and カフェイン (coffee, tea: 杯), 5 杯 and over
   // said (about 400 mg)
@@ -60968,20 +60968,22 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ⑩ バッジ: earned from the records as they are (nothing else kept but which were seen, settings dietBadgesSeen, so a new
   // one is said once, with 紙ふぶき); those still to come in grey with how far
+  // (野菜たっぷり, 野菜5皿の日を7日, taken out at the user's call with 野菜の皿数, 2026-11-23, tools/REMOVED.md; its id in
+  // dietBadgesSeen kept as it is)
   var dt9BadgeSaid = new Set();
   function dt9Run(days) { let best = 0, run = 0, prev = ""; for (const d of [...days].sort()) { run = prev && addDays(prev, 1) === d ? run + 1 : 1; best = Math.max(best, run); prev = d; } return best; }
   function dt9Badges() {
     const ws = sortedWeights().filter((r) => r.id <= todayKey), wDays = new Set(ws.map((r) => r.id)), a7 = avg7(), avgs = ws.map((r) => a7.get(r.id) || num(r.kg));
     const lost = avgs.length ? Math.max(0, avgs[0] - Math.min(...avgs)) : 0, tgt = wtTarget(), mDays = new Set(meals.items.filter((m) => isDay(m.date || "") && m.date <= todayKey).map((m) => m.date));
     const woDaysN = new Set(workouts.items.filter((w) => isDay(w.date || "") && w.date <= todayKey).map((w) => w.date)).size, runKm = sum(workouts.items.filter((w) => w.type === "ランニング" && isDay(w.date || "") && w.date <= todayKey), (w) => num(w.km));
-    const bd = bodyDays.items.filter((x) => isDay(x.date || "") && x.date <= todayKey), veg5 = bd.filter((x) => num(x.veg) >= 5).length, steps10 = bd.filter((x) => num(x.steps) >= 10000).length;
+    const bd = bodyDays.items.filter((x) => isDay(x.date || "") && x.date <= todayKey), steps10 = bd.filter((x) => num(x.steps) >= 10000).length;
     const sleep7 = dt9Run(bd.filter((x) => bd2SleepMins(x) >= 420).map((x) => x.date)), prs = dt8Prs().length;
     const B = (id, name, have, need, unit, word) => ({ id, name, ok: have >= need, left: need - have, unit, word });
     return [
       B("w1", "はじめの一歩", ws.length, 1, "回", "体重を記録する"), B("w7", "7日続けて", dt9Run(wDays), 7, "日", "体重を7日続けて記録"), B("w30", "30日続けて", dt9Run(wDays), 30, "日", "体重を30日続けて記録"),
       B("l1", "−1 kg", Math.floor(lost * 10) / 10, 1, "kg", "7日平均で 1 kg 減らす"), B("l3", "−3 kg", Math.floor(lost * 10) / 10, 3, "kg", "7日平均で 3 kg 減らす"), B("l5", "−5 kg", Math.floor(lost * 10) / 10, 5, "kg", "7日平均で 5 kg 減らす"),
       B("goal", "目標達成", tgt > 0 && avgs.length && avgs[avgs.length - 1] <= tgt ? 1 : 0, 1, "", "7日平均が目標体重に届く"),
-      B("m7", "食事を7日", dt9Run(mDays), 7, "日", "食事を7日続けて記録"), B("m30", "食事を30日", dt9Run(mDays), 30, "日", "食事を30日続けて記録"), B("veg", "野菜たっぷり", veg5, 7, "日", "野菜5皿の日を7日"),
+      B("m7", "食事を7日", dt9Run(mDays), 7, "日", "食事を7日続けて記録"), B("m30", "食事を30日", dt9Run(mDays), 30, "日", "食事を30日続けて記録"),
       B("wo10", "運動10日", woDaysN, 10, "日", "運動した日が10日"), B("wo50", "運動50日", woDaysN, 50, "日", "運動した日が50日"), B("run42", "フルマラソン分", Math.floor(runKm * 10) / 10, 42.195, "km", "ランの合計が 42.195 km"),
       B("run100", "100 km", Math.floor(runKm * 10) / 10, 100, "km", "ランの合計が 100 km"), B("pr5", "自己ベスト5回", prs, 5, "回", "自己ベストを5回更新"), B("st10", "1万歩", steps10, 1, "日", "1日に1万歩"),
       B("sl7", "よく寝た1週間", sleep7, 7, "日", "7時間睡眠を7日続ける"),
@@ -61215,14 +61217,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("p", { class: "sub" }, "この90日の、前の日の体重からの変化です。"));
   }
 
-  // ⑧ 30日チャレンジ (settings dietChallenge, with the account): one of 8, from the day it began, each day judged from the
+  // ⑧ 30日チャレンジ (settings dietChallenge, with the account): one of 7 (野菜を5皿 taken out at the user's call with 野菜の
+  // 皿数, 2026-11-23, tools/REMOVED.md: one begun before kept in the settings, not shown), from the day it began, each day judged from the
   // records (a day with none of the kind it asks for is not met; today not yet, till it is); 30 squares, the days met and on end
   const DT10_CH = [
     ["weigh", "毎日体重を測る", (d) => !!weights.get(d)],
     ["nosnack", "間食をしない", (d) => meals.items.some((m) => m.date === d) && !meals.items.some((m) => m.date === d && m.slot === "間食")],
     ["nolate", "21時以降に食べない", (d) => meals.items.some((m) => m.date === d) && !meals.items.some((m) => m.date === d && mealAt(m) && (mealAt(m) >= "21:00" || (mealAt(m) < "04:00" && (m.slot === "夕食" || m.slot === "間食"))))],
     ["kcal", "目安のカロリー以内", (d) => { const k = dt4DayIntake(d); return k !== null && k >= 800 && k <= kcalGoal(); }],
-    ["veg", "野菜を5皿", (d) => num(bd2Day(d)?.veg) >= 5],
     ["steps", "歩数の目標", (d) => num(bd2Day(d)?.steps) >= (typeof dt4StepGoal === "function" ? dt4StepGoal() : 8000)],
     ["water", "水分の目標", (d) => num(bd2Day(d)?.water) >= bd2WaterGoal()],
     ["move", "毎日運動する", (d) => workouts.items.some((w) => w.date === d)],
