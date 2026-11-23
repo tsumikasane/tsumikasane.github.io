@@ -38,7 +38,7 @@ const OLD = [
   ok(await p.evaluate(() => [...document.querySelectorAll("#tsumiToc button")].find((x) => x.textContent === "お知らせ")?.dataset.to) === "recRemindHead", "its お知らせ in the gear's contents leads to it");
   let st = await state(p);
   ok(st.on && JSON.stringify(st.times) === '["21:30"]' && JSON.stringify(st.kinds) === '["journal","meal"]' && st.add && !st.off, "started from the five: on, 21:30, 日記 and 食事", st);
-  ok(JSON.stringify(st.names) === JSON.stringify(["日記", "からだ", "食事", "運動", "勉強", "ルーティーン", "家計簿"]), "the kinds: the seven record pages", st.names);
+  ok(JSON.stringify(st.names) === JSON.stringify(["日記", "からだ", "食事", "運動", "勉強", "ルーティーン", "家計簿", "きょうやるToDo"]), "the kinds: the seven record pages and きょうやるToDo (2026-11-23)", st.names);
   ok(!(await setting(p, "recRemind")), "nothing of its own saved till it is changed");
   let a = await alarms(p);
   ok(a.length === 40 && new Date(a[0].at).toISOString() === "2026-11-23T12:30:00.000Z" && a[0].title === "記録のお知らせ" && a[0].body === "きょうは日記の記録がまだです" && a[0].url === "./#journal" && a[0].tag === "rec-remind:" + today,
@@ -87,6 +87,19 @@ const OLD = [
   a = await alarms(p);
   ok(a[0].body === "きょうは家計簿の記録がまだです" && a[0].url === "./#book" && await p.evaluate(() => window.__pushSig()) !== sig1, "日記 written: today's 家計簿 alone (its page, 家計簿); sent again", a[0]);
   ok(!p.errs.length, "no page errors (1, 2)", p.errs);
+  // きょうやるToDo (2026-11-23): in its own words; once those picked for the day are all done, not in it
+  await put(p, "settings", [{ id: "recRemind", on: true, kinds: ["money", "todo"], times: ["21:00"], known: ["journal", "weight", "meal", "workout", "study", "routine", "money", "todo"], updatedAt: 1 }]);
+  await put(p, "todos", [{ id: "t1", text: "レポート", today, createdAt: T(today) }, { id: "t2", text: "買い物", today, createdAt: T(today), done: true, doneAt: T(today, "10:00") }]);
+  await reload(p);
+  a = await alarms(p);
+  ok(a[0].body === "きょうは家計簿の記録と、きょうやるToDoがまだです" && a[0].url === "./#home", "きょうやるToDo: 「…の記録と、きょうやるToDoがまだです」", a[0]);
+  await put(p, "expenses", [{ id: "e1", date: today, kind: "out", category: "食費", amount: 500, createdAt: T(today) }]);
+  await reload(p);
+  a = await alarms(p);
+  ok(a[0].body === "きょうやるToDoが、まだ終わっていません" && a[0].url === "./#todo:pick", "きょうやるToDo alone: its words, ToDo's きょうやる", a[0]);
+  await put(p, "todos", [{ id: "t1", text: "レポート", today, createdAt: T(today), done: true, doneAt: T(today, "12:00") }, { id: "t2", text: "買い物", today, createdAt: T(today), done: true, doneAt: T(today, "10:00") }]);
+  await reload(p);
+  ok(!(await alarms(p)).some((x) => x.tag.endsWith(today)), "きょうやる all done: none today");
 
   // ---- 3 what counts as in: a weight, a 運動, a 勉強, every ルーティーン done, a 家計簿 not a 固定費 (or きょうは使っていない) ----
   const ALL = { id: "recRemind", on: true, kinds: ["journal", "weight", "meal", "workout", "study", "routine", "money"], times: ["21:00"], updatedAt: 1 };

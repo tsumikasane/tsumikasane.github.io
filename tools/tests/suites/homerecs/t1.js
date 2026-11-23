@@ -68,6 +68,38 @@ const reload = async (p) => { await p.reload(); await p.waitForTimeout(800); };
   r = await rows(p);
   ok(r.length === 1 && r[0].k === "journal" && !r[0].ok, "not set yet: from the お知らせ of before (日記)", r);
   ok(!p.errs.length, "no page errors (2)", p.errs);
+
+  // ---- きょうやるToDo (the user's call, 2026-11-23): in the list while きょうやる is in use, till the list is set again;
+  // how far and 開く; ぜんぶ終えました once all are done; 選ぶ while none are picked ----
+  const TD = ["つみかさねアプリ整理", "Vポイント獲得", "レポートを書く", "買い物", "洗濯", "メールを返す"].map((text, i) => ({ id: "t" + i, text, today: day, createdAt: T + i, ...(i === 5 ? { done: true, doneAt: T + 3600e3 } : {}) }));
+  await seed(p, { settings: [{ id: "recRemind", on: true, kinds: ALL, times: ["21:00"], updatedAt: 1 }], todos: TD }, "home");
+  r = await rows(p);
+  const td = r.find((x) => x.k === "todo");
+  ok(r.length === 8 && r[7].k === "todo" && td.name === "きょうやるToDo" && !td.ok && td.go, "set before it came, きょうやる in use: きょうやるToDo at the end, not yet", r.map((x) => x.k));
+  ok((await p.evaluate(() => document.querySelector('li[data-k="todo"] .h3-check-w small')?.textContent)) === "6 件中 1 件" && (await p.evaluate(() => document.querySelector('.h3-check-go[data-k="todo"]')?.textContent)) === "開く", "how far, and 開く");
+  await p.click('.h3-check-go[data-k="todo"]'); await p.waitForTimeout(900);
+  ok(await p.evaluate(() => location.hash === "#todo" && document.getElementById("sec-todo")?.classList.contains("td-focus")), "開く: ToDo, きょうやるだけ表示");
+  await p.evaluate(({ P }) => { const k = P + "todos", l = JSON.parse(localStorage.getItem(k)); l.forEach((t) => { t.done = true; t.doneAt = Date.now(); }); localStorage.setItem(k, JSON.stringify(l)); }, { P });
+  await p.goto(URL0 + "#home"); await reload(p);
+  ok((await rows(p)).find((x) => x.k === "todo")?.note === "ぜんぶ終えました", "all done: checked, ぜんぶ終えました");
+  await p.evaluate(({ P }) => { const k = P + "todos", l = JSON.parse(localStorage.getItem(k)); l.forEach((t) => { t.today = "2026-11-22"; t.done = false; delete t.doneAt; }); localStorage.setItem(k, JSON.stringify(l)); }, { P });
+  await reload(p);
+  ok((await p.evaluate(() => document.querySelector('li[data-k="todo"] .h3-check-w small')?.textContent)) === "まだ選んでいません" && (await p.evaluate(() => document.querySelector('.h3-check-go[data-k="todo"]')?.textContent)) === "選ぶ", "none picked today: 選ぶ");
+  await p.click('.h3-check-go[data-k="todo"]'); await p.waitForTimeout(900);
+  ok((await p.evaluate(() => document.getElementById("sheetTitle")?.textContent)) === "きょうやるを選ぶ", "選ぶ: きょうやるを選ぶ");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(500);
+  // turned off: kept so
+  await p.goto(URL0 + "#home"); await reload(p);
+  await p.click('[data-tile="h3recs"] .h3-recs-set'); await p.waitForTimeout(900);
+  await p.evaluate(() => document.getElementById("recKind_todo").scrollIntoView({ block: "center" })); await p.waitForTimeout(300);
+  await p.click("label[for=recKind_todo]"); await p.waitForTimeout(300);
+  await p.click("#sheetDone"); await p.waitForTimeout(600);
+  await reload(p);
+  ok(!(await rows(p)).some((x) => x.k === "todo"), "turned off there: gone, and stays gone");
+  // not in use (no きょうやる in the last 14 days): not put in
+  await seed(p, { settings: [{ id: "recRemind", on: true, kinds: ["journal"], times: ["21:00"], updatedAt: 1 }], todos: [{ id: "x", text: "むかしの", today: "2026-10-01", createdAt: T }] }, "home");
+  ok(JSON.stringify((await rows(p)).map((x) => x.k)) === '["journal"]', "きょうやる not in use lately: not put in");
+  ok(!p.errs.length, "no page errors (3)", p.errs);
   await b.close();
   console.log(fails ? `${fails} FAILED` : "ALL OK");
   process.exit(fails ? 1 : 0);

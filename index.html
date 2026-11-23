@@ -1904,6 +1904,8 @@ ul.wx-days > li { padding: 0; }
 .h3-check-mark { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--separator); color: #fff; }
 .h3-checks li.ok .h3-check-mark { background: var(--accent); box-shadow: none; }
 .h3-checks li.ok .h3-check-w { color: var(--muted); }
+.h3-check-w { display: grid; gap: 1px; min-width: 0; }
+.h3-check-w small { font-size: var(--t-foot); color: var(--muted); }
 .h3-check-note { font-size: var(--t-sub); color: var(--muted); white-space: nowrap; }
 .tile .h3-recs-set { position: relative; z-index: 1; display: block; margin-top: 4px; padding-inline: 0; }
 .h4-memo-in { -webkit-user-select: text; user-select: text; }
@@ -23713,8 +23715,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // they kept stays, and till this one is set it starts from them (on if one of them was, with the kinds of those that
   // were on and 積み忘れ's time)
   const REC_REMIND_ID = "recRemind", REC_REMIND_MAX = 3;
-  const REC_KINDS = [["journal", "日記"], ["weight", "からだ"], ["meal", "食事"], ["workout", "運動"], ["study", "勉強"], ["routine", "ルーティーン"], ["money", "家計簿"]];
-  const REC_PAGES = { journal: "journal", weight: "weight", meal: "meal", workout: "workout", study: "study", routine: "routine", money: "book" };
+  const REC_KINDS = [["journal", "日記"], ["weight", "からだ"], ["meal", "食事"], ["workout", "運動"], ["study", "勉強"], ["routine", "ルーティーン"], ["money", "家計簿"], ["todo", "きょうやるToDo"]]; // (きょうやるToDo: 2026-11-23, the user's call)
+  const REC_PAGES = { journal: "journal", weight: "weight", meal: "meal", workout: "workout", study: "study", routine: "routine", money: "book", todo: "todo:pick" };
+  // the kinds there when the list was set (a list kept before `known` was: those before きょうやるToDo); one added since is
+  // in it while its page is in use (きょうやるToDo: ToDos picked as きょうやる in the last 14 days), till the list is set again
+  const REC_KINDS_FIRST = ["journal", "weight", "meal", "workout", "study", "routine", "money"];
+  function recKindNew(k) { return k === "todo" && todos.items.some((t) => isDay(t.today || "") && t.today >= addDays(todayKey, -14)); }
   function recHm(s) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(s || ""); }
   function recKindName(k) { return (REC_KINDS.find(([x]) => x === k) || ["", k])[1]; }
   // their names joined: 日記と食事, 日記、食事と家計簿
@@ -23727,7 +23733,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function recRemind() {
     const v = settings.get(REC_REMIND_ID);
     if (!v) return recRemindBefore();
-    const kinds = REC_KINDS.map(([k]) => k).filter((k) => Array.isArray(v.kinds) && v.kinds.includes(k));
+    const known = Array.isArray(v.known) ? v.known : REC_KINDS_FIRST;
+    const kinds = REC_KINDS.map(([k]) => k).filter((k) => (Array.isArray(v.kinds) && v.kinds.includes(k)) || (!known.includes(k) && recKindNew(k)));
     const times = [...new Set((Array.isArray(v.times) ? v.times : []).filter(recHm))].sort().slice(0, REC_REMIND_MAX);
     return { on: !!v.on, kinds, times: times.length ? times : ["21:00"] };
   }
@@ -23742,7 +23749,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (k === "study") return study.items.some((s) => s.date === d);
     if (k === "routine") return rtItemsOn(d).every((r) => rtDoneOn(r, d));
     if (k === "money") return mo2ZeroDays().has(d) || expenses.items.some((e) => e.date === d && !e.fixed);
+    if (k === "todo") { // (きょうやるToDo: those picked for the day, やめた aside, all done; none picked: not yet)
+      if (d === todayKey) { const st = tdTodayStats(); return st.n > 0 && !st.left; }
+      const all = todos.items.filter((t) => typeof t.text === "string" && t.today === d && !t.cancelled && !(t.done && doneDay(t) !== d));
+      return all.length > 0 && all.every((t) => t.done);
+    }
     return true;
+  }
+  // what the notification says: 「きょうは日記と食事の記録がまだです」, きょうやるToDo in words of its own
+  function recRemindBody(miss) {
+    const recs = miss.filter((k) => k !== "todo"), td = miss.includes("todo");
+    return !recs.length ? "きょうやるToDoが、まだ終わっていません" : `きょうは${recNames(recs)}の記録${td ? "と、きょうやるToDo" : ""}がまだです`;
   }
   function recMissing(d, r = recRemind()) { return r.kinds.filter((k) => !recHas(k, d)); }
   // the notifications: each day at each time, the kinds not in yet (today's as they are now, a day to come all of them);
@@ -23759,7 +23776,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       for (const t of r.times) {
         const [h, mi] = t.split(":").map(Number), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
         if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5) continue;
-        out.push({ at, title: "記録のお知らせ", body: `きょうは${recNames(miss)}の記録がまだです`, tag: (badge && (i > 0 || noBlock) ? "tsumi-remind:" : "rec-remind:") + d,
+        out.push({ at, title: "記録のお知らせ", body: recRemindBody(miss), tag: (badge && (i > 0 || noBlock) ? "tsumi-remind:" : "rec-remind:") + d,
           url: miss.length === 1 ? "./#" + REC_PAGES[miss[0]] : "./#home" });
       }
     }
@@ -23773,7 +23790,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // saved (the times sorted, each once) and drawn again; with force, the times too, though one of them has the focus
   function recRemindPut(patch, force = false) {
     const v = { ...recRemind(), ...patch };
-    act(() => settings.set(REC_REMIND_ID, { on: !!v.on, kinds: v.kinds, times: [...new Set(v.times.filter(recHm))].sort().slice(0, REC_REMIND_MAX), updatedAt: Date.now() }));
+    act(() => settings.set(REC_REMIND_ID, { on: !!v.on, kinds: v.kinds, times: [...new Set(v.times.filter(recHm))].sort().slice(0, REC_REMIND_MAX), known: REC_KINDS.map(([k]) => k), updatedAt: Date.now() }));
     renderRecRemind(force); renderTsumiRemindTip();
   }
   function recTimesIn() { return [...$("recRemindTimes").querySelectorAll('input[type="time"]')]; }
@@ -23799,7 +23816,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!list.children.length) setChildren(list, REC_KINDS.map(([k, name]) => el("li", { class: "td9-show-row" }, el("label", { class: "td9-show-name", for: "recKind_" + k }, name),
       switchEl({ id: "recKind_" + k, checked: r.kinds.includes(k), onchange: (ev) => recRemindPut({ kinds: [...recRemind().kinds.filter((x) => x !== k), ...(ev.target.checked ? [k] : [])] }) }))));
     else for (const [k] of REC_KINDS) { const x = $("recKind_" + k); if (x) x.checked = r.kinds.includes(k); }
-    const notes = [r.kinds.includes("routine") ? "ルーティーンは、その日の項目がぜんぶできるまで「まだ」です。" : "", r.kinds.includes("money") ? "家計簿は、使わなかった日に家計簿のページで「きょうは使っていない」を押すと、その日はお知らせしません。" : ""].filter(Boolean).join("");
+    const notes = [r.kinds.includes("routine") ? "ルーティーンは、その日の項目がぜんぶできるまで「まだ」です。" : "", r.kinds.includes("money") ? "家計簿は、使わなかった日に家計簿のページで「きょうは使っていない」を押すと、その日はお知らせしません。" : "",
+      r.kinds.includes("todo") ? "きょうやるToDoは、その日に選んだものがぜんぶ終わるまで「まだ」です（選んでいない日も）。" : ""].filter(Boolean).join("");
     $("recRemindFoot").textContent = !r.on ? "決めた時刻に、毎日記録するもののうち、その日まだ記録していないものを1つの通知でお知らせします（「きょうは日記と食事の記録がまだです」のように）。お休みの日は届きません。"
       : !r.kinds.length ? "毎日記録するものを選んでください。"
       : st === "on" ? `毎日 ${r.times.join("・")} に、${r.kinds.length > 1 ? `${recNames(r.kinds)}のうち、その日まだ記録していないものがあれば` : `その日の${recNames(r.kinds)}の記録がまだなら`}、この端末に届きます。お休みの日は届きません。` + notes
@@ -25108,7 +25126,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月23日 13:12"; // 53e0ac92 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月23日 13:35"; // 2bffcce3 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -31002,11 +31020,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return { usual: hm(p80), at: hm(at), atMin: at };
   }
   function renderTsumiRemindTip() {
-    const tip = $("tsumiRemindTip"), r = recRemind(), sg = r.on && r.kinds.length && r.times.length === 1 ? tsRemindSuggest(r.kinds) : null;
+    const tip = $("tsumiRemindTip"), r = recRemind(), ks = r.kinds.filter((k) => k !== "todo"), sg = r.on && ks.length && r.times.length === 1 ? tsRemindSuggest(ks) : null; // (きょうやるToDo aside)
     const [h, mi] = r.times[0].split(":").map(Number), off = !sg || Math.abs(h * 60 + mi - sg.atMin) < 30;
     tip.hidden = off;
     if (off) return;
-    $("tsumiRemindTipText").textContent = `この30日は、たいてい ${sg.usual} ごろまでに${recNames(r.kinds)}を記録しています。`;
+    $("tsumiRemindTipText").textContent = `この30日は、たいてい ${sg.usual} ごろまでに${recNames(ks)}を記録しています。`;
     $("tsumiRemindTipBtn").textContent = `お知らせを ${sg.at} にする`;
     $("tsumiRemindTipBtn").onclick = () => { const was = recRemind().times; recRemindPut({ times: [sg.at] }, true); flash(`毎日の記録のお知らせを ${sg.at} にしました`, () => recRemindPut({ times: was }, true)); };
   }
@@ -57991,9 +58009,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // today), each done or to record now
   function h3Mine() {
     return recRemind().kinds.map((k) => {
-      const done = recHas(k, todayKey), rts = k === "routine" ? rtItemsOn(todayKey) : null;
-      const note = !done ? "" : rts ? (rts.length ? "ぜんぶできました" : "きょうはありません") : k === "money" && mo2ZeroDays().has(todayKey) && !expenses.items.some((e) => e.date === todayKey && !e.fixed) ? "使っていない日" : "記録しました";
-      return { k, name: recKindName(k), done, note, mine: true };
+      const done = recHas(k, todayKey), rts = k === "routine" ? rtItemsOn(todayKey) : null, td = k === "todo" ? tdTodayStats() : null;
+      const note = !done ? "" : td ? "ぜんぶ終えました" : rts ? (rts.length ? "ぜんぶできました" : "きょうはありません") : k === "money" && mo2ZeroDays().has(todayKey) && !expenses.items.some((e) => e.date === todayKey && !e.fixed) ? "使っていない日" : "記録しました";
+      // (きょうやるToDo: how far, and 選ぶ while none are picked, else 開く)
+      return { k, name: recKindName(k), done, note, sub: td && !done ? (td.n ? `${td.n} 件中 ${td.done} 件` : "まだ選んでいません") : "", go: td ? (td.n ? "開く" : "選ぶ") : "記録する", mine: true };
     });
   }
   function h3Recs() {
@@ -58007,6 +58026,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function h3RecGo(k, byKey) {
     homeReturn = `.h3-rec[data-k="${k}"], .h3-check-go[data-k="${k}"]`;
+    if (k === "todo") { openFromHome("todo"); tdMorningOpen(); return; } // (きょうやるToDo: the pick sheet, or きょうやるだけ表示)
     if (k === "journal" || k === "routine") openFromHome(k);
     else if (k === "weight" && weights.get(todayKey)) openRecEdit("weight", todayKey, byKey);
     else openRecNew(k, byKey);
@@ -58021,9 +58041,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("span", { class: "bar-track h3-checks-bar", role: "img", "aria-label": `${l.length} のうち ${done} 記録しました` }, el("i", { style: `width:${Math.round((done / l.length) * 100)}%` })),
       el("ul", { class: "h3-checks" }, l.map((x) => el("li", { class: x.done ? "ok" : "", "data-k": x.k },
         el("span", { class: "h3-check-mark", "aria-hidden": "true" }, x.done ? icon("check", 14) : null),
-        el("span", { class: "h3-check-w" }, x.name, el("span", { class: "sr-only" }, x.done ? `（${x.note}）` : "（まだ）")),
+        el("span", { class: "h3-check-w" }, x.name, x.sub ? el("small", {}, x.sub) : null, el("span", { class: "sr-only" }, x.done ? `（${x.note}）` : "（まだ）")),
         x.done ? el("span", { class: "h3-check-note", "aria-hidden": "true" }, x.note)
-          : el("button", { type: "button", class: "btn sm h3-check-go", "data-k": x.k, "aria-label": `${x.name}を記録する`, onclick: (ev) => h3RecGo(x.k, ev.detail === 0) }, "記録する")))),
+          : el("button", { type: "button", class: "btn sm h3-check-go", "data-k": x.k, "aria-label": `${x.name}を${x.go}`, onclick: (ev) => h3RecGo(x.k, ev.detail === 0) }, x.go)))),
       h3RecsSetBtn("毎日記録するものを変える")]);
     return tile("h3recs", String(done), `/ ${l.length}`, all, [el("div", { class: "h3-recs" }, l.map((x) => el("button", { type: "button", class: "h3-rec" + (x.done ? " done" : ""), "data-k": x.k,
       "aria-label": `${x.name}${x.done ? "（済み）" : "を記録"}`, onclick: (ev) => h3RecGo(x.k, ev.detail === 0) }, x.done ? icon("check", 14) : icon("plus", 14), x.name))), h3RecsSetBtn("毎日記録するものを選ぶ")]);
