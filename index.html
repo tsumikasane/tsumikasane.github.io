@@ -3655,8 +3655,6 @@ ul.list > li.td9-show-row { align-items: center; gap: 12px; }
 .td9-step-next.warn, .td-step .td9-due.warn { color: var(--warn); }
 .td-step .td9-due { margin-inline-start: auto; padding-inline-start: 8px; white-space: nowrap; }
 /* ⑥ when it will all be done */
-.td9-finish { margin: 2px 0 0; font-size: var(--t-sub); color: var(--muted); }
-.td9-finish.over { color: var(--warn); }
 /* ⑧ どうだった？ (gone at the user's call, 2026-11-21: its question and its row, for その25 ③'s card) */
 .td9-ask-q { margin: 0 0 6px; font-weight: 600; }
 .td9-ask-row { display: flex; align-items: center; gap: 8px; }
@@ -25098,7 +25096,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月23日 12:38"; // 132a7a86 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月23日 13:02"; // 1129313e (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -39599,7 +39597,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const when = [fmtMDW(todayKey), st.n ? `${st.n} 件中 ${st.done} 件完了` : "", st.mins && st.left ? `のこり ${keepUnits(durText(st.mins))}` : ""].filter(Boolean).join("・");
       setChildren(box, head(el("button", { type: "button", class: "link-btn td-fc-back", onclick: () => setTdFocus(false) }, "すべてのToDoに戻る")),
         el("p", { class: "td-fc-text" }, when),
-        st.n ? bar() : null, td9FinishLine(st.all), // (その9 ⑥)
+        st.n ? bar() : null, // (その9 ⑥ 終わる時刻: taken off 2026-11-23)
         st.n && !st.left ? el("p", { class: "td-fc-done", role: "status" }, "きょうやるを、ぜんぶ終えました！") : null,
         carryRow,
         el("div", { class: "td-fc-acts" }, pickBtn(st.n ? "選び直す" : "きょうやるを選ぶ", "chip-btn"), st.left ? el("button", { type: "button", class: "chip-btn", "aria-haspopup": "dialog", onclick: (ev) => openTdPanel("plan", ev.detail === 0) }, "きょうの時間割") : null));
@@ -39617,10 +39615,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       box.hidden = false;
       return;
     }
-    const left = st.all.filter((t) => !t.done), names = left.slice(0, 2).map((t) => `「${clip(oneLine(t.text), 14)}」`);
+    // (its のこり, the names of two left with ほか N 件 and their time, and その9 ⑥'s 終わる時刻: taken off 2026-11-23, the
+    // user's call)
     setChildren(box, head(el("span", { class: "td-fc-n" }, `${st.done}/${st.n}`)), bar(),
-      el("p", { class: "td-fc-text" }, left.length ? `のこり ${names.join("")}${left.length > names.length ? ` ほか ${left.length - names.length} 件` : ""}${st.mins ? `・${keepUnits(durText(st.mins))}` : ""}` : "きょうやるを、ぜんぶ終えました！"),
-      td9FinishLine(st.all), carryRow, // (その9 ⑥)
+      st.left ? null : el("p", { class: "td-fc-text" }, "きょうやるを、ぜんぶ終えました！"),
+      carryRow,
       el("div", { class: "td-fc-acts" }, el("button", { type: "button", class: "btn sm", onclick: () => setTdFocus(true) }, "きょうやるだけ表示"), pickBtn("選び直す", "link-btn")));
     box.hidden = false;
   }
@@ -48771,7 +48770,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   td8Ideas(tdNewSteps); // (⑥ in the new ToDo's form, made before this part ran)
 
   // ---------- ToDo その9 ①〜⑩ (the user's calls, 2026-11-12): what the page shows (①), the row menu by use (②), what ToDo
-  // can do (③), the same ToDo noticed (④), a step's 期限 (⑤), when it will all be done (⑥), 元気 (⑦), ひとこと once done
+  // can do (③), the same ToDo noticed (④), a step's 期限 (⑤), when it will all be done (⑥, taken out 2026-11-23), 元気 (⑦), ひとこと once done
   // (⑧), and the year's done days (⑩); (⑨, つみねこ on the page, was taken out: the user's call, 2026-11-16; ⑧'s ask as one is
   // done, 2026-11-21). Their state is var or kept in settings, as the page may be drawn before this part has run ----------
   // ① ページに出すもの: each card over the list shown or not (settings td9Show { off: [keys] }), いまやるなら by its own
@@ -48890,24 +48889,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return f;
   }
 
-  // ⑥ when today's (those given) will all be done, from now in the calendar's free times, clear of the plans and the
-  // ToDos with a time (30 minutes for one with no かかる時間); past the free hours, how much is left over
-  function td9FinishLine(list) {
-    const left = (list || []).filter((t) => !t.done && !t.cancelled && !isHm(t.time));
-    if (!left.length) return null;
-    const timed = todos.items.filter((t) => !t.done && isHm(t.time) && t.due === todayKey).map((t) => ({ s: minOf(t.time), end: minOf(t.time) + (num(t.mins) > 0 ? Math.round(num(t.mins)) : 30) }));
-    const tb = turnsByDay(todayKey, todayKey), sb = shiftsByDay(todayKey, todayKey);
-    const slots = freeSlots(todayKey, tb.get(todayKey) || [], [...(sb.get(todayKey) || []), ...timed], true).map(([a, b]) => [a, b]);
-    let end = null, over = 0;
-    for (const t of left) {
-      let m = num(t.mins) > 0 ? Math.round(num(t.mins)) : 30;
-      while (m > 0 && slots.length) { const s = slots[0], take = Math.min(m, s[1] - s[0]); s[0] += take; m -= take; end = s[0]; if (s[0] >= s[1]) slots.shift(); }
-      over += m;
-    }
-    const guess = left.some((t) => !(num(t.mins) > 0)) ? "（かかる時間のないものは30分で）" : "";
-    if (over > 0) return el("p", { class: "td9-finish over" }, `きょうの空き時間には入りきりません（あと ${keepUnits(durText(over))}）${guess}`);
-    return end === null ? null : el("p", { class: "td9-finish" }, `このまま続けると ${atMin(Math.min(end, 1439))}ごろに終わります${guess}`);
-  }
+  // (⑥ when today's would all be done, said on きょうやる: taken out at the user's call, 2026-11-23, tools/REMOVED.md)
 
   // (⑦ 元気, a ToDo's 重さ, was taken out: the user's call, 2026-11-18. t.energy stays on it, unused)
 

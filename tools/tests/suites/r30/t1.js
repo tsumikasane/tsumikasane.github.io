@@ -74,7 +74,7 @@ const TODOS = [
   let r = await rows(p);
   ok(r.length === 4 && ["a", "b", "c", added.id].every((id) => r.includes(id)), "only today's in the list", r);
   c = await card(p);
-  ok(c.includes("すべてのToDoに戻る") && c.includes("11月11日（水）・4 件中 0 件完了") && c.includes("選び直す") && c.includes("きょうの時間割") && c.includes("前の日の「ゼミの資料を読む」が残っています"), "its head: the day, how far, 選び直す, 時間割, yesterday's", c);
+  ok(c.includes("すべてのToDoに戻る") && c.includes("11月11日（水）・4 件中 0 件完了") && c.includes("選び直す") && c.includes("きょうの時間割") && c.includes("前の日の「ゼミの資料を読む」が残っています") && !c.includes("ごろに終わります") && !c.includes("入りきりません"), "its head: the day, how far, 選び直す, 時間割, yesterday's (no 終わる時刻: taken off 2026-11-23)", c);
   // kept for the day (a reload)
   await p.reload(); await p.waitForTimeout(900);
   ok((await rows(p)).length === 4 && !(await vis(p, "#todoSearchBox")), "kept as the page opens again");
@@ -103,7 +103,7 @@ const TODOS = [
   r = await rows(p);
   ok(await vis(p, "#todoSearchBox") && !r.includes("a") && !r.includes("c") && r.includes("d") && r.includes("h"), "back: today's out of the list, the rest there", r);
   c = await card(p);
-  ok(c.startsWith("きょうやる 4/5") && c.includes("のこり 「メールを返す」") && c.includes("きょうやるだけ表示") && c.includes("選び直す"), "the card: 4/5, what is left", c);
+  ok(c.startsWith("きょうやる 4/5") && !c.includes("のこり") && !c.includes("ごろに終わります") && !c.includes("入りきりません") && c.includes("きょうやるだけ表示") && c.includes("選び直す"), "the card: 4/5, its buttons (のこり and 終わる時刻 taken off at the user's call, 2026-11-23)", c);
   // words looked for: today's found too, no card
   await p.fill("#todoSearch", "銀行"); await p.waitForTimeout(400);
   ok((await rows(p)).includes("c") && (await card(p)) === null, "looking: today's found, the card away");
