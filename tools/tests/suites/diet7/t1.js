@@ -28,21 +28,10 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   await seed(p, base(), "diet");
   await part(p, "meal");
 
-  // ③ 食事の予定: one for tomorrow (its kcal from the common dishes), one for today, then 食べた
-  ok(await p.isVisible("#dt7Plan"), "③ the card");
-  await p.fill("#dt7PlanText", "おにぎり（鮭）"); await p.selectOption("#dt7PlanDay", "2026-11-15"); await p.selectOption("#dt7PlanSlot", "朝食");
-  await p.click('#dt7Plan button[type="submit"]'); await p.waitForTimeout(500);
-  let plans = (await setting(p, "mealPlans"))?.list || [];
-  ok(plans.length === 1 && plans[0].date === "2026-11-15" && plans[0].kcal === 180 && plans[0].slot === "朝食", "③ tomorrow's, kcal guessed", plans);
-  ok(/あした/.test(await txt(p, "#dt7Plan")) && !(await p.isVisible('#dt7Plan button:has-text("食べた")')), "③ tomorrow's: no 食べた yet", await txt(p, "#dt7Plan"));
-  await p.fill("#dt7PlanText", "バナナ"); await p.selectOption("#dt7PlanDay", "2026-11-14"); await p.selectOption("#dt7PlanSlot", "間食"); await p.fill("#dt7PlanKcal", "90");
-  await p.click('#dt7Plan button[type="submit"]'); await p.waitForTimeout(500);
-  let r = await txt(p, "#dt7Plan");
-  ok(/予定をぜんぶ食べると きょうは 2,390 kcal/.test(r) && /目安を 390 kcal 超えます/.test(r), "③ what today comes to", r);
-  await p.click('#dt7Plan button:has-text("食べた")'); await p.waitForTimeout(600);
-  const ban = (await ls(p, "meals")).find((m) => m.text === "バナナ");
-  plans = (await setting(p, "mealPlans"))?.list || [];
-  ok(ban && ban.date === D.DAY && ban.slot === "間食" && ban.kcal === 90 && plans.length === 1, "③ 食べた: put in, the plan off", { ban, plans });
+  // ③ 食事の予定: the card taken off at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line (its plans, in
+  // きょうの記録: mealplan)
+  ok(!(await p.$("#dt7Plan")) && !(await p.$("#dt7PlanText")) && !(await p.evaluate(() => [...document.querySelectorAll("#dt16Toc-meal .dt16-toc-go")].some((b) => b.dataset.id === "dt7Plan"))), "③ gone");
+  let r;
 
   // ① 食事カレンダー: November, within and over the 目安; a day pressed shows it
   const cal = await p.evaluate(() => ({ ym: document.querySelector("#dt7MealCal .bd2-cal-ym")?.textContent, ins: document.querySelectorAll("#dt7MealCal .dt7-cal-day.in").length, overs: document.querySelectorAll("#dt7MealCal .dt7-cal-day.over").length, today: document.querySelector('#dt7MealCal .dt7-cal-day.today')?.className }));

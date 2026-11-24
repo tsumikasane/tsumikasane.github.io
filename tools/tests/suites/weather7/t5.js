@@ -65,15 +65,9 @@ const ah = (rh) => { let s = 0, n = 0; for (let h = 7; h <= 21; h++) { const t =
   // ⑧ the days off: 11/21〜11/23 (勤労感謝の日), 11/23 from the 16 days
   ok((await txt(p, "#wx11RestSay")) === "次の休みは11/21（土）から3連休（勤労感謝の日）。11/23（月）は雨の予報です。" && (await p.$$eval("#wx11Rest li", (l) => l.map((x) => x.getAttribute("aria-label")))).join("｜") === "11月21日（土）、晴れ、最高18度、最低8度、降水確率10%｜11月22日（日）、晴れ、最高17度、最低7度、降水確率5%｜11月23日（月）（勤労感謝の日）、雨、最高17度、最低8度、降水確率70%",
     "⑧ 11/21〜11/23", [await txt(p, "#wx11RestSay"), await p.$$eval("#wx11Rest li", (l) => l.map((x) => x.getAttribute("aria-label")))]);
-  // ⑩ a year ago today, from the archive
-  ok(p.calls.some((u) => u.includes("archive-api") && u.includes("start_date=2025-11-16&end_date=2025-11-16") && u.includes("daily=weather_code,temperature_2m_max")) && (await txt(p, "#wx11PastOut")) === flat("2025年11月16日（日）　くもり最高 17°・最低 9°・雨 3.2 mm・風 4 m/sきょうの予報（最高 15°）より 2° 高い日でした"),
-    "⑩ 1年前のきょう", await txt(p, "#wx11PastOut"));
-  await p.click('#wx11Past [data-years="5"]'); await p.waitForTimeout(800);
-  ok((await txt(p, "#wx11PastOut")).startsWith("2021年11月16日（火）最高17°・最低9°") && (await p.getAttribute('#wx11Past [data-years="5"]', "aria-pressed")) === "true", "⑩ 5年前", await txt(p, "#wx11PastOut"));
-  await p.fill("#wx11PastDay", "2026-11-04"); await p.dispatchEvent("#wx11PastDay", "change"); await p.waitForTimeout(500);
-  ok((await txt(p, "#wx11PastOut")) === flat("11月4日（水）　雨最高 15°・最低 6°・雨 5 mmきょうの予報（最高 15°）と同じくらいの日でした"), "⑩ a day this month, from その4's record", await txt(p, "#wx11PastOut"));
-  await p.locator("#wx11Past").scrollIntoViewIfNeeded(); await p.evaluate(() => document.getElementById("daySheet").scrollBy(0, 120)); await p.waitForTimeout(200);
-  await p.screenshot({ path: out + "/wx11-past.png" });
+  // ⑩ a past day's weather (過去の天気): taken out at the user's call (2026-11-24, tools/REMOVED.md): no section, nor its
+  // chip, nor the day asked of the archive
+  ok(!(await p.$("#wx11Past")) && !(await p.$("#wx7-past")) && !(await p.$$eval("#wx7Jump button", (l) => l.some((x) => x.textContent === "過去の天気"))) && !p.calls.some((u) => u.includes("start_date=2025-11-16&end_date=2025-11-16")), "⑩ gone");
   // ⑨ the user's own things: taken out (the user's call, 2026-11-22, tools/REMOVED.md): those kept (水筒 always,
   // レインブーツ on a wet day) stay in the account's settings and aren't put in 持ち物
   ok((await txt(p, "#wx8Take li")) === "日焼け止め｜羽織るもの" && !(await p.$("#wx8Take .wx11-mine, #wx11TakeAdd")), "⑨ 水筒 not in 持ち物", await txt(p, "#wx8Take li"));

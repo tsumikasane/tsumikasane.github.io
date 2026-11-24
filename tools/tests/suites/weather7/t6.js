@@ -48,9 +48,8 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   const b = await chromium.launch();
   const p = await open(b, "2026-11-16T10:00:00+09:00", { settings: [{ id: "wxCommute", on: true, go: "05:30", back: "18:00", weekdays: true, updatedAt: 1 }, { id: "wxUmbAt", at: 30, updatedAt: 1 }] }); // (③ 傘の基準 taken out, 2026-11-22: a 30% kept from before)
 
-  // ① the 6 hours: 0〜6時 gone by, 12〜18時 60%
-  ok((await p.$$eval("#wx12Six [role=listitem]", (l) => l.map((x) => x.getAttribute("aria-label") + (x.classList.contains("wet") ? "（wet）" : "")))).join("｜") === "0時から6時、過ぎました｜6時から12時、降水確率10%｜12時から18時、降水確率60%（wet）｜18時から24時、降水確率10%", "① 0〜6時 gone, 12〜18時 60%",
-    await p.$$eval("#wx12Six [role=listitem]", (l) => l.map((x) => x.getAttribute("aria-label"))));
+  // ① rain's chance by the 6 hours (降水確率 6時間ごと): taken out at the user's call (2026-11-24, tools/REMOVED.md)
+  ok(!(await p.$("#wx12Six")) && !(await p.$(".wx12-six")), "① gone");
   // ② the warmest and coldest hours (16° at 14時, 8° at 2時)
   ok((await txt(p, ".wx-dl > div")).includes("最高の時刻14時ごろ｜最低の時刻2時ごろ"), "② 14時 and 2時", await txt(p, ".wx-dl > div"));
   // ④ the way there before dawn (5:50), back after dusk (17:01)

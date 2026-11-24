@@ -84,7 +84,7 @@ const DATA = {
   // ⑥ ⑦ ⑧ today's page
   await p.locator("#recList .rec-day-open").first().click(); await wait(p, 900);
   ok((await txt(p, "#recDayTitle")) === "11月15日（日）", "today's page");
-  ok((await txt(p, "#recDayBody .rec5-body")) === "体調 よい「すっきり」・睡眠 7 時間 30 分・水分 1,200 ml・歩数 8,000 歩・体温 36.4℃・血圧 118/76・野菜 3 皿・お酒 1 杯・コーヒー・お茶 2 杯", "⑥ からだのこと", await txt(p, "#recDayBody .rec5-body"));
+  ok((await txt(p, "#recDayBody .rec5-body")) === "体調 よい「すっきり」・睡眠 7 時間 30 分・水分 1,200 ml・歩数 8,000 歩・体温 36.4℃・血圧 118/76・野菜 3 皿", "⑥ からだのこと (お酒 and コーヒー・お茶 taken off at the user's call (2026-11-24, tools/REMOVED.md))", await txt(p, "#recDayBody .rec5-body"));
   ok(await p.evaluate(() => { const w = document.querySelector('#recDayBody ul[data-kind="weight"]'), b = document.querySelector("#recDayBody .rec5-body"); return !!(w && b && w.nextElementSibling?.nextElementSibling === b); }), "⑥ right after 体重");
   ok((await txt(p, "#rec3Ago")) === "1年前（2025/11/15） 2年前（2024/11/15）", "⑦ the years before", await txt(p, "#rec3Ago"));
   await p.click("#rec3DayJn"); await wait(p, 800);

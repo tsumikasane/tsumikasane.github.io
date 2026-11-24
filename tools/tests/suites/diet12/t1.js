@@ -105,10 +105,10 @@ const meal = async (p, text) => (await ls(p, "meals")).find((m) => m.text === te
   ok((await setting(p, "keepRange"))?.kg === 0.5, "⑧ the range kept");
   r = await txt(p, "#dt12Keep");
   ok(/範囲（65\.5〜66\.5 kg）に入った日 \d+ \/ 27 日/.test(r) && !/27 \/ 27/.test(r), "⑧ against the new range", r);
-  // ⑨ 体重が増えたとき: +0.8; the night's sleep, the day before's kcal, late, お酒, tags, 筋トレ
+  // ⑨ 体重が増えたとき: +0.8; the night's sleep, the day before's kcal, late, tags, 筋トレ (お酒 taken off at the user's call (2026-11-24, tools/REMOVED.md): not said, 3 杯 as they are)
   r = await txt(p, "#dt12Gain");
-  ok(/体重が増えたときのヒント \+0\.8 kg 前の記録（11\/14（土））より 0\.8 kg 増えました。/.test(r) && /睡眠が 5 時間と短め 前の日は摂取カロリーが目安より 800 kcal 多め 前の日は21時以降に食べた 前の日はお酒 3 杯 前の日は「塩分多め」 前の日は「外食」 前の日は筋トレ/.test(r)
-    && /7日平均で見ると \+0\.1 kg/.test(r), "⑨ the reasons", r);
+  ok(/体重が増えたときのヒント \+0\.8 kg 前の記録（11\/14（土））より 0\.8 kg 増えました。/.test(r) && /睡眠が 5 時間と短め 前の日は摂取カロリーが目安より 800 kcal 多め 前の日は21時以降に食べた 前の日は「塩分多め」 前の日は「外食」 前の日は筋トレ/.test(r)
+    && /7日平均で見ると \+0\.1 kg/.test(r) && !/お酒/.test(r), "⑨ the reasons", r);
   // ⑩ 体重を測る時刻: 7:10, 12 in the evening and heavier
   r = await txt(p, "#dt12When");
   ok(/体重を測る時刻 7:10 ごろ/.test(r) && /この60日 60 回・朝 48 回・夜 12 回/.test(r) && /夜に測った日は、朝より 0\.\d kg ほど重めに出ています（12 回）/.test(r), "⑩ the times", r);

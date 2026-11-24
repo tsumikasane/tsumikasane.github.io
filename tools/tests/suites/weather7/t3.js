@@ -48,20 +48,19 @@ const ev = (date, time, title, i) => ({ id: "x" + i, date, time, title, createdA
 
   // ① the outdoor plans in the rain (BBQ, and 部活 added; not 11/18's walk, dry)
   ok((await txt(p, "#wx9OutPlans li")) === "11/19（木）雨80%12:00BBQ｜11/19（木）雨80%18:00部活", "① BBQ and 部活 on 11/19", await txt(p, "#wx9OutPlans li"));
-  // ④ disasters
-  ok((await p.getAttribute(".wx9-kiki", "href")) === "https://www.jma.go.jp/bosai/risk/#zoom:13/lat:35.68/lon:139.77/colordepth:normal/elements:land" && (await p.getAttribute(".wx9-hazard", "href")) === "https://disaportal.gsi.go.jp/maps/?ll=35.68,139.77&z=14&base=pale&vs=c1j0l0u0t0h0z0" && !(await p.$(".wx9-heavy")),
-    "④ キキクル and the hazard map, no heavy rain today");
+  // ④ disasters (防災: キキクル, the hazard map, heavy rain): taken out at the user's call (2026-11-24, tools/REMOVED.md)
+  ok(!(await p.$("#wx9Bousai")) && !(await p.$(".wx9-kiki")) && !(await p.$(".wx9-hazard")) && !(await p.$("#wx7-bousai")), "④ gone");
   // ⑦ why it feels colder (⑥ the pleasant hours, in 暮らしのひとこと: taken out 2026-11-18)
   ok((await txt(p, "#wx9Feel")) === "18時ごろは、空気が乾いていて、気温より5°寒く感じそうです", "⑦ 18時 feels 5° colder", await txt(p, "#wx9Feel"));
   // ⑨ 天気と気分 went with きょうの気分 (taken out, the user's call 2026-11-19)
   ok(!(await p.$("#wx9Mood")), "⑨ no 天気と気分 (taken out)");
   await p.screenshot({ path: out + "/wx9-top.png" });
 
-  // ⑤ 11/17 cooling, ④ 11/19 heavy rain
+  // ⑤ 11/17 cooling; 11/19 (heavy rain): no 防災's line
   await p.click(".wx-days li:nth-child(2) button"); await p.waitForTimeout(400);
   ok((await txt(p, ".wx9-swing")) === "急に寒くなる時間：16時〜18時に7°下がります羽織るものがあると安心", "⑤ 11/17 16時〜18時 (15.5° to 9°)", await txt(p, ".wx9-swing"));
   await p.click(".wx-days li:nth-child(4) button"); await p.waitForTimeout(400);
-  ok((await txt(p, ".wx9-heavy")).startsWith("大雨のおそれがあります（1時間に35mm）"), "④ 11/19 35 mm", await txt(p, ".wx9-heavy"));
+  ok(!(await p.$(".wx9-heavy")), "④ 11/19: no 大雨 line (防災 taken out)");
   await p.click(".wx-days li:nth-child(1) button"); await p.waitForTimeout(400);
 
   // ① ② ⑩ the notifications

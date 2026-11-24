@@ -27,9 +27,9 @@ const goDay = (p, d) => p.evaluate((d) => { const i = [...document.querySelector
   // ③ 塩分の目安
   r = await txt(p, "#dt14Salt");
   ok(/塩分の目安（この7日） 1日 6\.8 g 目安の 7\.5 g 未満に入っています。 多かったのは 定食（4 g × 6）・ラーメン（6 g × 2）・トースト（0\.8 g × 6）/.test(r) && /目安のわかった食事 14 \/ 21 件/.test(r), "③ the salt", r);
-  // ① 食べすぎやすい日: 寝不足 first
+  // ① 食べすぎやすい日: 寝不足 first (お酒を飲んだ次の日 taken off at the user's call (2026-11-24, tools/REMOVED.md))
   r = await txt(p, "#dt14Over");
-  ok(/寝不足の日（6時間未満） 8 日・平均 2,400 kcal（ほかの日 1,846 kcal） \+554 kcal お酒を飲んだ次の日 4 日・平均 2,140 kcal（ほかの日 1,907 kcal） \+233 kcal 運動しなかった日/.test(r) && /寝不足の日は、ほかの日より 1日 554 kcal 多く食べています。/.test(r), "① the days", r);
+  ok(/寝不足の日（6時間未満） 8 日・平均 2,400 kcal（ほかの日 1,846 kcal） \+554 kcal 運動しなかった日/.test(r) && !/お酒/.test(r) && /寝不足の日は、ほかの日より 1日 554 kcal 多く食べています。/.test(r), "① the days", r);
 
   // ⑥ メニューの達成率: 29% of the sets and 50% of the km each week before this one
   await part(p, "workout");

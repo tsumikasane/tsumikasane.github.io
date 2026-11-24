@@ -38,10 +38,11 @@ async function open(b, data, when = `${DAY}T12:00:00+09:00`) {
   await p.selectOption("#mealPlanSlot", "昼食"); await p.fill("#mealPlanText", "おにぎり"); await submit(p);
   l = await plans(p);
   ok(l.length === 2 && l[1].slot === "昼食" && l[1].text === "おにぎり" && l[1].kcal === 180, "no kcal: as the last time", l[1]);
-  // what they come to (300 eaten, 300 planned, against 2,000); the day's own total as it was; the same plans in 食事の予定
+  // what they come to (300 eaten, 300 planned, against 2,000); the day's own total as it was; 食事の予定's card (the same plans)
+  // taken off at the user's call (2026-11-24, tools/REMOVED.md)
   ok(/予定をぜんぶ食べると きょうは 600 kcal・目安まで あと 1,400 kcal/.test(await card(p)), "what they come to", await card(p));
   ok(/300 \/ 2,000 kcal/.test(await p.evaluate(() => document.querySelector("#mealGoalCard .card-head").innerText)), "the day's total: the plans not in it");
-  ok((await p.locator("#dt7Plan .dt7-plan-list li").count()) === 2, "the same plans in 食事の予定");
+  ok(!(await p.$("#dt7Plan")), "食事の予定's card: none");
   // 食べた: 昼食 at 12:00, the plan off, 昼食's row has it
   await p.click('#mealSlots .meal-plan-list[aria-label="昼食の予定"] .meal-plan-eat'); await p.waitForTimeout(600);
   const ms = await meals(p);

@@ -32,10 +32,9 @@ const redraw = async (p) => { await W(p, "redraw"); await p.waitForTimeout(200);
   // ① the normal and last year's
   ok(p.calls.some((u) => u.includes("archive-api") && u.includes("start_date=2016-11-06") && u.includes("end_date=2025-12-04")), "① the archive asked once for the 10 years", p.calls.filter((u) => u.includes("archive")));
   ok((await txt(p, "#wx4Norm")) === "平年よりあたたか最高+3°・最低+2°平年（過去10年の同じころ）は15°/6°。去年のきょうは20°/10°", "① against the normal, and last year's day", await txt(p, "#wx4Norm"));
-  // ⑧ how sure
-  ok((await txt(p, ".wx4-sure")) === "予報の自信高い", "⑧ today: 高い", await txt(p, ".wx4-sure"));
-  ok((await txt(p, "#wx4SureNote")) === "予報がはずれやすいのは11/18（水）・11/19（木）。予報どうしで、気温や雨の見こみが分かれています。", "⑧ the days apart (6°; rain or not)", await txt(p, "#wx4SureNote"));
-  ok(p.calls.some((u) => u.includes("models=jma_seamless,ecmwf_ifs025,gfs_seamless")), "⑧ the three models in one request");
+  // ⑧ how sure (予報の自信): taken out at the user's call (2026-11-24, tools/REMOVED.md): not in the day card nor under the
+  // week, and the models no longer asked for
+  ok(!(await p.$(".wx4-sure")) && !(await p.$("#wx4SureNote")) && !/予報の自信|予報がはずれやすい/.test(await txt(p, "#calPanelBody")) && !p.calls.some((u) => u.includes("models=")), "⑧ gone");
   // ⑨ the warnings, by the 市区町村
   ok((await p.getAttribute(".wx4-warn", "href")) === "https://www.jma.go.jp/bosai/warning/#area_type=class20s&area_code=1310100&lang=ja" && (await txt(p, ".wx4-warn")) === "警報・注意報を見る（気象庁）", "⑨ 千代田区's page", await p.getAttribute(".wx4-warn", "href"));
   const codes = await p.evaluate(() => ["13101", "14118", "14131", "27128", "27141", "27202", "01101", "40131", "23101", "x"].map((m) => window.__wx4.area(m)));

@@ -40,15 +40,11 @@ async function open(b, when, more = {}, o = {}) {
   // ④ the days' names
   ok((await txt(p, ".wx-days li:nth-child(4) .wx8-tag")) === "冬日" && (await p.getAttribute(".wx-days li:nth-child(4) .wx8-tag", "class")).includes("cold"), "④ 11/19: 冬日 (blue)");
   ok(JSON.stringify(await Promise.all([W(p, "names", { hi: 36, lo: 26 }), W(p, "names", { hi: -2, lo: -8 }), W(p, "names", { hi: 26, lo: 10 }), W(p, "names", { hi: 31, lo: -1 })])) === JSON.stringify([["猛暑日", "熱帯夜"], ["真冬日"], ["夏日"], ["真夏日", "冬日"]]), "④ 気象庁's names");
-  // ③ the hours out
-  ok((await txt(p, "#wx8Out .wx-line")) === "きょう14時〜20時：雨の心配はなさそうです｜気温16°→13°（体感9〜17°）服装はコート｜風が強い時間があります（最大9m/s）", "③ today 14時〜20時", await txt(p, "#wx8Out .wx-line"));
-  await p.selectOption("#wx8OutDay", "1"); await p.waitForTimeout(300);
-  ok((await txt(p, "#wx8Out .wx-line")) === "あした14時〜20時：雨の心配はなさそうです｜気温16°→13°（体感12〜15°）服装はジャケットなどの上着", "③ tomorrow", await txt(p, "#wx8Out .wx-line"));
-  await p.selectOption("#wx8OutFrom", "20"); await p.waitForTimeout(300);
-  ok((await p.inputValue("#wx8OutTo")) === "21" && (await txt(p, "#wx8Out .wx8-out-rain")).startsWith("あした20時〜21時"), "③ from after to: to moves on", await p.inputValue("#wx8OutTo"));
-  // ① ③ ⑩ in the chips
+  // ③ the hours out (おでかけの時間): taken out at the user's call (2026-11-24, tools/REMOVED.md)
+  ok(!(await p.$("#wx8Out")) && !(await p.$("#wx8OutDay")) && !(await p.$("#wx7-outing")), "③ gone");
+  // ① ⑩ in the chips (③ おでかけ, taken out, not)
   const chips = await p.$$eval("#wx7Jump button", (l) => l.map((x) => x.textContent));
-  ok(chips.includes("持ち物") && chips.includes("おでかけ") && chips.includes("ことば"), "①③⑩ in the chips", chips);
+  ok(chips.includes("持ち物") && !chips.includes("おでかけ") && chips.includes("ことば"), "①⑩ in the chips (③ not)", chips);
   // ⑩ the words
   await p.locator("#wx8Words summary").scrollIntoViewIfNeeded();
   await p.click("#wx8Words summary"); await p.waitForTimeout(200);
@@ -68,7 +64,7 @@ async function open(b, when, more = {}, o = {}) {
   ok(JSON.stringify(al) === JSON.stringify([["11-17", "7:00"], ["11-18", "7:00"], ["11-19", "7:00"], ["11-20", "7:00"], ["11-21", "9:00"], ["11-22", "9:00"]]) && (await txt(p, "#wxMornNote")).includes("土日・祝日は9:00にお知らせします。"), "⑨ 7:00 on weekdays, 9:00 on Saturday and Sunday", al);
   await p.screenshot({ path: out + "/wx8-morning.png" });
 
-  // the top, and 持ち物・おでかけ
+  // the top, and 持ち物
   await p.evaluate(() => document.getElementById("daySheet").scrollTo(0, 0)); await p.waitForTimeout(200);
   await p.screenshot({ path: out + "/wx8-top.png" });
   await p.locator("#wx8Take").scrollIntoViewIfNeeded(); await p.waitForTimeout(200);

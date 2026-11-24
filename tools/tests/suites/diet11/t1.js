@@ -49,9 +49,9 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   ok(!(await p.$("#dt11Bulk")), "③ gone");
 
   await part(p, "weight");
-  // ⑩ 目標の一覧: the goals, set and not; 決める opens where it is set
+  // ⑩ 目標の一覧: the goals, set and not; 決める opens where it is set (間食 taken off at the user's call (2026-11-24, tools/REMOVED.md), its goal kept)
   r = await txt(p, "#dt11Goals");
-  ok(/目標体重 いま \d\d\.\d kg（7日平均） 65\.0 kg 変える/.test(r) && /間食 今週 3 回 週 3 回まで/.test(r) && !/間食 今週 3 回 週 3 回まで 変える/.test(r) && !(await p.$('#dt11Goals button[aria-label^="間食を"]')) && /たんぱく質 きょう [\d.]+ g 未設定 決める/.test(r), "⑩ the list", r);
+  ok(/目標体重 いま \d\d\.\d kg（7日平均） 65\.0 kg 変える/.test(r) && !/間食/.test(r) && (await setting(p, "snackGoal"))?.perWeek === 3 && /たんぱく質 きょう [\d.]+ g 未設定 決める/.test(r), "⑩ the list", r);
   await p.click('#dt11Goals button[aria-label="たんぱく質を決める"]'); await p.waitForTimeout(700);
   ok(await p.isVisible("#proteinGoal"), "⑩ 決める opens its setting");
   await p.keyboard.press("Escape"); await p.waitForTimeout(400);

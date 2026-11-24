@@ -66,14 +66,8 @@ const setting = (p, id) => p.evaluate(({ P, id }) => (JSON.parse(localStorage.ge
   await p.click("#wx14SkyOn"); await p.waitForTimeout(400);
   ok((await p.getAttribute(".wx-daycard", "class")) === "card wx-daycard", "① turned off");
   await p.click("#wx14SkyOn"); await p.waitForTimeout(400);
-  // ⑤ readiness: one ticked, where to meet
-  await p.locator("#wx14Prep summary").scrollIntoViewIfNeeded();
-  await p.click("#wx14Prep summary"); await p.waitForTimeout(200);
-  await p.click("#wx14PrepList li:first-child input"); await p.waitForTimeout(300);
-  await p.fill("#wx14Meet", "南公園の入り口"); await p.dispatchEvent("#wx14Meet", "change"); await p.waitForTimeout(300);
-  const prep = await setting(p, "wxPrep");
-  ok(prep && JSON.stringify(prep.done) === JSON.stringify(["飲み水（1人1日3L × 3日分）"]) && prep.meet === "南公園の入り口" && (await txt(p, "#wx14PrepSum")) === "防災の備え（10個のうち1個）", "⑤ one ticked, 南公園", prep);
-  await p.screenshot({ path: out + "/wx14-prep.png" });
+  // ⑤ readiness (防災の備え), under 防災: taken out with it at the user's call (2026-11-24, tools/REMOVED.md)
+  ok(!(await p.$("#wx14Prep")) && !(await p.$("#wx14Meet")), "⑤ gone");
 
   // ② sunset today 30 minutes before, sunrise tomorrow
   await p.locator("#wx14Box").scrollIntoViewIfNeeded();
