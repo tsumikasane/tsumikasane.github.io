@@ -27,12 +27,9 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   await seed(p, base(), "diet");
   await part(p, "meal");
 
-  // ① 間食の目標: 3 this week, a goal of 3 a week; the weeks before kept to it
-  ok(/今週の間食 3 回/.test(await txt(p, "#dt11Snack")), "① this week's", await txt(p, "#dt11Snack"));
-  await p.selectOption("#dt11SnackGoal", "3"); await p.waitForTimeout(400);
-  ok((await setting(p, "snackGoal"))?.perWeek === 3, "① kept");
-  let r = await txt(p, "#dt11Snack");
-  ok(/今週の間食 3 \/ 3 回/.test(r) && /あと 0 回まで・\d+ 週続けて目標どおり/.test(r), "① against it", r);
+  // ① 今週の間食 (with its goal): taken out at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line; the goal set kept
+  ok(!(await p.$("#dt11Snack")) && !(await p.$("#dt11SnackGoal")) && !(await p.evaluate(() => [...document.querySelectorAll("#dt16Toc-meal .dt16-toc-go")].some((b) => ["dt11Snack"].includes(b.dataset.id)))) && (await setting(p, "snackGoal"))?.perWeek === 3, "① gone, its goal kept");
+  let r;
   // ② ちょい足し: マヨネーズ, under the 区分 picked
   await rec(p, "昼食", "often");
   await p.click('#dt11Add button:has-text("マヨネーズ（大さじ1）")'); await p.waitForTimeout(500);
@@ -54,7 +51,7 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   await part(p, "weight");
   // ⑩ 目標の一覧: the goals, set and not; 決める opens where it is set
   r = await txt(p, "#dt11Goals");
-  ok(/目標体重 いま \d\d\.\d kg（7日平均） 65\.0 kg 変える/.test(r) && /間食 今週 3 回 週 3 回まで 変える/.test(r) && /たんぱく質 きょう [\d.]+ g 未設定 決める/.test(r), "⑩ the list", r);
+  ok(/目標体重 いま \d\d\.\d kg（7日平均） 65\.0 kg 変える/.test(r) && /間食 今週 3 回 週 3 回まで/.test(r) && !/間食 今週 3 回 週 3 回まで 変える/.test(r) && !(await p.$('#dt11Goals button[aria-label^="間食を"]')) && /たんぱく質 きょう [\d.]+ g 未設定 決める/.test(r), "⑩ the list", r);
   await p.click('#dt11Goals button[aria-label="たんぱく質を決める"]'); await p.waitForTimeout(700);
   ok(await p.isVisible("#proteinGoal"), "⑩ 決める opens its setting");
   await p.keyboard.press("Escape"); await p.waitForTimeout(400);

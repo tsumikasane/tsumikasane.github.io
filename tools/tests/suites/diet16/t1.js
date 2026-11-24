@@ -19,19 +19,16 @@ const off = (p, id) => p.evaluate((id) => document.getElementById(id)?.classList
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
   await p.goto(process.env.URL0);
   await seed(p, base(), "diet");
+  await p.evaluate((P) => { const s = JSON.parse(localStorage.getItem(P + "settings") || "[]"); s.push({ id: "slotShare", preset: "night", updatedAt: 1 }); localStorage.setItem(P + "settings", JSON.stringify(s)); }, P);
   await part(p, "meal");
 
-  // ① 区分ごとの目安: ふつう, then 夜しっかり
-  let r = await txt(p, "#dt16Slots");
-  ok(/区分ごとの目安 朝食 400 \/ 500 kcal あと 100 kcal 昼食 0 \/ 700 kcal まだ（目安 700 kcal） 夕食 0 \/ 600 kcal まだ（目安 600 kcal） 間食 0 \/ 200 kcal まだ（目安 200 kcal）/.test(r), "① ふつう", r);
-  await p.selectOption("#dt16Slots select", "night"); await p.waitForTimeout(400);
-  ok((await setting(p, "slotShare"))?.preset === "night" && /朝食 400 \/ 400 kcal あと 0 kcal 昼食 0 \/ 600 kcal まだ（目安 600 kcal） 夕食 0 \/ 800 kcal/.test(await txt(p, "#dt16Slots")), "① 夜しっかり", await txt(p, "#dt16Slots"));
+  // ① 区分ごとの目安 and ③ 夜に食べなかった日: taken out at the user's call (2026-11-24, tools/REMOVED.md): no cards, nor their
+  // もくじ's lines; the way chosen (slotShare) kept
+  let r;
+  ok(!(await p.$("#dt16Slots")) && !(await p.$("#dt16Night")) && !(await p.evaluate(() => [...document.querySelectorAll("#dt16Toc-meal .dt16-toc-go")].some((b) => ["dt16Slots", "dt16Night"].includes(b.dataset.id)))) && (await setting(p, "slotShare"))?.preset === "night", "①③ gone, slotShare kept");
   // ② 間食をよく食べる時間: 午後 6, 夜 3, 昼 1
   r = await txt(p, "#dt16Snack");
   ok(/この30日 10 回 朝 0 昼 1 午後 6 夕方 0 夜 3 深夜 0 いちばん多いのは午後です。/.test(r), "② the hours", r);
-  // ③ 夜に食べなかった日: 2 in a row (11/13 was late), the best 9
-  r = await txt(p, "#dt16Night");
-  ok(/夜に食べなかった日 2 日続いています きょうも続けば 3 日・この90日でいちばん長いのは 9 日/.test(r) && (await p.locator("#dt16Night .dt16-n-dots i.late").count()) === 3, "③ the nights", r);
   // ⑨ もくじ: open, a card gone to
   await p.click("#dt16Toc-meal summary"); await p.waitForTimeout(200);
   r = await txt(p, "#dt16Toc-meal summary");
@@ -42,19 +39,19 @@ const off = (p, id) => p.evaluate((id) => document.getElementById(id)?.classList
   let top = 9999;
   for (let i = 0; i < 30 && !(top >= 0 && top < 852); i++) { await p.waitForTimeout(200); top = await p.evaluate((id) => document.getElementById(id).getBoundingClientRect().top, lastId); }
   ok(top >= 0 && top < 852, "⑨ gone to (the card in sight)", [lastId, top]);
-  // ⑩ かくす: 区分ごとの目安 hidden, taken back, hidden again and shown
+  // ⑩ かくす: 間食をよく食べる時間 hidden, taken back, hidden again and shown
   await p.evaluate(() => window.scrollTo(0, 0));
-  await p.click('#dt16Toc-meal button[aria-label="「区分ごとの目安」をかくす"]'); await p.waitForTimeout(400);
-  ok(await off(p, "dt16Slots") && !(await p.isVisible("#dt16Slots")) && ((await setting(p, "dietHide"))?.list || []).some((x) => x.id === "dt16Slots" && x.name === "区分ごとの目安"), "⑩ hidden");
-  ok(/かくしたカード 1/.test(await txt(p, "#dt16Toc-meal summary")) && /かくしたカード 区分ごとの目安 出す/.test(await txt(p, "#dt16Toc-meal")), "⑩ listed as hidden", await txt(p, "#dt16Toc-meal"));
+  await p.click('#dt16Toc-meal button[aria-label="「間食をよく食べる時間」をかくす"]'); await p.waitForTimeout(400);
+  ok(await off(p, "dt16Snack") && !(await p.isVisible("#dt16Snack")) && ((await setting(p, "dietHide"))?.list || []).some((x) => x.id === "dt16Snack" && x.name === "間食をよく食べる時間"), "⑩ hidden");
+  ok(/かくしたカード 1/.test(await txt(p, "#dt16Toc-meal summary")) && /かくしたカード 間食をよく食べる時間 出す/.test(await txt(p, "#dt16Toc-meal")), "⑩ listed as hidden", await txt(p, "#dt16Toc-meal"));
   await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
-  ok(!(await off(p, "dt16Slots")) && await p.isVisible("#dt16Slots"), "⑩ taken back");
-  await p.click('#dt16Toc-meal button[aria-label="「区分ごとの目安」をかくす"]'); await p.waitForTimeout(400);
+  ok(!(await off(p, "dt16Snack")) && await p.isVisible("#dt16Snack"), "⑩ taken back");
+  await p.click('#dt16Toc-meal button[aria-label="「間食をよく食べる時間」をかくす"]'); await p.waitForTimeout(400);
   await part(p, "meal");
-  ok(await off(p, "dt16Slots"), "⑩ still hidden after a reload");
+  ok(await off(p, "dt16Snack"), "⑩ still hidden after a reload");
   await p.click("#dt16Toc-meal summary"); await p.waitForTimeout(200);
-  await p.click('#dt16Toc-meal button[aria-label="「区分ごとの目安」を出す"]'); await p.waitForTimeout(400);
-  ok(!(await off(p, "dt16Slots")) && !(((await setting(p, "dietHide"))?.list || []).length), "⑩ shown again");
+  await p.click('#dt16Toc-meal button[aria-label="「間食をよく食べる時間」を出す"]'); await p.waitForTimeout(400);
+  ok(!(await off(p, "dt16Snack")) && !(((await setting(p, "dietHide"))?.list || []).length), "⑩ shown again");
 
   // ④ 1年の距離の目標: none, then 500 km
   await part(p, "workout");

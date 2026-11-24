@@ -25,13 +25,8 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   ok(t.had === 29 && r.includes(`平均 ${N.format(t.mean)} kcal・記録 29 日・目安を超えた日 ${t.over} 日`) && (await p.locator("#dt15Trend svg rect").count()) === 29 && (await p.locator("#dt15Trend svg polyline.avg").count()) === 1, "① 30 days", [t.mean, t.over, r]);
   await p.click('#dt15Trend button:has-text("90日")'); await p.waitForTimeout(300);
   ok((await p.locator("#dt15Trend svg rect").count()) === 29 && (await p.getAttribute('#dt15Trend button:has-text("90日")', "aria-pressed")) === "true" && /10\/18/.test(await txt(p, "#dt15Trend")) === false, "① 90 days (the records as they are)", await txt(p, "#dt15Trend"));
-  // ② たんぱく質の目標の提案: 68 kg × 1.6 → 110 g; made the goal, taken back
-  r = await txt(p, "#dt15Prot");
-  ok(/たんぱく質の目標の提案 1日 110 g 体重 68\.0 kg × 1\.6 g（筋トレをしている人の目安） 目標はまだ決めていません・この14日の平均 60 g/.test(r), "② the plan", r);
-  await p.click('#dt15Prot button:has-text("110 g を目標にする")'); await p.waitForTimeout(400);
-  ok((await setting(p, "pfcGoal"))?.p === 110 && /いまの目標と同じです/.test(await txt(p, "#dt15Prot")), "② made the goal");
-  await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
-  ok(!(await setting(p, "pfcGoal")), "② taken back");
+  // ② たんぱく質の目標の提案: taken out at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line; no goal set
+  ok(!(await p.$("#dt15Prot")) && !(await p.evaluate(() => [...document.querySelectorAll("#dt16Toc-meal .dt16-toc-go")].some((b) => ["dt15Prot"].includes(b.dataset.id)))) && !(await setting(p, "pfcGoal")), "② gone");
   // ③ 食べたものの種類
   const k = await W(p, "kinds"); r = await txt(p, "#dt15Kinds");
   ok(k.kinds === 9 && k.was === 8 && /9 種類 この7日 22 品・前の7日は 8 種類（\+1） よく続いているもの トースト 7 回・定食 6 回 はじめて食べたもの おにぎり/.test(r), "③ the kinds", [k, r]);

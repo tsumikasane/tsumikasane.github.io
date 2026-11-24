@@ -42,5 +42,6 @@ const settings = () => [
   { id: "body", height: 170, age: 30, sex: "m", updatedAt: T("2026-09-20") },
   { id: "kcalGoal", target: 2000, updatedAt: T("2026-09-20") },
   { id: "weight", target: 65, updatedAt: T("2026-09-20") },
+  { id: "snackGoal", perWeek: 3, updatedAt: T("2026-09-20") },
 ];
 module.exports = { T, DAY, addDays, weights, meals, workouts, bodyDays, settings };

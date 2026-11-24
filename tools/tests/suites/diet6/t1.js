@@ -22,16 +22,9 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   // ① 野菜: taken out at the user's call (2026-11-23, tools/REMOVED.md): no card, nor its もくじ's line; the 皿 put in kept
   const toc6 = await p.evaluate(() => document.getElementById("dt16Toc-meal")?.textContent || "");
   ok(!(await p.$("#dt6Veg")) && !(await p.$('button[aria-label="食べた野菜を1皿ふやす"]')) && !/野菜/.test(toc6) && (await day(p, D.DAY))?.veg === 2, "① 野菜 gone, the 2 皿 kept", [await day(p, D.DAY), toc6]);
-  // ② お酒 2, コーヒー 5: 休肝日 6 of the 7 days, カフェイン 多め
-  await p.click('#dt6Drink button[aria-label="お酒を1杯ふやす"]'); await p.waitForTimeout(300);
-  await p.click('#dt6Drink button[aria-label="お酒を1杯ふやす"]'); await p.waitForTimeout(300);
-  for (let i = 0; i < 5; i++) { await p.click('#dt6Drink button[aria-label="コーヒー・お茶を1杯ふやす"]'); await p.waitForTimeout(200); }
-  let x = await day(p, D.DAY);
-  ok(x?.alc === 2 && x?.caf === 5, "② kept", x);
-  let r = await txt(p, "#dt6Drink");
-  ok(/休肝日 6 日/.test(r) && /カフェインが多め/.test(r), "② 休肝日 and カフェイン", r);
-  await p.click('#dt6Drink button[aria-label="お酒を1杯へらす"]'); await p.waitForTimeout(400);
-  ok((await day(p, D.DAY))?.alc === 1, "② − kept");
+  // ② お酒・カフェイン: taken out at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line; the 杯 put in kept
+  ok(!(await p.$("#dt6Drink")) && !(await p.$('button[aria-label="お酒を1杯ふやす"]')) && !/お酒|カフェイン/.test(toc6) && (await day(p, D.DAY))?.alc === 2 && (await day(p, D.DAY))?.caf === 5, "② お酒・カフェイン gone, the 杯 kept", [await day(p, D.DAY), toc6]);
+  let r;
   // ③ 2,000 − 1,200 = 800 left: dishes that fit; one pressed goes in
   r = await txt(p, "#mealGoalCard .dt6-fit");
   ok(/あと 800 kcal で食べられるもの/.test(r || ""), "③ offered", r);

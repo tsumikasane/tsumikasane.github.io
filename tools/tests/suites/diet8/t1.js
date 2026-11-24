@@ -30,9 +30,8 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   // ② PFCバランス: today's トースト alone has PFC (P 40・F 45・C 200 kcal)
   let r = await txt(p, "#mealGoalCard .dt8-pfc");
   ok(/たんぱく質 14%/.test(r) && /脂質 16%/.test(r) && /炭水化物 70%/.test(r) && /脂質が少なめ・炭水化物が多め/.test(r) && /PFCのある 1 \/ 2 品から/.test(r), "② the shares and the words", r);
-  // ③ 食事の記録: 7 days on end, 18 the longest, 25 of 30 days, 朝食 missed twice
-  r = await txt(p, "#dt8Log");
-  ok(/続けて記録した日 7 日 いちばん長かったのは 18 日/.test(r) && /記録した日 25 \/ 30 日/.test(r) && /朝食を抜いた日 2 日/.test(r), "③ the days", r);
+  // ③ 食事の記録 (the days on end, of 30, 3食そろった日, 朝食を抜いた日): taken out at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line
+  ok(!(await p.$("#dt8Log")) && !(await p.evaluate(() => [...document.querySelectorAll("#dt16Toc-meal .dt16-toc-go")].some((b) => ["dt8Log"].includes(b.dataset.id)))), "③ gone");
   // ① 文でまとめて入れる: the words parsed (区分, kcal given, kcal guessed), then put in, no time
   const pz = await W(p, "parse", "朝 トースト 200、納豆（1パック）\n昼 定食 700\n夜 カレー\n夜食 300、おにぎり 2個", "間食");
   ok(pz.length === 6 && pz[0].slot === "朝食" && pz[0].kcal === 200 && pz[1].kcal === 86 && pz[1].guessed && pz[2].slot === "昼食" && pz[3].slot === "夕食" && pz[3].kcal === 750 && pz[3].guessed

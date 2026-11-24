@@ -12,7 +12,7 @@ function weights() {
 function bodyDays() {
   const out = [];
   for (let i = 60; i >= 1; i--) { const d = addDays(DAY, -i); out.push({ id: d, date: d, ...(i % 3 === 0 ? { bed: "01:30", wake: "06:30" } : { bed: "23:00", wake: "06:30" }), createdAt: T(d), updatedAt: T(d) }); }
-  out.push({ id: DAY, date: DAY, bed: "23:00", wake: "06:30", water: 2000, steps: 10000, veg: 2, pulse: 60, createdAt: T(DAY), updatedAt: T(DAY) });
+  out.push({ id: DAY, date: DAY, bed: "23:00", wake: "06:30", water: 2000, steps: 10000, veg: 2, alc: 2, caf: 5, pulse: 60, createdAt: T(DAY), updatedAt: T(DAY) });
   return out;
 }
 const meals = () => [{ id: "m1", date: DAY, slot: "朝食", text: "トースト", kcal: 400, createdAt: T(DAY, 7) }, { id: "m2", date: DAY, slot: "昼食", text: "定食", kcal: 800, createdAt: T(DAY, 12) }];
