@@ -118,13 +118,14 @@ async function open(b, when) {
   await p.click("#jn2PhotoOpen"); await p.waitForTimeout(600);
   ok((await p.inputValue("#sec-journal .datenav input[type=date]")) === D.DAY, "③ opened its day");
 
-  // ⑧ 文字の大きさと書体, and ⑤ 写真ごと書き出す (この月), under the gear
+  // ⑧ 文字の大きさと書体: taken out at the user's call (2026-11-24, tools/REMOVED.md): not under the gear; a size and face
+  // chosen before not used (the letters as they are), kept on this device. ⑤ 写真ごと書き出す (この月), under the gear
   const fs0 = await p.evaluate(() => parseFloat(getComputedStyle(document.getElementById("journalText")).fontSize));
-  await p.click("#jnSettings"); await p.waitForTimeout(800);
-  await p.selectOption("#jn3FontSize", "l"); await p.selectOption("#jn3FontFace", "serif"); await p.waitForTimeout(200);
+  await p.evaluate((P) => localStorage.setItem(P + "jnFont", JSON.stringify({ size: "xl", face: "serif" })), P);
+  await p.reload(); await p.waitForTimeout(1200);
   const f1 = await p.evaluate(() => { const s = getComputedStyle(document.getElementById("journalText")); return { size: parseFloat(s.fontSize), face: s.fontFamily }; });
-  ok(Math.abs(f1.size - fs0 * 1.15) < 0.6 && /Mincho|serif/.test(f1.face), "⑧ larger, 明朝", [fs0, f1]);
-  ok(JSON.stringify(await ls(p, "jnFont")) === '{"size":"l","face":"serif"}', "⑧ kept on this device", await ls(p, "jnFont"));
+  await p.click("#jnSettings"); await p.waitForTimeout(800);
+  ok(!(await p.$("#jn3FontSize")) && !(await p.$("#jn3FontFace")) && Math.abs(f1.size - fs0) < 0.1 && !/Mincho/.test(f1.face) && (await ls(p, "jnFont"))?.size === "xl", "⑧ gone: no fields, the letters as they are, what was chosen kept", [fs0, f1]);
   ok((await txt(p, "#jn3OutMonth")) === "この月（11月）", "⑤ the month named", await txt(p, "#jn3OutMonth"));
   const [dl] = await Promise.all([p.waitForEvent("download", { timeout: 20000 }), p.click("#jn3OutMonth")]);
   const html = fs.readFileSync(await dl.path(), "utf8");

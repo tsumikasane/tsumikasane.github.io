@@ -32,7 +32,7 @@ async function open(b, when) {
 
   // ⑤ the letters, written as typed
   const n = [...(await p.inputValue("#journalText")).trim()].length;
-  ok((await txt(p, "#jnCount")) === `・${n}字`, "⑤ the letters", await txt(p, "#jnCount"));
+  ok((await txt(p, "#jnCount")) === `${n}字` && !(await p.evaluate(() => /書くと自動で保存/.test(document.getElementById("jnCard").innerText))), "⑤ the letters (the words before them taken out, 2026-11-24)", await txt(p, "#jnCount"));
   // ⑤ the days in a row: 11/9〜11/13 (today written now)
   await p.waitForTimeout(1500);
   const sk = await txt(p, "#jnStreak");

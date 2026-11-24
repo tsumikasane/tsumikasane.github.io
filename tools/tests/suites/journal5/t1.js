@@ -104,17 +104,13 @@ const putPhotos = (p, days) => p.evaluate(({ days, b64 }) => new Promise((res, r
   ok(dl2.suggestedFilename() === "nikki-2026-11-collage.png", "⑤ saved", dl2.suggestedFilename());
   await p.click("#jn5PicClose"); await p.waitForTimeout(300);
 
-  // ⑧ 紙 and ⑥ 日記を取り込む (under the gear)
+  // ⑧ 紙 and ⑥ 日記を取り込む: taken out at the user's call (2026-11-24, tools/REMOVED.md): not under the gear; a paper
+  // chosen before not used (the field as it is), kept on this device
+  await p.evaluate((P) => localStorage.setItem(P + "jnPaper", "lined"), P);
+  await p.reload(); await p.waitForTimeout(1200);
+  ok(!(await p.evaluate(() => [...document.getElementById("sec-journal").classList].some((c) => /^jn5-(lined|grid|cream)$/.test(c)) || getComputedStyle(document.getElementById("journalText")).backgroundImage.includes("gradient"))), "⑧ the paper chosen before not used");
   await p.click("#jnSettings"); await p.waitForTimeout(800);
-  await p.selectOption("#jn5Paper", "lined"); await p.waitForTimeout(200);
-  ok((await p.evaluate(() => document.getElementById("sec-journal").classList.contains("jn5-lined") && getComputedStyle(document.getElementById("journalText")).backgroundImage.includes("repeating-linear-gradient"))) && (await p.evaluate((P) => localStorage.getItem(P + "jnPaper"), P)) === "lined", "⑧ 罫線");
-  await p.fill("#jn5ImpText", "つみかさね　日記\n2026年10月1日（木）〜2026年11月13日（金）（3 日）\n\n────────────\n2026年10月1日（木）\n\n十月のはじめ。\n\n────────────\n2026/10/2\nふつかめ\n2026-11-13 追記です\n2027/01/01 先の日");
-  await p.click("#jn5ImpRead"); await p.waitForTimeout(300);
-  ok((await txt(p, "#jn5ImpAsk")).startsWith(flat("10/1〜11/13の 3 日分を取り込みます。（あしたより先の 1 日はとばします）そのうち 1 日は、もう日記があります。")), "⑥ seen first", await txt(p, "#jn5ImpAsk"));
-  await p.click("#jn5ImpGo"); await p.waitForTimeout(800);
-  ok((await entry(p, "2026-10-01"))?.text === "十月のはじめ。" && (await entry(p, "2026-10-02"))?.text === "ふつかめ" && (await entry(p, "2026-11-13")).text === "あしたは雨。\n\n追記です" && !(await entry(p, "2027-01-01")), "⑥ brought in (and 書き足す on 11/13)", [await entry(p, "2026-10-01"), (await entry(p, "2026-11-13")).text]);
-  await undo(p); await p.waitForTimeout(300);
-  ok(!(await entry(p, "2026-10-01")) && !(await entry(p, "2026-10-02")) && (await entry(p, "2026-11-13")).text === "あしたは雨。", "⑥ 元に戻す", (await entry(p, "2026-11-13")).text);
+  ok(!(await p.$("#jn5Paper")) && !(await p.$("#jn5ImpText")) && !(await p.$("#jn5ImpRead")) && (await p.evaluate((P) => localStorage.getItem(P + "jnPaper"), P)) === "lined", "⑧⑥ not under the gear, the paper kept on this device");
   await p.click("#sheetDone"); await p.waitForTimeout(600);
   await p.screenshot({ path: "journal5-page.png", fullPage: true });
 

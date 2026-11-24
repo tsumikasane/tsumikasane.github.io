@@ -146,12 +146,9 @@ const base = () => ({ todos: D.todos(), todoLists: D.lists(), events: D.events()
 
   // ⑩ 日記: today's done ones, written in at a press
   ok((await W(p, "jn", "2026-11-11")).startsWith("きょうできたこと\n・レポートの資料集め\n・ジムに行く"), "⑩ the words", await W(p, "jn", "2026-11-11"));
+  // (its part under 日記's writing: taken out at the user's call, 2026-11-24, tools/REMOVED.md)
   await p.goto(process.env.URL0 + "#journal"); await p.reload(); await p.waitForTimeout(1500);
-  ok((await txt(p, "#td4JnTodos")).startsWith("きょう終えたToDo（"), "⑩ under 日記's writing", await txt(p, "#td4JnTodos"));
-  await p.fill("#journalText", "いい天気だった"); await p.waitForTimeout(200);
-  await p.locator("#td4JnTodos .btn").click(); await p.waitForTimeout(1800);
-  const jt = await p.inputValue("#journalText");
-  ok(jt.startsWith("いい天気だった\n\nきょうできたこと\n・レポートの資料集め\n・ジムに行く") && (await ls(p, "journal")).find((j) => j.date === "2026-11-11")?.text === jt.trim() && (await txt(p, "#td4JnTodos")).includes("日記に入っています"), "⑩ written in after what was there, saved, said so", jt);
+  ok(!(await p.$("#td4JnTodos")) && !(await p.evaluate(() => /終えたToDo/.test(document.getElementById("sec-journal").innerText))), "⑩ not under 日記's writing (taken out)");
 
   // ⑩ from ToDo's その他, on a fresh day's 日記
   const q = await phone(b, new Date("2026-11-11T21:30:00+09:00"), { deviceScaleFactor: 1 });
