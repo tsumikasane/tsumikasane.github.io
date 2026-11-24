@@ -53,20 +53,10 @@ const goDay = (p, d) => p.evaluate((d) => { const i = [...document.querySelector
   await part(p, "weight");
   r = await txt(p, "#dt14Fc");
   ok(/見通しの変化 目標 66\.0 kg いま 2027年3\/14（日）ごろ 22 日遅く 11\/8（日）の時点 2027年2\/20（土）ごろ/.test(r) && /先週の予想より 22 日遅くなりました。/.test(r), "⑧ the moves", r);
-  // ⑨ 睡眠の質: the 14 nights; ぐっすり for last night, then off
-  r = await txt(p, "#dt14Sq");
-  ok(/ぐっすりの日 7 時間 30 分・あまりの日 5 時間/.test(r) && (await p.locator("#dt14Sq .dt14-sq-dots i.q1").count()) === 3 && (await p.locator("#dt14Sq .dt14-sq-dots i.q3").count()) === 10, "⑨ the nights", r);
-  await p.click('#dt14Sq button:has-text("ぐっすり")'); await p.waitForTimeout(300);
-  ok((await ls(p, "bodyDays")).find((x) => x.id === DAY)?.sleepQ === 3 && (await p.getAttribute('#dt14Sq button:has-text("ぐっすり")', "aria-pressed")) === "true", "⑨ ぐっすり kept");
-  await p.click('#dt14Sq button:has-text("ぐっすり")'); await p.waitForTimeout(300);
-  const dd = (await ls(p, "bodyDays")).find((x) => x.id === DAY);
-  ok(dd && dd.sleepQ === undefined && dd.bed === "23:00", "⑨ off again, the day kept", dd);
-  // a day with nothing else: kept with its 睡眠の質, gone with it
-  await goDay(p, "2026-08-01"); await p.waitForTimeout(400);
-  await p.click('#dt14Sq button:has-text("あまり")'); await p.waitForTimeout(300);
-  ok((await ls(p, "bodyDays")).find((x) => x.id === "2026-08-01")?.sleepQ === 1, "⑨ a day with only its 睡眠の質 kept");
-  await p.click('#dt14Sq button:has-text("あまり")'); await p.waitForTimeout(300);
-  ok(!(await ls(p, "bodyDays")).some((x) => x.id === "2026-08-01"), "⑨ and gone with it");
+  // ⑨ 睡眠の質: taken out at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line; the nights put in
+  // (bodyDays' sleepQ) kept
+  const toc9 = await p.evaluate(() => document.getElementById("dt16Toc-weight")?.textContent || ""), sq = (await ls(p, "bodyDays")).filter((x) => [1, 2, 3].includes(x.sleepQ)).length;
+  ok(!(await p.$("#dt14Sq")) && !(await p.$(".dt14-sq-btn")) && !/睡眠の質/.test(toc9) && toc9.length > 0 && sq > 0 && sq === D.bodyDays().filter((x) => [1, 2, 3].includes(x.sleepQ)).length, "⑨ 睡眠の質 gone, the nights put in kept", [sq, toc9]);
   await part(p, "weight");
   // ⑩ 体脂肪率の判定: 24% for a man of 30, やや高い
   r = await txt(p, "#dt14Fat");

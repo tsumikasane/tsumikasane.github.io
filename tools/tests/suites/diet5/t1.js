@@ -60,14 +60,10 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
 
   // ⑧〜⑩ からだ
   await part(p, "weight");
-  // ⑧ 血圧: the 13th's in the week; today's put in, 高め said
-  r = await txt(p, "#dt5Vital");
-  ok(/血圧・脈拍/.test(r), "⑧ the card", r);
-  await p.fill("#dt5Sys", "140"); await p.press("#dt5Sys", "Tab"); await p.fill("#dt5Dia", "88"); await p.press("#dt5Dia", "Tab"); await p.fill("#dt5Pulse", "70"); await p.press("#dt5Pulse", "Tab"); await p.waitForTimeout(600);
-  const bd = (await ls(p, "bodyDays")).find((x) => x.id === "2026-11-14");
-  ok(bd && bd.sys === 140 && bd.dia === 88 && bd.pulse === 70, "⑧ kept in bodyDays", bd);
-  await p.click("#wtInput"); await p.waitForTimeout(300);
-  ok(/高めの目安/.test(await txt(p, "#dt5Vital")) && /140\/88/.test(await txt(p, "#dt5Vital")), "⑧ 高め", await txt(p, "#dt5Vital"));
+  // ⑧ 血圧・脈拍: taken out at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line; what was put in
+  // (bodyDays' sys, dia, pulse: the 13th's) kept
+  const toc8 = await p.evaluate(() => document.getElementById("dt16Toc-weight")?.textContent || ""), bps = (await ls(p, "bodyDays")).filter((x) => x.sys > 0);
+  ok(!(await p.$("#dt5Vital")) && !(await p.$("#dt5Sys")) && !/血圧・脈拍/.test(toc8) && toc8.length > 0 && bps.length > 0, "⑧ 血圧・脈拍 gone, what was put in kept", [bps.length, toc8]);
   // ⑨ Mondays heavier
   r = await txt(p, "#dt5Wd");
   ok(/月曜がいちばん重め/.test(r), "⑨ Monday", r);

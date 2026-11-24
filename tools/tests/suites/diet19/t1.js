@@ -67,19 +67,11 @@ const avg7 = (d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.addDays
   ok(wk && wk.n === 11 && wk.now === 5 && wk.was === 4 && wk.z.join() === "30,270,30" && wk.fast === 9 && wk.last === "2026-11-14" && wk.lastKmh === 6
     && r.startsWith("ウォーキングの速さ 時速 5.0 km ゆっくり 30 分 ふつう 270 分 速歩き 30 分 この4週 11 回の平均 時速 5.0 km・その前の4週 4.0 km・速歩き 9% 11/14（土）：3 km・30 分・10:00/km（時速 6.0 km）"), "⑤ the walks", [wk, r]);
 
-  // ⑥ 夜の体重: the 30 days' (11/9〜11/15), then tonight's 70.4
+  // ⑥ 夜の体重: taken out at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line; the nights put in
+  // (bodyDays' night, 11/9〜11/15) kept
   await part(p, "weight");
-  const ups = [], downs = [];
-  for (let d = "2026-11-09"; d <= "2026-11-15"; d = D.addDays(d, 1)) { const n = Math.round((kgOn.get(d) + 0.7) * 10) / 10; ups.push(n - kgOn.get(d)); downs.push(kgOn.get(D.addDays(d, 1)) - n); }
-  const mean = (xs) => Math.round((xs.reduce((s, v) => s + v, 0) / xs.length) * 10) / 10, sg = (v) => (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toFixed(1);
-  let nw = await W(p, "night");
-  r = await txt(p, "#dt19Night");
-  ok(nw.up === mean(ups) && nw.down === mean(downs) && r.includes(`この30日の平均：日中 ${sg(mean(ups))} kg・夜のあいだ ${sg(mean(downs))} kg`), "⑥ the 30 days", [nw, mean(ups), mean(downs), r]);
-  await p.fill("#dt19Night input", "70.4"); await p.press("#dt19Night input", "Enter"); await p.waitForTimeout(400);
-  const bd = (await ls(p, "bodyDays")).find((x) => x.id === D.DAY);
-  ok(bd?.night === 70.4 && (await txt(p, "#dt19Night")).includes("朝 69.9 → 夜 70.4 kg（日中 +0.5 kg）"), "⑥ tonight's", [bd, await txt(p, "#dt19Night")]);
-  await p.fill("#dt19Night input", ""); await p.press("#dt19Night input", "Enter"); await p.waitForTimeout(400);
-  ok(!("night" in ((await ls(p, "bodyDays")).find((x) => x.id === D.DAY) || {})), "⑥ taken out");
+  const toc6 = await p.evaluate(() => document.getElementById("dt16Toc-weight")?.textContent || ""), nights = (await ls(p, "bodyDays")).filter((x) => x.night > 0).map((x) => x.id).sort();
+  ok(!(await p.$("#dt19Night")) && !/夜の体重/.test(toc6) && toc6.length > 0 && nights.length === 7 && nights[0] === "2026-11-09" && nights[6] === "2026-11-15", "⑥ 夜の体重 gone, the nights put in kept", [nights, toc6]);
   // ⑦ これまでのあゆみ: the start, the whole kg, the runs, the ウエスト and ベルト
   const story = await W(p, "story"), kgs = [];
   let mark = Math.floor(avg7("2026-10-01"));
@@ -132,7 +124,7 @@ const avg7 = (d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.addDays
   await seed(p, { settings: [] }, "diet");
   for (const k of ["meal", "workout", "weight"]) {
     await part(p, k);
-    const shown = await p.evaluate(() => ["dt19Stock", "dt19Back", "dt19Sweat", "dt19Nights", "dt19Walk", "dt19Night", "dt19Story"].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }));
+    const shown = await p.evaluate(() => ["dt19Stock", "dt19Back", "dt19Sweat", "dt19Nights", "dt19Walk", "dt19Story"].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }));
     ok(!shown.length && /^はじめにやること 0 \/ 5/.test(await txt(p, "#dt19Setup")) && !/食事をはじめて記録|運動をはじめて記録/.test(await txt(p, "#dt19Setup")), `a new account (${k})`, shown);
   }
   ok(!p.errs.length, "no errors on a new account", p.errs);

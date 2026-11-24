@@ -75,19 +75,13 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   const head0 = await txt(p, "#dt8Week .dt8-week-ym");
   await p.click('#dt8Week [aria-label="前の週"]'); await p.waitForTimeout(200);
   ok((await txt(p, "#dt8Week .dt8-week-ym")) !== head0, "⑧ the week before", await txt(p, "#dt8Week .dt8-week-ym"));
-  // ⑨ 健康診断: two days, the latest against the one before, 判定値's words
-  ok(/健康診断の結果/.test(await txt(p, "#dt8Hc")), "⑨ none yet", await txt(p, "#dt8Hc"));
-  await p.click('#dt8Hc button:has-text("記録する")'); await p.waitForTimeout(200);
-  await p.fill("#dt8HcDate", "2025-11-01"); await p.fill('#dt8Hc input[data-k="waist"]', "88"); await p.fill('#dt8Hc input[data-k="tg"]', "180"); await p.fill('#dt8Hc input[data-k="a1c"]', "5.4");
-  await p.click('#dt8Hc button[type="submit"]'); await p.waitForTimeout(400);
-  await p.click('#dt8Hc button:has-text("記録する")'); await p.waitForTimeout(200);
-  await p.fill("#dt8HcDate", "2026-11-01"); await p.fill('#dt8Hc input[data-k="waist"]', "84.5"); await p.fill('#dt8Hc input[data-k="tg"]', "160"); await p.fill('#dt8Hc input[data-k="a1c"]', "5.4");
-  await p.click('#dt8Hc button[type="submit"]'); await p.waitForTimeout(400);
-  const hc = (await setting(p, "healthChecks"))?.list || [];
-  ok(hc.length === 2 && hc[0].date === "2026-11-01" && hc[0].waist === 84.5 && hc[1].tg === 180, "⑨ kept", hc);
-  r = await txt(p, "#dt8Hc .dt8-hc-list");
-  ok(/腹囲 84.5 cm ↓ 3.5/.test(r) && /中性脂肪 160 mg\/dL ↓ 20 高め/.test(r) && /HbA1c 5.4 % →/.test(r) && !/HbA1c 5.4 % → 高め/.test(r), "⑨ against the one before", r);
-  ok((await W(p, "flag", "hdl", 38)) === "低め" && (await W(p, "flag", "ldl", 150)) === "高い", "⑨ 判定値");
+  // ⑨ 健康診断: its card taken out at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line; what was
+  // put in (settings healthChecks) kept, and its 判定値 still there for からだのレポート
+  await p.evaluate(({ P }) => { const k = P + "settings", l = JSON.parse(localStorage.getItem(k) || "[]").filter((x) => x.id !== "healthChecks"); l.push({ id: "healthChecks", list: [{ id: "h1", date: "2026-11-01", waist: 84.5, tg: 160 }], updatedAt: 1 }); localStorage.setItem(k, JSON.stringify(l)); }, { P });
+  await part(p, "weight");
+  const toc9 = await p.evaluate(() => document.getElementById("dt16Toc-weight")?.textContent || "");
+  ok(!(await p.$("#dt8Hc")) && !(await p.$("#dt8HcDate")) && !/健康診断/.test(toc9) && toc9.length > 0 && ((await setting(p, "healthChecks"))?.list || []).length === 1, "⑨ 健康診断 gone, what was put in kept", toc9);
+  ok((await W(p, "flag", "hdl", 38)) === "低め" && (await W(p, "flag", "ldl", 150)) === "高い", "⑨ 判定値 (kept for からだのレポート)");
   // ⑩ 画像: 90 days as a PNG, saved
   await p.selectOption("#dt8ImgDays", "90");
   await p.click('#dt8Img button:has-text("グラフを画像にする")'); await p.waitForTimeout(800);

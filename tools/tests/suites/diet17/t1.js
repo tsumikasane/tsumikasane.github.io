@@ -28,7 +28,7 @@ const avg7 = (ws, d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.add
   let r;
   const fulls = (await ls(p, "meals")).filter((m) => [1, 2, 3].includes(m.full)).length, toc17 = await p.evaluate(() => document.getElementById("dt16Toc-meal")?.textContent || "");
   ok(!(await p.$("#dt17Full")) && !(await p.$("#dt17Bal")) && !(await p.$(".dt17-full-btn")) && !/食後の満足度|主食・主菜・副菜/.test(toc17) && fulls > 0 && fulls === D.meals().filter((m) => m.full).length, "①② gone, the full put in kept", [fulls, toc17]);
-  // (the みそ汁 ② added to today's, kept: ⑨'s week counts it)
+  // (the みそ汁 ② added to today's, kept as it was)
   await put(p, "meals", [...(await ls(p, "meals")), { id: "miso", date: D.DAY, slot: "朝食", text: "みそ汁", kcal: 40, createdAt: D.T(D.DAY, 8) }]);
   await part(p, "meal");
   ok(!(await p.$("#dt17Full")) && !(await p.$("#dt17Bal")), "①② not drawn after a 食事 is added either");
@@ -69,29 +69,10 @@ const avg7 = (ws, d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.add
   const ws = D.weights(), diff = Math.round((avg7(ws, D.DAY) - avg7(ws, "2025-11-16")) * 10) / 10, ly = await W(p, "lastYear");
   r = await txt(p, "#dt17LastYear");
   ok(ly.diff === diff && diff < 0 && r.startsWith(`去年とくらべるグラフ −${Math.abs(diff).toFixed(1)} kg`) && r.includes(`去年のいまごろより ${Math.abs(diff).toFixed(1)} kg 軽くなっています。`) && (await p.locator("#dt17LastYear polyline").count()) === 2, "⑧ the two lines", [ly.diff, diff, r]);
-  // ⑨ 週のふりかえりメモ: the week's numbers, last week's 来週やること, one written and kept
-  const wk = await W(p, "week"), kg = Math.round((avg7(ws, D.DAY) - avg7(ws, "2026-11-15")) * 10) / 10;
-  r = await txt(p, "#dt17Review");
-  ok(wk.s === "2026-11-15" && wk.kg === kg && wk.kcal === 2820 && wk.wo === 2 && r.includes("週のふりかえりメモ 11/15〜11/21") && r.includes("摂取 平均 2,820 kcal・運動 2 日") && r.includes("先週決めたこと：ランを3回する"), "⑨ the week", [wk, kg, r]);
-  await p.fill('#dt17Review textarea[aria-label="よかったこと"]', "野菜を毎日食べた");
-  await p.click('#dt17Review textarea[aria-label="来週やること"]'); await p.waitForTimeout(400);
-  await p.fill('#dt17Review textarea[aria-label="来週やること"]', "早く寝る"); await p.click("#dt17Review .card-head"); await p.waitForTimeout(400);
-  let notes = (await setting(p, "weekNotes"))?.list || [];
-  ok(notes.length === 2 && notes[1].week === "2026-11-15" && notes[1].good === "野菜を毎日食べた" && notes[1].next === "早く寝る", "⑨ written", notes);
-  await part(p, "weight");
-  ok((await p.inputValue('#dt17Review textarea[aria-label="よかったこと"]')) === "野菜を毎日食べた", "⑨ kept after a reload");
-  // ⑩ 体重以外の変化: one, then a common one pressed, one typed, one taken out and back
-  r = await txt(p, "#dt17Nsv");
-  ok(/^体重以外の変化 1 こ 残す ＋ ベルトの穴がひとつ縮んだ ＋ 階段で息が切れにくい ＋ 朝すっきり起きられる ＋ 体が軽く感じる 前のズボンが入った 11\/1（日） 消す$/.test(r), "⑩ the one", r);
-  await p.click('#dt17Nsv button[aria-label="「階段で息が切れにくい」を残す"]'); await p.waitForTimeout(400);
-  await p.fill("#dt17Nsv input", "寝つきがよくなった"); await p.press("#dt17Nsv input", "Enter"); await p.waitForTimeout(400);
-  let nsv = (await setting(p, "nsv"))?.list || [];
-  r = await txt(p, "#dt17Nsv");
-  ok(nsv.length === 3 && nsv.filter((x) => x.date === D.DAY).length === 2 && /^体重以外の変化 3 こ .* 寝つきがよくなった 11\/16（月） 消す 階段で息が切れにくい 11\/16（月） 消す 前のズボンが入った 11\/1（日） 消す$/.test(r), "⑩ two added", [nsv, r]);
-  await p.click('#dt17Nsv button[aria-label="「前のズボンが入った」を消す"]'); await p.waitForTimeout(400);
-  ok(((await setting(p, "nsv"))?.list || []).length === 2, "⑩ taken out");
-  await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
-  ok(((await setting(p, "nsv"))?.list || []).length === 3 && /前のズボンが入った/.test(await txt(p, "#dt17Nsv")), "⑩ brought back");
+  // ⑨ 週のふりかえりメモ and ⑩ 体重以外の変化: taken out at the user's call (2026-11-24, tools/REMOVED.md): no cards, nor their
+  // もくじ's lines; what was written (settings weekNotes, nsv: one each) kept
+  const toc9 = await p.evaluate(() => document.getElementById("dt16Toc-weight")?.textContent || "");
+  ok(!(await p.$("#dt17Review")) && !(await p.$("#dt17Nsv")) && !/週のふりかえりメモ|体重以外の変化/.test(toc9) && toc9.length > 0 && ((await setting(p, "weekNotes"))?.list || []).length === 1 && ((await setting(p, "nsv"))?.list || []).length === 1, "⑨⑩ gone, what was written kept", toc9);
 
   const wide = await p.evaluate(() => document.documentElement.scrollWidth);
   ok(wide <= 393, "no sideways scroll", wide);
@@ -101,7 +82,7 @@ const avg7 = (ws, d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.add
   await seed(p, { settings: [] }, "diet");
   for (const k of ["meal", "workout", "weight"]) {
     await part(p, k);
-    const shown = await p.evaluate(() => ["dt17Fry", "dt17Ladder", "dt17Zones", "dt17Pulse", "dt17LastYear", "dt17Review", "dt17Nsv"].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }));
+    const shown = await p.evaluate(() => ["dt17Fry", "dt17Ladder", "dt17Zones", "dt17Pulse", "dt17LastYear"].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }));
     ok(!shown.length, `nothing shown on a new account (${k})`, shown);
   }
   ok(!p.errs.length, "no errors on a new account", p.errs);

@@ -65,15 +65,15 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   // ⑨ short nights' mornings up 0.4, the others down 0.2
   r = await txt(p, "#dt6Sleep");
   ok(/6時間未満の次の朝 \+0\.40 kg/.test(r) && /7時間以上の次の朝 −0\.(19|20|21) kg/.test(r), "⑨", r);
-  // ⑩ no ごほうび yet; one set at a weight under now
-  ok(/ごほうびを決める/.test(await txt(p, "#dt6Reward")), "⑩ none yet", await txt(p, "#dt6Reward"));
+  // ⑩ ごほうび: taken out at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line, nor its place in
+  // からだ's settings; those set (settings dietRewards) kept
+  await p.evaluate(({ P }) => { const k = P + "settings", l = JSON.parse(localStorage.getItem(k) || "[]").filter((x) => x.id !== "dietRewards"); l.push({ id: "dietRewards", list: [{ id: "r1", kg: 60, text: "服を買う" }], updatedAt: 1 }); localStorage.setItem(k, JSON.stringify(l)); }, { P });
+  await part(p, "weight");
+  const toc10 = await p.evaluate(() => document.getElementById("dt16Toc-weight")?.textContent || "");
+  ok(!(await p.$("#dt6Reward")) && !/ごほうび/.test(toc10) && toc10.length > 0 && ((await setting(p, "dietRewards"))?.list || []).length === 1, "⑩ ごほうび gone, those set kept", toc10);
   await p.click("#wtSettings"); await p.waitForTimeout(500);
-  await p.fill("#dt6RewardKg", "60"); await p.fill("#dt6RewardText", "服を買う"); await p.click('#dt6RewardForm button[type="submit"]'); await p.waitForTimeout(400);
-  await p.fill("#dt6RewardKg", "80"); await p.fill("#dt6RewardText", "映画"); await p.click('#dt6RewardForm button[type="submit"]'); await p.waitForTimeout(400);
-  ok((await setting(p, "dietRewards"))?.list.length === 2, "⑩ kept");
+  ok(!(await p.$("#dt6RewardForm")) && !(await p.$("#dt6RewardKg")), "⑩ nor in からだ's settings");
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
-  r = await txt(p, "#dt6Reward");
-  ok(/1 \/ 2/.test(r) && /服を買う/.test(r) && /あと/.test(r) && /80.0 kg・映画/.test(r), "⑩ next and reached", r);
 
   const wide = await p.evaluate(() => document.documentElement.scrollWidth);
   ok(wide <= 393, "no sideways scroll", wide);
