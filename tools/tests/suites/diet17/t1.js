@@ -61,10 +61,11 @@ const avg7 = (ws, d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.add
   ok(!(await p.$("#dt17Today")) && JSON.stringify((await ls(p, "bodyDays")).find((x) => x.id === D.DAY)?.pain) === '["knee","tired"]', "④ gone with 運動 done, the pains kept");
   ok(/スクワット いまは スクワット（ベスト 30 回） .* 30 回できたので、次は「ブルガリアンスクワット」へ進めます。/.test(await txt(p, "#dt17Ladder")), "⑤ the next step ready", await txt(p, "#dt17Ladder"));
 
-  // ⑦ 脈拍の変化: 68 against 60
+  // ⑦ 脈拍の変化: taken out at the user's call (2026-11-24, tools/REMOVED.md), as 脈拍 can't be put in any more: no card, nor
+  // its もくじ's line; the 脈拍 put in kept
   await part(p, "weight");
-  r = await txt(p, "#dt17Pulse");
-  ok(/^脈拍の変化 68 拍 11\/16（月）は、いつも（60 拍）より 8 拍高めです。疲れや寝不足のサインかもしれません。運動は軽めにしましょう。 この2週の平均 60\.6 拍・その前の2週 63 拍・下がっていて、体力がついてきたサインです 朝起きてすぐ/.test(r) && (await p.locator("#dt17Pulse .dt17-p-dots i").count()) === 28, "⑦ the pulse", r);
+  const toc7 = await p.evaluate(() => document.getElementById("dt16Toc-weight")?.textContent || "");
+  ok(!(await p.$("#dt17Pulse")) && !/脈拍の変化/.test(toc7) && toc7.length > 0 && (await ls(p, "bodyDays")).some((x) => x.pulse > 0), "⑦ 脈拍の変化 gone, the 脈拍 kept", toc7);
   // ⑧ 去年とくらべるグラフ
   const ws = D.weights(), diff = Math.round((avg7(ws, D.DAY) - avg7(ws, "2025-11-16")) * 10) / 10, ly = await W(p, "lastYear");
   r = await txt(p, "#dt17LastYear");
@@ -82,7 +83,7 @@ const avg7 = (ws, d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.add
   await seed(p, { settings: [] }, "diet");
   for (const k of ["meal", "workout", "weight"]) {
     await part(p, k);
-    const shown = await p.evaluate(() => ["dt17Fry", "dt17Ladder", "dt17Zones", "dt17Pulse", "dt17LastYear"].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }));
+    const shown = await p.evaluate(() => ["dt17Fry", "dt17Ladder", "dt17Zones", "dt17LastYear"].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }));
     ok(!shown.length, `nothing shown on a new account (${k})`, shown);
   }
   ok(!p.errs.length, "no errors on a new account", p.errs);

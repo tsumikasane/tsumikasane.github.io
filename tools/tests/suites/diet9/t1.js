@@ -28,10 +28,13 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   await p.goto(process.env.URL0);
   await seed(p, base(), "diet");
 
-  // ⑨⑩ からだ first: 血圧 over 30 days; the badges there are, taken as seen (none said)
+  // ⑨ 血圧のまとめ: taken out at the user's call (2026-11-24, tools/REMOVED.md), as 血圧 can't be put in any more: no card,
+  // nor its もくじ's line; the 10 days' 血圧 kept, and still in the month's page (⑧) below
+  // ⑩ からだ first: the badges there are, taken as seen (none said)
   await part(p, "weight");
-  let r = await txt(p, "#dt9Bp");
-  ok(/血圧のまとめ この30日・10 日/.test(r) && /平均 133 \/ 82 脈拍 63 拍\/分/.test(r) && /135\/85 以上の日 4 日/.test(r) && /いちばん高かった日 137 \/ 83/.test(r) && /この7日 131 \/ 83 その前の7日 136 \/ 82/.test(r), "⑨ the 30 days", r);
+  const toc9 = await p.evaluate(() => document.getElementById("dt16Toc-weight")?.textContent || "");
+  ok(!(await p.$("#dt9Bp")) && !/血圧のまとめ/.test(toc9) && toc9.length > 0 && (await ls(p, "bodyDays")).filter((x) => x.sys > 0).length === 10, "⑨ 血圧のまとめ gone, the 血圧 kept", toc9);
+  let r;
   r = await txt(p, "#dt9Badges");
   const bs = await W(p, "badges");
   const has = (id) => bs.find((x) => x.id === id)?.ok;
