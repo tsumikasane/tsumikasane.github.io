@@ -2859,8 +2859,8 @@ form.add .memo-area { display: none; }
 #todoList > li { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 #todoList > li a[href] { -webkit-touch-callout: default; }
 #todoList > li.held { background: var(--fill-press); }
-/* ランレベル (the user's call): the distance run so far as a level, each its colour on a pennant with a runner; the ones not
-   reached yet faded. Its card on 運動, and its own page */
+/* ランレベル (the user's call): the distance run so far as a level, each its gem (2026-11-24: by the gems' rank, not by
+   colours); the ones not reached yet faded. Its card on 運動, and its own page */
 .rl-badge { display: inline-flex; flex: none; }
 .rl-badge.ahead { opacity: .42; }
 .rl-card { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px var(--space-2); border: 0; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
@@ -8578,8 +8578,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </div>
         <div class="diet-part" id="part-workout" style="--sec-c: var(--c-workout)" hidden>
           <h3 class="sr-only">運動</h3>
-          <!-- ランレベル: the distance run so far as a level, each with its colour and badge (the user's call: as a running app
-               has them), a press away from all of them -->
+          <!-- ランレベル: the distance run so far as a level, each with its gem (the user's call: as a running app has them;
+               2026-11-24, gems by their rank in place of colours), a press away from all of them -->
           <button type="button" class="card rl-card" id="runLevelCard"></button>
           <!-- ⑧ the month's runs against its goal (the user's call, 2026-11-10; the goal under the gear while 運動 shows) -->
           <div class="card pad run-month" id="runMonthCard"></div>
@@ -13714,36 +13714,92 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return { minutes: sum(inWeek, (w) => w.minutes), days: new Set(inWeek.map((w) => w.date)).size };
   }
   // ---------- ランレベル: the distance run so far, as levels (the user's call: as a running app has them) ----------
-  // every ランニング's 距離 added up, all of them so far; one without a 距離 doesn't count. Each level from its first km,
-  // its colour on a pennant of our own with a runner on it, and its range as said under its name
+  // every ランニング's 距離 added up, all of them so far; one without a 距離 doesn't count. Each level from its first km, a
+  // gem of its own (the user's call, 2026-11-24: the levels by the gems' rank, not by colours): the farther run, the
+  // dearer the gem, the four most precious from 1,000 km and ダイヤモンド the last. Each its own cut too, so they are told
+  // apart without their colours; its tones (the lightest to the deepest, then its outline), the bar's colour when not its
+  // own, and its range as said under its name
   const RUN_LEVELS = [
-    { name: "イエロー", from: 0, color: "#f8d84a", range: "0〜49.99 km" },
-    { name: "オレンジ", from: 50, color: "#f6a04d", range: "50.00〜249.9 km" },
-    { name: "グリーン", from: 250, color: "#5bd38c", range: "250.0〜999.9 km" },
-    { name: "ブルー", from: 1000, color: "#62c6f5", range: "1,000〜2,499 km" },
-    { name: "パープル", from: 2500, color: "#ad8ef3", range: "2,500〜4,999 km" },
-    { name: "ブラック", from: 5000, color: "#3a3a3c", ink: "#ffffff", bar: "var(--fg)", range: "5,000〜14,999 km" },
-    { name: "ボルト", from: 15000, color: "#d6f53f", range: "15,000 km〜" },
+    { name: "水晶", from: 0, cut: "crystal", tones: ["#ffffff", "#eef5fb", "#d9e6f1", "#c0d2e3", "#a6bdd3", "#839eb9"], bar: "#9fb6cc", range: "0〜49.99 km" },
+    { name: "アメジスト", from: 50, cut: "cushion", tones: ["#eadcfd", "#c5a6f0", "#9e70dd", "#7b4cc2", "#5b3298", "#4b2783"], range: "50.00〜249.9 km" },
+    { name: "トパーズ", from: 250, cut: "pear", tones: ["#fff1cc", "#fcd27a", "#f5ae3e", "#de8b1d", "#b66b0e", "#975608"], range: "250.0〜999.9 km" },
+    { name: "エメラルド", from: 1000, cut: "step", tones: ["#cdf6df", "#72dda2", "#27b06b", "#168850", "#0d633a", "#0a5230"], range: "1,000〜2,499 km" },
+    { name: "サファイア", from: 2500, cut: "oval", tones: ["#d5e3ff", "#82abf6", "#3b75e4", "#2354b9", "#183e8d", "#13306f"], range: "2,500〜4,999 km" },
+    { name: "ルビー", from: 5000, cut: "heart", tones: ["#ffd6de", "#f67c95", "#e03150", "#b9193b", "#8d102c", "#740c24"], range: "5,000〜14,999 km" },
+    { name: "ダイヤモンド", from: 15000, cut: "brilliant", tones: ["#ffffff", "#eef7fd", "#d3e8f6", "#a9cde6", "#88b5d7", "#5f8fb3"],
+      bar: "linear-gradient(90deg, #8fd0f5, #b9a8f2, #f2a9c8)", range: "15,000 km〜" },
   ];
   const runKm = () => Math.round(sum(workouts.items.filter((w) => w.type === "ランニング"), (w) => w.km) * 100) / 100;
   const runLevelOf = (km) => RUN_LEVELS.reduce((at, l, i) => (km >= l.from ? i : at), 0);
-  const kmText = (n) => `${n.toLocaleString("ja-JP", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km`;
-  // a level's badge: the pennant in its colour, a line inside it and a runner, both in its ink; one not reached yet faded
+  const kmText = (n) => `${n.toLocaleString("ja-JP", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km`;
+  // the gems drawn in a 64 box: their facets each in a tone of its colour (thin lines between them), the outline over
+  // them and a glint on them
+  const rlPts = (a) => a.map(([x, y]) => `${Math.round(x * 100) / 100},${Math.round(y * 100) / 100}`).join(" ");
+  const rlFacet = (pts, fill, t) => svgEl("polygon", { points: rlPts(pts), fill, stroke: t[5], "stroke-opacity": 0.28, "stroke-width": 0.6, "stroke-linejoin": "round" });
+  const rlEdge = (pts, t) => svgEl("polygon", { class: "rl-edge", points: rlPts(pts), fill: "none", stroke: t[5], "stroke-width": 1.5, "stroke-linejoin": "round" });
+  const rlGlint = (x, y, r) => svgEl("path", { d: `M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}Z`, fill: "#ffffff", opacity: 0.95 });
+  const rlRing = (n, at) => Array.from({ length: n }, (_, k) => at(-Math.PI / 2 + (k * 2 * Math.PI) / n));
+  let rlGemSeq = 0;
+  // a cut seen from above, its outline O (from its top, round c): kites from the table out to the edge and stars between
+  // them, each lit as it faces the upper left, and the table (O's every other point drawn in to k) lighter at its upper left
+  function rlFromAbove(O, c, k, t) {
+    const g = svgEl("g"), n = O.length, T = O.filter((_, i) => i % 2 === 0).map(([x, y]) => [c[0] + (x - c[0]) * k, c[1] + (y - c[1]) * k]), m = T.length;
+    const tone = (poly, shift = 0) => {
+      const b = Math.cos(Math.atan2(sum(poly, (q) => q[1]) / poly.length - c[1], sum(poly, (q) => q[0]) / poly.length - c[0]) - Math.atan2(-1, -0.7));
+      return t[clampTo((b > 0.55 ? 1 : b > 0.05 ? 2 : b > -0.5 ? 3 : 4) + shift, 0, 4)];
+    };
+    for (let j = 0; j < m; j++) {
+      const kite = [T[j], O[(2 * j + n - 1) % n], O[2 * j], O[(2 * j + 1) % n]], star = [T[j], O[(2 * j + 1) % n], T[(j + 1) % m]];
+      g.append(rlFacet(kite, tone(kite), t), rlFacet(star, tone(star, -1), t));
+    }
+    const id = `rlGem${++rlGemSeq}`, defs = svgEl("defs"), shine = svgEl("linearGradient", { id, x1: 0, y1: 0, x2: 1, y2: 1 });
+    shine.append(svgEl("stop", { offset: 0, "stop-color": t[0] }), svgEl("stop", { offset: 1, "stop-color": t[2] }));
+    defs.append(shine);
+    g.append(defs, rlFacet(T, `url(#${id})`, t), rlEdge(O, t));
+    return g;
+  }
+  const rlWith = (g, ...more) => { g.append(...more); return g; };
+  const RL_CUTS = {
+    // 水晶 as it grows: a six-sided column to a point, seen from the side
+    crystal: (t) => rlWith(svgEl("g"),
+      rlFacet([[14, 24], [24, 28], [24, 60], [14, 56]], t[1], t), rlFacet([[24, 28], [40, 28], [40, 60], [24, 60]], t[0], t), rlFacet([[40, 28], [50, 24], [50, 56], [40, 60]], t[3], t),
+      rlFacet([[14, 24], [32, 4], [24, 28]], t[0], t), rlFacet([[24, 28], [32, 4], [40, 28]], t[1], t), rlFacet([[40, 28], [32, 4], [50, 24]], t[2], t),
+      svgEl("path", { d: "M28 34v20M35 36v14", stroke: t[3], "stroke-width": 1, "stroke-linecap": "round", opacity: 0.5 }),
+      rlEdge([[14, 24], [32, 4], [50, 24], [50, 56], [40, 60], [24, 60], [14, 56]], t), rlGlint(21, 13, 4)),
+    // a square, its sides rounded out
+    cushion: (t) => rlWith(rlFromAbove(rlRing(16, (a) => [32 + 26 * Math.sign(Math.cos(a)) * Math.sqrt(Math.abs(Math.cos(a))), 32 + 26 * Math.sign(Math.sin(a)) * Math.sqrt(Math.abs(Math.sin(a)))]), [32, 32], 0.55, t), rlGlint(15, 14, 4.5)),
+    // round below, to a point above
+    pear: (t) => rlWith(rlFromAbove(rlRing(16, (a) => [32 + 28 * Math.sin(a + Math.PI / 2) * Math.sin((a + Math.PI / 2) / 2), 33 - 27 * Math.cos(a + Math.PI / 2)]), [32, 40], 0.5, t), rlGlint(19, 30, 4.5)),
+    // the step cut named after エメラルド: an octagon, its steps down to the table
+    step: (t) => {
+      const g = svgEl("g"), o = [[18, 4], [46, 4], [54, 12], [54, 52], [46, 60], [18, 60], [10, 52], [10, 12]], d = [[24, 13], [40, 13], [45, 18], [45, 46], [40, 51], [24, 51], [19, 46], [19, 18]];
+      [0, 1, 3, 4, 4, 2, 1, 0].forEach((k, i) => g.append(rlFacet([o[i], o[(i + 1) % 8], d[(i + 1) % 8], d[i]], t[k], t)));
+      return rlWith(g, rlFacet(d, t[2], t), rlFacet([[27, 21], [37, 21], [39, 23], [39, 41], [37, 43], [27, 43], [25, 41], [25, 23]], t[1], t), rlEdge(o, t), rlGlint(16, 11, 4.5));
+    },
+    oval: (t) => rlWith(rlFromAbove(rlRing(16, (a) => [32 + 21 * Math.cos(a), 32 + 27.5 * Math.sin(a)]), [32, 32], 0.52, t), rlGlint(20, 14, 4.5)),
+    heart: (t) => rlWith(rlFromAbove(rlRing(32, (a) => {
+      const u = a + Math.PI / 2, x = 16 * Math.sin(u) ** 3, y = -(13 * Math.cos(u) - 5 * Math.cos(2 * u) - 2 * Math.cos(3 * u) - Math.cos(4 * u));
+      return [32 + 1.72 * x, 32 + 1.72 * (y - 2.5)];
+    }), [32, 30], 0.5, t), rlGlint(17, 14, 4.5)),
+    // ダイヤモンド as it is drawn, from the side: the crown over the pavilion, and its fire (a glimmer of rose, blue and gold)
+    brilliant: (t) => {
+      const g = svgEl("g"), at = [2, 14, 26, 38, 50, 62];
+      g.append(rlFacet([[2, 26], [17, 12], [27, 12], [20, 26]], t[1], t), rlFacet([[27, 12], [37, 12], [44, 26], [20, 26]], t[0], t), rlFacet([[37, 12], [47, 12], [62, 26], [44, 26]], t[2], t));
+      [1, 2, 0, 3, 4].forEach((k, i) => g.append(rlFacet([[at[i], 26], [at[i + 1], 26], [32, 61]], t[k], t)));
+      return rlWith(g, svgEl("polygon", { points: "16,28 24,28 29,47", fill: "#ffc4dc", opacity: 0.9 }), svgEl("polygon", { points: "39,28 46,28 35,50", fill: "#b4e4ff", opacity: 0.95 }),
+        svgEl("polygon", { points: "48,15 53,20 47,23", fill: "#fff0a0", opacity: 0.95 }), rlEdge([[17, 12], [47, 12], [62, 26], [32, 61], [2, 26]], t), rlGlint(24, 18, 4), rlGlint(33, 36, 2.6));
+    },
+  };
+  // a level's badge: its gem; one not reached yet faded
   function runBadge(i, size, ahead = false) {
-    const l = RUN_LEVELS[i], ink = l.ink || "#1c1c1e";
-    const svg = svgEl("svg", { viewBox: "0 0 60 70", width: size, height: Math.round((size * 70) / 60), "aria-hidden": "true", focusable: "false" });
-    svg.append(svgEl("path", { d: "M3 3h54v49L30 67 3 52Z", fill: l.color }),
-      svgEl("path", { d: "M9.5 9.5h41v39.2L30 59.8 9.5 48.7Z", fill: "none", stroke: ink, "stroke-width": 2.6, "stroke-linejoin": "round" }));
-    const man = svgEl("g", { transform: "translate(14 13.5) scale(1.32)", fill: "none", stroke: ink, "stroke-width": 2.3, "stroke-linecap": "round", "stroke-linejoin": "round" });
-    man.append(svgEl("circle", { cx: 14.6, cy: 4.1, r: 2.1, fill: ink, stroke: "none" }),
-      ...["M13.2 7.4 11 13", "M13.2 7.8l3 2.1 2.6-1.3", "M13 7.8l-3 1.5-2.5 2", "M11 13l3.9 2.7-.7 5", "M11 13l-2.5 3.3-3.5.6"].map((d) => svgEl("path", { d })));
-    svg.append(man);
-    return el("span", { class: "rl-badge" + (ahead ? " ahead" : "") }, svg);
+    const l = RUN_LEVELS[i], svg = svgEl("svg", { viewBox: "0 0 64 64", width: size, height: size, "aria-hidden": "true", focusable: "false" });
+    svg.append(RL_CUTS[l.cut](l.tones));
+    return el("span", { class: "rl-badge" + (ahead ? " ahead" : ""), "data-gem": l.cut }, svg);
   }
   // the bar to the next level, in this one's colour (full at the last)
   function runTrack(i, km) {
     const l = RUN_LEVELS[i], next = RUN_LEVELS[i + 1], part = next ? clampTo((km - l.from) / (next.from - l.from), 0, 1) : 1;
-    return el("div", { class: "rl-track", "aria-hidden": "true" }, el("span", { class: "rl-fill", style: `width: ${(part * 100).toFixed(1)}%; background: ${l.bar || l.color}` }));
+    return el("div", { class: "rl-track", "aria-hidden": "true" }, el("span", { class: "rl-fill", style: `width: ${(part * 100).toFixed(1)}%; background: ${l.bar || l.tones[2]}` }));
   }
   const runToGo = (i, km) => (RUN_LEVELS[i + 1] ? `あと ${kmText(RUN_LEVELS[i + 1].from - km)} で${RUN_LEVELS[i + 1].name} レベル` : `いちばん上の${RUN_LEVELS[i].name} レベルです`);
   // the card on 運動, and the page when it shows: the badge, the bar with the next level's badge at its end, what is left
@@ -24981,7 +25037,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月24日 17:30"; // c07943bc (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月24日 19:24"; // 7f8ad809 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
