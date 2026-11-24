@@ -51,22 +51,12 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   ok(/推定1RM 70 kg/.test(r) && /10回 52.5 kg/.test(r), "④ under 種目", r);
   // ⑥ ランのタイム予想: taken out at the user's call (2026-11-19, tools/REMOVED.md)
   ok(!(await p.$("#dt5Race")), "⑥ gone");
-  // ⑦ interval: 20 × 8 with 10 rest = 3:50; run on the clock to its end, then put in
-  r = await txt(p, "#dt5Hiit");
-  ok(/全部で 3:50/.test(r), "⑦ the length", r);
-  await p.selectOption('#dt5Hiit select[aria-label="回数"]', "4"); await p.waitForTimeout(400);
-  ok(/全部で 1:50/.test(await txt(p, "#dt5Hiit")), "⑦ 回数 changed and kept", await txt(p, "#dt5Hiit"));
-  await p.click("#dt5Hiit .btn"); await p.waitForTimeout(300);
-  ok(/よーい/.test(await txt(p, "#dt5Hiit")), "⑦ ready", await txt(p, "#dt5Hiit"));
-  await p.clock.setFixedTime(new Date(WHEN.getTime() + 8000)); await p.waitForTimeout(500);
-  ok(/運動/.test(await txt(p, ".dt5-hi-phase")) && /1 \/ 4 回/.test(await txt(p, "#dt5Hiit")), "⑦ 運動 1 of 4", await txt(p, "#dt5Hiit"));
-  await p.clock.setFixedTime(new Date(WHEN.getTime() + 27000)); await p.waitForTimeout(500);
-  ok(/休み/.test(await txt(p, ".dt5-hi-phase")), "⑦ 休み", await txt(p, "#dt5Hiit"));
-  await p.clock.setFixedTime(new Date(WHEN.getTime() + 120000)); await p.waitForTimeout(600);
-  ok(/できました/.test(await txt(p, "#dt5Hiit")), "⑦ done", await txt(p, "#dt5Hiit"));
-  await p.locator("#dt5Hiit button", { hasText: "運動に記録する" }).click(); await p.waitForTimeout(500);
-  const hi = (await ls(p, "workouts")).find((x) => /インターバル/.test(x.note || ""));
-  ok(hi && hi.type === "その他" && hi.minutes === 2 && hi.date === "2026-11-14", "⑦ put in", hi);
+  // ⑦ インターバルタイマー: taken out at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line; the
+  // 秒 and 回 chosen before (settings hiit) kept
+  await p.evaluate(({ P }) => { const k = P + "settings", l = JSON.parse(localStorage.getItem(k) || "[]").filter((x) => x.id !== "hiit"); l.push({ id: "hiit", work: 30, rest: 15, rounds: 6, updatedAt: 1 }); localStorage.setItem(k, JSON.stringify(l)); }, { P });
+  await part(p, "workout");
+  const toc7 = await p.evaluate(() => document.getElementById("dt16Toc-workout")?.textContent || "");
+  ok(!(await p.$("#dt5Hiit")) && !(await p.$(".dt5-hi-phase")) && !/インターバル/.test(toc7) && toc7.length > 0 && (await ls(p, "settings")).find((x) => x.id === "hiit")?.rounds === 6, "⑦ インターバルタイマー gone, the 秒 and 回 kept", toc7);
 
   // ⑧〜⑩ からだ
   await part(p, "weight");

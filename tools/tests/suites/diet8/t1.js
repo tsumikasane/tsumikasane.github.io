@@ -58,18 +58,12 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   // ⑦ 先月とくらべる: 7 days against 2
   r = await txt(p, "#dt8Month");
   ok(/11月1〜14日と、10月1〜14日/.test(r) && /運動した日 7 日 \+5 日 10月 2 日/.test(r), "⑦ the days", r);
-  // ④ ストップウォッチ: 2:05, then into 時間 (2 分), kept on this device; リセット
-  await p.click('#dt8Watch button:has-text("スタート")'); await p.waitForTimeout(200);
-  ok(!!JSON.parse(await p.evaluate((P) => localStorage.getItem(P + "dt8Watch"), P) || "{}").start, "④ kept on this device");
-  await p.clock.setFixedTime(new Date(WHEN.getTime() + 125000)); await p.waitForTimeout(600);
-  ok((await txt(p, "#dt8WTime")) === "2:05", "④ counting", await txt(p, "#dt8WTime"));
-  await p.click('#dt8Watch button:has-text("一時停止")'); await p.waitForTimeout(200);
-  await p.clock.setFixedTime(new Date(WHEN.getTime() + 300000)); await p.waitForTimeout(400);
-  ok((await txt(p, "#dt8WTime")) === "2:05", "④ paused", await txt(p, "#dt8WTime"));
-  await p.click('#dt8Watch button:has-text("時間に入れる")'); await p.waitForTimeout(300);
-  ok((await p.inputValue("#woMin")) === "2" && (await p.inputValue("#woType")) === "ランニング", "④ into 時間", await p.inputValue("#woMin"));
-  await p.click('#dt8Watch button:has-text("リセット")'); await p.waitForTimeout(200);
-  ok((await txt(p, "#dt8WTime")) === "0:00" && (await p.isVisible('#dt8Watch button:has-text("スタート")')), "④ reset");
+  // ④ ストップウォッチ: taken out at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line; what it
+  // was at on this device kept
+  await p.evaluate((P) => localStorage.setItem(P + "dt8Watch", JSON.stringify({ start: 0, acc: 125000 })), P);
+  await part(p, "workout");
+  const toc4 = await p.evaluate(() => document.getElementById("dt16Toc-workout")?.textContent || "");
+  ok(!(await p.$("#dt8Watch")) && !(await p.$("#dt8WTime")) && !/ストップウォッチ/.test(toc4) && toc4.length > 0 && JSON.parse(await p.evaluate((P) => localStorage.getItem(P + "dt8Watch"), P) || "{}").acc === 125000, "④ ストップウォッチ gone, what it was at kept", toc4);
 
   await part(p, "weight");
   // ⑧ 週のまとめ: the week's words, copied; ‹ the week before
