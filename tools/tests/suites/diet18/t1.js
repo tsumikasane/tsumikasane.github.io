@@ -87,21 +87,12 @@ const mmss = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 
   ok(/^食べる予定の前に カレンダーから 11\/17（火） 12:00 ○○さんとランチ あした 外食は、ふだんより 約 400 kcal 多くなりがちです。きょうを 400 kcal 軽めにすると、ならせます。 定食なら/.test(r)
     && r.includes("11/19（木） 19:00 忘年会 あと 3 日 飲み会は、ふだんより 約 1,000 kcal 多くなりがちです。きょうから 3 日を 340 kcal ずつ軽めにすると、ならせます。"), "④ what to do", r);
 
-  // ⑤ ピッチのメトロノーム: 170, スタート (beats), とめる; ＋ and 180
+  // ⑤ ピッチのメトロノーム: taken out at the user's call (2026-11-24, tools/REMOVED.md): no card, nor its もくじ's line; the
+  // steps a minute chosen before (settings cadence) kept
+  await p.evaluate(({ P }) => { const k = P + "settings", l = JSON.parse(localStorage.getItem(k) || "[]").filter((x) => x.id !== "cadence"); l.push({ id: "cadence", bpm: 180, updatedAt: 1 }); localStorage.setItem(k, JSON.stringify(l)); }, { P });
   await part(p, "workout");
-  r = await txt(p, "#dt18Metro");
-  ok(/^ピッチのメトロノーム − 170 歩\/分 ＋ 160 165 170 175 180 185 スタート/.test(r), "⑤ at first", r);
-  await p.click("#dt18Metro .dt18-m-go"); await p.waitForTimeout(1500);
-  let mt = await W(p, "metro");
-  ok(mt.on && mt.played >= 3 && (await p.textContent("#dt18Metro .dt18-m-go")) === "とめる", "⑤ beating", mt);
-  await p.click("#dt18Metro .dt18-m-go"); await p.waitForTimeout(300);
-  mt = await W(p, "metro");
-  const played = mt.played; await p.waitForTimeout(400);
-  ok(!mt.on && (await W(p, "metro")).played === played && (await p.textContent("#dt18Metro .dt18-m-go")) === "スタート", "⑤ stopped", mt);
-  await p.click('#dt18Metro button[aria-label="1 増やす"]'); await p.waitForTimeout(300);
-  ok((await setting(p, "cadence"))?.bpm === 171 && /171 歩\/分/.test(await txt(p, "#dt18Metro")), "⑤ one up");
-  await p.click('#dt18Metro .dt18-m-pre button:has-text("180")'); await p.waitForTimeout(300);
-  ok((await setting(p, "cadence"))?.bpm === 180 && (await p.getAttribute('#dt18Metro .dt18-m-pre button:has-text("180")', "aria-pressed")) === "true", "⑤ 180 pressed");
+  const toc5 = await p.evaluate(() => document.getElementById("dt16Toc-workout")?.textContent || "");
+  ok(!(await p.$("#dt18Metro")) && !(await p.$(".dt18-m-go")) && !/メトロノーム/.test(toc5) && toc5.length > 0 && (await setting(p, "cadence"))?.bpm === 180, "⑤ メトロノーム gone, the 歩数 kept", toc5);
   // ⑥ ジムの会費の元: 8,000 円, 6 days (1,333 円), October 8 (1,000 円), 2 more for 1,000; then every day of 運動 (9)
   let g = await W(p, "gym");
   r = await txt(p, "#dt18Gym");
@@ -142,7 +133,7 @@ const mmss = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 
   ok(wide <= 393, "no sideways scroll", wide);
   ok(!p.errs.length, "no errors", p.errs);
 
-  // a new account: only the tools (①②⑤) shown
+  // a new account: only the tools (①②; ⑤ taken out) shown
   await seed(p, { settings: [] }, "diet");
   for (const k of ["meal", "workout", "weight"]) {
     await part(p, k);
