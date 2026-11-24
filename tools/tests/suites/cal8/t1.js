@@ -98,6 +98,8 @@ let b;
   ok((await p.evaluate(() => window.__cal8.month())) === "2026-12", "⑦ →: the next month", await p.evaluate(() => window.__cal8.month()));
   await p.keyboard.press("t"); await p.waitForTimeout(500);
   ok((await p.evaluate(() => window.__cal8.month())) === "2026-11", "⑦ T: きょう");
+  await p.keyboard.press("y"); await p.waitForTimeout(400);
+  ok((await p.evaluate(() => window.__cal8.view())) === "month", "⑦ Y: nothing (年 taken out at the user's call (2026-11-24, tools/REMOVED.md))");
   await p.keyboard.press("n"); await p.waitForTimeout(800);
   ok(await p.isVisible("#planView"), "⑦ N: a new plan");
 

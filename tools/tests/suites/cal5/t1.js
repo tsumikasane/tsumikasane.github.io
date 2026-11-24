@@ -49,10 +49,9 @@ let b;
   ok((await ev(p, "e2")).pauseFrom === "2026-11-23", "④ 元に戻す", await ev(p, "e2"));
   await closeSheet(p);
 
-  // ⑤ 年
-  await p.click('#calViews button[data-view="year"]'); await p.waitForTimeout(600);
-  ok((await txt(p, ".cal5-anniv")).includes("母の誕生日（56歳）") && (await txt(p, ".cal5-anniv")).includes("あと6日"), "⑤ the year's birthdays", await txt(p, ".cal5-anniv"));
-  await p.click('#calViews button[data-view="month"]'); await p.waitForTimeout(600);
+  // ⑤ the year's birthdays and anniversaries, under 年's months: taken out with 年 (その2 ⑦) at the user's call
+  // (2026-11-24, tools/REMOVED.md)
+  ok(!(await p.$('#calViews button[data-view="year"]')) && !(await p.$(".cal5-anniv")) && !(await p.$("#calYear")), "⑤ gone, with 年");
 
   // ⑥ 来週の予定のお知らせ
   ok(!al.some((a) => a.tag.startsWith("cal-week:")), "⑥ off at first");

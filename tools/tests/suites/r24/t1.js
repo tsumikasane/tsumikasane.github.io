@@ -170,15 +170,8 @@ let b;
   // ① the end dragged into another says so
   await undo(p);
   await dragEnd('[data-ev="e1|2026-11-11"]', 0);
-  // ⑦ 年
-  await view(p, "year");
-  ok((await txt(p, "#calMonthName")) === "2026年" && (await p.locator(".cal-ym").count()) === 12 && (await p.locator('.cal-ym[data-ym="2026-11"]').getAttribute("aria-label")).startsWith("11月、予定 "), "⑦ the year: 12 months", await txt(p, "#calMonthName"));
-  ok(await p.evaluate(() => { const m = document.querySelector('.cal-ym[data-ym="2026-11"]'); const d = [...m.querySelectorAll(".yd:not(.pad)")]; return d[10].classList.contains("today") && d[11].classList.contains("l3") && d[2].classList.contains("sun"); }), "⑦ today ringed, a busy day dark, a holiday red");
-  await p.evaluate(() => document.getElementById("calPrev").click()); await p.waitForTimeout(700);
-  ok((await txt(p, "#calMonthName")) === "2025年", "⑦ ‹: the year before");
-  await p.evaluate(() => document.getElementById("calNext").click()); await p.waitForTimeout(700);
-  await p.click('.cal-ym[data-ym="2026-11"]'); await p.waitForTimeout(500);
-  ok((await p.evaluate(() => window.__cal.view())) === "month" && (await txt(p, "#calMonthName")) === "2026年11月", "⑦ a month pressed: that month");
+  // ⑦ 年: taken out at the user's call (2026-11-24, tools/REMOVED.md)
+  ok(!(await p.$('#calViews button[data-view="year"]')) && !(await p.$("#calYear")), "⑦ 年: gone");
   await p.close();
 
   // ⑩ ふりかえり on 説明会 (11/10): kept, in the day's list, on 日記's page, found

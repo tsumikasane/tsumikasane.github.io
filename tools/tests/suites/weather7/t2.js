@@ -48,7 +48,7 @@ async function open(b, when, more = {}, o = {}) {
   // ⑩ the words
   await p.locator("#wx8Words summary").scrollIntoViewIfNeeded();
   await p.click("#wx8Words summary"); await p.waitForTimeout(200);
-  ok((await p.$$eval("#wx8Words dt", (l) => l.length)) === 11 && (await txt(p, "#wx8Words dt")).startsWith("降水確率｜暑さ指数（WBGT）"), "⑩ 11 words explained");
+  ok((await p.$$eval("#wx8Words dt", (l) => l.length)) === 10 && (await txt(p, "#wx8Words dt")).startsWith("降水確率｜暑さ指数（WBGT）") && !(await txt(p, "#wx8Words dt")).includes("体感温度"), "⑩ 10 words explained (体感温度 taken out at the user's call (2026-11-24, tools/REMOVED.md))");
   await p.screenshot({ path: out + "/wx8-words.png" });
 
   // ② the picture: saved where it can't be shared

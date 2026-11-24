@@ -42,13 +42,15 @@ const redraw = async (p) => { await W(p, "redraw"); await p.waitForTimeout(200);
   // ⑥ UV as the hours' figure (the strong hours were said in 暮らしのひとこと, taken out 2026-11-18)
   await p.click('#wx3Seg [data-view="uv"]'); await p.waitForTimeout(300);
   ok((await txt(p, ".wx-hours .wx-t")).startsWith("3｜5｜6｜5｜3｜1｜0") && (await p.getAttribute('#wx3Seg [data-view="uv"]', "aria-pressed")) === "true", "⑥ 紫外線 by the hour", await txt(p, ".wx-hours .wx-t"));
-  ok(await p.evaluate(() => [...document.querySelectorAll("#wx3Seg button")].every((x) => x.scrollWidth <= x.clientWidth + 1)), "⑥ the six buttons fit");
+  ok(await p.evaluate(() => [...document.querySelectorAll("#wx3Seg button")].every((x) => x.scrollWidth <= x.clientWidth + 1)), "⑥ the five buttons fit");
+  // (その3 ⑨'s 体感 to pick, an hour's 体感 and the tile's （体感 ○°） taken out at the user's call (2026-11-24, tools/REMOVED.md))
+  ok(!(await p.$('#wx3Seg [data-view="feel"]')) && (await p.$$eval("#wx3Seg button", (l) => l.map((x) => x.textContent).join("・"))) === "気温・風・湿度・雨量・紫外線" && !/体感/.test(await txt(p, '.tile[data-tile="weather"]')), "体感: not to pick, nor on the tile", await p.$$eval("#wx3Seg button", (l) => l.map((x) => x.textContent).join("・")));
   await p.click('#wx3Seg [data-view="temp"]'); await p.waitForTimeout(300);
 
   // ⑤ an hour pressed
   ok(await p.evaluate(() => document.getElementById("wx4HourBox").hidden), "⑤ no hour open at first");
   await p.click('.wx4-hb[data-t="2026-11-14T15:00"]'); await p.waitForTimeout(300);
-  ok((await txt(p, "#wx4HourBox")).startsWith("きょう15時雨閉じる気温16°体感15°降水確率70%雨量2mm風北2m/s湿度65%雲の量50%気圧1015hPa紫外線1（弱い）") && // (その5 adds the same hour yesterday after it)
+  ok((await txt(p, "#wx4HourBox")).startsWith("きょう15時雨閉じる気温16°降水確率70%雨量2mm風北2m/s湿度65%雲の量50%気圧1015hPa紫外線1（弱い）") && // (その5 adds the same hour yesterday after it)
     (await p.getAttribute('.wx4-hb[data-t="2026-11-14T15:00"]', "aria-expanded")) === "true",
     "⑤ 15時 in full", await txt(p, "#wx4HourBox"));
   await p.screenshot({ path: out + "/wx4-hour.png" });

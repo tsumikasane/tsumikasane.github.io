@@ -33,10 +33,8 @@ let b;
   const pushed = await p.evaluate(() => window.__cal15.push());
   ok(pushed[0]?.[0] === "cal15Clock" && JSON.stringify(pushed).includes('[{"k":1,"at":"21:00"},{"k":0,"at":"07:30"}]'), "① what the server is sent has them", pushed);
 
-  // ⑨ the year's 大事な予定: taken out with 大事な予定 (the user's call, 2026-11-23)
-  await p.click('#calViews [data-view="year"]'); await p.waitForTimeout(700);
-  ok(!(await p.$(".cal15-stars")) && !(await txt(p, "#calYear")).includes("大事な予定"), "⑨ the year's 大事な予定: gone (taken out)");
-  await p.click('#calViews [data-view="month"]'); await p.waitForTimeout(700);
+  // ⑨ the year's 大事な予定: taken out with 大事な予定 (the user's call, 2026-11-23), and 年 itself (2026-11-24)
+  ok(!(await p.$('#calViews [data-view="year"]')) && !(await p.$(".cal15-stars")), "⑨ the year's 大事な予定: gone (taken out), and 年 too");
 
   // ② the plans as a table
   await p.click("#calSettings"); await p.waitForTimeout(800);

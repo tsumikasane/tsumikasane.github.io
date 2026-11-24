@@ -56,17 +56,16 @@ let b;
   let al = await alarms(p);
   ok(!al.some((a) => String(a.tag).startsWith("cal-gap:")) && (await setting(p, "calendar")).gap17?.on === true, "⑥ taken out: no すきま時間, the setting kept", al.map((a) => a.tag));
 
-  // ③ 平日, ④ 時限の帯 (週)
+  // ③ 平日 (the week's Monday to Friday): taken out at the user's call (2026-11-24, tools/REMOVED.md): no button beside 7日・5日・3日;
+  // ④ 時限の帯 (週) in the 7 days' view
   await p.click('#calViews [data-view="week"]'); await p.waitForTimeout(600);
-  await tap(p, '#calDays [data-days="wd"]'); await p.waitForTimeout(500);
-  ok(JSON.stringify(await p.evaluate(() => window.__cal17.days())) === '["2026-11-16","2026-11-17","2026-11-18","2026-11-19","2026-11-20"]' && (await p.getAttribute('#calDays [data-days="wd"]', "aria-pressed")) === "true" && (await p.getAttribute('#calDays [data-days="5"]', "aria-pressed")) === "false", "③ Monday to Friday", await p.evaluate(() => window.__cal17.days()));
+  ok(!(await p.$('#calDays [data-days="wd"]')) && (await p.$$eval("#calDays button", (l) => l.map((x) => x.textContent).join("・"))) === "7日・5日・3日", "③ 平日: gone", await p.$$eval("#calDays button", (l) => l.map((x) => x.textContent).join("・")));
+  ok((await p.evaluate(() => window.__cal17.days())).includes("2026-11-16"), "the week has 11/16", await p.evaluate(() => window.__cal17.days()));
   const bands = await p.evaluate(() => [...document.querySelectorAll('.tg-col[data-day="2026-11-16"] .cal17-band')].map((x) => x.textContent + "@" + x.style.top));
   ok(bands.length === 6 && bands[0] === "1限@37.5%", "④ the 6 periods behind", bands);
-  await tap(p, "#calNext"); await p.waitForTimeout(500);
-  ok(JSON.stringify(await p.evaluate(() => window.__cal17.days())) === '["2026-11-23","2026-11-24","2026-11-25","2026-11-26","2026-11-27"]', "③ a week at a turn", await p.evaluate(() => window.__cal17.days()));
   await tap(p, '#calDays [data-days="5"]'); await p.waitForTimeout(500);
   const five = await p.evaluate(() => window.__cal17.days());
-  ok(five.length === 5 && five[0] === (await p.evaluate(() => window.__cal17.day())) && (await p.getAttribute('#calDays [data-days="5"]', "aria-pressed")) === "true", "③ 5日 again: five from the day", five);
+  ok(five.length === 5 && five[0] === (await p.evaluate(() => window.__cal17.day())) && (await p.getAttribute('#calDays [data-days="5"]', "aria-pressed")) === "true", "5日: five from the day", five);
   await tap(p, '#calDays [data-days="7"]'); await p.waitForTimeout(500);
   ok((await p.evaluate(() => window.__cal17.days())).length === 7 && !(await p.evaluate(() => document.querySelector('.tg-col[data-day="2026-11-22"] .cal17-band'))), "④ none on a Sunday");
   await p.click('#calViews [data-view="month"]'); await p.waitForTimeout(500);

@@ -51,7 +51,7 @@ const ev = (date, time, title, i) => ({ id: "x" + i, date, time, title, createdA
   // ④ disasters (防災: キキクル, the hazard map, heavy rain): taken out at the user's call (2026-11-24, tools/REMOVED.md)
   ok(!(await p.$("#wx9Bousai")) && !(await p.$(".wx9-kiki")) && !(await p.$(".wx9-hazard")) && !(await p.$("#wx7-bousai")), "④ gone");
   // ⑦ why it feels colder (⑥ the pleasant hours, in 暮らしのひとこと: taken out 2026-11-18)
-  ok((await txt(p, "#wx9Feel")) === "18時ごろは、空気が乾いていて、気温より5°寒く感じそうです", "⑦ 18時 feels 5° colder", await txt(p, "#wx9Feel"));
+  ok(!(await p.$("#wx9Feel")) && !(await txt(p, "#calPanelBody")).includes("感じそうです"), "⑦ 体感のわけ: taken out at the user's call (2026-11-24, tools/REMOVED.md)");
   // ⑨ 天気と気分 went with きょうの気分 (taken out, the user's call 2026-11-19)
   ok(!(await p.$("#wx9Mood")), "⑨ no 天気と気分 (taken out)");
   await p.screenshot({ path: out + "/wx9-top.png" });

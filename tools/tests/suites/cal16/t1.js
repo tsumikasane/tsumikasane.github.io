@@ -128,10 +128,8 @@ let b;
   ok(await p.evaluate(() => document.querySelector('[data-wh="2-18"]').className === "l4" && document.querySelector('[data-wh="1-9"]').className === "l2" && document.querySelector('[data-wh="0-9"]').className === "l0"), "⑥ darker for more");
   await closeSheet(p);
 
-  // ⑦ the year so far: taken away by the user's call (2026-11-18, tools/REMOVED.md); the year view is without it
-  await p.click('#calViews [data-view="year"]'); await p.waitForTimeout(700);
-  ok(!(await p.$("#cal16YearHead")) && !(await p.$(".cal16-year-row")), "⑦ 1年のまとめ: gone (the user's call, 2026-11-18)");
-  await p.click('#calViews [data-view="month"]'); await p.waitForTimeout(500);
+  // ⑦ the year so far: taken away by the user's call (2026-11-18, tools/REMOVED.md), and 年 itself (2026-11-24)
+  ok(!(await p.$('#calViews [data-view="year"]')) && !(await p.$("#cal16YearHead")) && !(await p.$(".cal16-year-row")), "⑦ 1年のまとめ: gone (the user's call, 2026-11-18), and 年 too");
 
   // ⑧ 単位
   await p.evaluate(() => window.__cal16.tt()); await p.waitForTimeout(800);

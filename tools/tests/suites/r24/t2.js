@@ -1,4 +1,4 @@
-// カレンダー その2: 年 turned by a swipe; a ふりかえり being typed isn't redrawn under the finger
+// カレンダー その2: (年 turned by a swipe: 年 taken out, 2026-11-24); a ふりかえり being typed isn't redrawn under the finger
 process.env.URL0 = process.env.URL0 || "http://localhost:8772/";
 const { chromium } = require("playwright");
 const { phone, seed, at, P } = require("./lib");
@@ -10,16 +10,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   const b = await chromium.launch();
   const p = await phone(b, at("10:00", today), { deviceScaleFactor: 1 });
   await seed(p, make(), "calendar"); await p.waitForTimeout(1000);
-  await p.click('#calViews button[data-view="year"]'); await p.waitForTimeout(500);
-  const swipe = (dx) => p.evaluate((dx) => {
-    const box = document.getElementById("calYear"), r = box.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + 200;
-    const fire = (type, cx) => box.dispatchEvent(new PointerEvent(type, { pointerType: "touch", isPrimary: true, pointerId: 7, clientX: cx, clientY: y, bubbles: true }));
-    fire("pointerdown", x); for (let k = 1; k <= 6; k++) fire("pointermove", x + (dx * k) / 6); fire("pointerup", x + dx);
-  }, dx);
-  await swipe(-200); await p.waitForTimeout(900);
-  ok((await txt(p, "#calMonthName")) === "2027年", "⑦ a swipe to the left: the next year", await txt(p, "#calMonthName"));
-  await swipe(200); await p.waitForTimeout(900);
-  ok((await txt(p, "#calMonthName")) === "2026年", "⑦ and back");
+  // ⑦ 年 (and its swipe): taken out at the user's call (2026-11-24, tools/REMOVED.md)
+  ok(!(await p.$('#calViews button[data-view="year"]')) && !(await p.$("#calYear")), "⑦ 年: gone");
   // ⑩ typing a word: a change elsewhere (another device's) doesn't take it away
   await p.click('#calViews button[data-view="month"]'); await p.waitForTimeout(400);
   await p.evaluate(() => [...document.querySelectorAll(".cal-day")].find((x) => x.getAttribute("aria-label").startsWith("11月10日")).click()); await p.waitForTimeout(700);

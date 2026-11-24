@@ -44,7 +44,7 @@ let b;
 
   // ⑩ and ④ the day's sheet
   await openDayOf(p, "11月25日");
-  ok((await txt(p, "#cal4Day .cal4-from")) === "きょうから11日後（1週間と4日）", "⑩ how far the day is", await txt(p, "#cal4Day .cal4-from"));
+  ok(!(await p.$("#cal4Day .cal4-from")) && !/きょうから|日後|日前/.test(await txt(p, "#cal4Day")), "⑩ how far the day is: taken out at the user's call (2026-11-24, tools/REMOVED.md)", await txt(p, "#cal4Day"));
   await p.click('#cal4Day [data-stamp="⭐"]'); await p.waitForTimeout(500);
   ok((await setting(p, "calendar"))?.stamps?.["2026-11-25"] === "⭐", "④ a stamp put on the day", (await setting(p, "calendar"))?.stamps);
   ok((await p.getAttribute('#cal4Day [data-stamp="⭐"]', "aria-pressed")) === "true", "④ shown as picked");
@@ -52,7 +52,7 @@ let b;
   await closeSheet(p);
   ok((await cell(p, "11月25日")).stamp === "star", "④ and in the month");
   await openDayOf(p, "11月15日");
-  ok(await p.evaluate(() => !document.querySelector("#cal4Day .cal4-from")), "⑩ none for あした (its title says it)");
+  ok(await p.evaluate(() => !document.querySelector("#cal4Day .cal4-from")), "⑩ none for あした either");
   await closeSheet(p);
 
   // ⑧ 前回・次回
