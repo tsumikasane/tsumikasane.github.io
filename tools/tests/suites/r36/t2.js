@@ -183,20 +183,7 @@ async function open(b, when, more = {}, hash = "todo") {
     await q.context().close();
   }
 
-  // ---- ① when: the time to the next plan said; in a checklist's tab, none; one alone, none
-  {
-    const p = await open(b, "2026-11-11T10:00:00+09:00");
-    const why = await p.evaluate(() => [...document.querySelectorAll("#td6NowCard .td6-now-why .phrase")].map((x) => x.textContent.replace(/[\s   ]+/g, "")));
-    ok(why.includes("次の予定まで3時間"), "① 10:00: 3 hours to バイト (13:00), said", why);
-    await p.locator("#todoTabs button", { hasText: "持ち物" }).click(); await p.waitForTimeout(400);
-    ok(await p.isHidden("#td6NowCard"), "① not in a checklist's tab");
-    errs.push(...p.errs);
-    await p.context().close();
-    const q = await open(b, "2026-11-11T10:00:00+09:00", { replace: true, todos: D.todos().filter((t) => t.done || t.listId === "l-pack").concat([{ id: "solo", text: "ひとつだけ", createdAt: T("2026-11-01") }]) });
-    ok(await q.isHidden("#td6NowCard"), "① one alone: none (the list is enough)");
-    errs.push(...q.errs);
-    await q.context().close();
-  }
+  // (① when: the time to the next plan, a checklist's tab, one alone: いまやるなら taken out at the user's call (2026-11-24, tools/REMOVED.md))
 
   // ---- ⑨ the last one done counts (not one cancelled)
   {

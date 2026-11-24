@@ -93,7 +93,7 @@ async function open(b, when) {
   ok(!(await byText(p, "用事")).length && (await todo(p, "c")) && (await todo(p, "f")), "⑤ 元に戻す: both back");
 
   // ---- ⑥ 集中 (1件に集中する画面): taken out with ToDo's 集中, 2026-11-21
-  ok(!!(await p.$("#td6NowCard .td6-now-next")) && !(await p.locator("#td6NowCard button", { hasText: "始める" }).count()), "⑥ いまやるなら: no 始める");
+  ok(!(await p.$("#td6NowCard")), "⑥ いまやるなら: none either (taken out at the user's call, 2026-11-24)");
 
   // ---- ⑦ 追加と完了 in 完了のふりかえり
   await menu(p, "完了のふりかえり");
@@ -111,17 +111,11 @@ async function open(b, when) {
   ok((await p.evaluate(() => window.__osc)) === 0, "⑧ none as one is checked off");
   await p.click('#todoList [data-check="f"]'); await p.waitForTimeout(1800);
   await p.click("#todoSettings"); await p.waitForTimeout(800);
-  ok(!(await p.$("#td7Sound")) && (await p.inputValue("#td7TidyDays")) === "0", "④ in 編集, off at first (⑧ not there)");
+  ok(!(await p.$("#td7Sound")) && !(await p.$("#td7TidyDays")) && !(await p.$("#td7TidyFoot")) && !(await txt(p, "#daySheet")).includes("最近削除」に移します"), "④⑧ neither in 編集 (④ 整理: taken out at the user's call (2026-11-24, tools/REMOVED.md))");
   await p.click("#sheetDone"); await p.waitForTimeout(500);
 
-  // ---- ④ 整理: 30 days; 履修登録 (done 10/1) to 最近削除, with 元に戻す
-  await p.click("#todoSettings"); await p.waitForTimeout(800);
-  await p.selectOption("#td7TidyDays", "30"); await p.waitForTimeout(700);
-  ok(((await ls(p, "settings")).find((x) => x.id === "todoTidy") || {}).days === 30 && !(await todo(p, "old1")) && (await status(p)).includes("完了してから30日たったToDoを1件、最近削除に移しました"), "④ 30 days: 履修登録 to 最近削除, said");
-  ok((await txt(p, "#td7TidyFoot")).startsWith("完了してから30日たったToDoを、自動で「最近削除」に移します"), "④ said in 編集");
-  await undo(p);
-  ok(!!(await todo(p, "old1")), "④ 元に戻す");
-  await p.click("#sheetDone"); await p.waitForTimeout(500);
+  // ---- ④ 整理 (taken out, 2026-11-24): 履修登録 (done 10/1) stays where it is
+  ok(!!(await todo(p, "old1")), "④ 履修登録 (done 10/1) stays");
 
   // ---- ⑨ 見通しで期限を動かす: メールに返信 to tomorrow; 部屋の片付け (no 期限) to Saturday; 終わる
   await p.click("#todoWeek"); await p.waitForTimeout(600);

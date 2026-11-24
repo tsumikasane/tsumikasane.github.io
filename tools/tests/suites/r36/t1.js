@@ -26,32 +26,14 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00"), WK = "2026-11-08";
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
   await seed(p, D.all(), "todo"); await p.waitForTimeout(1200);
 
-  // ---- ① いまやるなら: the best five, the card, ほかの候補, ×, and off in 編集
-  const now = await W(p, "now");
-  ok(now.map((x) => x.id).join(",") === "e,c,a,g,r1", "① the five, best first (not 薬を飲む at 20:00, nor one put aside or a checklist's; 重要 counts no more, 2026-11-23)", now);
-  ok(JSON.stringify(now[0].why) === JSON.stringify(["期限切れ", "40%まで進んでいる"]) && now[0].left === 72, "① why, and what is left of it (2時間, 40% done)", now[0]);
-  ok(await p.isVisible("#td6NowCard") && (await txt(p, "#td6NowCard .td6-now-name")) === "資料を読む" && (await p.evaluate(() => [...document.querySelectorAll("#td6NowCard .td6-now-why .phrase")].map((x) => x.textContent.replace(/[\s\u00a0\u2009\u202f]+/g, "")).join("・"))) === "期限切れ・40%まで進んでいる・のこり1時間12分", "① the card", await txt(p, "#td6NowCard"));
-  await p.click("#td6NowCard .td6-now-next"); await p.waitForTimeout(300);
-  ok((await txt(p, "#td6NowCard .td6-now-name")) === "メールに返信" && (await txt(p, "#td6NowCard .td6-now-next")) === "ほかの候補（2/5）" && (await p.evaluate(() => document.activeElement?.classList.contains("td6-now-next"))), "① ほかの候補: the next, the press kept on it");
-  for (let i = 0; i < 4; i++) { await p.click("#td6NowCard .td6-now-next"); await p.waitForTimeout(150); }
-  ok((await txt(p, "#td6NowCard .td6-now-name")) === "資料を読む", "① round to the first again");
-  await p.click("#td6NowCard .td6-now-name"); await p.waitForTimeout(700);
-  ok((await p.inputValue("#reText")) === "資料を読む", "① its name opens it");
-  await p.click("#sheetCancel"); await p.waitForTimeout(500);
-  await p.click('#td6NowCard button[aria-label="きょうは出さない"]'); await p.waitForTimeout(400);
-  ok(await p.isHidden("#td6NowCard") && (await status(p)).includes("「いまやるなら」は、きょうは出しません"), "① ×: not for today, said");
-  await undo(p);
-  ok(await p.isVisible("#td6NowCard"), "① 元に戻す");
+  // ---- ① いまやるなら: taken out at the user's call (2026-11-24, tools/REMOVED.md): no card over the list, nothing in 編集
+  ok(!(await p.$("#td6NowCard")) && !(await p.$(".td6-now-name")), "① いまやるなら: no card");
   await p.click("#todoSettings"); await p.waitForTimeout(800);
-  ok(await p.isChecked("#td6NowOn"), "① on in 編集");
-  await p.click("#td6NowOn"); await p.waitForTimeout(300);
+  ok(!(await p.$("#td6NowOn")) && !(await txt(p, "#daySheet")).includes("いまやるなら"), "① nor in 編集");
   await p.click("#sheetDone"); await p.waitForTimeout(500);
-  ok(await p.isHidden("#td6NowCard"), "① turned off: none");
-  await p.click("#todoSettings"); await p.waitForTimeout(800); await p.click("#td6NowOn"); await p.waitForTimeout(300); await p.click("#sheetDone"); await p.waitForTimeout(500);
-  ok(await p.isVisible("#td6NowCard"), "① on again");
   // not while looking for words
   await p.fill("#todoSearch", "資料"); await p.waitForTimeout(400);
-  ok(await p.isHidden("#td6NowCard") && await p.isHidden("#td6WeekCard"), "①② not while looking for words");
+  ok(await p.isHidden("#td6WeekCard"), "② not while looking for words");
   await p.fill("#todoSearch", ""); await p.waitForTimeout(400);
 
   // ---- ② 今週やる: the card, the row's mark, its sheet, the filter, the row's menu, and きょうやるを選ぶ
@@ -277,13 +259,7 @@ const WHEN = new Date("2026-11-11T08:30:00+09:00"), WK = "2026-11-08";
   const kd = (await byText(p, "課題を出す"))[0];
   ok(kd && kd.due === "2026-11-20" && kd.memo === "第3章" && !kd.flag && !(await byText(p, "洗剤を買う"))[0]?.flag && !(await byText(p, "大学")).length, "⑩ its task rows (p1 as nothing now), not the section", kd);
 
-  // ---- ① 始める (taken out with ToDo's 集中, 2026-11-21); the card still goes while a timer runs (勉強's, 目標's)
-  await p.evaluate(({ P }) => { localStorage.removeItem(P + "td6Now"); }, { P });
-  await W(p, "render"); await p.waitForTimeout(300);
-  ok(await p.isVisible("#td6NowCard") && !(await p.locator("#td6NowCard button", { hasText: "始める" }).count()), "① no 始める");
-  await p.evaluate(({ P }) => localStorage.setItem(P + "focus", JSON.stringify({ kind: "work", todoId: null, study: { sub: "" }, len: 25, end: Date.now() + 20 * 60e3, left: null, at: Date.now() - 5 * 60e3 })), { P });
-  await W(p, "render"); await p.waitForTimeout(300);
-  ok(await p.isHidden("#td6NowCard"), "① the card goes while a timer runs");
+  // (① 始める: taken out with ToDo's 集中, 2026-11-21; いまやるなら itself, 2026-11-24)
 
   ok(!p.errs.length, "no errors", p.errs);
   console.log(fails ? `${fails} FAILED` : "ALL OK");

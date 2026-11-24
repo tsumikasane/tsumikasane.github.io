@@ -144,13 +144,13 @@ const at = (s) => Date.parse(`${s}+09:00`);
   ok(eve && eve.at === at("2026-11-11T21:00:00") && /^あしたが期限のToDo（\d+ 件）$/.test(eve.title) && eve.body.includes("レポートを書く") && eve.body.includes("プレゼン準備") && !eve.body.includes("前期のレポート"), "⑧ the evening before, the next day's", eve);
   ok((await W(p, "bell", "td-eve2:2026-11-11")) === "前の晩のまとめ", "⑧ its kind");
 
-  // ---- ⑩ 授業の前のお知らせ
+  // ---- ⑩ 授業の前のお知らせ: taken out at the user's call (2026-11-24, tools/REMOVED.md): not in 編集; one turned on before tells nothing
+  await p.click("#todoSettings"); await p.waitForTimeout(900);
+  ok(!(await p.$("#td20ClsOn")) && !(await p.$("#td20ClsFoot")) && !(await txt(p, "#daySheet")).includes("授業の前のお知らせ") && (await p.locator("#td20EveOn").count()) === 1, "⑩ not in ToDo's 編集 (⑧ still there)");
+  await closeSheet(p);
   await W(p, "put", { cls: { on: true, min: 10 } }); await p.waitForTimeout(300);
   al = await W(p, "alarms");
-  const cl = al.find((x) => x.tag === "td-cls:2026-11-12:ev-en");
-  ok(cl && cl.at === at("2026-11-12T10:30:00") && cl.title === "英語（10:40〜）の前に" && cl.body === "この授業のToDo：英語の単語テストの勉強", "⑩ before the class, its ToDos", cl);
-  ok(!al.some((x) => String(x.tag).startsWith("td-cls:2026-11-16")), "⑩ none for a class with none");
-  ok((await W(p, "bell", cl.tag)) === "授業の前", "⑩ its kind");
+  ok(!al.some((x) => String(x.tag).startsWith("td-cls:")) && (await W(p, "bell", "td-cls:2026-11-12:ev-en")) === "", "⑩ none before a class (on before too), no kind of its own", al.filter((x) => String(x.tag).startsWith("td-cls:")));
 
   // ---- ⑨ 授業・バイト・予定の最中 (taken out, 2026-11-21: one turned on before does nothing)
   const h0 = al.find((x) => x.url === "./#todo:h" && x.at === at("2026-11-11T20:00:00"));
@@ -159,11 +159,11 @@ const at = (s) => Date.parse(`${s}+09:00`);
   al = await W(p, "alarms");
   const h1 = al.find((x) => x.tag === "todo-busy:" + h0.tag);
   ok(!h1 && al.some((x) => x.tag === h0.tag && x.at === h0.at) && !al.some((x) => String(x.tag).startsWith("todo-busy:")), "⑨ (taken out, 2026-11-21; on before too): as it is", al.filter((x) => x.url === "./#todo:h"));
-  ok(al.some((x) => x.tag === "td-cls:2026-11-12:ev-en" && x.at === at("2026-11-12T10:30:00")), "⑩'s as it is");
+  ok(!al.some((x) => String(x.tag).startsWith("td-cls:")), "⑩'s none still");
 
   // ---- the guide
   const g = await W(p, "guide");
-  ok(!g.includes("最中") && ["前の晩のまとめ", "授業の前のお知らせ", "今月やる", "ほかのToDoのサブタスクにする", "名前の#タグ", "保存した探し方", "時間の使いかた", "次に会う日", "返事をうながす"].every((w) => g.includes(`"${w}"`)), "the guide has them");
+  ok(!g.includes("最中") && !g.includes("授業の前のお知らせ") && ["前の晩のまとめ", "今月やる", "ほかのToDoのサブタスクにする", "名前の#タグ", "保存した探し方", "時間の使いかた", "次に会う日", "返事をうながす"].every((w) => g.includes(`"${w}"`)), "the guide has them");
 
   ok(!p.errs.length, "no errors", p.errs);
   await b.close();

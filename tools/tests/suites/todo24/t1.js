@@ -80,13 +80,13 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
   ok(!(await items(p)).map(flat).some((w) => w.includes("集中")), "② not in a row's menu", await items(p));
   await p.keyboard.press("Escape"); await p.waitForTimeout(300);
 
-  // ---- ③ 連続を守るお知らせ
+  // ---- ③ 連続を守るお知らせ: taken out at the user's call (2026-11-24, tools/REMOVED.md): not in 編集; one turned on before tells nothing
   await p.click("#todoSettings"); await p.waitForTimeout(900);
-  ok(!(await p.isChecked("#td24StreakOn")) && (await p.isDisabled("#td24StreakAt")), "③ in 編集, off at first");
-  await p.locator("#td24StreakOn").check(); await p.waitForTimeout(400);
+  ok(!(await p.$("#td24StreakOn")) && !(await p.$("#td24StreakAt")), "③ not in 編集");
   await closeSheet(p);
-  const al = (await W(p, "alarms")).find((a) => a.tag === "td24-streak:2026-11-11");
-  ok(al && flat(al.body) === "あと3件で3日連続です" && al.at === Date.parse("2026-11-11T21:00:00+09:00"), "③ today's at 21:00, the run said", al);
+  await W(p, "setting", "td24", { streak: true, at: "21:00", updatedAt: Date.now() }); await p.waitForTimeout(300);
+  const al = (await W(p, "alarms")).filter((a) => String(a.tag).startsWith("td24-streak:"));
+  ok(!al.length, "③ none at 21:00 (on before too)", al);
 
   // ---- ④ やりたい度
   await W(p, "update", "sd2", { want: 1 }); await p.waitForTimeout(200);
@@ -126,7 +126,7 @@ const saveSheet = async (p) => { await p.click("#recSave"); await p.waitForTimeo
 
   // ---- the guide
   const gd = await W(p, "guide");
-  ok(["かかる時間を名前から", "連続を守るお知らせ", "やりたい度", "ToDoの絵文字", "つながりで見る", "使っていないリスト・ラベル"].every((w) => gd.includes(w)) && !["休みの日にやる・平日にやる", "よく使う時刻", "サブタスクで集中", "きのうのつづき"].some((w) => gd.includes(w)), "the guide has them (not the ones taken out)");
+  ok(["かかる時間を名前から", "やりたい度", "ToDoの絵文字", "つながりで見る", "使っていないリスト・ラベル"].every((w) => gd.includes(w)) && !["休みの日にやる・平日にやる", "よく使う時刻", "サブタスクで集中", "きのうのつづき", "連続を守るお知らせ"].some((w) => gd.includes(w)), "the guide has them (not the ones taken out)");
 
   ok(!p.errs.length, "no errors", p.errs);
   await b.close();

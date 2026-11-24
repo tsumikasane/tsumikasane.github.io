@@ -164,30 +164,21 @@ const find = async (p, q) => { await p.fill("#todoSearch", q); await p.waitForTi
   ok(await p.locator('.td18-cal button[aria-label="次の月"]').isDisabled(), "⑨ no month after this one");
   await closeSheet(p);
 
-  // ---- ⑩ きょうやるの上限
+  // ---- ⑩ きょうやるの上限: taken out at the user's call (2026-11-24, tools/REMOVED.md): not in 編集; 3 set before holds none back
   await p.click("#todoSettings"); await p.waitForTimeout(900);
-  ok((await p.locator("#td18TodayMax").count()) === 1 && (await p.inputValue("#td18TodayMax")) === "0", "⑩ in ToDo's 編集, none at first");
-  await p.selectOption("#td18TodayMax", "3"); await p.waitForTimeout(400);
-  ok((await W(p, "set")).todayMax === 3, "⑩ set", await W(p, "set"));
+  ok(!(await p.$("#td18TodayMax")) && !(await txt(p, "#daySheet")).includes("きょうやるの上限"), "⑩ not in ToDo's 編集");
   await closeSheet(p);
+  await W(p, "setting", "td18", { todayMax: 3, updatedAt: Date.now() });
   for (const id of ["c", "h", "k8"]) await W(p, "update", id, { today: "2026-11-11" });
   await p.waitForTimeout(400);
   await hold(p, "rp3"); await press(p, "きょうやるに入れる");
-  ok(!(await todo(p, "rp3")).today && (await status(p)).includes("きょうやるは3件までにしています（いま3件）"), "⑩ one more not put in", await status(p));
-  ok((await p.locator("#sheetStatus button:visible, #status button:visible").first().textContent()) === "それでも入れる", "⑩ with それでも入れる");
-  await undo(p);
-  ok((await todo(p, "rp3")).today === "2026-11-11", "⑩ それでも入れる puts it in");
-  await W(p, "pick", "ra10"); await p.waitForTimeout(300);
-  ok(!(await todo(p, "ra10")).today, "⑩ きょうやるを選ぶ too");
+  ok((await todo(p, "rp3")).today === "2026-11-11" && !(await status(p)).includes("までにしています"), "⑩ a fourth put in as it is", await status(p));
   await W(p, "pickMany", ["ra10", "j1"]); await p.waitForTimeout(300);
-  ok(!(await todo(p, "ra10")).today && !(await todo(p, "j1")).today, "⑩ and several at once");
-  await W(p, "max", 0); await p.waitForTimeout(300);
-  await W(p, "pick", "ra10"); await p.waitForTimeout(300);
-  ok((await todo(p, "ra10")).today === "2026-11-11", "⑩ none: as before");
+  ok((await todo(p, "ra10")).today === "2026-11-11" && (await todo(p, "j1")).today === "2026-11-11", "⑩ several at once too (きょうやるを選ぶ)");
 
   // ---- the guide
   const g = await W(p, "guide");
-  ok(["はかる", "次にやるサブタスク", "探す条件", "チェックリストを毎朝リセット", "人ごとのToDo", "コンパクトに表示する", "きょうやるの上限", "完了カレンダー", "前回のこと"].every((w) => g.includes(`"${w}"`)) && !g.includes("写真のあるToDo"), "the guide has them");
+  ok(["はかる", "次にやるサブタスク", "探す条件", "チェックリストを毎朝リセット", "人ごとのToDo", "コンパクトに表示する", "完了カレンダー", "前回のこと"].every((w) => g.includes(`"${w}"`)) && !g.includes("写真のあるToDo") && !g.includes("きょうやるの上限"), "the guide has them (not きょうやるの上限, taken out)");
 
   ok(!p.errs.length, "no errors", p.errs);
   await b.close();

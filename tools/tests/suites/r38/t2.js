@@ -49,11 +49,10 @@ async function open(b, when, data = D.all(), o = {}) {
   ok(!(await items(p)).some((x) => x.startsWith("いつかやるに移す")), "② not a repeat into いつかやる", await items(p));
   await p.click("#todoMenuNo"); await p.waitForTimeout(300);
 
-  // ---- ② found when looked for; out of いまやるなら and the board
+  // ---- ② found when looked for; not on the board (いまやるなら: taken out, 2026-11-24)
   await p.fill("#todoSearch", "ギター"); await p.dispatchEvent("#todoSearch", "input"); await p.waitForTimeout(400);
   ok(await shown(p, "sd1"), "② found when looked for (open)");
   await p.fill("#todoSearch", ""); await p.dispatchEvent("#todoSearch", "input"); await p.waitForTimeout(300);
-  ok(!(await W(p, "nowList")).some((id) => id === "sd1" || id === "sd2"), "② not in いまやるなら");
   ok(!(await W(p, "board")).some((id) => id === "sd1" || id === "sd2"), "② not on the board");
 
   // ---- ④ on a list's tab, none; 決めない
@@ -79,7 +78,6 @@ async function open(b, when, data = D.all(), o = {}) {
   ok((await W(p, "tab")) === "" && await p.evaluate(() => document.querySelector('#todoTabs [aria-pressed="true"]')?.textContent.startsWith("ぜんぶ")), "⑧ the tab showing put away: ぜんぶ");
   const al = await W(p, "alarms", at("2026-11-11", "08:40"));
   ok(!al.some((a) => /old2/.test(a.tag)) && (await W(p, "dueCount")) >= 0, "⑧ no お知らせ for one put away (前期の授業)");
-  ok(!(await W(p, "nowList")).some((id) => id === "j1" || id === "old2"), "⑧ not in いまやるなら");
 
   // ---- ⑨ a list gone: none fit, said
   await W(p, "setting", "td8Views", { list: [{ id: "v1", name: "消えたリスト", listId: "l-gone" }, { id: "v2", name: "すぐ終わる", mins: 15 }], updatedAt: Date.now() });

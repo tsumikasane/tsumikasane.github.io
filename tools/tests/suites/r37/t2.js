@@ -72,17 +72,14 @@ async function open(b, when, more = {}, hash = "todo") {
     await r.context().close();
   }
 
-  // ---- ④ 7 days: a checklist's old check stays, one taken off goes; once a day; only on ToDo's page
+  // ---- ④ 整理 (taken out at the user's call (2026-11-24, tools/REMOVED.md)): 7 days set before moves none, on ToDo's page too
   {
     const p = await open(b, "2026-11-11T08:30:00+09:00", { settings: [{ id: "todoTidy", days: 7, updatedAt: 1 }], todos: [{ id: "p9", text: "傘", listId: "l-pack", done: true, doneAt: T("2026-10-20", 8), createdAt: T("2026-10-02", 9, 5) }] }, "home");
-    ok(!!(await todo(p, "old1")), "④ not on another page");
+    const n0 = (await ls(p, "todos")).length;
     await p.evaluate(() => document.querySelector('button[data-tab="todo"]').click()); await p.waitForTimeout(1200);
-    const tidied = ["old1", "p0", "z0", "z1", "z2", "z4", "z5", "z7", "z8", "z10", "z11"].filter((id) => true);
     const xs = await ls(p, "todos");
-    ok(!xs.some((t) => t.id === "old1") && !xs.some((t) => t.id === "p0") && xs.some((t) => t.id === "p9") && xs.some((t) => t.id === "p1") && xs.some((t) => t.id === "z3") && (await status(p)).includes("完了してから7日たったToDoを"), "④ 7 days: old ones and a check taken off go; a checklist's check and the recent stay", xs.filter((t) => t.done).map((t) => t.id));
-    const n1 = (await ls(p, "todos")).length;
-    await W(p, "render"); await p.waitForTimeout(300);
-    ok((await ls(p, "todos")).length === n1, "④ once a day");
+    ok(xs.length === n0 && ["old1", "p0", "p1", "p9", "z3"].every((id) => xs.some((t) => t.id === id)) && !(await status(p)).includes("完了してから"), "④ 7 days set before: none moved", xs.filter((t) => t.done).map((t) => t.id));
+    ok(((await ls(p, "settings")).find((x) => x.id === "todoTidy") || {}).days === 7, "④ the days set stay as they were");
     errs.push(...p.errs);
     await p.context().close();
   }
