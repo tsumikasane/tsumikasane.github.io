@@ -90,11 +90,8 @@ const menuOf = (p, k) => p.evaluate((k) => document.querySelector(`.m-cell[data-
   await undo(p);
   ok((await goal(p, "g1")).mandala[4].jl.length === 2, "⑧ 元に戻す");
   await p.click("#mNoteClose"); await p.waitForTimeout(300);
-  // ⑩ 声で読み上げる
-  await p.evaluate(() => { window.__spoken = null; Object.defineProperty(window, "speechSynthesis", { configurable: true, value: { speaking: false, speak(u) { window.__spoken = u.text; window.__lang = u.lang; }, cancel() {} } }); });
-  await p.click("#mSpeak"); await p.waitForTimeout(300);
-  const said = await p.evaluate(() => window.__spoken);
-  ok(said?.startsWith("目標は、TOEIC 800点。達成基準は、") && said.includes("期限まで、あと77日です。") && /いま、\d+パーセントです。/.test(said) && said.endsWith("次のマスは、毎日15分、シャドーイング、単語帳2周。") && (await p.evaluate(() => window.__lang)) === "ja-JP" && (await txt(p, "#mSpeak")) === "読み上げをとめる", "⑩ read out", said);
+  // ⑩ the goal read out: taken out at the user's call (2026-11-24, tools/REMOVED.md): no button in the goal's sheet
+  ok(!(await p.$("#mSpeak")) && !(await p.evaluate(() => document.getElementById("mRoot").innerText.includes("読み上げ"))), "⑩ no reading out (taken out)");
   // ⑨ 日記でふれた日
   ok((await txt(p, "#mJn")).startsWith("日記で 1日ふれています 11月10日（火） きょうはTOEICの単語を50語やった。") && (await p.inputValue("#mJnWords")) === "TOEIC 800点", "⑨ the 日記 that speak of it", await txt(p, "#mJn"));
   await p.fill("#mJnWords", "ゆっくり 単語"); await p.press("#mJnWords", "Enter"); await p.waitForTimeout(500);

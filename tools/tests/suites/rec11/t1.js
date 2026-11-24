@@ -93,12 +93,8 @@ const DATA = {
   await p.locator("#recList .rec-day-open").first().click(); await wait(p, 900);
   ok((await txt(p, "#recDayNote")) === "きょう・テーマ「早起き」できた", "⑤ きょう's theme (the mood went with きょうの気分, taken out 2026-11-19)", await txt(p, "#recDayNote"));
   ok((await rows(p, "#recDayBody .rec-day-go .chip-btn")).includes("予定"), "⑥ 予定 among この日に書く");
-  await p.evaluate(() => { Object.defineProperty(window, "speechSynthesis", { value: { speak(u) { window.__said = u.text; }, cancel() { window.__cancelled = (window.__cancelled || 0) + 1; } }, configurable: true }); });
-  await p.click("#rec11Speak"); await wait(p, 300);
-  const said = await p.evaluate(() => window.__said || "");
-  ok(said.startsWith("11月16日（月）の記録") && said.includes("食事 合計 800 kcal") && !said.includes("【") && (await txt(p, "#rec11Speak")) === "読み上げをやめる", "④ read aloud", said);
-  await p.click("#rec11Speak"); await wait(p, 200);
-  ok((await txt(p, "#rec11Speak")) === "この日の記録を読み上げる" && await p.evaluate(() => window.__cancelled >= 1), "④ pressed again: stopped");
+  // ④ the day read aloud: taken out at the user's call (2026-11-24, tools/REMOVED.md): no button on the day's page
+  ok(!(await p.$("#rec11Speak")) && !(await p.evaluate(() => document.body.innerText.includes("読み上げ"))), "④ no reading aloud (taken out)");
   await p.locator("#recDayBody .rec-day-go .chip-btn", { hasText: "予定" }).click(); await wait(p, 800);
   ok((await tab(p)) === "calendar", "⑥ 予定: the calendar, at the day", await tab(p));
 

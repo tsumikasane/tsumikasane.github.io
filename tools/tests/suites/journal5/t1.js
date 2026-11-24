@@ -32,7 +32,6 @@ const putPhotos = (p, days) => p.evaluate(({ days, b64 }) => new Promise((res, r
   const b = await chromium.launch();
   const p = await phone(b, new Date("2026-11-14T21:00:00+09:00"), { deviceScaleFactor: 1, acceptDownloads: true });
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
-  await p.context().addInitScript(() => { window.__said = []; const ss = window.speechSynthesis; if (ss) { ss.speak = (u) => { window.__said.push(u.text); setTimeout(() => u.onend && u.onend(), 50); }; ss.cancel = () => {}; } });
   await seed(p, D.all(), "journal"); await p.waitForTimeout(1000);
 
   // ⑩ あとで書く: taken out (the user's call, 2026-11-19, tools/REMOVED.md): no button, no list of the days. The days marked
@@ -88,10 +87,8 @@ const putPhotos = (p, days) => p.evaluate(({ days, b64 }) => new Promise((res, r
   await p.click("#jn5RdNext"); await p.waitForTimeout(300);
   ok((await txt(p, "#jn5RdTitle")) === "2026年11月3日（火）", "① ‹ 次に書いた日", await txt(p, "#jn5RdTitle"));
 
-  // ② 聞く (in the reader): 伏せ字 as ふせじ, # left out
-  await p.click("#jn5RdSpeak"); await p.waitForTimeout(300);
-  const said = await p.evaluate(() => window.__said);
-  ok(said.length === 1 && said[0] === "11月3日（火）。文化の日。カフェ に行った。（ふせじ）", "② read out", said);
+  // ② the day read out (日記を聞く, and 聞く in the reader): taken out at the user's call (2026-11-24, tools/REMOVED.md)
+  ok(!(await p.$("#jn5RdSpeak")) && !(await p.$("#jn5Speak")) && !(await p.evaluate(() => document.getElementById("jn5Reader").innerText.includes("聞く"))), "② no reading out (taken out)");
   await p.click("#jn5RdClose"); await p.waitForTimeout(400);
   ok((await val(p)).startsWith("文化の日"), "① closed on the day read last", await val(p));
 

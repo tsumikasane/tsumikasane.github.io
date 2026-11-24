@@ -19,7 +19,6 @@ const names = (p) => p.evaluate(() => [...document.querySelectorAll("#rtList .rt
 async function open(b, data, hm = "09:00") {
   const p = await phone(b, new Date(`${D.DAY}T${hm}:00+09:00`), { deviceScaleFactor: 1 });
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
-  await p.addInitScript(() => { window.__said = []; try { Object.defineProperty(window, "speechSynthesis", { configurable: true, value: { speak: (u) => window.__said.push(u.text), cancel: () => {}, speaking: false } }); } catch {} });
   await seed(p, data, "routine"); await p.waitForTimeout(900);
   return p;
 }
@@ -69,14 +68,11 @@ async function open(b, data, hm = "09:00") {
   ok(!(await day(p)).done.includes("r2"), "⑥ 元に戻す");
   await p.evaluate(() => window.__rt5.heard("カレーを食べる")); await p.waitForTimeout(200);
   ok((await toast(p)).includes("に合う、まだの項目がありませんでした"), "⑥ nothing matched, said");
-  // ⑦ 読み上げ in 1つずつ進める, and ⑩ ⑤ there
+  // ⑦ the items read out in 1つずつ進める: taken out at the user's call (2026-11-24, tools/REMOVED.md); and ⑩ ⑤ there
   await p.locator("#rtFoot button", { hasText: "1つずつ進める" }).click(); await p.waitForTimeout(300);
-  await p.click("#rt5StepSpeak"); await p.waitForTimeout(200);
-  let said = await p.evaluate(() => window.__said.slice());
-  ok((await p.getAttribute("#rt5StepSpeak", "aria-pressed")) === "true" && said.length === 1 && said[0] === (await txt(p, "#rt2StepName")).replace(/^\S+\s/, "") || said[0] === (await p.evaluate(() => document.querySelector("#rt2StepName").textContent)), "⑦ the item said", said);
+  ok(await shown(p, "#rt2Step") && !(await p.$("#rt5StepSpeak")) && !(await p.evaluate(() => document.getElementById("rt2Step").innerText.includes("読み上げ"))) && await shown(p, "#rt2StepName"), "⑦ no 読み上げ in 1つずつ進める (taken out)");
   while ((await txt(p, "#rt2StepName")) !== "読書" && await shown(p, "#rt2Step")) { await p.click("#rt2StepLater"); await p.waitForTimeout(150); }
-  said = await p.evaluate(() => window.__said.slice());
-  ok(said[said.length - 1] === "読書。ミニマムは、1ページだけ" && await shown(p, "#rt5StepMini") && (await txt(p, "#rt5StepMini")) === "ミニでやった（1ページだけ）" && await shown(p, "#rt5StepLink a"), "⑦⑩⑤ 読書 in 1つずつ進める", said.slice(-1));
+  ok(await shown(p, "#rt5StepMini") && (await txt(p, "#rt5StepMini")) === "ミニでやった（1ページだけ）" && await shown(p, "#rt5StepLink a"), "⑩⑤ 読書 in 1つずつ進める");
   await p.click("#rt5StepMini"); await p.waitForTimeout(300);
   ok((await day(p)).mini?.includes("r4"), "⑩ ミニでやった in 1つずつ進める");
   await p.click("#rt2Step .ask-keep"); await p.waitForTimeout(300);

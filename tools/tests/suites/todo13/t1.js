@@ -54,7 +54,7 @@ async function open(b, when, o = {}) {
   await hold(p, "c"); await press(p, "ひみつにする");
   ok((await todo(p, "c")).secret === true, "③ kept");
   ok((await txt(p, '#todoList [data-edit="c"]')) === "ひみつのToDo" && !(await p.evaluate(() => [...document.querySelectorAll("#todoList")].some((l) => l.innerText.includes("メールに返信")))), "③ its name hidden in the list", await txt(p, '#todoList [data-edit="c"]'));
-  ok((await W(p, "speak")).includes("ひみつのToDo") && !(await W(p, "speak")).includes("メールに返信") && (await W(p, "printBox")).includes("ひみつのToDo"), "③ read out and printed as such");
+  ok((await W(p, "printBox")).includes("ひみつのToDo"), "③ printed as such (its reading out taken out, 2026-11-24)");
   ok((await todo(p, "c")).text === "メールに返信", "③ the name itself kept");
   await p.click('#todoList [data-edit="c"]'); await p.waitForTimeout(800);
   ok((await p.inputValue("#reText")) === "メールに返信", "③ opened: all there");

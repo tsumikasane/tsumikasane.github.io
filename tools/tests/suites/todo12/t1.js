@@ -83,13 +83,10 @@ async function open(b, when, o = {}) {
   await p.locator("#td12CarryOn").click({ force: true }); await p.waitForTimeout(200);
   await p.click("#sheetDone"); await p.waitForTimeout(700);
 
-  // ---- ③ 読み上げ
-  const said = await W(p, "speak");
-  ok(/^きょうのToDoは\d+件です。/.test(flat(said)) && said.includes("期限切れが 1 件") && said.includes("資料を読む、期限切れ") && said.includes("薬を飲む、20時"), "③ what is read", said);
-  ok((await p.evaluate(() => { document.getElementById("todoMore").click(); return [...document.querySelectorAll("#todoMenuGroup button")].map((x) => x.textContent); })).includes("きょうのToDoを読み上げる"), "③ in その他");
-  await p.evaluate(() => { window.__said = []; speechSynthesis.speak = (u) => window.__said.push(u.text); });
-  await press(p, "きょうのToDoを読み上げる");
-  ok((await p.evaluate(() => window.__said.length)) === 1 && (await status(p)).includes("読み上げています") && (await status(p)).includes("とめる"), "③ spoken, とめる", await status(p));
+  // ---- ③ the day's ToDos read out: taken out at the user's call (2026-11-24, tools/REMOVED.md): not in その他
+  const more = await p.evaluate(() => { document.getElementById("todoMore").click(); return [...document.querySelectorAll("#todoMenuGroup button")].map((x) => x.textContent); });
+  await p.keyboard.press("Escape"); await p.waitForTimeout(300);
+  ok(more.length > 3 && !more.some((w) => w.includes("読み上げ")) && more.some((w) => w.includes("印刷")), "③ not in その他 (taken out), 印刷 still there", more);
 
   // ---- ④ 数える: from its sheet (out of the new form since the user's call of 2026-11-19), on the row, ＋1 to the end
   await p.click("#todoAdd"); await p.waitForTimeout(700);

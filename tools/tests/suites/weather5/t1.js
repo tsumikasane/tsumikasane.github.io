@@ -48,10 +48,8 @@ async function open(b, when, more = {}, o = {}) {
   ok((await txt(p, "#wx5Check .wx5-score")) === "この4日の雨のあたり2/4日気温のずれは、平均1.3°", "⑩ the 4 days", await txt(p, "#wx5Check .wx5-score"));
   const g = await p.evaluate((P) => JSON.parse(localStorage.getItem(P + "wxGuess")), P);
   ok(JSON.stringify(g.days["2026-11-17"]) === JSON.stringify({ hi: 16, lo: 6, rain: 10, word: "晴れ" }) && JSON.stringify(g.days["2026-11-15"].act) === JSON.stringify({ hi: 16, lo: 8, mm: 0 }), "⑩ tomorrow's kept, yesterday's come", g.days);
-  // ⑥ read aloud
-  ok((await W(p, "speech", D.DAY)) === "きょうの東京の天気は、晴れ。最高 15度、最低 7度、降水確率 10パーセントです。服装は、ジャケットなど、しっかりした上着を。", "⑥ today's words", await W(p, "speech", D.DAY));
-  ok((await W(p, "speech", "2026-11-19")).startsWith("11月19日木曜日の東京の天気は、晴れ。最高 9度、最低 マイナス1度"), "⑥ a day ahead, below 0", await W(p, "speech", "2026-11-19"));
-  ok(!!(await p.$("#wx5Speak")) === (await p.evaluate(() => "speechSynthesis" in window)), "⑥ the button where it can speak");
+  // ⑥ the day read aloud: taken out at the user's call (2026-11-24, tools/REMOVED.md): no button by the place (画像で送る still there)
+  ok(!(await p.$("#wx5Speak")) && !!(await p.$(".wx-place-line")), "⑥ no reading aloud (taken out)");
   await p.screenshot({ path: out + "/wx5-top.png" });
 
   // ② before the pressure falls

@@ -49,11 +49,9 @@ let b;
   ok(!al.some((a) => a.tag.startsWith("cal-star:")) && (await setting(p, "calendar")).starEve?.on === true, "④ taken out: none the evening before a ★ plan, the setting kept");
 
   // ⑤ read out
-  const say = await p.evaluate(() => window.__cal7.speech("2026-11-17"));
-  ok(say === "11月17日火曜日の予定は 2 件です。14時から15時まで、面接、場所は〇〇ビル。14時30分から15時まで、歯医者。", "⑤ what is read out", say);
-  ok((await p.evaluate(() => window.__cal7.speech("2026-11-19"))) === "11月19日木曜日の予定はありません。", "⑤ a day with none");
+  // ⑤ 読み上げ: taken out at the user's call (2026-11-24, tools/REMOVED.md): not under the day's list
   await openDayOf(p, "11月17日");
-  ok(await p.isVisible("#cal7Speak"), "⑤ 読み上げ under the day's list");
+  ok(!(await p.$("#cal7Speak")) && !(await p.evaluate(() => document.querySelector("#dayView .label-tools").innerText.includes("読み上げ"))), "⑤ no 読み上げ under the day's list (taken out)");
   // ⑨ the month's plans as words (shared)
   await p.evaluate(() => { window.__shared = null; navigator.share = (d) => { window.__shared = d; return Promise.resolve(); }; });
   await p.click("#dayShare"); await p.waitForTimeout(200);
