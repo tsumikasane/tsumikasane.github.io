@@ -1,8 +1,9 @@
-// 動き (the user's call, 2026-11-25): HIG's motion all over the app, the charts drawn as infographics. Driven as a user
-// would, with the motion asked for (window.__moForce: a test program's browser has none, so the other suites read the
-// page as it is drawn), and without it, and with Reduce Motion
+// 動き (the user's call, 2026-11-25, asked twice): HIG's motion all over the app, the charts drawn as infographics; the
+// second time, more: figures counting, a segmented control's thumb sliding, rows that move, a check's ring, a part's cards
+// rising. Driven as a user would, with the motion asked for (window.__moForce: a test program's browser has none, so the
+// other suites read the page as it is drawn), and without it, and with Reduce Motion
 const { chromium } = require("playwright");
-const { URL0, phone } = require("./lib");
+const { URL0, P, phone } = require("./lib");
 const recseed = require("../../cmp/recseed.js");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -80,6 +81,71 @@ const wide = (p) => p.evaluate(() => document.documentElement.scrollWidth <= inn
   ok(!p.errs.length, "no page errors (motion)", p.errs);
   await p.close();
 
+  // ---- asked again (more of it): figures count up, a segmented control's thumb slides, rows move, a check sends a ring ----
+  // つみかさね's figures, scrolled to: from 0 up to what they are, ending as drawn
+  p = await open(b, "home");
+  await tab(p, "tsumi"); await p.waitForTimeout(400);
+  await p.evaluate(() => { const x = document.querySelector("#sec-tsumi .big"); window.scrollTo(0, x.getBoundingClientRect().top + scrollY - 300); });
+  await p.waitForTimeout(300);
+  const mid = await p.evaluate(() => document.querySelector("#sec-tsumi .big").textContent);
+  await p.waitForTimeout(1400);
+  const end = await p.evaluate(() => document.querySelector("#sec-tsumi .big").textContent);
+  const skel = (s) => s.replace(/[\d,.]+/g, "#");
+  ok(/\d/.test(end) && mid !== end && skel(mid) === skel(end), "a figure counts up as its card comes into sight, in its own words", { mid, end });
+  ok(!p.errs.length, "no page errors (figures)", p.errs);
+  await p.close();
+  // ToDo: a checked one's row fades where it stood as it goes to 完了, the rows under it slide up; its check sends a ring
+  const T = Date.parse("2026-11-20T09:00:00+09:00");
+  p = await phone(b, NOW, { deviceScaleFactor: 1 });
+  await p.context().addInitScript(() => { window.__moForce = true; });
+  await p.goto(URL0); await recseed(p);
+  await p.evaluate(({ P, T }) => { localStorage.setItem(P + "todos", JSON.stringify(["ひとつめ", "ふたつめ", "みっつめ", "よっつめ", "いつつめ"].map((text, i) => ({ id: "t" + i, text, createdAt: T + i, updatedAt: T + i })))); }, { P, T });
+  await p.goto(URL0 + "#todo"); await p.reload(); await p.waitForTimeout(2400);
+  const rowsNow = () => p.evaluate(() => ({
+    ghost: [...document.querySelectorAll(".mo-ghost")].map((g) => ({ text: g.textContent.trim().slice(0, 4), data: [...g.querySelectorAll("*")].concat(g).some((x) => [...x.attributes].some((a) => a.name === "id" || a.name.startsWith("data-"))), inert: g.inert, hidden: g.getAttribute("aria-hidden") })),
+    sliding: [...document.querySelectorAll("#todoList > li:not(.mo-ghost)")].filter((x) => x.getAnimations().some((a) => JSON.stringify(a.effect.getKeyframes()).includes("translate"))).length,
+    running: document.getAnimations().filter((a) => a.playState === "running").length,
+    styled: document.querySelectorAll("#todoList [style], #todoParts[style], #todoList .check[style]").length,
+    rip: document.querySelectorAll(".check.mo-rip").length,
+  }));
+  await (await p.$('#todoList [data-check="t1"]')).click();
+  await p.waitForTimeout(80);
+  ok((await rowsNow()).rip === 1, "a check done sends a ring out");
+  // (it waits in its place a moment, then goes: looked for as it goes)
+  await p.waitForFunction(() => document.querySelector(".mo-ghost"), null, { timeout: 4000, polling: "raf" }).catch(() => {});
+  let r = await rowsNow();
+  ok(r.ghost.length === 1 && r.ghost[0].text === "ふたつめ" && !r.ghost[0].data && r.ghost[0].inert && r.ghost[0].hidden === "true", "as it goes to 完了, its row fades where it stood (no ids, out of reach)", r);
+  ok(r.sliding >= 3, "and the rows under it slide up", r);
+  await p.waitForTimeout(900);
+  r = await rowsNow();
+  ok(!r.ghost.length && r.running === 0 && r.styled === 0 && r.rip === 0, "then the list as it is drawn (the row gone, nothing moving, nothing left on the rows)", r);
+  ok(await p.evaluate(() => [...document.querySelectorAll("#todoList > li")].map((x) => x.textContent).join("|").indexOf("ふたつめ") < 0), "ふたつめ is in 完了, not in the list");
+  // the bar: its thumb slides to 完了, and the rows of 完了 come in
+  const other = await p.$('#todoParts button[aria-pressed="false"]');
+  const box = await other.boundingBox();
+  await p.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await p.waitForTimeout(60);
+  const th = await p.evaluate(() => { const bar = document.getElementById("todoParts"), cs = getComputedStyle(bar, "::before"); return { on: bar.classList.contains("mo-thumb"), content: cs.content, left: parseFloat(cs.left), transition: cs.transitionProperty, fading: [...document.querySelectorAll("#todoList > li")].filter((x) => x.getAnimations().length).length }; });
+  ok(th.on && th.content !== "none" && th.left > 0 && /left/.test(th.transition), "the bar's thumb slides to the part picked", th);
+  ok(th.fading > 0, "and 完了's rows come in", th);
+  await p.waitForTimeout(700);
+  ok(await p.evaluate(() => { const bar = document.getElementById("todoParts"); return !bar.classList.contains("mo-thumb") && !bar.hasAttribute("style"); }), "then the bar as it is drawn");
+  ok(!p.errs.length, "no page errors (rows, thumb)", p.errs);
+  await p.close();
+  // ダイエット: a part picked, its cards rise in
+  p = await open(b, "diet");
+  const part = await p.$('#dietParts button[aria-pressed="false"]');
+  const pb = await part.boundingBox();
+  await p.mouse.click(pb.x + pb.width / 2, pb.y + pb.height / 2);
+  await p.waitForTimeout(80);
+  const rose = (await mine(p)).filter((x) => /(^| )card( |$)/.test(x.cls) && x.props.includes("opacity") && x.props.includes("transform"));
+  ok(rose.length >= 2, "ダイエット: the part picked, its cards rise in", rose.length);
+  ok(await wide(p), "no sideways scroll as the part comes in");
+  await p.waitForTimeout(1800);
+  ok((await settled(p)) === 0, "and settled in a moment", await settled(p));
+  ok(!p.errs.length, "no page errors (part)", p.errs);
+  await p.close();
+
   // ---- Reduce Motion: none of it ----
   p = await open(b, "home", { reducedMotion: "reduce" });
   ok(!(await p.evaluate(() => document.documentElement.classList.contains("mo"))), "Reduce Motion: no html.mo");
@@ -91,6 +157,9 @@ const wide = (p) => p.evaluate(() => document.documentElement.scrollWidth <= inn
   ok(!(await p.evaluate(() => document.documentElement.classList.contains("mo"))), "a test program's browser: no html.mo");
   await tab(p, "calendar"); await p.waitForTimeout(60);
   ok((await mine(p)).length === 0, "and nothing moves", await mine(p));
+  await tab(p, "todo"); await p.waitForTimeout(300);
+  await p.click('#todoParts button[aria-pressed="false"]'); await p.waitForTimeout(60);
+  ok(!(await p.evaluate(() => document.getElementById("todoParts").classList.contains("mo-thumb"))) && (await mine(p)).length === 0, "nor a bar's thumb, nor rows", await mine(p));
   ok(!p.errs.length, "no page errors (unasked)", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");
