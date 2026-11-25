@@ -59,15 +59,12 @@ const badge = (p) => p.evaluate(() => document.querySelector('#menu button[data-
   await p.locator("#mMenu button", { hasText: "やる日を決める" }).click(); await p.waitForTimeout(300);
   await p.locator('#mMenu [data-do="2026-11-16"]').click(); await p.waitForTimeout(500);
   ok((await goal(p, "g1")).mandala[4].doOn === "2026-11-16" && (await status(p)).includes("「長文」を 11月16日（月） にやります") && (await tops(p))[4].includes("11/16にやる"), "① a cell's day, from its menu", [await status(p), (await tops(p))[4]]);
-  // ⑦ ビフォー・アフター: two photos, 12 days apart
-  ok(!(await shown(p, "mBefore")), "⑦ not before there are two photos");
+  // ⑦ ビフォー・アフター: taken out at the user's call (2026-11-25, tools/REMOVED.md): two photos, none side by side
   await p.clock.setFixedTime(new Date("2026-11-03T12:00:00+09:00"));
   await W(p, "photo", "g1", [0, 0], "#c33"); await p.waitForTimeout(300);
   await p.clock.setFixedTime(new Date("2026-11-15T17:30:00+09:00"));
   await W(p, "photo", "g1", [4], "#33c"); await p.waitForTimeout(600);
-  ok((await shown(p, "mBefore")) && JSON.stringify(await p.$$eval("#mBefore figcaption", (xs) => xs.map((x) => x.textContent))) === '["はじめ・11/3","いま・11/15"]' && (await txt(p, "#mBefore .sub")) === "12日のちがい・写真 2枚（押すと大きく）", "⑦ the first and latest, side by side", await txt(p, "#mBefore"));
-  await p.locator("#mBefore figure").nth(1).click(); await p.waitForTimeout(200);
-  ok(await p.evaluate(() => document.querySelectorAll("#mBefore figure")[1].classList.contains("big")), "⑦ pressed: larger");
+  ok(!(await p.$("#mBefore")) && !(await p.$("#mBeforeHead")), "⑦ (taken out) no ビフォー・アフター with two photos");
   // ⑩ やる場所: 毎日15分 on the train
   await p.evaluate(() => document.getElementById("daySheet").scrollTo(0, 0));
   await p.click('.m-cell[data-k="3"] [data-role="open"]'); await p.waitForTimeout(500);
@@ -82,19 +79,18 @@ const badge = (p) => p.evaluate(() => document.querySelector('#menu button[data-
   await p.click('#goalGap [data-where="電車"]'); await p.waitForTimeout(300);
   ok(JSON.stringify(await gapNames()) === '["クローゼット"]' && (await p.getAttribute('#goalGap [data-where="電車"]', "aria-pressed")) === "true", "⑩ on the train: 本棚 (at home) left out", await gapNames());
 
-  // ⑥ 達成の音, ② on and off
+  // ⑥ 達成の音: taken out at the user's call (2026-11-25, tools/REMOVED.md): not in 設定 (② タブの数 there alone); none heard, on before too
   await p.click("#goalSettings"); await p.waitForTimeout(600);
-  ok((await W(p, "chimes")) === 0, "⑥ off at first");
-  await p.click("#goalChimeOn"); await p.waitForTimeout(300);
-  ok((await W(p, "chimes")) === 1 && (await p.evaluate((P) => localStorage.getItem(P + "goalChime"), P)) === "1", "⑥ on: heard once");
+  ok(!(await p.$("#goalChimeOn")) && (await p.evaluate(() => [...document.querySelectorAll("h3.group-head")].some((h) => h.offsetParent && h.textContent === "タブの数"))), "⑥ (taken out) not in 設定: タブの数 alone");
+  await p.evaluate((P) => { localStorage.setItem(P + "goalChime", "1"); window.__osc = 0; const A = window.AudioContext || window.webkitAudioContext; if (A) { const o = A.prototype.createOscillator; A.prototype.createOscillator = function () { window.__osc++; return o.call(this); }; } }, P);
   await p.click("#goalBadgeOn"); await p.waitForTimeout(300);
   ok((await badge(p)) === "", "② off: no number");
   await p.click("#goalBadgeOn"); await p.waitForTimeout(300);
   ok((await badge(p)) === "2", "② on again");
   await done(p);
-  // ① 模試2回目, done from きょうのマス: heard (⑥), off the list, the number down (②)
+  // ① 模試2回目, done from きょうのマス: off the list, the number down (②); no sound (⑥ taken out)
   await p.locator("#goalToday li", { hasText: "模試2回目" }).locator(".check").click(); await p.waitForTimeout(700);
-  ok((await goal(p, "g1")).mandala[2].c[1].d === true && (await W(p, "chimes")) === 2 && !(await txt(p, "#goalToday")).includes("模試2回目") && (await badge(p)) === "1", "① done today: ⑥ heard, ② one less", [await W(p, "chimes"), await badge(p)]);
+  ok((await goal(p, "g1")).mandala[2].c[1].d === true && (await p.evaluate(() => window.__osc)) === 0 && !(await txt(p, "#goalToday")).includes("模試2回目") && (await badge(p)) === "1", "① done today: ② one less (⑥ none heard)", [await p.evaluate(() => window.__osc), await badge(p)]);
 
   ok(!p.errs.length, "no errors", p.errs);
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

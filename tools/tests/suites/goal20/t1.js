@@ -66,16 +66,14 @@ const bulk = (p) => p.$$eval("#mDoBulk .g17-batch li", (xs) => xs.map((x) => (x.
   await p.click("#goalSimpleBtn"); await p.waitForTimeout(400);
   ok(JSON.stringify(await simple()) === '[true,true,true,true,true,"シンプル表示"]' && (await p.getAttribute("#goalSimpleBtn", "aria-pressed")) === "false", "② back as it was", await simple());
 
-  // ⑦ 休む曜日: taken out (the user's call, 2026-11-20). The run is counted day after day again, 連続を守るお知らせ comes on
-  // every evening, and the check table has no 休
+  // ⑦ 休む曜日: taken out (the user's call, 2026-11-20). The run is counted day after day again (連続を守るお知らせ: taken out,
+  // 2026-11-25), and the check table has no 休
   ok((await blockText(p, "部屋を片づける")).includes("2日連続・きょうまだ"), "⑦ (taken out) 2 days (11/13, 11/14)");
   await p.click("#goalSettings"); await p.waitForTimeout(600);
   ok(!(await p.$("#goalRestDays")), "⑦ (taken out) not in 設定");
   let st = await W(p, "streak", "g3");
   ok(st.cur === 2 && !st.today, "⑦ (taken out) the run: 11/13 and 11/14, not over 火・木", st);
-  await p.click("#goalGuardOn"); await p.waitForTimeout(400);
-  let al = await guard(p);
-  ok(al.length === 2 && al[0].tag === "goal-guard:2026-11-15" && al[1].tag === "goal-guard:2026-11-16", "⑦ (taken out) 連続を守るお知らせ: this evening and the next", al.map((a) => a.tag));
+  ok(!(await p.$("#goalGuardOn")) && !(await guard(p)).length, "(連続を守るお知らせ: taken out at the user's call (2026-11-25, tools/REMOVED.md)): not in 設定, none told");
   await done(p);
   hb = await habit(p);
   ok(hb[1] === "シャドーイング - - ○ - - - - - - ○ - - - - 0", "⑦ (taken out) ③ no 休", hb);

@@ -29,17 +29,17 @@ const nows = (p) => p.evaluate(() => Date.now());
   ok(!(await W(p, "alarms", await nows(p))).some((a) => a.tag.startsWith("goal-ms:")), "⑧ (taken out) no notification the day before a 中間目標");
   // ② やりたいこと（いつか）: taken out at the user's call (2026-11-21, tools/REMOVED.md)
   ok(!(await p.$("#goalWish")) && !(await txt(p, "#sec-goal")).includes("やりたいこと"), "② (taken out) no やりたいこと（いつか）");
-  // ④ 文字の大きさ: 大きく
+  // ④ 文字の大きさ: taken out at the user's call (2026-11-25, tools/REMOVED.md): not in 設定; 大きく chosen before does nothing
   await p.click("#goalSettings"); await p.waitForTimeout(600);
-  await p.click('#goalFont button[data-font="l"]'); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => localStorage.getItem("tsumikasane:goalFont") === "l" && document.querySelector('#goalFont [data-font="l"]').getAttribute("aria-pressed") === "true"), "④ 大きく, on this device");
+  ok(!(await p.$("#goalFont")) && !(await p.$("#goalFontHead")), "④ (taken out) not in 設定");
+  await p.evaluate(() => localStorage.setItem("tsumikasane:goalFont", "l"));
   // ⑧'s switch: taken out
   ok(!(await p.$("#goalMsOn")), "⑧ (taken out) not in 設定");
   await done(p);
 
   // TOEIC
   await open(p, "TOEIC");
-  ok(await p.evaluate(() => document.getElementById("mandalaView").classList.contains("mfont-l") && [...document.querySelectorAll(".m-cell .m-text")].some((x) => x.textContent === "長文" && getComputedStyle(x).fontSize === "20px")), "④ the chart's words larger");
+  ok(await p.evaluate(() => !document.getElementById("mandalaView").classList.contains("mfont-l") && !document.getElementById("mandalaView").classList.contains("mfont-s")), "④ (taken out) the chart's words as they are, 大きく chosen before or not");
   // ⑤ 時間の目標: 10時間
   await p.selectOption("#mTimeGoal select", "10"); await p.waitForTimeout(400);
   t = (await txt(p, "#mTimeGoal")).replace(/\s/g, "");

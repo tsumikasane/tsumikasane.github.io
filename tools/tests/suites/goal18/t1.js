@@ -43,13 +43,10 @@ const guard = async (p) => (await W(p, "alarms", await p.evaluate(() => Date.now
   const room = paces.find((x) => x[0] === "部屋を片づける")?.[1], toeic = paces.find((x) => x[0] === "TOEIC 800点")?.[1];
   ok(/^少し遅れ気味（\d+日分おくれ）$/.test(room || "") && toeic === "順調", "⑤ days behind, on the block (none when on time)", paces);
 
-  // ④ 連続を守るお知らせ: 部屋を片づける, two days in a row up to yesterday, not yet today
+  // ④ 連続を守るお知らせ: taken out at the user's call (2026-11-25, tools/REMOVED.md): not in 設定, none told
   await p.click("#goalSettings"); await p.waitForTimeout(600);
-  ok((await guard(p)).length === 0, "④ off at first");
-  await p.click("#goalGuardOn"); await p.waitForTimeout(400);
   let al = await guard(p);
-  ok((await setting(p, "goalGuard"))?.on === true && al[0]?.tag === "goal-guard:2026-11-15" && new Date(al[0].at).toISOString() === "2026-11-15T11:00:00.000Z" && al[0].body === "「部屋を片づける」は 2日つづけて進めています。きょうも1マス進めると 3日です"
-    && al[1]?.tag === "goal-guard:2026-11-16" && al[1].body === "つづけて進めている目標は、きょうも進められましたか？", "④ that evening, and the next", al);
+  ok(!(await p.$("#goalGuardOn")) && al.length === 0, "④ (taken out) not in 設定, none told", al);
   // ② カードの並び順: 次の一歩 to the top, and back (予定のあとで was taken out, the user's call, 2026-11-20)
   ok(JSON.stringify(await order(p)) === '["goalDayPace","goalNow","goalNext","goalDue"]', "② as they were", await order(p));
   for (let i = 0; i < 3; i++) { await p.locator('#goalOrderList [data-mv="goalNext:-1"]').click(); await p.waitForTimeout(150); }
@@ -105,14 +102,14 @@ const guard = async (p) => (await W(p, "alarms", await p.evaluate(() => Date.now
   await p.fill("#mReflect", "【リスニング】毎日続けられた"); await p.click("#mReflectAdd"); await p.waitForTimeout(500);
   ok((await goal(p, "g1")).notes.some((n) => n.text === "【リスニング】毎日続けられた"), "⑩ written");
   await done(p);
-  ok((await guard(p)).length === 2, "④ 部屋を片づける still not moved today: as it was");
-  // ⑤ in 進み具合: 部屋を片づける; ④ once it is moved on today
+  ok((await guard(p)).length === 0, "④ (taken out) none, 部屋を片づける still not moved today");
+  // ⑤ in 進み具合: 部屋を片づける (④ once it is moved on today: taken out)
   await open(p, "部屋を片づける");
   ok(/^少し遅れ気味（予定より \d+日分おくれています）。期限に間に合うには、/.test(await txt(p, "#mProgress .m-pace")), "⑤ in 進み具合", await txt(p, "#mProgress .m-pace"));
   await p.click('.m-cell[data-k="2"] [data-role="check"]'); await p.waitForTimeout(600);
   await done(p);
   al = await guard(p);
-  ok(al.length === 1 && al[0].tag === "goal-guard:2026-11-16", "④ moved on today: none for this evening", al);
+  ok(al.length === 0, "④ (taken out) none, moved on today or not", al);
 
   // ⑨ 目標の棚卸し: one by one
   const live = await p.locator("#goalTanaStart").textContent();

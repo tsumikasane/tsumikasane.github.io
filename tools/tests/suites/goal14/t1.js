@@ -45,15 +45,12 @@ const menuOf = (p, k) => p.evaluate((k) => document.querySelector(`.m-cell[data-
   await p.click("#goalHelpClose"); await p.waitForTimeout(200);
   ok(!!(await p.$("#goalHelpOpen")), "① closed");
   ok(!(await p.$("#goalWdOn")) && !(await W(p, "alarms", await p.evaluate(() => Date.now()))).some((a) => a.tag.startsWith("goal-wd:")), "③ (taken out) no switch, no morning notification");
-  await p.selectOption("#goalWipMax", "3"); await p.waitForTimeout(400);
-  ok((await setting(p, "goalWip"))?.max === 3, "⑤ a limit of three");
+  // ⑤ 進行中の目標の上限: taken out at the user's call (2026-11-25, tools/REMOVED.md)
+  ok(!(await p.$("#goalWipMax")), "⑤ (taken out) not in 設定");
   await done(p);
-  // ⑤ four under way: said over the page, まとめて選ぶ from there
-  ok((await txt(p, "#goalWipLine")) === "進行中の目標が 4つ（上限 3つ）です 保留にする目標を選ぶ", "⑤ over the limit, said", await txt(p, "#goalWipLine"));
-  await p.locator("#goalWipLine .link-btn").click(); await p.waitForTimeout(300);
-  ok(!!(await p.$("#goalPickEnd")), "⑤ まとめて選ぶ from there");
-  await p.click("#goalPickEnd"); await p.waitForTimeout(300);
-  // ⑥ a new goal like one there; ⑤ asked first
+  // ⑤ four under way: nothing said over the page (taken out)
+  ok(!(await p.$("#goalWipLine")), "⑤ (taken out) nothing over the page");
+  // ⑥ a new goal like one there (⑤ asked first: taken out)
   await p.click("#goalAdd"); await p.waitForTimeout(700);
   await p.fill("#goalTitle", "TOEIC 900点"); await p.waitForTimeout(200);
   ok((await txt(p, "#goalSimilar")) === "似た目標があります：「TOEIC 800点」（進行中・46%）", "⑥ one like it, said", await txt(p, "#goalSimilar"));
@@ -62,10 +59,9 @@ const menuOf = (p, k) => p.evaluate((k) => document.querySelector(`.m-cell[data-
   await p.fill("#goalTitle", "TOEIC 900点"); await p.fill("#goalCriterion", "900点をとる");
   await p.locator("#goalDeadlinePicks .chip-btn", { hasText: "半年後" }).click(); await p.waitForTimeout(200);
   await p.click("#goalSave"); await p.waitForTimeout(600);
-  ok((await ls(p, "goals")).length === 8 && (await shown(p, "goalWipSay")) && (await txt(p, "#goalWipSay")).startsWith("進行中の目標が 4つあって、上限（3つ）に達しています。"), "⑤ asked first, not added", await txt(p, "#goalWipSay"));
-  await p.click("#goalWipGo"); await p.waitForTimeout(900);
+  await p.waitForTimeout(300);
   const gs = await ls(p, "goals"), ng = gs.find((g) => g.title === "TOEIC 900点");
-  ok(gs.length === 9 && ng?.deadline === "2027-05-15", "⑤ それでも追加する", ng);
+  ok(gs.length === 9 && ng?.deadline === "2027-05-15" && !(await p.$("#goalWipSay")), "⑤ (taken out) added at once, nothing asked", ng);
   await done(p);
 
   // ⑦ the 期限 put at the day the pace gives (TOEIC)

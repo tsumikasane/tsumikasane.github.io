@@ -78,29 +78,22 @@ const tags = async (p) => (await W(p, "alarms", await p.evaluate(() => Date.now(
   await undo(p);
   g8 = await goal(p, "g8");
   ok(g8.deadline === "2026-11-21" && g8.dlog.length === 1 && (await p.inputValue("#mDeadline")) === "2026-11-21", "③ 元に戻す, its record too", [g8.deadline, g8.dlog]);
-  // ⑧ a letter, sealed
-  await p.fill("#mLetterText", "ここまで来たね。おめでとう！"); await p.click("#mLetterSeal"); await p.waitForTimeout(600);
-  g8 = await goal(p, "g8");
-  const lt = await txt(p, "#mLetter");
-  ok(g8.letter?.text === "ここまで来たね。おめでとう！" && lt.startsWith("✉️ 封をした手紙があります") && !lt.includes("おめでとう"), "⑧ sealed, not shown", lt);
+  // ⑧ 未来の自分への手紙: taken out at the user's call (2026-11-25, tools/REMOVED.md)
+  ok(!(await p.$("#mLetter")) && !(await p.$("#mLetterText")) && !(await p.$("#mLetterHead")), "⑧ (taken out) no letter to write");
   // ⑨ 5回目 checked: nothing asked (時間を聞く was taken out, the user's call, 2026-11-20)
   await p.locator('.m-cell[data-k="4"] [data-role="check"]').click(); await p.waitForTimeout(700);
   ok((await goal(p, "g8")).done === true && !(await p.$("#mAskTime")), "⑨ (taken out) checked, nothing asked");
-  // ⑧ achieved: the letter come
-  ok((await shown(p, "mLetterRow")) && (await txt(p, "#mLetter")).startsWith("✉️ 未来の自分からの手紙が届いています"), "⑧ come once achieved", await txt(p, "#mLetter"));
+  // ⑧ achieved: no letter come (taken out)
+  ok(!(await p.$("#mLetterRow")), "⑧ (taken out) none come once achieved");
   // ④ 印刷: the eight
   await p.evaluate(() => { window.print = () => { const x = document.getElementById("goalPrint"); window.__printed = [x?.querySelectorAll(".gp13-c").length, x?.innerText.replace(/\s+/g, " ").trim()]; }; });
   await p.click("#mPrint"); await p.waitForTimeout(300);
   let pr = await p.evaluate(() => window.__printed);
   ok(pr?.[0] === 9 && pr[1].startsWith("朝ランを習慣に達成基準：5回走る 期限：11月21日（土） 進み具合 100%") && pr[1].includes("✓5回目") && pr[1].endsWith("つみかさね 11月14日（土）に印刷"), "④ the eight on paper", pr);
   await done(p);
-  // ⑧ on its block, under 達成
+  // ⑧ on its block, under 達成: none (taken out)
   await p.click('#goalFilters button[data-filter="done"]'); await p.waitForTimeout(500);
-  ok((await p.locator(".goal", { has: p.locator(".title", { hasText: "朝ランを習慣に" }) }).locator(".g13-letter").count()) === 1, "⑧ on its block");
-  await open(p, "朝ランを習慣に");
-  await p.click("#mLetterGo"); await p.waitForTimeout(600);
-  ok((await goal(p, "g8")).letter.openedAt > 0 && (await txt(p, "#mLetter")).endsWith("ここまで来たね。おめでとう！") && !(await shown(p, "mLetterRow")), "⑧ opened", await txt(p, "#mLetter"));
-  await done(p);
+  ok((await p.locator(".goal .g13-letter").count()) === 0, "⑧ (taken out) none on its block");
   await p.click('#goalFilters button[data-filter="active"]'); await p.waitForTimeout(500);
 
   // ④ 印刷: 全体 of TOEIC

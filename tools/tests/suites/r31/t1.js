@@ -68,12 +68,12 @@ const done = async (p) => { await p.click("#sheetDone"); await p.waitForTimeout(
   await p.locator("#sheetStatus button").click(); await p.waitForTimeout(500);
   g1 = await goal(p, "g1");
   ok(!g1.mandala[0].c[1].due && !g1.mandala[4].due, "④ 元に戻す: taken off again");
-  // ⑧ ごほうび: in its progress; 50% reached: said with the 紙ふぶき
-  ok(pr.includes("ごほうび：50%で「ケーキを食べる」（あと 4%）・達成で「旅行に行く」"), "⑧ in its progress", pr);
+  // ⑧ ごほうび: taken out at the user's call (2026-11-25, tools/REMOVED.md): not in its progress, nothing to set; 50% reached: none said
+  ok(!pr.includes("ごほうび") && !(await p.$("#mRewardHalf")), "⑧ (taken out) not in its progress, nothing to set", pr);
   await p.evaluate(() => document.getElementById("daySheet").scrollTop = 0); await p.waitForTimeout(200);
   await p.click('.m-cell[data-k="2"] [data-role="open"]'); await p.waitForTimeout(500);
   await p.click('.m-cell[data-k="1"] [data-role="check"]'); await p.waitForTimeout(500);
-  ok((await status(p)).includes("50% まで来ました") && (await status(p)).includes("50%のごほうびの時間です：ケーキを食べる"), "⑧ 50%: its ごほうび said", await status(p));
+  ok((await status(p)).includes("50% まで来ました") && !(await status(p)).includes("ごほうび"), "⑧ 50%: said, no ごほうび (taken out)", await status(p));
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
   // ⑨ ふりかえりの型
   await p.evaluate(() => document.getElementById("mReflect").scrollIntoView({ block: "center" }));
@@ -133,7 +133,7 @@ const done = async (p) => { await p.click("#sheetDone"); await p.waitForTimeout(
   await open(p, "子の目標");
   await p.click('.m-cell[data-k="0"] [data-role="check"]'); await p.waitForTimeout(1200);
   ok((await goal(p, "g8")).done && (await goal(p, "g7")).done, "⑤ the other achieved: this one achieved with it", [(await goal(p, "g8")).done, (await goal(p, "g7")).done]);
-  ok((await status(p)).includes("「子の目標」を達成しました。ごほうびの時間です：映画を見る。「親」を達成しました"), "⑧⑤ its ごほうび said, and the one it stands in", await status(p));
+  ok((await status(p)).includes("「子の目標」を達成しました。「親」を達成しました") && !(await status(p)).includes("ごほうび"), "⑤ said, and the one it stands in (⑧ ごほうび taken out)", await status(p));
   await done(p);
 
   // ⑩ the record over 達成
