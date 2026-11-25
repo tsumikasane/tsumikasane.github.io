@@ -3607,11 +3607,6 @@ ul.list li.rec8-cmp::before { display: none; }
 .ts-mem-none { font-size: var(--t-sub); color: var(--muted); }
 .ts-mem-acts { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-top: 2px; }
 .ts-mem-go { min-height: 40px; }
-/* 10 これから届くお知らせ: when over what, at the left */
-#tsumiBell > li { flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
-.ts-bell-when { font-size: var(--t-sub); color: var(--muted); font-variant-numeric: tabular-nums; }
-.ts-bell-what { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.ts-bell.none { color: var(--muted); font-size: var(--t-sub); }
 /* 8 時間と季節で変わる空: under the stairs' canvas, over 高さで変わる景色 (the wrap's own background) */
 .tsumi-stairs { isolation: isolate; }
 .ts-sky { position: absolute; inset: 0; z-index: -1; border-radius: 12px; overflow: hidden; pointer-events: none; }
@@ -9720,10 +9715,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield"><input type="time" id="tsumiMonthSumAt" value="09:00"></div>
         </form>
         <p class="group-foot" id="tsumiMonthSumFoot"></p>
-        <!-- その5 10 これから届くお知らせ (the user's call, 2026-11-13): the next 7 days' -->
-        <h3 class="group-head" id="tsumiBellHead">これから届くお知らせ</h3>
-        <ul class="list card" id="tsumiBell"></ul>
-        <p class="group-foot" id="tsumiBellFoot"></p>
+        <!-- (その5 10 これから届くお知らせ, the next 7 days' listed: taken out at the user's call, 2026-11-25, tools/REMOVED.md;
+             the notifications themselves come as they did) -->
       </div>
       <!-- ルーティーンの設定 (its gear): ④ the order, ≡ dragged, and ⑥ the reminder (the user's calls, 2026-11-10) -->
       <div class="sheet-view" id="rtGroup" hidden>
@@ -24936,7 +24929,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月25日 19:57"; // fa6f1c68 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月25日 20:09"; // 82b90290 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -30820,7 +30813,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ---------- つみかさね その5 (the user's calls, 2026-11-13): 1 きょう積めるブロック, 2 種類ごとの週の目標, 3 これまでの
   // いちばん, 4 設定の目次, 5 きょうの思い出, 7 はじめてからの記念日, 8 時間と季節で変わる空, 9 つみねこがほめてくれる,
-  // 10 これから届くお知らせ (6 ひとことの印と一覧: taken out with ブロックにひとこと, the user's call, 2026-11-18) ----------
+  // (10 これから届くお知らせ: its list taken out at the user's call, 2026-11-25, the notifications kept; 6 ひとことの印と一覧:
+  // taken out with ブロックにひとこと, the user's call, 2026-11-18) ----------
   // 1 きょう積めるブロック: what today still has to be done, as faint blocks with a ＋ in the places at the top of the
   // stairs, to be stacked from there: the ToDos due by today or picked for きょうやる, not done (as ToDo's own count has
   // them: not waiting, not held back), the late ones first, and today's ルーティーン while none of it is checked (not on an
@@ -31147,20 +31141,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return () => { if (tab === "tsumi" && document.visibilityState === "visible" && !sheetEl.open) showNekoSay(words); };
   }
 
-  // 10 これから届くお知らせ: つみかさね's notifications in the next 7 days (毎日の記録, まとめ), as they are set now, in
-  // time order, and whether they come to this device
-  function renderTsumiBell() {
-    const now = Date.now(), list = alarmTimes(now).filter((a) => /^(?:tsumi|rec-remind)/.test(a.tag || "") && a.at <= now + 7 * 864e5).sort((a, b) => a.at - b.at), st = pushState();
-    setChildren($("tsumiBell"), list.length ? list.slice(0, 30).map((a) => {
-      const d = new Date(a.at);
-      return el("li", { class: "ts-bell" }, el("span", { class: "ts-bell-when" }, `${fmtMDW(ymd(d))} ${d.getHours()}:${pad(d.getMinutes())}`), el("span", { class: "ts-bell-what" }, el("strong", {}, oneLine(a.title)), " ", oneLine(a.body)));
-    }) : el("li", { class: "ts-bell none" }, "この先7日に届くお知らせはありません。"));
-    $("tsumiBellFoot").textContent = !list.length ? "毎日の記録・1日・週・月のまとめのお知らせをオンにすると、ここに並びます。"
-      : st === "on" ? "記録や設定が変わると、その都度つくり直されます。" : pushWords(st).replace("通知アラーム", "お知らせ");
-  }
+  // (10 これから届くお知らせ: つみかさね's notifications in the next 7 days, listed in the gear: taken out at the user's call,
+  // 2026-11-25, tools/REMOVED.md. 毎日の記録のお知らせ and the まとめ are sent as they were: alarmTimes makes them)
 
   // the gear's and the card's parts of these, drawn with the others
-  function renderTsumiGear5() { renderTsumiMemory(); renderTsumiBest(); renderTsumiKindGoals(); renderTsumiStartFoot(); renderTsumiBell(); }
+  function renderTsumiGear5() { renderTsumiMemory(); renderTsumiBest(); renderTsumiKindGoals(); renderTsumiStartFoot(); }
   function renderTsumiFoot5() { renderTsumiKindGoalLine(); renderTsumiStartLine(); }
   // said once, as つみかさね is drawn: はじめてからの記念日 (with 紙ふぶき, unless a 記念日 had it), a kind's week reached
   function tsDailyChecks5(said, mark) {
