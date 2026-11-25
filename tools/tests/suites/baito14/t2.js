@@ -18,11 +18,17 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   await p.addInitScript(() => { Object.defineProperty(navigator, "share", { value: undefined, configurable: true }); window.__copied = ""; Object.defineProperty(navigator, "clipboard", { value: { writeText: async (t) => { window.__copied = t; } }, configurable: true }); });
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
-  // ③ カフェ's 10月分 in 家計簿: its お知らせ no more
-  ok((await tags(p)).includes("bt14-pay:j1|2026-10"), "③ before");
+  // ③ 給料の入金のたしかめ (the お知らせ the day after a 給料日) taken out at the user's call (2026-11-25, tools/REMOVED.md): none,
+  // its switch kept on; the month's block still says a 給料日 gone by while its pay isn't in 家計簿 (カフェ 10月分, 11/25), until it is
+  ok(!(await tags(p)).some((t) => t.startsWith("bt14-pay:")), "③ お知らせ: gone " + JSON.stringify(await tags(p)));
+  const past = async () => { await p.click("#monthNav .navbtn"); await p.waitForTimeout(400); // (前月)
+    return p.evaluate(() => { const b = [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("カフェ")); return b ? b.querySelector(".bt14-notes .warn")?.innerText.replace(/\s+/g, " ").trim() || "" : "(no カフェ)"; }); };
+  await p.clock.setFixedTime(at("12:00", "2026-11-26")); await p.reload(); await p.waitForTimeout(900);
+  ok((await past()) === "給料日（11/25）をすぎています。入った額を「収入に入れる」で家計簿に入れましょう", "③ the month's note, kept: " + (await p.evaluate(() => document.querySelector("#jobSum")?.innerText.replace(/\s+/g, " ").slice(0, 300))));
   await p.evaluate((P) => { const l = JSON.parse(localStorage.getItem(P + "expenses") || "[]"); l.push({ id: "in1", kind: "in", amount: 5300, date: "2026-11-25", category: "給与", pay: "j1|2026-10", createdAt: 1 }); localStorage.setItem(P + "expenses", JSON.stringify(l)); }, P);
   await p.reload(); await p.waitForTimeout(900);
-  ok(!(await tags(p)).includes("bt14-pay:j1|2026-10") && (await tags(p)).includes("bt14-pay:j1|2026-11"), "③ in 家計簿: " + JSON.stringify(await tags(p)));
+  ok((await past()) === "", "③ in 家計簿: no note");
+  await p.clock.setFixedTime(at("12:00", today)); await p.reload(); await p.waitForTimeout(900);
   // ⑥ ヘルプに入れる日を文字で: taken out at the user's call (2026-11-19, tools/REMOVED.md)
   ok(!(await p.$("#bt14Help")), "⑥ gone");
   // ⑤ 社員 佐藤 in; 店長 田中 off and back

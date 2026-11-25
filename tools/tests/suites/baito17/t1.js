@@ -23,20 +23,20 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   // ④ 11月 30 時間 (カフェ 20・塾 10; 上限 20), 今週 2 日 (上限 2); the bar there (その3 ⑤'s too had none)
   ok(await p.evaluate(() => document.querySelector("#bt17Caps .bar-track").getBoundingClientRect().height === 8), "④ the bar");
   ok((await txt(p, "#bt17Caps")) === "11月は 30 時間・上限 20 時間を 10 時間 こえています 今週（11/15〜11/21）は 2 日・上限 2 日まで あと 0 日", "④ " + (await txt(p, "#bt17Caps")));
-  // ⑤ 11/25 の給料 (カフェ 10月分 20,000 円): 貯金 30%・自由 20%・のこり 50%
-  ok((await txt(p, "#bt17Split")) === "給料の使いみち 11月25日（水）の給料 約 20,000 円（カフェ） 貯金 30% 6,000 円 自由 20% 4,000 円 のこり 50% 10,000 円", "⑤ " + (await txt(p, "#bt17Split")));
-  // ⑥ カフェ 1 年 on 11/25
+  // ⑤ 給料の使いみち taken out at the user's call (2026-11-25, tools/REMOVED.md): no card, though 貯金 30%・自由 20% stay saved
+  ok(!(await p.$("#bt17Split")) && !(await p.evaluate(() => [...document.querySelectorAll("#moneyJob .card")].some((c) => c.innerText.includes("使いみち")))), "⑤ 給料の使いみち: gone");
+  // ⑥ カフェ 1 年 on 11/25: the card, kept; its お知らせ taken out at the user's call (2026-11-25, tools/REMOVED.md), its switch kept on
   ok((await txt(p, "#bt17Anniv")) === "カフェで働きはじめて 1 年 11月25日（水）・あと 5 日 2025/11/25から これまで 14 回・70 時間・約 70,000 円", "⑥ " + (await txt(p, "#bt17Anniv")));
   const al = await p.evaluate(() => window.__bt17.alarms(Date.now()).filter((a) => /^bt17-/.test(a.tag)).map((a) => [a.tag, new Date(a.at).toISOString(), a.title, a.body]));
-  ok(JSON.stringify(al) === JSON.stringify([["bt17-anniv:j1:2026-11-25", "2026-11-25T00:00:00.000Z", "カフェで働きはじめて 1 年です", "2025/11/25から 14 回・70 時間。おつかれさまです"]]), "⑥ お知らせ: " + JSON.stringify(al));
+  ok(JSON.stringify(al) === "[]", "⑥ お知らせ: gone " + JSON.stringify(al));
   // ⑦ 11/20 まで: 去年 15,000 円 (塾) → 今年 37,500 円
   ok((await txt(p, "#jobYear .bt17-year")) === "11/20までに入った給料：去年 15,000 円 → 今年 37,500 円（+22,500 円）", "⑦ " + (await txt(p, "#jobYear .bt17-year")));
   // ⑧ 立ち仕事 2.5 × 50 kg × 5 時間 × 1.05 × 3 回 (11/23 はまだ)
   ok((await p.evaluate(() => [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("カフェ")).querySelector(".bt17-notes p")?.innerText.replace(/\s+/g, " ").trim())) === "消費の目安：ここまで 約 1,970 kcal（1回 約 660 kcal）", "⑧");
-  // ①②③④⑤⑥⑧ the settings
+  // ①②③④⑧ the settings (⑤ and ⑥'s お知らせ gone)
   await p.click("#moneySettings"); await p.waitForTimeout(500);
-  const f = await p.evaluate(() => { const g = (k) => document.querySelector(`#jobForms [data-job="j1"] [data-f="${k}"]`); const v = (id) => document.getElementById(id); return [g("app").value, g("roles").value, g("raiseH").value, g("raisePlus").value, g("move").value, v("bt17MonthMax").value, v("bt17WeekDays").value, v("bt17S0n").value, v("bt17S0p").value, v("bt17S1n").value, v("bt17S2n").value, v("bt17AnnivChk").checked]; });
-  ok(JSON.stringify(f) === JSON.stringify(["https://shift.example.com/cafe", "レジ、キッチン", "100", "30", "stand", "20", "2", "貯金", "30", "自由", "", true]), "the settings: " + JSON.stringify(f));
+  const f = await p.evaluate(() => { const g = (k) => document.querySelector(`#jobForms [data-job="j1"] [data-f="${k}"]`); const v = (id) => document.getElementById(id); return [g("app").value, g("roles").value, g("raiseH").value, g("raisePlus").value, g("move").value, v("bt17MonthMax").value, v("bt17WeekDays").value, !!v("bt17S0n") || !!v("bt17SplitForm"), !!v("bt17AnnivChk"), [...document.querySelectorAll("h3.group-head")].filter((h) => /使いみち|勤続/.test(h.textContent)).length]; });
+  ok(JSON.stringify(f) === JSON.stringify(["https://shift.example.com/cafe", "レジ、キッチン", "100", "30", "stand", "20", "2", false, false, 0]), "the settings: " + JSON.stringify(f));
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

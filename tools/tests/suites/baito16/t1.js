@@ -27,8 +27,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ok(!(await p.evaluate(() => [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("塾"))?.querySelector(".bt16-notes"))), "⑥ none for 塾 (no 去年)");
   // ⑧ バイトの日の支出: taken out at the user's call (2026-11-19, tools/REMOVED.md)
   ok(!(await p.$("#bt16Spend")), "⑧ バイトの日の支出: gone");
-  // ⑨ 最低賃金 1,100 円: カフェ and 11/9's 900 円
-  ok((await txt(p, "#bt16Min")) === "最低賃金（1,100 円）より低い時給 ・ カフェの時給 1,000 円 100 円 低い ・ 11/9（月）の この回の時給 900 円 200 円 低い 最低賃金より低い時給は、ふつう認められていません。数字をたしかめて、お店に聞いてみましょう。", "⑨ " + (await txt(p, "#bt16Min")));
+  // ⑨ 最低賃金 taken out at the user's call (2026-11-25, tools/REMOVED.md): no card, though 1,100 円 stays saved
+  ok(!(await p.$("#bt16Min")) && !(await p.evaluate(() => [...document.querySelectorAll("#moneyJob .card")].some((c) => c.innerText.includes("最低賃金")))), "⑨ 最低賃金: gone");
   // ②③④⑤ お知らせ
   const al = await p.evaluate(() => window.__bt16.alarms(Date.now()).filter((a) => /^(bt16-|bt2-ask:|bt7-go:)/.test(a.tag)).map((a) => [a.tag, new Date(a.at).toISOString(), a.title, a.body]).sort((a, b) => a[1].localeCompare(b[1])));
   const by = (t) => al.find((a) => a[0] === t);
@@ -37,11 +37,11 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ok(!!by("bt2-ask:2026-11-25"), "④ the 締め切り's お知らせ, not yet given");
   const go = by("bt7-go:tz1:2026-11-23:17:00");
   ok(go && go[1] === "2026-11-23T07:20:00.000Z" && go[3].startsWith("17:00 からカフェ（通勤 30 分・10 分前に着く）"), "⑤ " + JSON.stringify(go));
-  // ①③⑤⑨ the settings
+  // ①③⑤ the settings (⑨ gone)
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   await p.click("#bt16CardsBox summary"); await p.waitForTimeout(300);
-  const f = await p.evaluate(() => { const g = (k) => document.querySelector(`#jobForms [data-job="j1"] [data-f="${k}"]`); const c = (id) => document.querySelector(`#bt16Cards [data-card="${id}"]`); return [g("early").value, g("pass").value, document.getElementById("bt16MinWage").value, document.getElementById("bt16TentChk").checked, document.getElementById("bt16PassChk").checked, c("bt14People").checked, c("bt6Cal").checked, document.getElementById("bt16CardsHead").textContent, document.querySelectorAll("#bt16Cards [data-card]").length, [...document.querySelectorAll("#bt16Cards [data-card]")].map((x) => x.dataset.card)]; });
-  ok(JSON.stringify(f.slice(0, 8)) === JSON.stringify(["10", "2026-11-23", "1100", true, true, false, true, "カードを選ぶ（1 こ しまっています）"]) && f[8] >= 25 && !["bt2Calc", "bt14Help", "bt15Tpl", "bt13Week", "bt5Year", "bt13Miles", "bt15Tax", "bt6Feel", "bt6Bulk", "bt7Photos", "bt5Find", "bt12Cost", "bt9GensenCard", "bt12Feel", "bt2Bulk", "bt5Weeks", "bt7Total", "bt8Records", "bt8Ways", "bt9Heat", "bt14What", "bt15Hunt", "bt16Spend"].some((id) => f[9].includes(id)), "①③⑤⑨ the settings: " + JSON.stringify(f));
+  const f = await p.evaluate(() => { const g = (k) => document.querySelector(`#jobForms [data-job="j1"] [data-f="${k}"]`); const c = (id) => document.querySelector(`#bt16Cards [data-card="${id}"]`); return [g("early").value, g("pass").value, !!document.getElementById("bt16MinWage") || [...document.querySelectorAll("h3.group-head")].some((h) => h.textContent.includes("最低賃金")), document.getElementById("bt16TentChk").checked, document.getElementById("bt16PassChk").checked, c("bt14People").checked, c("bt6Cal").checked, document.getElementById("bt16CardsHead").textContent, document.querySelectorAll("#bt16Cards [data-card]").length, [...document.querySelectorAll("#bt16Cards [data-card]")].map((x) => x.dataset.card)]; });
+  ok(JSON.stringify(f.slice(0, 8)) === JSON.stringify(["10", "2026-11-23", false, true, true, false, true, "カードを選ぶ（1 こ しまっています）"]) && f[8] >= 25 && !["bt2Calc", "bt14Help", "bt15Tpl", "bt13Week", "bt5Year", "bt13Miles", "bt15Tax", "bt6Feel", "bt6Bulk", "bt7Photos", "bt5Find", "bt12Cost", "bt9GensenCard", "bt12Feel", "bt2Bulk", "bt5Weeks", "bt7Total", "bt8Records", "bt8Ways", "bt9Heat", "bt14What", "bt15Hunt", "bt16Spend", "bt16Min", "bt17Split"].some((id) => f[9].includes(id)), "①③⑤ the settings (⑨ gone): " + JSON.stringify(f));
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

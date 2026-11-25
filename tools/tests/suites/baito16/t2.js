@@ -33,16 +33,15 @@ const shown = (p, id) => p.evaluate((id) => getComputedStyle(document.getElement
   ok(await p.evaluate(() => document.getElementById("bt16CardsBox").open), "① the cards opened");
   await p.click('#bt16Cards [data-card="bt6Cal"]'); await p.click('#bt16Cards [data-card="bt14People"]'); await p.waitForTimeout(400);
   ok(JSON.stringify((await setting(p, "bt16")).hide) === JSON.stringify(["bt6Cal"]) && (await txt(p, "#bt16CardsHead")) === "カードを選ぶ（1 こ しまっています）", "① kept: " + JSON.stringify((await setting(p, "bt16")).hide));
-  // ⑤ 早めに着く 0, ③ 定期券 12/31, ⑨ 最低賃金 900
+  // ⑤ 早めに着く 0, ③ 定期券 12/31 (⑨ 最低賃金 taken out at the user's call, 2026-11-25: its 1,100 円 stays saved)
   await p.fill('#jobForms [data-job="j1"] [data-f="early"]', ""); await p.fill('#jobForms [data-job="j1"] [data-f="pass"]', "2026-12-31"); await p.waitForTimeout(900);
-  await p.fill("#bt16MinWage", "900"); await p.dispatchEvent("#bt16MinWage", "change"); await p.waitForTimeout(300);
   const j1 = await job(p, "j1");
-  ok(!("early" in j1) && j1.pass === "2026-12-31" && (await setting(p, "bt16")).minWage === 900, "③⑤⑨ kept: " + JSON.stringify(j1));
+  ok(!("early" in j1) && j1.pass === "2026-12-31" && (await setting(p, "bt16")).minWage === 1100, "③⑤ kept (⑨'s 1,100 円 too): " + JSON.stringify(j1));
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   ok(!(await shown(p, "bt6Cal")) && (await shown(p, "bt14People")), "① on the page");
   ok((await txt(p, "#bt3Next")).includes("16:30 に出ると間に合います（通勤 30 分）"), "⑤ no minutes early: " + (await txt(p, "#bt3Next")));
   ok((await p.isHidden("#bt16Pass")) && JSON.stringify((await tags(p)).filter((t) => t.startsWith("bt16-pass"))) === JSON.stringify(["bt16-pass:j1:2026-12-31:3"]), "③ 12/31: " + JSON.stringify(await tags(p)));
-  ok(await p.isHidden("#bt16Min"), "⑨ 900 円: none below");
+  ok(!(await p.$("#bt16Min")), "⑨ 最低賃金: gone");
   // ⑩ 9:00〜1:00 (16 時間): said as it goes in, and on its row
   await p.clock.setFixedTime(at("12:01", today));
   await p.selectOption("#shiftJob", "j1"); await p.fill("#shiftDate", "2026-11-28"); await p.fill("#shiftStart", "09:00"); await p.fill("#shiftEnd", "01:00"); await p.fill("#shiftRest", "0");

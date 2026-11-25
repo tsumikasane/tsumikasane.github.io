@@ -19,10 +19,11 @@ const block = (p, name) => p.evaluate((name) => [...document.querySelectorAll("#
   ok(cafe.notes === "週40時間をこえた分：12 時間・+3,000 円 交通費は1か月 1,000 円 まで：−1,400 円", "①② notes: " + cafe.notes);
   ok(cafe.parts.includes("週40時間をこえた分の割増 3,000 円") && cafe.parts.includes("8時間をこえた分の割増 500 円") && cafe.parts.includes("交通費 2,400 円") && cafe.parts.includes("交通費の上限 −1,400 円") && cafe.parts.includes("合計 63,500 円"), "①② parts: " + JSON.stringify(cafe.parts));
   ok((await txt(p, '#shiftList li[data-shift="w21"]')).includes("12,800 円") && (await txt(p, '#shiftList li[data-shift="w20"]')).includes("5,300 円") && (await txt(p, '#shiftList li[data-shift="w19"]')).includes("8,300 円"), "① each shift");
-  // ③④ お知らせ: 給料日の次の朝 (カフェ 10月分・11月分, 塾 10月分), 12/1 に年の目安 (73,300 / 90,000)
+  // ④ お知らせ: 12/1 に年の目安 (73,300 / 90,000); ③ 給料の入金のたしかめ (給料日の次の朝) taken out at the user's call
+  // (2026-11-25, tools/REMOVED.md): none, though its switch (payChk) stays saved on
   const al = await p.evaluate(() => window.__bt14.alarms(Date.now()).filter((a) => /^bt14-/.test(a.tag)).map((a) => [a.tag, new Date(a.at).toISOString(), a.title, a.body]));
   const by = (t) => al.find((a) => a[0] === t);
-  ok(JSON.stringify(by("bt14-pay:j1|2026-10")) === JSON.stringify(["bt14-pay:j1|2026-10", "2026-11-26T00:00:00.000Z", "給料は入りましたか？", "カフェの10月分（見込み 約 5,300円）。入っていたら、家計簿の収入に入れましょう"]) && by("bt14-pay:j1|2026-11") && by("bt14-pay:j2|2026-10"), "③ " + JSON.stringify(al));
+  ok(al.length && !al.some((a) => a[0].startsWith("bt14-pay:")), "③ 給料の入金のたしかめ: gone " + JSON.stringify(al));
   ok(JSON.stringify(by("bt14-wall:2026-12")) === JSON.stringify(["bt14-wall:2026-12", "2026-12-01T00:00:00.000Z", "年の目安に近づいています", "2026年の見込み 約 73,300円・目安 90,000円まで あと 約 16,700円"]) && !by("bt14-wall:2027-01"), "④ " + JSON.stringify(by("bt14-wall:2026-12")));
   // ⑧ 塾, left on 10/31
   const lf = await txt(p, "#bt14Left");
@@ -40,9 +41,9 @@ const block = (p, name) => p.evaluate((name) => [...document.querySelectorAll("#
   ok(!(await p.$("#bt14What")), "⑦ 時給が変わったら: gone");
   // ②③④ the settings
   await p.click("#moneySettings"); await p.waitForTimeout(500);
-  const f = await p.evaluate(() => ({ max: document.querySelector('#jobForms [data-job="j1"] [data-f="fareMax"]').value, pay: document.getElementById("bt14PayChk").checked, wall: document.getElementById("bt14WallChk").checked,
+  const f = await p.evaluate(() => ({ max: document.querySelector('#jobForms [data-job="j1"] [data-f="fareMax"]').value, pay: !!document.getElementById("bt14PayChk") || [...document.querySelectorAll("h3.group-head")].some((h) => h.textContent.includes("給料の入金")), wall: document.getElementById("bt14WallChk").checked,
     ot: document.querySelector('#jobForms [data-job="j1"] [data-f="ot"]').closest("label").textContent }));
-  ok(f.max === "1000" && f.pay && f.wall && f.ot.startsWith("1日8時間・週40時間をこえた分は"), "①②③④ the settings: " + JSON.stringify(f));
+  ok(f.max === "1000" && !f.pay && f.wall && f.ot.startsWith("1日8時間・週40時間をこえた分は"), "①②④ the settings (③ gone): " + JSON.stringify(f));
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

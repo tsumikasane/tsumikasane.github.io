@@ -32,14 +32,13 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   ok((await p.inputValue("#reShiftRole")) === "キッチン", "② in the sheet");
   await p.selectOption("#reShiftRole", "レジ"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   ok((await ls(p, "shifts")).find((x) => x.id === "n2").role === "レジ", "② changed");
-  // ④⑤ the settings: 上限 off, 使いみち 50% 生活費
+  // ④ the settings: 上限 off (⑤ 給料の使いみち and ⑥'s お知らせ taken out at the user's call, 2026-11-25: what was set stays saved)
   await p.click("#moneySettings"); await p.waitForTimeout(500);
   await p.fill("#bt17MonthMax", ""); await p.fill("#bt17WeekDays", ""); await p.dispatchEvent("#bt17WeekDays", "change"); await p.waitForTimeout(300);
-  await p.fill("#bt17S2n", "生活費"); await p.fill("#bt17S2p", "50"); await p.dispatchEvent("#bt17S2p", "change"); await p.waitForTimeout(300);
   const s = await setting(p, "bt17");
-  ok(!("monthMax" in s) && !("weekDays" in s) && JSON.stringify(s.split) === JSON.stringify([{ name: "貯金", pct: 30 }, { name: "自由", pct: 20 }, { name: "生活費", pct: 50 }]), "④⑤ kept: " + JSON.stringify(s));
+  ok(!("monthMax" in s) && !("weekDays" in s) && JSON.stringify(s.split) === JSON.stringify([{ name: "貯金", pct: 30 }, { name: "自由", pct: 20 }]) && s.annivChk === true, "④ kept (⑤⑥'s saved too): " + JSON.stringify(s));
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
-  ok((await p.isHidden("#bt17Caps")) && (await txt(p, "#bt17Split")).endsWith("生活費 50% 10,000 円"), "④⑤ on the page: " + (await txt(p, "#bt17Split")));
+  ok((await p.isHidden("#bt17Caps")) && !(await p.$("#bt17Split")), "④ on the page (⑤ gone)");
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");
