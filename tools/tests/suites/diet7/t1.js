@@ -101,12 +101,13 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   ok(/減った体重の内訳/.test(r) && /体脂肪量 −3\.\d kg 減ったうちの \d+%/.test(r), "⑨ said", r);
   await p.click('#dt7Split button:has-text("30日")'); await p.waitForTimeout(200);
   ok(/体重 −1\.\d kg/.test(await txt(p, "#dt7Split")), "⑨ 30 days", await txt(p, "#dt7Split"));
-  // ⑩ 目標の理由: written, shown; on 食事 too, today being over its 目安
-  await p.click('#dt7Why button:has-text("理由を書く")'); await p.waitForTimeout(200);
-  await p.fill("#dt7WhyIn", "夏までにジーンズをはく"); await p.click('#dt7Why button:has-text("保存")'); await p.waitForTimeout(400);
-  ok((await setting(p, "dietWhy"))?.text === "夏までにジーンズをはく" && /夏までにジーンズをはく/.test(await txt(p, "#dt7Why")), "⑩ kept and shown");
+  // ⑩ 目標の理由 taken out at the user's call (2026-11-25, tools/REMOVED.md): no card, and no line on 食事 though today is over
+  // its 目安 and a reason was written before (kept as it was)
+  ok(!(await p.$("#dt7Why")) && !(await p.evaluate(() => [...document.querySelectorAll("#part-weight .card")].some((c) => c.innerText.includes("目標の理由")))), "⑩ 目標の理由: gone");
+  await p.evaluate((P) => { const l = JSON.parse(localStorage.getItem(P + "settings") || "[]"); l.push({ id: "dietWhy", text: "夏までにジーンズをはく", updatedAt: 1 }); localStorage.setItem(P + "settings", JSON.stringify(l)); }, P);
   await part(p, "meal");
-  ok(/目標の理由 夏までにジーンズをはく/.test(await txt(p, "#mealGoalCard .dt7-why-meal") || ""), "⑩ on 食事, over the 目安", await txt(p, "#mealGoalCard"));
+  ok(!(await p.$("#mealGoalCard .dt7-why-meal")) && !(await txt(p, "#mealGoalCard")).includes("夏までにジーンズをはく"), "⑩ not on 食事 either", await txt(p, "#mealGoalCard"));
+  ok((await setting(p, "dietWhy"))?.text === "夏までにジーンズをはく", "⑩ what was written stays");
 
   const wide = await p.evaluate(() => document.documentElement.scrollWidth);
   ok(wide <= 393, "no sideways scroll", wide);

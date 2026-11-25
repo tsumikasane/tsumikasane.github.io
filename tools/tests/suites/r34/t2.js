@@ -1,5 +1,5 @@
-// からだ その2: the edges — a page with nothing yet (睡眠 half put in and emptied; 水分 taken out 2026-11-20), あったこと kept for a
-// day while another is looked at and taken off, 生理, 停滞期 not said, the calendar's months, the 節目 not said twice nor
+// からだ その2: the edges — a page with nothing yet (睡眠 half put in and emptied; 水分 taken out 2026-11-20), あったこと's buttons
+// gone (taken out 2026-11-25, 生理 with them), 停滞期 not said, the calendar's months, the 節目 not said twice nor
 // for a past day, サイズの目標's line and emptied, the week's notification on and off, and CSV in
 // other shapes, written over and taken back
 process.env.URL0 = process.env.URL0 || "http://localhost:8777/";
@@ -31,7 +31,7 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   ok(JSON.stringify(vis) === "[false,false,false,false,true]", "nothing yet: only 睡眠", vis);
   ok(!(await e.$(".bd2-water-v")) && (await txt(e, ".bd2-sleep-v")) === "—" && (await txt(e, ".bd2-sleep-note")).startsWith("きょうの朝までの夜です。"), "nothing yet: no 水分 (taken out), no sleep",
     [await txt(e, ".bd2-sleep-v"), await txt(e, ".bd2-sleep-note")]);
-  ok(!(await e.$("#bd2Daily .bd2-less")) && !(await e.$('#bd2Tags button:has-text("生理")')), "nothing yet: no −200; no 生理 without 女性");
+  ok(!(await e.$("#bd2Daily .bd2-less")) && !(await e.$("#bd2Tags")), "nothing yet: no −200; no あったこと (taken out)");
   // ⑦ a cup, then back to none: went with 水分 (taken out 2026-11-20); ⑧ below empties a day the same way
   // ⑧ 寝た only: kept, no length; under an hour: none; over midnight; both emptied: gone
   await setTime(e, "#bd2Bed", "23:30");
@@ -47,23 +47,16 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   ok((await wt(e, "2026-11-11"))?.kg === 70 && !/kg台|半分|届きました/.test(await status(e)) && !(await e.isVisible("#bd2Quick")), "⑤ a first weight, no goal: nothing said", await status(e));
   ok(await e.isVisible("#bd2Cal") && !(await e.isVisible("#bd2Effects")), "④ one weight: the calendar; ② too few for the next day");
 
-  // ---- あったこと: picked for a day without its weight, kept while another is looked at; on and off on a day with one; 生理
+  // ---- あったこと's buttons taken out at the user's call (2026-11-25, tools/REMOVED.md): none for 女性 either (生理 went with
+  // them); a weight in, no tags; the day before as it was
   const p = await mk();
   await seed(p, { ...base(), settings: [...D.settings().filter((x) => x.id !== "body"), { id: "body", height: 160, age: 25, sex: "f", updatedAt: D.T("2026-09-20") }] }, "weight"); await p.waitForTimeout(1000);
-  ok(!!(await p.$('#bd2Tags button:has-text("生理")')), "② 生理 for 女性");
-  await p.locator("#bd2Tags button", { hasText: "むくみ" }).click(); await p.waitForTimeout(200);
-  await prev(p); await p.waitForTimeout(400);
-  ok((await p.getAttribute('#bd2Tags button:has-text("むくみ")', "aria-pressed")) === "false", "② the day before: its own");
-  await next(p); await p.waitForTimeout(400);
-  ok((await p.getAttribute('#bd2Tags button:has-text("むくみ")', "aria-pressed")) === "true", "② back: still picked");
+  ok(!(await p.$("#bd2Tags")) && !(await p.$(".bd2-tag")) && !(await txt(p, "#wtForm")).includes("生理"), "② no buttons, 女性 too");
   await p.fill("#wtInput", "67.0"); await p.click("#wtSubmit"); await p.waitForTimeout(700);
-  ok(JSON.stringify((await wt(p, "2026-11-11"))?.tags) === '["swell"]', "② saved with the weight", await wt(p, "2026-11-11"));
+  ok((await wt(p, "2026-11-11"))?.kg === 67 && !("tags" in (await wt(p, "2026-11-11"))), "a weight in, no tags", await wt(p, "2026-11-11"));
   await prev(p); await p.waitForTimeout(400);
-  await p.locator("#bd2Tags button", { hasText: "塩分多め" }).click(); await p.waitForTimeout(400);
-  ok(JSON.stringify((await wt(p, "2026-11-10"))?.tags) === '["salty"]', "② on, on a day with its weight");
-  await p.locator("#bd2Tags button", { hasText: "塩分多め" }).click(); await p.waitForTimeout(400);
   const r10 = await wt(p, "2026-11-10");
-  ok(!("tags" in r10) && r10.kg === 67.2, "② off: none kept, the rest as it was", r10);
+  ok(!("tags" in r10) && r10.kg === 67.2, "the day before as it was", r10);
   // ⑦ a past day's 水分: taken out at the user's call (2026-11-20, tools/REMOVED.md); the day before's 1,600 ml stays
   ok(!(await p.$(".bd2-water-v")) && (await bday(p, "2026-11-10"))?.water === 1600, "⑦ gone, the day before's kept", await bday(p, "2026-11-10"));
 

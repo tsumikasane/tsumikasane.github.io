@@ -52,12 +52,9 @@ async function part(p, k) { await p.evaluate(({ P, k }) => localStorage.setItem(
   ok(/記録のチェック 4 件/.test(await txt(p, "#dt15Check")) && ((await setting(p, "dt15Ok"))?.ids || []).includes("b:2026-11-12:steps"), "⑨ left as it is");
   await p.click('#dt15Check button[aria-label="11/13（金）の食事「おにぎり」を見る"]'); await p.waitForTimeout(500);
   ok(await p.isVisible("#part-meal") && /11月13日（金）/.test(await txt(p, "#mealGoalCard")), "⑨ gone to its day and part", await txt(p, "#mealGoalCard"));
-  // ⑩ 目標体重の見直し: 52 kg is BMI 18.0; made 53.5
+  // ⑩ 目標体重の見直し taken out at the user's call (2026-11-25, tools/REMOVED.md): no card, the goal (52 kg) as it was
   await part(p, "weight");
-  r = await txt(p, "#dt15Target");
-  ok(/目標体重の見直し BMI 18\.0 目標の 52\.0 kg は「低体重（やせ）」です。健康的な範囲は 53\.5〜71\.9 kg（BMI 18\.5〜25）、標準体重は 63\.6 kg です。 やせすぎの目標です。53\.5 kg 以上にするのがおすすめです。/.test(r), "⑩ too low", r);
-  await p.click('#dt15Target button:has-text("53.5 kg にする")'); await p.waitForTimeout(400);
-  ok((await setting(p, "weight"))?.target === 53.5 && /BMI 18\.5/.test(await txt(p, "#dt15Target")) && !/やせすぎ/.test(await txt(p, "#dt15Target")), "⑩ made 53.5", await txt(p, "#dt15Target"));
+  ok(!(await p.$("#dt15Target")) && !(await p.evaluate(() => [...document.querySelectorAll("#part-weight .card")].some((c) => c.innerText.includes("目標体重の見直し")))) && (await setting(p, "weight"))?.target === 52, "⑩ 目標体重の見直し: gone");
   // ⑧ 寝る時刻の目標: 23:30
   const bd = await W(p, "bed"); r = await txt(p, "#dt15Bed");
   ok(bd.at === "23:30" && bd.had === 14 && bd.kept === 8 && r.includes(`守れた日 8 / 14 日・おそくなった日は平均`) && (await p.locator("#dt15Bed .dt15-bed-dots i.late").count()) === 6, "⑧ the nights", [bd, r]);

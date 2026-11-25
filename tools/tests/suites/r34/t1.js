@@ -10,6 +10,7 @@ const wt = async (p, d) => (await ls(p, "weights")).find((r) => r.id === d);
 const status = (p) => p.evaluate(() => [document.getElementById("status")?.textContent || "", document.getElementById("sheetStatus").textContent].join("｜"));
 const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerText.replace(/\s+/g, " ").trim() ?? null, sel);
 const W = (p, f, ...a) => p.evaluate(({ f, a }) => window.__bd2[f](...a), { f, a });
+const goDay = (p, d) => p.evaluate((d) => { const f = document.querySelector("#sec-diet .datenav input[type=date]"); f.value = d; f.dispatchEvent(new Event("change", { bubbles: true })); }, d);
 const WHEN = new Date("2026-11-11T07:40:00+09:00");
 const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.settings() });
 (async () => {
@@ -26,19 +27,19 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   await p.locator("#bd2Quick button", { hasText: "同じ" }).click(); await p.waitForTimeout(200);
   ok((await p.inputValue("#wtInput")) === last.kg.toFixed(1), "① 同じ");
 
-  // ② あったこと picked before the day has its weight: kept with 記録する; ⑤ nothing crossed today
-  await p.locator("#bd2Tags button", { hasText: "外食" }).click(); await p.waitForTimeout(200);
-  ok((await p.getAttribute('#bd2Tags button:has-text("外食")', "aria-pressed")) === "true" && !(await p.$('#bd2Tags button:has-text("生理")')), "② picked; 生理 only for 女性");
+  // ② あったこと's buttons taken out at the user's call (2026-11-25, tools/REMOVED.md): none under the weight; a day's tags
+  // kept as it is written again (11/6's 飲み会); ⑤ nothing crossed today
+  ok(!(await p.$("#bd2Tags")) && !(await p.$("#bd2TagLabel")) && !(await p.$(".bd2-tag")) && !(await txt(p, "#wtForm")).includes("あったこと"), "② the buttons: gone");
   await p.click("#wtSubmit"); await p.waitForTimeout(700);
   let r = await wt(p, "2026-11-11");
-  ok(r?.kg === last.kg && JSON.stringify(r.tags) === '["eatout"]', "② saved with the weight", r);
+  ok(r?.kg === last.kg && !("tags" in r), "the day's weight in, no tags", r);
   ok(!(await p.isVisible("#bd2Quick")), "① gone once the day has its own");
-  // pressed with the weight there: at once; written again with 更新する, kept
-  await p.locator("#bd2Tags button", { hasText: "寝不足" }).click(); await p.waitForTimeout(500);
-  ok(JSON.stringify((await wt(p, "2026-11-11")).tags) === '["eatout","short"]', "② at once on a day with its weight");
-  await p.fill("#wtInput", (last.kg + 0.1).toFixed(1)); await p.click("#wtSubmit"); await p.waitForTimeout(700);
-  ok(JSON.stringify((await wt(p, "2026-11-11")).tags) === '["eatout","short"]', "② kept as the day is written again");
-  // what came of them: 飲み会 up, 運動 down
+  const was6 = await wt(p, "2026-11-06");
+  await goDay(p, "2026-11-06"); await p.waitForTimeout(500);
+  await p.fill("#wtInput", was6.kg.toFixed(1)); await p.click("#wtSubmit"); await p.waitForTimeout(700);
+  ok(JSON.stringify((await wt(p, "2026-11-06")).tags) === '["drink"]' && (await wt(p, "2026-11-06")).updatedAt > was6.updatedAt, "② kept as the day is written again", await wt(p, "2026-11-06"));
+  await goDay(p, "2026-11-11"); await p.waitForTimeout(500);
+  // what came of the tags kept (still drawn): 飲み会 up, 運動 down
   const eff = await W(p, "effects");
   const drink = eff?.list.find((x) => x.k === "drink"), move = eff?.list.find((x) => x.k === "move");
   ok(drink && move && drink.d > 0.3 && move.d < -0.1 && drink.n >= 4, "② 飲み会 the next day up, 運動した down", eff);

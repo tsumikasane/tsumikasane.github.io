@@ -59,19 +59,10 @@ const N = new Intl.NumberFormat("ja-JP");
   ok(ws.some((w) => w.exercise === "プランク" && w.per === "sec" && w.reps === 30) && ws.some((w) => w.type === "その他" && w.minutes === 3 && w.note === "階段"), "⑥ 秒 and 分 kept so", ws);
   ok(/きょうのすきま運動：スクワット 20回・プランク 30秒・階段 3分/.test(await txt(p, "#dt13Quick")), "⑥ said", await txt(p, "#dt13Quick"));
 
-  // ⑧ もし1日 ○ kcal なら: 1,800 to begin with; 1,500 under 基礎代謝; made the 目安 and taken back
+  // ⑧ もし1日 ○ kcal なら taken out at the user's call (2026-11-25, tools/REMOVED.md): no card; the 目安 as it was
   await part(p, "weight");
-  r = await txt(p, "#dt13Sim");
-  let s = await W(p, "sim");
-  ok(s.kcal === 1800 && s.base.from === "推定メンテナンスカロリー" && /いまの食事の目安です。/.test(r) && r.includes(`推定メンテナンスカロリー ${N.format(s.base.kcal)} kcal から`), "⑧ the 目安 to begin with", [s, r]);
-  await p.selectOption("#dt13Sim select", "1500"); await p.waitForTimeout(400);
-  s = await W(p, "sim", 1500); r = await txt(p, "#dt13Sim");
-  const wk = Math.round(s.perWeek * 100) / 100;
-  ok(r.includes(`1週間の体重 −${String(Math.round(Math.abs(wk) * 10) / 10)} kg`) && r.includes(`約 ${Math.ceil(s.days / 7)} 週`) && r.includes(`基礎代謝（${N.format(s.bmr)} kcal）より少ないので`), "⑧ at 1,500", [s, r]);
-  await p.click('#dt13Sim button:has-text("1,500 kcal を食事の目安にする")'); await p.waitForTimeout(400);
-  ok((await setting(p, "kcalGoal"))?.target === 1500 && /いまの食事の目安です。/.test(await txt(p, "#dt13Sim")), "⑧ made the 目安");
-  await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
-  ok((await setting(p, "kcalGoal"))?.target === 1800, "⑧ taken back");
+  ok(!(await p.$("#dt13Sim")) && !(await p.evaluate(() => [...document.querySelectorAll("#part-weight .card")].some((c) => c.innerText.includes("もし1日")))), "⑧ もし1日 ○ kcal なら: gone");
+  ok((await setting(p, "kcalGoal"))?.target === 1800, "⑧ the 目安 as it was");
   // ⑨ 睡眠負債: 5 時間
   r = await txt(p, "#dt13Debt");
   ok(/睡眠負債（この7日） 5 時間/.test(r) && /平均 6 時間 17 分・6時間未満 2 日 週末の寝だめでは取り戻しきれません/.test(r) && (await p.locator("#dt13Debt .dt13-debt-bar i.short").count()) === 2, "⑨ the debt", r);
