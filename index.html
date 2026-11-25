@@ -24946,7 +24946,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月25日 16:54"; // b16b1185 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月25日 18:31"; // f196ca06 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -57018,9 +57018,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // 運動 (⑥), a minute's breathing (⑦), the week ahead (⑧). (⑤ the season under the date and ⑨ the day read aloud were
   // taken out: the user's call, 2026-11-16; ① and ② went with すぐに記録, and ③ the mood, ⑥ the stopwatch and ⑦ the
   // breathing were taken out, 2026-11-19: the records kept.)
-  // and おやすみ・おはよう into からだ's 睡眠 (⑩). The mood, the note and the breaths are kept in 設定 (synced), water and
-  // sleep in からだ's own record, the stopwatch on this device. Function declarations and var, as the page may draw before
-  // this part has run ----------
+  // and おやすみ into からだ's 睡眠 (⑩; its おはよう taken out at the user's call, 2026-11-25). The mood, the note and
+  // the breaths are kept in 設定 (synced), water and sleep in からだ's own record, the stopwatch on this device. Function
+  // declarations and var, as the page may draw before this part has run ----------
   var homeFour = false, h4MemoEdit = false, h4MemoDraft = "", h4Refocus = null;
   const H4_TILES = [
     { key: "h4week", label: "これから1週間", color: "var(--c-cal)", icon: "cal-week", open: "calendar", wide: true },
@@ -57094,14 +57094,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ⑩ 睡眠 in からだ's record (その2 ⑧: a day's bed is the night before it, and its wake): おやすみ from 18:00 (the next
-  // day's from noon on), おはよう in the morning, last night's hours on the tile
+  // day's from noon on), and last night's hours on the tile, they alone. (おはよう in the morning, the wake recorded at a
+  // press, and the night's 寝た → 起きた under the hours: taken out at the user's call, 2026-11-25, tools/REMOVED.md. The
+  // wake is put in in からだ's 睡眠, where both times stay)
   function h4SleepTile() {
-    const x = bd2Day(todayKey), mins = bd2SleepMins(x), h = new Date().getHours(), night = h >= 18 || h < 4, morning = h >= 4 && h < 12;
+    const x = bd2Day(todayKey), mins = bd2SleepMins(x), h = new Date().getHours(), night = h >= 18 || h < 4;
     const bedDay = h >= 12 ? addDays(todayKey, 1) : todayKey, tonight = bedDay !== todayKey ? bd2Day(bedDay) : null;
     const sub = night && tonight && isHm(tonight.bed || "") ? `おやすみ ${tonight.bed} を記録しました`
-      : x && (isHm(x.bed || "") || isHm(x.wake || "")) ? `ゆうべ ${x.bed || "−"} → ${x.wake || "−"}` : "おやすみ・おはようを押すと、睡眠を記録します";
-    const btn = night ? el("button", { type: "button", class: "chip-btn h4-bed", onclick: () => { const hm = atMin(nowMinutes()); bd2PutDay(bedDay, { bed: hm }, `おやすみ ${hm} を記録しました`); } }, icon("moon", 14), "おやすみ")
-      : morning ? el("button", { type: "button", class: "chip-btn h4-wake", onclick: () => { const hm = atMin(nowMinutes()); bd2PutDay(todayKey, { wake: hm }, `おはよう ${hm} を記録しました`); } }, icon("sun", 14), "おはよう") : null;
+      : x && (isHm(x.bed || "") || isHm(x.wake || "")) ? null : "おやすみを押すと、睡眠を記録します";
+    const btn = night ? el("button", { type: "button", class: "chip-btn h4-bed", onclick: () => { const hm = atMin(nowMinutes()); bd2PutDay(bedDay, { bed: hm }, `おやすみ ${hm} を記録しました`); } }, icon("moon", 14), "おやすみ") : null;
     return tile("h4sleep", mins ? String(Math.floor(mins / 60)) : "まだ", mins ? `時間${mins % 60 ? mins % 60 + "分" : ""}` : null, sub, btn ? el("div", { class: "h3-btns" }, btn) : null);
   }
 
@@ -57480,7 +57481,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     h3spend: "家計簿の予算の残り。今月あといくら使えるか（給料日からの予算なら、次の給料日まで）", h3time: "ことしが何%過ぎたか（リング）と、あと何日",
     h3streak: "記録が何日続いているか", h3week: "勉強・運動・ToDo・支出を、先週の同じ曜日までとくらべる",
     h4week: "7日分の予定・ToDo・バイト・天気。日を押すとカレンダーのその日",
-    h4sleep: "夜は「おやすみ」、朝は「おはよう」で、からだの睡眠に記録",
+    h4sleep: "夜は「おやすみ」で、からだの睡眠に記録", // (朝の「おはよう」: taken out at the user's call, 2026-11-25)
     h4memo: "買うものや、わすれないこと（ほかの端末にもそろう）",
     h5since: "「禁煙」「つきあって」など、ある日から何日たったか",
     h5links: "よく開くサイトをボタンに", h5year: "ことしの記録の合計",
@@ -57660,7 +57661,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (k === "job") return shifts.items.some((x) => hpToday(x.createdAt));
     if (k === "goal") return goals.items.some((g) => hpToday(g.createdAt) || moveDays(g).has(d));
     if (k === "prep") return calTwo && (turnsByDay(d, d).get(d) || []).some((t) => t.day === 0 && !t.e.ten && calChecked(t.e, d).size > 0); // (its 持ち物・準備)
-    if (k === "h4sleep") { const x = bd2Day(d), n = bd2Day(addDays(d, 1)); return !!(x && isHm(x.wake || "")) || !!(n && isHm(n.bed || "")); } // (おはよう this morning, or tonight's おやすみ, the next day's: last night's, on today's, was put in yesterday)
+    if (k === "h4sleep") { const x = bd2Day(d), n = bd2Day(addDays(d, 1)); return !!(x && isHm(x.wake || "")) || !!(n && isHm(n.bed || "")); } // (this morning's wake, put in in からだ since おはよう was taken out (2026-11-25), or tonight's おやすみ, the next day's: last night's, on today's, was put in yesterday)
     if (k === "h4memo" || k === "h5since" || k === "h5links") return hpToday(settings.get(k)?.updatedAt);
     return false;
   }

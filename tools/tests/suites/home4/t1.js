@@ -2,6 +2,7 @@
 process.env.URL0 = process.env.URL0 || "http://localhost:8802/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
+const { part, toTile } = require("../homeparts/parts");
 const D = require("./data");
 const out = process.argv[2] || __dirname + "/shots";
 let fails = 0;
@@ -70,13 +71,18 @@ async function open(b, when) {
   // ⑨ read aloud was taken out (the user's call, 2026-11-16): no button, nor its switch
   ok(!(await p.$("#h4Speak")) && !(await p.evaluate(() => document.getElementById("sec-home").innerText.includes("読み上げる"))), "⑨ no きょうを読み上げる (taken out)");
 
-  // ⑩ おはよう in the morning: from last night's 23:30
-  ok((await tileTxt(p, "h4sleep")).startsWith("睡眠まだゆうべ23:30→−"), "⑩ before", await tileTxt(p, "h4sleep"));
+  // ⑩ the morning: おはよう (the wake recorded at a press) and the night's 寝た → 起きた under the hours taken out at the
+  // user's call (2026-11-25, tools/REMOVED.md): last night's 23:30 alone, まだ, with no button and no times
+  ok((await tileTxt(p, "h4sleep")) === "睡眠まだ" && !(await p.$('.h4-wake, .tile[data-tile="h4sleep"] .h3-btns')), "⑩ the morning: まだ, no おはよう, no 23:30", await tileTxt(p, "h4sleep"));
+  // the wake put in in からだ's 睡眠 (the tile opens it): the hours alone on the tile, in 完了 now (opened, and its record put in)
   await p.clock.setFixedTime(new Date("2026-11-14T07:45:00+09:00"));
-  await p.click(".h4-wake"); await p.waitForTimeout(400);
+  await p.click('.tile[data-tile="h4sleep"] .tile-head'); await p.waitForTimeout(2200); // (a tile pressed stays where it was for 2 s)
+  await p.fill("#bd2Wake", "07:45"); await p.dispatchEvent("#bd2Wake", "change"); await p.waitForTimeout(400);
   const bd = (await lsOf(p, "bodyDays")).find((x) => x.id === D.DAY);
-  ok(bd && bd.wake === "07:45" && bd.bed === "23:30", "⑩ wake into からだ's record, the rest kept (the water put in by すぐに記録 went with it, 2026-11-19)", bd);
-  ok((await tileTxt(p, "h4sleep")).startsWith("睡眠8時間15分ゆうべ23:30→07:45") && !!(await p.$('.tile[data-tile="h4sleep"].h2-done')), "⑩ last night's hours", await tileTxt(p, "h4sleep"));
+  ok(bd && bd.wake === "07:45" && bd.bed === "23:30", "⑩ the wake in からだ's record, the bed kept", bd);
+  await p.click('.menu button[data-tab="home"]'); await p.waitForTimeout(800);
+  ok((await toTile(p, "h4sleep")) === "done" && (await tileTxt(p, "h4sleep")) === "睡眠8時間15分" && !!(await p.$('.tile[data-tile="h4sleep"].h2-done')), "⑩ last night's hours, they alone (no 23:30 → 07:45)", await tileTxt(p, "h4sleep"));
+  await part(p, "todo");
   await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(200);
   await p.screenshot({ path: out + "/h4-home.png", fullPage: true });
   ok(!p.errs.length, "no page errors", p.errs);
@@ -88,7 +94,7 @@ async function open(b, when) {
   const bt = (await lsOf(p, "bodyDays")).find((x) => x.id === "2026-11-15");
   ok(bt && bt.bed === "22:40" && bt.date === "2026-11-15", "⑩ おやすみ: tomorrow's bed", bt);
   ok((await tileTxt(p, "h4sleep")).includes("おやすみ22:40を記録しました"), "⑩ said on the tile", await tileTxt(p, "h4sleep"));
-  ok(!(await p.$(".h4-wake")), "⑩ no おはよう at night");
+  ok(!(await p.$(".h4-wake")), "⑩ no おはよう at night (nor in the morning: taken out, 2026-11-25)");
   // (pressed where it is: not under the tile's own head, which opens カレンダー as a whole)
   const top = await p.$eval('.h4-day[data-day="2026-11-17"]', (b) => { b.scrollIntoView({ block: "center" }); const r = b.getBoundingClientRect(); const x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!x && b.contains(x); });
   ok(top, "⑧ a day's button is on top where it is pressed");
@@ -98,6 +104,13 @@ async function open(b, when) {
   await p.screenshot({ path: out + "/h4-dark.png", fullPage: true });
   ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "no sideways scroll");
   ok(!p.errs.length, "no page errors (evening)", p.errs);
+
+  // ⑩ nothing of last night: まだ, and おやすみ's words alone (おはよう taken out at the user's call, 2026-11-25)
+  const q = await phone(b, new Date("2026-11-14T13:00:00+09:00"), { deviceScaleFactor: 1 });
+  q.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) q.errs.push("console: " + m.text().slice(0, 200)); });
+  await seed(q, { ...D.all(), bodyDays: [] }, "home"); await q.waitForTimeout(900);
+  ok((await tileTxt(q, "h4sleep")) === flat("睡眠まだおやすみを押すと、睡眠を記録します") && !(await q.$('.tile[data-tile="h4sleep"] .h3-btns')), "⑩ nothing yet: まだ, おやすみ's words alone", await tileTxt(q, "h4sleep"));
+  ok(!q.errs.length, "no page errors (nothing yet)", q.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");
   process.exit(fails ? 1 : 0);
