@@ -3,6 +3,7 @@ process.env.URL0 = process.env.URL0 || "http://localhost:8803/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
 const D = require("./data");
+const { allTiles } = require("../homeparts/parts");
 const out = process.argv[2] || __dirname + "/shots";
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -77,7 +78,7 @@ async function open(b, when) {
   await p.evaluate(() => window.scrollTo(0, 0));
   await p.click("#h5JumpBtn"); await p.waitForTimeout(300);
   const items = await p.$$eval("#h5JumpGroup [data-go]", (l) => l.map((x) => x.dataset.go));
-  ok(await p.evaluate(() => document.getElementById("h5Jump").open) && items.length === keys.length, "③ the tiles listed", items.length);
+  ok(await p.evaluate(() => document.getElementById("h5Jump").open) && JSON.stringify(items) === JSON.stringify(await shown(p)), "③ the tiles listed (those showing: まだ's " + "since 2026-11-25)", [items.length, (await shown(p)).length]);
   await p.click('#h5JumpGroup [data-go="h5year"]'); await p.waitForTimeout(300);
   const lit = await p.$eval('.tile[data-tile="h5year"]', (t) => t.classList.contains("spot"));
   await p.waitForTimeout(1700);
@@ -100,7 +101,7 @@ async function open(b, when) {
   await p.click("#homeSettings"); await p.waitForTimeout(700);
   await p.click('#h5Set [data-set="all"]'); await p.waitForTimeout(400);
   await p.click("#sheetCancel").catch(() => {}); await p.keyboard.press("Escape"); await p.waitForTimeout(600);
-  ok((await shown(p)).length === keys.length, "② ぜんぶ: all back", (await shown(p)).length);
+  ok((await allTiles(p)).length === keys.length, "② ぜんぶ: all back (まだ and 完了 " + "together since 2026-11-25)", (await allTiles(p)).length);
   await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(200);
   await p.screenshot({ path: out + "/h5-home.png", fullPage: true });
   ok(!p.errs.length, "no page errors", p.errs);

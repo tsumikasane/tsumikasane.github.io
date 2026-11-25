@@ -1,6 +1,7 @@
 // ルーティーン ①〜⑩
 const { chromium } = require("playwright");
 const { URL0, P, at, phone, seed } = require("./lib");
+const { toTile } = require("../homeparts/parts"); // (きょう まだ・完了, 2026-11-25: a tile with its record put in today, or opened, is in 完了)
 const out = process.argv[2] || __dirname + "/shots";
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -119,6 +120,7 @@ const rows = (p) => p.evaluate(() => [...document.querySelectorAll("#rtList > li
   ok(names.join(",") === "水を飲む,日記を書く,ストレッチ,勉強", "④ the page in the new order: " + names.join(","));
   // きょう's tile: the first three in that order, 水 counted
   await p.goto(URL0 + "#home"); await p.reload(); await p.waitForTimeout(800);
+  await toTile(p, "routine"); // (水, counted today: in 完了)
   const tile = await p.evaluate(() => [...document.querySelectorAll('[data-tile="routine"] .rt-tile li')].map((li) => li.innerText.replace(/\s+/g, " ").trim()));
   ok(tile.length === 4 && tile[0].startsWith("水を飲む") && tile[0].includes("8/8") && tile[1].startsWith("日記を書く") && tile[2].startsWith("ストレッチ") && tile[3] === "ほか 1 項目", "きょう's tile: " + tile.join(" | "));
   await p.locator('[data-tile="routine"] button[data-rt="r2"]').click(); await p.waitForTimeout(300);

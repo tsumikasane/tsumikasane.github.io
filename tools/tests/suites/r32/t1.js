@@ -4,6 +4,7 @@ const { chromium } = require("playwright");
 const fs = require("fs");
 const { P, phone, seed } = require("./lib");
 const { T, all } = require("./data");
+const { toTile } = require("../homeparts/parts"); // (きょう まだ・完了, 2026-11-25: a tile with its record put in today, or opened, is in 完了)
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
 const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P + k) || "[]"), { P, k });
@@ -152,13 +153,16 @@ const PIC = fs.readFileSync(__dirname + "/pic.png");
 
   // ⑥ きょう's tile: the goal put first, and its next step
   await p.goto(process.env.URL0 + "#home"); await p.reload(); await p.waitForTimeout(1300);
+  await toTile(p, "goal");
   const tile = await txt(p, '.tile[data-tile="goal"]');
   ok(tile.includes("「TOEIC 800点」の期限まで") && tile.includes("次の一歩・TOEIC"), "⑥ the tile: TOEIC, its next step", tile);
   // ⑦ きょう's tile with only a goal given up (and one achieved, then none): neither 保留中 nor, with none achieved, すべて達成
   const quitOnly = all().filter((g) => g.id === "g3");
   await seed(p, { goals: [...quitOnly, ...all().filter((g) => g.done).slice(0, 1)] }, "home"); await p.waitForTimeout(800);
+  await toTile(p, "goal");
   const t2 = await txt(p, '.tile[data-tile="goal"]');
   await seed(p, { goals: quitOnly }, "home"); await p.waitForTimeout(800);
+  await toTile(p, "goal");
   const t3 = await txt(p, '.tile[data-tile="goal"]');
   ok(t2.includes("すべて達成") && !t2.includes("保留中") && t3.includes("まだ") && !t3.includes("保留中") && !t3.includes("すべて達成"), "⑦ the tile: すべて達成 / まだ, never 保留中", [t2, t3]);
   ok(p.errs.length === 0, "no errors on the page", p.errs);

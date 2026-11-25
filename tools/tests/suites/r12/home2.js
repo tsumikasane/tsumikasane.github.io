@@ -1,12 +1,13 @@
 // きょう ⑤⑥⑦: 摂取カロリー, 体重の変化, 天気
 const { chromium } = require("playwright");
 const { URL0, P, at, phone, seed, T0 } = require("./lib");
+const { toTile } = require("../homeparts/parts"); // (きょう まだ・完了, 2026-11-25: a tile with its record put in today, or opened, is in 完了)
 const out = process.argv[2] || __dirname + "/shots";
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
 const today = "2026-11-09";
-const tileText = (p, key) => p.evaluate((key) => { const t = document.querySelector(`.tile[data-tile="${key}"]`); return t ? t.innerText.replace(/\s+/g, " ").trim() : null; }, key);
-const colText = (p, part) => p.evaluate((part) => { const c = [...document.querySelectorAll('.tile[data-tile="diet"] .dt-col')].find((x) => x.getAttribute("style").includes(part)); return c ? c.innerText.replace(/\s+/g, " ").trim() : null; }, part);
+const tileText = async (p, key) => (await toTile(p, key), p.evaluate((key) => { const t = document.querySelector(`.tile[data-tile="${key}"]`); return t ? t.innerText.replace(/\s+/g, " ").trim() : null; }, key));
+const colText = async (p, part) => (await toTile(p, "diet"), p.evaluate((part) => { const c = [...document.querySelectorAll('.tile[data-tile="diet"] .dt-col')].find((x) => x.getAttribute("style").includes(part)); return c ? c.innerText.replace(/\s+/g, " ").trim() : null; }, part));
 // a forecast: today rain from 16:00, tomorrow fine
 function forecast() {
   const hours = [], prob = [];

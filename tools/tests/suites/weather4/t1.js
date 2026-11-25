@@ -3,6 +3,7 @@ process.env.URL0 = process.env.URL0 || "http://localhost:8806/";
 const { chromium } = require("playwright");
 const { phone, seed } = require("./lib");
 const D = require("./data");
+const { toTile } = require("../homeparts/parts"); // (きょう まだ・完了, 2026-11-25: a tile with its record put in today, or opened, is in 完了)
 const out = process.argv[2] || __dirname + "/shots";
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -110,6 +111,7 @@ const redraw = async (p) => { await W(p, "redraw"); await p.waitForTimeout(200);
 
   // ③ on きょう's tile
   await p.keyboard.press("Escape"); await p.waitForTimeout(600);
+  await toTile(p, "weather"); // (opened above: in 完了)
   ok((await txt(p, '.tile[data-tile="weather"] .wx4-tnote')) === "帰り（18:00）は雨の予報です。傘を", "③ the tile: 帰り in the rain (行き gone by)", await txt(p, '.tile[data-tile="weather"]'));
   await p.close();
 

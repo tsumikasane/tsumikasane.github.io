@@ -1,11 +1,12 @@
 // きょう ⑧⑨⑩: ふりかえり, あしたの準備, カウントダウン
 const { chromium } = require("playwright");
 const { URL0, P, at, phone, seed, T0 } = require("./lib");
+const { toTile } = require("../homeparts/parts"); // (きょう まだ・完了, 2026-11-25: a tile with its record put in today, or opened, is in 完了)
 const out = process.argv[2] || __dirname + "/shots";
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
 const today = "2026-11-09", tmr = "2026-11-10";
-const tileText = (p, key) => p.evaluate((key) => { const t = document.querySelector(`.tile[data-tile="${key}"]`); return t ? t.innerText.replace(/\s+/g, " ").trim() : null; }, key);
+const tileText = async (p, key) => (await toTile(p, key), p.evaluate((key) => { const t = document.querySelector(`.tile[data-tile="${key}"]`); return t ? t.innerText.replace(/\s+/g, " ").trim() : null; }, key));
 const order = (p) => p.evaluate(() => [...document.querySelectorAll("#homeTiles > .tile")].map((t) => t.dataset.tile).join(","));
 const at21 = Date.parse("2026-11-09T21:00:00+09:00");
 const DATA = {
@@ -43,7 +44,7 @@ function forecast() {
   await seed(p, DATA);
   await p.evaluate((P) => localStorage.setItem(P + "wxPlace", JSON.stringify({ lat: 35.68, lon: 139.77, at: Date.now() })), P);
   await p.reload(); await p.waitForTimeout(1000);
-  ok((await order(p)).startsWith("review,tomorrow,weather,todo,calendar,countdown,"), "21:00: " + await order(p));
+  ok((await order(p)).startsWith("review,tomorrow,weather,calendar,countdown,"), "21:00 (まだ: ToDo, one done today, in 完了): " + await order(p));
   const rv = await tileText(p, "review");
   ok(rv === "きょうのふりかえり 6こ きょう積んだブロック ToDo 1件 完了 勉強 1時間 30分 運動 ラン 4 km・筋トレ 3セット 食事 2回・1,350 kcal 体重 65.2 kg 支出 1,200円 日記を書く"
     || /^きょうのふりかえり 6こ きょう積んだブロック ToDo 1件 完了 勉強 1 時間 30 分 運動 ラン 4 km・筋トレ 3セット 食事 2回・1,350 kcal 体重 65.2 kg 支出 1,200 円 日記を書く( 文字で送る)?$/.test(rv), "⑧ " + rv); // (文字で送る: きょう その2, 2026-11-13; 6こ: 食事 one block a day since 2026-11-25, its 2 meals in one)

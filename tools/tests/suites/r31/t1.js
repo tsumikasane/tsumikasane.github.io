@@ -3,6 +3,7 @@ process.env.URL0 = process.env.URL0 || "http://localhost:8774/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
 const { T, all } = require("./data");
+const { toTile } = require("../homeparts/parts"); // (きょう まだ・完了, 2026-11-25: a tile with its record put in today, or opened, is in 完了)
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
 const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P + k) || "[]"), { P, k });
@@ -147,6 +148,7 @@ const done = async (p) => { await p.click("#sheetDone"); await p.waitForTimeout(
   // ⑥ きょう's tile: the next step, checked there, with 元に戻す
   await p.goto(process.env.URL0 + "#home"); await p.reload(); await p.waitForTimeout(1200);
   const nx = (await W(p, "next"))[0];
+  await toTile(p, "goal");
   const tileName = await p.evaluate(() => document.querySelector('.tile[data-tile="goal"] .gl-tile .rt-label')?.textContent);
   ok(!!nx && tileName === nx[1], "⑥ the tile: the first next step", [tileName, nx]);
   await p.click('.tile[data-tile="goal"] .gl-tile .rt-row'); await p.waitForTimeout(600);

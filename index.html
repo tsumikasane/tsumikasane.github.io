@@ -236,17 +236,21 @@ button:active:not(:disabled) { opacity: .5; transition: none; }
   background: var(--glass); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
   box-shadow: var(--shadow), inset 0 0 0 .5px var(--glass-edge);
 }
-html[data-tab="goal"] #goalFilters, html[data-tab="diet"] #dietParts, html[data-tab="calendar"] #calViews, html[data-tab="todo"] #todoParts { display: flex; }
+html[data-tab="goal"] #goalFilters, html[data-tab="diet"] #dietParts, html[data-tab="calendar"] #calViews, html[data-tab="todo"] #todoParts, html[data-tab="home"] #homeParts { display: flex; }
 /* ToDo's: not while ToDos are picked (what to do with them is at the foot then) nor under きょうやるだけ (its tools put away) */
 html:is(.td-selecting, .td-focusing) #todoParts { display: none !important; }
 .pagebar button { flex: 1 1 0; min-width: 0; padding: 0 8px; background: transparent; border: 0; border-radius: 999px; color: var(--fg); font-size: 14px; font-weight: 600; line-height: 1.2; cursor: pointer; }
 /* the one picked: tint on the lighter bubble, as the selected tab */
 .pagebar button[aria-pressed="true"] { color: var(--accent); background: var(--pill); box-shadow: 0 1px 4px rgba(0, 0, 0, .12); }
+/* きょう's: the part a tile has just gone to (まだ・完了), nudged */
+#homeParts button.hp-bump { animation: hp-bump .6s ease-out; }
+@keyframes hp-bump { 35% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { #homeParts button.hp-bump { animation: none; } }
 /* ダイエット's: each of からだ・食事・運動 with its symbol beside its name, as the tab bar's pages have theirs */
 #dietParts button, #calViews button { display: flex; align-items: center; justify-content: center; gap: 6px; }
 #dietParts .icon, #calViews .icon { flex: none; width: 20px; height: 20px; }
-html:is([data-tab="goal"], [data-tab="diet"], [data-tab="todo"]) .wrap { padding-bottom: calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + var(--space-1) + var(--pagebar) + var(--space-4)); }
-html:is([data-tab="goal"], [data-tab="diet"], [data-tab="calendar"], [data-tab="todo"]) #status { bottom: calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + var(--space-1) + var(--pagebar) + 12px); }
+html:is([data-tab="goal"], [data-tab="diet"], [data-tab="todo"], [data-tab="home"]) .wrap { padding-bottom: calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + var(--space-1) + var(--pagebar) + var(--space-4)); }
+html:is([data-tab="goal"], [data-tab="diet"], [data-tab="calendar"], [data-tab="todo"], [data-tab="home"]) #status { bottom: calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + var(--space-1) + var(--pagebar) + 12px); }
 /* (ToDo's) its ＋ (その23) over the bar */
 html[data-tab="todo"]:not(.td-focusing) .td23-fab { bottom: calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + var(--space-1) + var(--pagebar) + 12px); }
 
@@ -325,8 +329,8 @@ html[data-tab="calendar"] .wrap { padding-top: max(var(--space-1), env(safe-area
   .wrap { max-width: 760px; padding: 0 var(--space-4) var(--space-8); }
   /* no tab bar here: a page's own bar sits at the foot of its column, beside the sidebar */
   .pagebar { left: 272px; right: 0; bottom: max(var(--space-2), env(safe-area-inset-bottom, 0px)); }
-  html:is([data-tab="goal"], [data-tab="diet"], [data-tab="calendar"], [data-tab="todo"]) .wrap { padding-bottom: calc(max(var(--space-2), env(safe-area-inset-bottom, 0px)) + var(--pagebar) + var(--space-8)); }
-  html:is([data-tab="goal"], [data-tab="diet"], [data-tab="calendar"], [data-tab="todo"]) #status { bottom: calc(max(var(--space-2), env(safe-area-inset-bottom, 0px)) + var(--pagebar) + 12px); }
+  html:is([data-tab="goal"], [data-tab="diet"], [data-tab="calendar"], [data-tab="todo"], [data-tab="home"]) .wrap { padding-bottom: calc(max(var(--space-2), env(safe-area-inset-bottom, 0px)) + var(--pagebar) + var(--space-8)); }
+  html:is([data-tab="goal"], [data-tab="diet"], [data-tab="calendar"], [data-tab="todo"], [data-tab="home"]) #status { bottom: calc(max(var(--space-2), env(safe-area-inset-bottom, 0px)) + var(--pagebar) + 12px); }
   html[data-tab="todo"]:not(.td-focusing) .td23-fab { bottom: calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + 16px); } /* (where it was: over the bar here) */
   .navbar { padding-inline: var(--space-3); }
   .back { display: none; }
@@ -9114,6 +9118,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
          (each a 種類); 完了, those checked off -->
     <div class="pagebar" role="group" aria-label="ToDoの表示の切り替え" id="todoParts">
       <button type="button" data-part="open" aria-pressed="true">すべて</button>
+      <button type="button" data-part="done" aria-pressed="false">完了</button>
+    </div>
+    <!-- きょう's (the user's call, 2026-11-25: as ToDo's and 目標's): まだ, the tiles not yet done today; 完了, those opened
+         today or with their record put in today. The next day all are まだ again -->
+    <div class="pagebar" role="group" aria-label="きょうのタイルの表示の切り替え" id="homeParts">
+      <button type="button" data-part="todo" aria-pressed="true">まだ</button>
       <button type="button" data-part="done" aria-pressed="false">完了</button>
     </div>
     <!-- ダイエット's: which of からだ・食事・運動 shows (the user's call: the three in a row at the foot, as the tab bar has) -->
@@ -21978,6 +21988,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const hidden = homeHidden(), wide = (t) => { const k = t.dataset.tile, d = !!(homeTile(k).wide || (k === "todo" && top.length)); if (homeFive && h5Folded(k)) return false; return homeTwo ? h2Wide(k, d) : d; };
     let rest = homeTileOrder().filter((k) => !hidden.has(k) && (!homeTile(k).evening || evening) && !(homeSix && h6Off(k))).map((k) => built.find((t) => t.dataset.tile === k)).filter(Boolean); // (きょう その6 ① 出すとき)
     if (homeTwo) rest = h2Order(rest);
+    const anyTile = rest.length > 0;
+    if (homeParted) rest = hpSplit(rest); // (きょう まだ・完了: those of the part chosen at the foot)
     const shown = [];
     let waiting = false;
     while (rest.length) {
@@ -21987,7 +21999,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         t.classList.add("wide"); shown.push(t);
       } else { shown.push(t); waiting = !waiting; }
     }
-    $("homeTiles").replaceChildren(...(shown.length ? shown : [el("p", { class: "card tiles-none" }, "タイルをすべて隠しています。右上の歯車から、出すタイルを選べます。")]));
+    $("homeTiles").replaceChildren(...(shown.length ? shown : [el("p", { class: "card tiles-none" }, anyTile ? hpNone() : "タイルをすべて隠しています。右上の歯車から、出すタイルを選べます。")]));
     if (focusRow.rt) $("homeTiles").querySelector(`[data-rt="${focusRow.rt}"]`)?.focus();
     if (focusRow.td) $("homeTiles").querySelector(`[data-td="${focusRow.td}"]`)?.focus();
     if (homeFour) h4HeadSync(); // (きょう その4: the line under the date, and a field typed in on a tile given its focus back)
@@ -24888,7 +24900,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月25日 10:57"; // d3df6b46 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月25日 12:24"; // bcd396d6 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -56556,6 +56568,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("span", { class: "flabel", "aria-hidden": "true" }), el("div", { class: "ffield" }, time("h2AmTo", "amTo", "きょうの準備を出しおわる時刻"), el("span", { class: "unit" }, "まで")),
         recRow("夜のタイル", time("h2PmFrom", "pmFrom", "ふりかえりとあしたの準備を出しはじめる時刻"), { unit: "から" })),
       el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "日記を書いた、ルーティーンがぜんぶできた、などできょうの分が済んだタイルは、名前の横に✓が付いて文字が薄くなります。"),
+        el("span", { class: "phrase" }, "下の「まだ」「完了」では、きょう開いたタイルと、きょう記録を入れたタイルが完了に移ります（次の日は、また全部まだに戻ります）。"),
         el("span", { class: "phrase" }, "きょうの準備は、この時間のほか、移動時間のある予定の出発2時間前からも出ます。"),
         el("span", { class: "phrase" }, "夜のタイルは、きょうのふりかえりとあしたの準備です。"),
         el("span", { class: "phrase" }, "タイルを長押しすると、その場で動かしたり、大きさを変えたり、隠したりできます。"))));
@@ -57706,6 +57719,118 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren($("h6UseNote"), top.length ? `この端末でよく押すタイル：${top.map(([k, n]) => `${homeTile(k).label}（${n}回）`).join("、")}` : "この端末でタイルを押した回数から並べます。まだ数えていません。");
   }
   homeSix = true;
+  if (tab === "home") draw(() => renderHome());
+
+  // ---------- きょう まだ・完了 (the user's call, 2026-11-25): a bar at the foot of きょう, as ToDo's すべて・完了 and 目標's
+  // 進行中・達成, with まだ and 完了. Every tile starts the day in まだ and goes to 完了 by itself for the rest of the day once
+  // it is opened (its page, or a sheet, opened from it; a link on it; a press on a part of it with nothing to press) or its
+  // own record is put in today (日記 written, a 勉強, ダイエット's 体重・食事・運動, a ルーティーン checked, a ToDo done, a 予定
+  // or a シフト put in, a goal moved, and the like); the next day every tile is まだ again (the app starts afresh as the day
+  // turns). The tiles opened are kept with the account (設定 "homeDone": the day and their keys, so another device has
+  // them too); the records are read as they are, so one taken back (元に戻す) takes its tile back to まだ. A tile in use on
+  // its own parts (a check, a field) stays where it is meanwhile and a moment after, as ToDo's checked ones do (the user's
+  // call: rows moved under the finger), then goes, the part it went to nudged at the foot.
+  // Function declarations and var, as the page may draw before this part has run ----------
+  var homeParted = false, homePart = "todo", hpStays = new Map(), hpTimer = 0;
+  function hpOpened() {
+    const v = settings.get("homeDone");
+    return new Set(v && v.day === todayKey && Array.isArray(v.keys) ? v.keys.filter((k) => typeof k === "string" && homeTile(k)) : []);
+  }
+  function hpOpen(k) {
+    const s = hpOpened();
+    if (!homeTile(k) || s.has(k)) return;
+    s.add(k);
+    act(() => settings.set("homeDone", { day: todayKey, keys: [...s], updatedAt: Date.now() }));
+  }
+  // a tile's own record, put in today (a 予定, a シフト, a goal or a メモ by when it was put in; the rest by their day)
+  function hpToday(t) { return num(t) > 0 && ymd(new Date(num(t))) === todayKey; }
+  function hpRecorded(k) {
+    const d = todayKey;
+    if (k === "journal") return !!(journal.get(d)?.text || "").trim();
+    if (k === "study") return study.items.some((x) => x.date === d);
+    if (k === "move") return workouts.items.some((w) => w.date === d);
+    if (k === "diet") return !!weights.get(d) || meals.items.some((m) => m.date === d) || mealSkips(d).length > 0 || workouts.items.some((w) => w.date === d);
+    if (k === "routine") return routineDone(d).size > 0;
+    if (k === "money") return mo2ZeroDays().has(d) || expenses.items.some((x) => x.date === d && !x.fixed); // (a 固定費 put in by itself not one)
+    if (k === "todo") return todos.items.some((t) => t.done && doneDay(t) === d);
+    if (k === "calendar") return events.items.some((e) => hpToday(e.createdAt));
+    if (k === "countdown") return events.items.some((e) => e.count && hpToday(e.createdAt));
+    if (k === "job") return shifts.items.some((x) => hpToday(x.createdAt));
+    if (k === "goal") return goals.items.some((g) => hpToday(g.createdAt) || moveDays(g).has(d));
+    if (k === "prep") return calTwo && (turnsByDay(d, d).get(d) || []).some((t) => t.day === 0 && !t.e.ten && calChecked(t.e, d).size > 0); // (its 持ち物・準備)
+    if (k === "h4sleep") { const x = bd2Day(d), n = bd2Day(addDays(d, 1)); return !!(x && isHm(x.wake || "")) || !!(n && isHm(n.bed || "")); } // (おはよう this morning, or tonight's おやすみ, the next day's: last night's, on today's, was put in yesterday)
+    if (k === "h4memo" || k === "h5since" || k === "h5links") return hpToday(settings.get(k)?.updatedAt);
+    return false;
+  }
+  function hpPartOf(k, opened = hpOpened()) { return opened.has(k) || hpRecorded(k) ? "done" : "todo"; }
+  // a tile in use stays in the part it was in: a moment after a press on it (2 s, by a timer of its own), while a field on
+  // it has the focus, and while it is being written on (メモ, あの日から, リンク)
+  function hpStay(k) {
+    const s = hpStays.get(k), part = s ? s.part : homePart;
+    if (s) clearTimeout(s.timer);
+    const x = { part, timer: setTimeout(() => { if (hpStays.get(k) === x) { hpStays.delete(k); hpSettle(); } }, 2000) };
+    hpStays.set(k, x);
+  }
+  function hpHeld(k) {
+    const a = document.activeElement;
+    const using = (a?.matches?.("input, textarea, select, [contenteditable]") && a.closest?.("#homeTiles > .tile")?.dataset.tile === k)
+      || (k === "h4memo" && !!h4MemoEdit) || (k === "h5since" && !!h5SinceEdit) || (k === "h5links" && !!h5LinkEdit);
+    if (using) hpStay(k);
+    const s = hpStays.get(k);
+    return !!s && s.part === homePart;
+  }
+  // those of the part chosen, from the tiles to show (きょう's order kept)
+  function hpSplit(list) {
+    const opened = hpOpened();
+    return list.filter((t) => hpHeld(t.dataset.tile) || hpPartOf(t.dataset.tile, opened) === homePart);
+  }
+  function hpNone() {
+    return homePart === "done" ? "きょう完了したタイルは、まだありません。タイルを開いたり、記録を入れたりすると、ここに移ります。" : "きょうのタイルは、すべて完了しました。";
+  }
+  // once no tile stays, those shown that are of the other part now go, faded out, and the part they went to is nudged; not
+  // while a sheet, a tile's menu or a field is in use (a moment later then), nor away from きょう (drawn as it shows again)
+  function hpSettle() {
+    clearTimeout(hpTimer); hpTimer = 0;
+    if (hpStays.size || tab !== "home" || document.visibilityState !== "visible") return;
+    if (sheetEl.open || $("h2TileMenu")?.open || document.activeElement?.matches?.("input, textarea, select, [contenteditable]")) { hpTimer = setTimeout(hpSettle, 1500); return; }
+    const opened = hpOpened(), going = [...$("homeTiles").querySelectorAll(":scope > .tile")].filter((t) => !hpHeld(t.dataset.tile) && hpPartOf(t.dataset.tile, opened) !== homePart);
+    if (!going.length) return;
+    const to = homePart === "todo" ? "done" : "todo", go = () => { renderHome(); hpNudge(to); };
+    if (reduceMotion.matches) { go(); return; }
+    for (const t of going) t.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.96)" }], { duration: 200, easing: "ease-in", fill: "forwards" });
+    setTimeout(go, 200); // (a timer, not the animation's promise, which waits while the page isn't drawn)
+  }
+  function hpNudge(part) {
+    const b = $("homeParts").querySelector(`[data-part="${part}"]`);
+    if (!b || reduceMotion.matches) return;
+    b.classList.remove("hp-bump"); void b.offsetWidth; b.classList.add("hp-bump");
+    setTimeout(() => b.classList.remove("hp-bump"), 700);
+  }
+  // a press on a tile: it stays a moment; opened, when the press opened a page or a sheet, was a link, or was on a part
+  // with nothing to press (a tile that opens nothing, looked at). A check or a field on it counts by the record it puts in
+  $("homeTiles").addEventListener("click", (ev) => {
+    const t = ev.target.closest?.("#homeTiles > .tile"), k = t?.dataset.tile;
+    if (!k || !homeTile(k)) return;
+    hpStay(k);
+    const ctl = ev.target.closest("button, a[href], input, textarea, select, label, summary, [contenteditable]");
+    const looked = !ctl || !t.contains(ctl) || ctl.matches("a[href]"), nav = navSeq, sheet = sheetEl.open, dlg = document.querySelectorAll("dialog[open]").length;
+    setTimeout(() => { if (looked || navSeq !== nav || (!sheet && sheetEl.open) || document.querySelectorAll("dialog[open]").length > dlg) hpOpen(k); }, 0);
+  }, true);
+  // (a field on a tile typed in, or left: it stays a moment more; a button left doesn't count, its focus comes and goes
+  // with the tiles drawn anew)
+  for (const type of ["input", "focusout"]) $("homeTiles").addEventListener(type, (ev) => {
+    const k = ev.target.matches?.("input, textarea, select, [contenteditable]") && ev.target.closest("#homeTiles > .tile")?.dataset.tile;
+    if (k && homeTile(k)) hpStay(k);
+  });
+  for (const b of $("homeParts").querySelectorAll("button")) b.addEventListener("click", () => {
+    const part = b.dataset.part === "done" ? "done" : "todo";
+    if (part === homePart) return;
+    homePart = part;
+    for (const x of $("homeParts").querySelectorAll("button")) x.setAttribute("aria-pressed", String(x.dataset.part === part));
+    renderHome();
+  });
+  H6_WAYS.push(["下の「まだ」「完了」", "きょう開いたタイルと、きょう記録を入れたタイルは完了へ。次の日は、また全部まだに"]);
+  homeParted = true;
   if (tab === "home") draw(() => renderHome());
 
   // ---------- きょう あしたの準備のページ (the user's call, 2026-11-19): the 「あしたの準備」 tile (from the evening's hour)

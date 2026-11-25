@@ -3,6 +3,7 @@ process.env.URL0 = process.env.URL0 || "http://localhost:8804/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
 const D = require("./data");
+const { part, toTile } = require("../homeparts/parts");
 const out = process.argv[2] || __dirname + "/shots";
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -64,11 +65,13 @@ async function open(b, when) {
 
   // ④ the figures hidden, and shown
   await more(p, "h6-hide-btn");
+  await toTile(p, "money"); // (きょう まだ・完了, 2026-11-25: a tile with its record put in today, or opened, is in 完了)
   const bl = await p.$eval('.tile[data-tile="money"] .big', (x) => getComputedStyle(x).filter);
   ok(await p.$eval("#homeTiles", (g) => g.classList.contains("h6-hide")) && bl.includes("blur") && (await p.getAttribute('.tile[data-tile="money"] .big', "aria-hidden")) === "true", "④ money blurred, out of a reader's way", bl);
   ok(!(await p.$eval('.tile[data-tile="todo"] .big', (x) => getComputedStyle(x).filter)).includes("blur"), "④ ToDo's as it was");
   await p.click("#h6ShowBtn"); await p.waitForTimeout(400);
   ok(!(await p.$eval("#homeTiles", (g) => g.classList.contains("h6-hide"))) && !(await p.$("#h6ShowBtn")), "④ 数字を出す");
+  await part(p, "todo");
 
   // ⑤ by voice was taken out (the user's call, 2026-11-16), and すぐに記録 with its field (2026-11-19)
   ok(!(await p.$(".h6-mic")) && !(await p.$("#h4LineIn")), "⑤ no voice button, no すぐに記録 (both taken out)");
