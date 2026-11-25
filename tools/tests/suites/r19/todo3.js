@@ -104,16 +104,25 @@ const jpeg = async (p) => Buffer.from(await p.evaluate(() => { const c = documen
   ok(await p.isHidden("#focusBar") && (await toast(p)).includes("集中タイマーが終わっていました（25分を記録）"), "timer: both over while away: said, with もう1回", await toast(p));
   log = (await ls(p, "settings")).find((x) => x.id === "focusLog");
   ok(log.days[today] === 12 + 25 + 25, "timer: the day's minutes", log.days);
-  // the lengths as kept (編集's 集中タイマー went with ToDo's 集中): 勉強's timer, 50 分
+  // the lengths as kept (編集's 集中タイマー went with ToDo's 集中): 50 分, started as 目標's cells start it (勉強's
+  // 集中タイマーを始める: taken out at the user's call, 2026-11-25, tools/REMOVED.md)
   await p.click("#todoSettings"); await p.waitForTimeout(500);
   ok(!(await p.$("#focusWork")) && !(await p.$("#focusForm")), "timer: its lengths not in ToDo's 編集");
   await p.keyboard.press("Escape"); await p.waitForTimeout(600);
   await p.evaluate(({ P }) => { const s = JSON.parse(localStorage.getItem(P + "settings")); s.push({ id: "focus", work: 50, rest: 10, updatedAt: 1 }); localStorage.setItem(P + "settings", JSON.stringify(s)); }, { P });
   await p.goto(URL0 + "#study"); await p.reload(); await p.waitForTimeout(900);
-  await p.click("#stFocusGo"); await p.waitForTimeout(400);
-  ok((await txt(p, "#focusBar")).startsWith("集中 50:00") && (await txt(p, "#focusName")) === "勉強", "timer: 50 分 as kept, from 勉強", await txt(p, "#focusBar"));
+  ok(!(await p.$("#stFocusGo")) && !(await txt(p, "#studyForm")).includes("集中"), "timer: no 集中タイマーを始める on 勉強 (taken out 2026-11-25)", await txt(p, "#studyForm"));
+  await p.evaluate(() => window.__focusStart(null, null, null)); await p.waitForTimeout(400);
+  ok((await txt(p, "#focusBar")).startsWith("集中 50:00"), "timer: 50 分 as kept", await txt(p, "#focusBar"));
   await p.goto(URL0 + "#home"); await p.reload(); await p.waitForTimeout(800);
   ok(await p.isVisible("#focusBar"), "timer: over another page, after the app opened again");
+  // one begun from 勉強 before its button went (2026-11-25) ends as it did: its minutes in 勉強 (focus: true)
+  await p.evaluate(({ P }) => localStorage.setItem(P + "focus", JSON.stringify({ kind: "work", todoId: null, study: { sub: "" }, len: 25, end: Date.now() + 13 * 60e3, left: null, at: Date.now() - 12 * 60e3 })), { P });
+  await p.reload(); await p.waitForTimeout(900);
+  ok((await txt(p, "#focusName")) === "勉強", "timer: one begun from 勉強 before, on the bar as 勉強", await txt(p, "#focusBar"));
+  await p.click("#focusStop"); await p.waitForTimeout(500);
+  const fs1 = (await ls(p, "study")).filter((x) => x.focus);
+  ok(fs1.length === 1 && fs1[0].minutes === 12 && fs1[0].date === today && !fs1[0].subjectId && await p.isHidden("#focusBar"), "timer: its 12 minutes in 勉強, as before", fs1);
   await p.screenshot({ path: __dirname + "/shots/t-timer.png" });
   ok(!p.errs.length, "no errors: " + p.errs.join(" | "));
   await b.close();

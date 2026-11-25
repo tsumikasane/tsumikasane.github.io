@@ -1056,6 +1056,18 @@ span.rtc-d { background: transparent; color: var(--muted); cursor: default; }
 /* ① an hour or more said in hours (+15分 +30分 +1時間 taken out 2026-11-19) */
 .ffield.st-min { flex-wrap: wrap; row-gap: 8px; }
 .st-min-words { font-size: var(--t-sub); color: var(--muted); font-variant-numeric: tabular-nums; }
+/* 勉強のタイマー (the user's call, 2026-11-25, in place of 集中タイマー): under 時間, the time big while it measures, the
+   buttons under it; 時間に入れる the one in the accent */
+.ffield.st-timer { flex-wrap: wrap; gap: 8px 10px; }
+form.add > .flabel#stTimerLabel { align-self: start; padding-top: 6px; } /* (beside its first line: スタート, or the time) */
+.st-timer[data-mode="idle"] .st-tm-hint { flex-basis: 100%; }
+.st-tm-time { font-size: 30px; line-height: 1.15; font-weight: 700; font-variant-numeric: tabular-nums; }
+.st-timer[data-mode="pause"] .st-tm-time { color: var(--muted); }
+.st-tm-state, .st-tm-hint { font-size: var(--t-sub); color: var(--muted); }
+.st-tm-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); animation: stTmBlink 1s steps(2) infinite; }
+@keyframes stTmBlink { 50% { opacity: .2; } }
+@media (prefers-reduced-motion: reduce) { .st-tm-dot { animation: none; } }
+.st-tm-bar { display: flex; flex-wrap: wrap; gap: 8px; flex-basis: 100%; }
 /* ② よく記録する, over the form: one line that scrolls sideways out to the screen's edges, a dot of the subject's colour in
    each chip */
 .st-often-head { margin: 0 0 6px; font-size: var(--t-sub); color: var(--muted); }
@@ -8586,7 +8598,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <p class="group-foot"><span class="phrase">ランニングの記録の距離を、</span><span class="phrase">これまでの分すべて足したものです。</span><span class="phrase">距離を入れていない記録は数えません。</span></p>
       </section>
 
-      <!-- 勉強: time by subject, entered after studying (the user's call: no timer). The subjects are the user's own, each with
+      <!-- 勉強: time by subject, entered after studying (the user's call at first: no timer; since 2026-11-25 a タイマー that puts
+           what it measured in 時間). The subjects are the user's own, each with
            a colour, set up under the gear like the calendar's labels. And since 2026-11-13 (the user's call, 勉強 ①〜⑩):
            ② よく記録する, ① +15分 +30分 +1時間, ⑨ 教材 and どこまで, ③ the memos of before, ⑧ 試験まで, ⑦ ふりかえり,
            ④ この1週間, ⑤ 勉強カレンダー, ⑥ 科目ごとの時間, ⑨ 教材's progress; ⑩ and the 試験 and 教材 under the gear -->
@@ -8603,6 +8616,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <label class="flabel" for="stMin">時間<span class="sr-only">（分）</span></label>
           <!-- ① a press adds its time to the field; an hour or more is said in hours -->
           <div class="ffield st-min"><input type="number" id="stMin" placeholder="30" min="1" max="1440" inputmode="numeric" required><span class="unit">分</span><span class="st-min-words" id="stMinWords"></span></div>
+          <!-- (勉強のタイマー, 2026-11-25: the time studied measured, and put in 時間 above as it is) -->
+          <span class="flabel" id="stTimerLabel">タイマー</span>
+          <div class="ffield st-timer" id="stTimer" role="group" aria-labelledby="stTimerLabel"></div>
           <!-- ⑨ the 教材 (put in under the gear) and how far it went -->
           <label class="flabel" for="stMat" id="stMatLabel" hidden>教材 <span class="opt">任意</span></label>
           <div class="ffield" id="stMatField" hidden><select id="stMat"><option value="">なし</option></select></div>
@@ -8610,8 +8626,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield st-upto" id="stUptoField" hidden><input type="number" id="stUpto" min="1" max="99999" inputmode="numeric"><span class="unit" id="stUptoUnit"></span><span class="st-upto-now" id="stUptoNow"></span></div>
           <label class="flabel" for="stNote">メモ <span class="opt">任意</span></label>
           <div class="ffield"><input type="text" id="stNote" maxlength="1000" list="stNoteHints"><datalist id="stNoteHints"></datalist></div>
-          <!-- (勉強の集中タイマー: ToDo's focus timer started from here, its minutes in 勉強 under the subject picked) -->
-          <div class="actions"><button class="btn ghost" type="button" id="stFocusGo"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-timer"/></svg>集中タイマーを始める</button><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
+          <!-- (勉強の集中タイマー's 集中タイマーを始める, beside 追加: taken out at the user's call, 2026-11-25, tools/REMOVED.md) -->
+          <div class="actions"><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
         </form>
         <ul class="list card" id="studyList"></ul>
         <div class="muted small" id="studyTotal"></div>
@@ -14669,7 +14685,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // +30分 +1時間 under 時間, ② what is recorded again and again with one press, ③ the subject's memos of before as
   // suggestions, ④ この1週間 a bar a day, ⑤ 勉強カレンダー, ⑥ 科目ごとの時間, ⑦ ふりかえり, ⑧ 試験まで, ⑨ 教材 and how far
   // it went, ⑩ the subjects in the user's own order, and put away. A timer after all since 2026-11-20 (the user's call): ToDo's
-  // focus timer started from the form, its minutes recorded here (勉強の集中タイマー, after 勉強 その2's block)
+  // focus timer started from the form, its minutes recorded here (勉強の集中タイマー: taken out at the user's call,
+  // 2026-11-25); in its place, the same day, a タイマー whose time is put in 時間 (勉強のタイマー, after 勉強 その2's block)
 
   // ⑩ the user's order (↑ ↓ under the gear): those moved have one, any added since come after them as they were added. One
   // put away (しまう) is off the form's chips; its records keep it, and its colour
@@ -14714,7 +14731,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderStudy() {
     const cur = stSubjectChoice ? subjects.get(stSubjectChoice) : null;
     if (stSubjectChoice && (!cur || cur.shelved)) stSubjectChoice = "";
-    renderStChips(); stFocusSync();
+    renderStChips(); stTimerRender(); // (勉強のタイマー)
     for (const fn of [stSubjectEditor, stMatEditor, stExamEditor]) draw(fn); // (under the gear)
     stFillMatSelect(); stFillHints();
     const items = study.items.filter((x) => x.date === viewDate).sort((a, b) => num(a.createdAt) - num(b.createdAt));
@@ -24947,7 +24964,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月25日 15:45"; // 5597b3c4 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月25日 16:26"; // 95fec4ad (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -63258,13 +63275,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("st2ShareRow").hidden = !study.items.length;
   }
 
-  // ---------- 勉強の集中タイマー (the user's call, 2026-11-20, asked by the ToDo session: started from ToDo and from 勉強; a
-  // timer in 勉強 after all, where the first choice was none): ToDo's focus timer started from 勉強's form, beside 追加,
-  // while the day shown is today. Its minutes go in 勉強 as records of the subject picked in the form (科目なし with none:
-  // the user's answer, 「科目で記録する」) and of the 教材 picked; メモ and どこまで stay in their fields. The timer is
-  // ToDo's code: focusStart's third (study) is kept on the timer as v.study and handed back, stFocusCredit called as its
-  // minutes are credited (a set over, one stopped, one started again) and stFocusName for its bar and its words. A record
-  // made so has focus: true, and ② よく記録する leaves it out (not put in by hand) ----------
+  // ---------- 勉強のタイマー (the user's call, 2026-11-25: 集中タイマーの代わりに): the time studied measured under 時間 in
+  // the form (スタート, 一時停止 and 再開, リセット), 時間に入れる putting it in 時間 as it is, in whole minutes (1 at the
+  // least, 1440 at the most), for 追加; 元に戻す takes it back. On this device and kept over a reload or with the app
+  // closed: when it started (start) and what it measured before a pause (acc), in stTimer. Function declarations and var,
+  // as the page may draw before this runs.
+  // (勉強の集中タイマー, the user's call of 2026-11-20: ToDo's focus timer started from the form, its minutes in 勉強 as
+  // records of the subject picked, focus: true. Its 集中タイマーを始める taken out at the user's call, 2026-11-25,
+  // tools/REMOVED.md. One begun from 勉強 before then ends as it did: focusStart's third (study) kept on the timer as
+  // v.study and handed back, stFocusCredit called as its minutes are credited and stFocusName for its bar and its words.
+  // ② よく記録する leaves the records it made out, as before. The timer itself stays, started from 目標's cells) ----------
   function stFocusName(st) { const sub = st?.sub ? subjects.get(st.sub) : null; return sub ? oneLine(sub.name) : "勉強"; }
   function stFocusCredit(st, mins, day = todayKey) {
     const m = Math.round(num(mins)), sub = st?.sub ? subjects.get(st.sub) : null, mat = st?.mat ? stMatOf(st.mat) : null;
@@ -63275,12 +63295,47 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     act(() => study.add(item));
     tdSay(`勉強${sub ? `（${oneLine(sub.name)}）` : ""}に ${durText(m)}を記録しました`); // (after the timer's own words)
   }
-  function stFocusSync() { $("stFocusGo").hidden = viewDate !== todayKey; }
-  $("stFocusGo").addEventListener("click", () => {
-    const st = { sub: stSubjectChoice && subjects.get(stSubjectChoice) ? stSubjectChoice : "" }, m = stMatOf($("stMat").value);
-    if (m) st.mat = m.id;
-    focusStart(null, null, st);
-  });
+  var stTmTimer = 0;
+  function stTmGet() {
+    try { const v = JSON.parse(localStorage.getItem(LS_PREFIX + "stTimer") || "null"); if (v && num(v.acc) >= 0 && num(v.start) >= 0) return { start: num(v.start), acc: num(v.acc) }; } catch {}
+    return { start: 0, acc: 0 };
+  }
+  function stTmPut(v) {
+    try { if (v.start || v.acc) localStorage.setItem(LS_PREFIX + "stTimer", JSON.stringify({ start: v.start, acc: v.acc })); else localStorage.removeItem(LS_PREFIX + "stTimer"); } catch {}
+    stTimerRender();
+  }
+  function stTmMs(v = stTmGet()) { return v.acc + (v.start ? Math.max(0, Date.now() - v.start) : 0); }
+  function stTmClock(ms) { const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60); return (h ? `${h}:${pad(m)}` : String(m)) + `:${pad(t % 60)}`; }
+  function stTimerRender() {
+    const box = $("stTimer"), v = stTmGet(), ms = stTmMs(v), mode = v.start ? "run" : ms ? "pause" : "idle";
+    if (!box) return;
+    if (box.dataset.mode !== mode) {
+      box.dataset.mode = mode;
+      const btn = (cls, words, f, ic) => el("button", { type: "button", class: "btn sm " + cls, onclick: f }, ic ? icon(ic, 18) : null, words);
+      setChildren(box, mode === "idle" ? [btn("ghost", "スタート", () => stTmPut({ start: Date.now(), acc: 0 }), "timer"), el("span", { class: "st-tm-hint" }, "測った時間を「時間」に入れます")]
+        : [el("span", { class: "st-tm-time", id: "stTmTime", role: "timer", "aria-live": "off" }, stTmClock(ms)),
+          mode === "run" ? el("span", { class: "st-tm-dot", "aria-hidden": "true" }) : el("span", { class: "st-tm-state" }, "一時停止中"),
+          el("span", { class: "st-tm-bar" },
+            mode === "run" ? btn("ghost", "一時停止", () => stTmPut({ start: 0, acc: stTmMs() })) : btn("ghost", "再開", () => stTmPut({ start: Date.now(), acc: stTmGet().acc })),
+            btn("st-tm-put", "時間に入れる", stTmToForm), mode === "pause" ? btn("ghost", "リセット", stTmReset) : null)]);
+    }
+    stTmTick();
+  }
+  function stTmTick() {
+    clearTimeout(stTmTimer);
+    const v = stTmGet(), ms = stTmMs(v), t = $("stTmTime");
+    if (t) t.textContent = stTmClock(ms);
+    if (v.start && document.visibilityState === "visible") stTmTimer = setTimeout(stTmTick, 1015 - (ms % 1000));
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") stTimerRender(); });
+  // 時間に入れる: what it measured, in whole minutes, in 時間 as it is; the timer back to 0 for the next
+  function stTmToForm() {
+    const was = stTmGet(), min = Math.min(1440, Math.max(1, Math.round(stTmMs(was) / 60000))), before = $("stMin").value;
+    stTmPut({ start: 0, acc: 0 });
+    $("stMin").value = String(min); stSyncMinWords();
+    flash(`時間に ${durText(min)}を入れました。「追加」で記録します`, () => { stTmPut(was); $("stMin").value = before; stSyncMinWords(); });
+  }
+  function stTmReset() { const was = stTmGet(); stTmPut({ start: 0, acc: 0 }); flash("タイマーをリセットしました", () => stTmPut(was)); }
 
   // ---------- バイト その3 ①〜⑩ (the user's calls, 2026-11-14): the next shifts (①), a shift from a few words (②), rest and
   // days in a row looked over (③), the week's hours against a limit (④), the month's aim (⑤), the pay as it came against
