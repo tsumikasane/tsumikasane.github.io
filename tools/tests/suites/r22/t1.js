@@ -101,6 +101,8 @@ async function addMeal(p, text = "おにぎり") {
   ok(await p.evaluate(() => window.__ts.sig()) !== sig1, "⑩ the notification sent again as a block goes on (pushSig)");
   // ④ a block with no photo: no 写真; ② その日をまとめて見る, and back
   ok(!(await p.isVisible("#tsumiPhoto")) && await p.isVisible("#tsumiDayAll"), "② ④ under the stairs: その日をまとめて見る, no 写真");
+  // (この記録を開く under a block, and a ToDo's 同じToDoをきょうも入れる: taken out at the user's call (2026-11-25, tools/REMOVED.md); 食事's きょうも同じ… stays)
+  ok(await p.isHidden("#tsumiOpen") && (await txt(p, "#tsumiAgain")) === "きょうも同じ食事を記録", "no この記録を開く; 食事's きょうも同じ食事を記録 still", await txt(p, ".tsumi-acts"));
   const pickedDay = await p.evaluate(() => { const s = window.__ts.shown(); return s[s.length - 1].day; });
   await p.click("#tsumiPrev"); await p.waitForTimeout(150);
   const pk = await p.evaluate(() => window.__ts.pick());
@@ -108,6 +110,11 @@ async function addMeal(p, text = "おにぎり") {
   ok(await tabNow(p) === "recday" && (await txt(p, "#recDayTitle")).startsWith("11月10日") && (await p.getAttribute("#backBtn", "aria-label")) === "つみかさねに戻る", "② the day's records, back to つみかさね", [await tabNow(p), await txt(p, "#recDayTitle"), await p.getAttribute("#backBtn", "aria-label")]);
   await p.click("#backBtn"); await p.waitForTimeout(900);
   ok(await tabNow(p) === "tsumi" && await p.evaluate(() => window.__ts.pick()) === pk, "② back: the block shown as it was", [await tabNow(p), pk]);
+  // a ToDo's block: neither この記録を開く nor 同じToDoをきょうも入れる (taken out, 2026-11-25); Enter on the stairs opens nothing
+  for (let i = 0; i < 60 && !String(await p.evaluate(() => window.__ts.pick())).startsWith("todo:"); i++) { await p.click("#tsumiPrev"); await p.waitForTimeout(60); }
+  ok(String(await p.evaluate(() => window.__ts.pick())).startsWith("todo:") && await p.isHidden("#tsumiOpen") && await p.isHidden("#tsumiAgain") && !(await txt(p, ".tsumi-acts")).includes("同じToDo"), "a ToDo's block: no 同じToDoをきょうも入れる, no この記録を開く", [await p.evaluate(() => window.__ts.pick()), await txt(p, ".tsumi-acts")]);
+  await p.focus("#tsumiCanvas"); await p.keyboard.press("Enter"); await p.waitForTimeout(500);
+  ok(!(await p.evaluate(() => document.getElementById("daySheet").open)) && await tabNow(p) === "tsumi", "Enter on a block: nothing opened");
   // ① the year: from the gear, its page, and played on the stairs
   await p.click("#tsumiSettings"); await p.waitForTimeout(600);
   ok((await txt(p, "#tsumiYears")).includes("2026年のつみかさね") && (await txt(p, "#tsumiYears")).includes("2025年のつみかさね 618 こ"), "① the years in the gear", await txt(p, "#tsumiYears"));
