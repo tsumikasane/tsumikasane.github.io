@@ -35,6 +35,9 @@ const opts = (p, sel) => p.evaluate((sel) => [...document.querySelector(sel).opt
   await p.evaluate(() => document.getElementById("discardYes")?.offsetParent && document.getElementById("discardYes").click()); await p.waitForTimeout(400);
   // ④ 費目の設定
   await p.locator("#moneySettings").click(); await p.waitForTimeout(500);
+  // the notes under 予算, 費目ごとの予算, 費目, 毎月の固定費 and 貯金の目標: taken out at the user's call (2026-11-25, tools/REMOVED.md)
+  const mg = await p.evaluate(() => document.getElementById("moneyGroup").innerText);
+  ok(!/スイッチを切った費目は|その日になると明細に自動で入れます|始める月からの毎月の収支|「費目ごとの支出」に残りが出ます|毎月の支出の予算です|1か月として数えます/.test(mg) && mg.includes("名前を書きかえると"), "the five notes gone (支払い方法's kept)");
   let cats = await p.evaluate(() => [...document.querySelectorAll("#catEditList li")].map((li) => li.dataset.cat));
   ok(cats.length === 11 && cats[0] === "食費", "④ 支出's 11: " + cats.join(","));
   await p.fill("#catAddName", "サブスク"); await p.locator('#catAddForm button[type="submit"]').click(); await p.waitForTimeout(300);
