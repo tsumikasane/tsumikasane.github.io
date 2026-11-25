@@ -53,10 +53,8 @@ const setting = (p, id) => p.evaluate(({ P, id }) => (JSON.parse(localStorage.ge
   ok((await txt(p, "#wx14Wind")) === flat("行き（8:00）は向かい風（東の風 6 m/s）。帰り（18:00）は追い風（東の風 5 m/s）。向かい風のときは、時間に余裕をもって"), "④ head wind there, tail wind back", await txt(p, "#wx14Wind"));
   // ⑧ the week's rain against the normal
   ok((await txt(p, "#wx14WeekRain")) === flat("この1週間の雨の量：合わせて 18 mm（平年のこのころの1週間は 22 mm。平年の 82%）"), "⑧ 18 mm against 22", await txt(p, "#wx14WeekRain"));
-  // ⑩ the 16 days as a graph
-  ok((await p.getAttribute("#wx14Long svg", "aria-label")) === "16日間の気温。いちばん暖かいのは11/21（土）（最高18度）、いちばん冷えるのは11/19（木）（最低-1度）", "⑩ the 16 days", await p.getAttribute("#wx14Long svg", "aria-label"));
-  await p.locator("#wx14Long").scrollIntoViewIfNeeded(); await p.waitForTimeout(200);
-  await p.screenshot({ path: out + "/wx14-long.png" });
+  // ⑩ the 16 days as a graph: taken out with 2週間（8日目から） at the user's call (2026-11-25, tools/REMOVED.md)
+  ok(!(await p.$("#wx14Long")) && !(await p.$("#wx5Long")) && !(await p.$$eval("#calPanelBody > h3.group-head", (l) => l.some((x) => x.textContent.startsWith("2週間")))), "⑩ the 16 days' graph gone, with 2週間");
   // ① 11/19's rain colour (③ the plants, in 暮らしのひとこと: taken out 2026-11-18)
   await p.click(".wx-days li:nth-child(4) button"); await p.waitForTimeout(400);
   ok((await p.getAttribute(".wx-daycard", "class")).endsWith("wx14-sky rain"), "① rain's colour on 11/19", await p.getAttribute(".wx-daycard", "class"));

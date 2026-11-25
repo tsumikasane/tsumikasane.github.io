@@ -33,7 +33,9 @@ async function open(b, when, more = {}) {
 }
 (async () => {
   const b = await chromium.launch();
-  let p = await open(b, "2026-11-16T10:00:00+09:00", { settings: [{ id: "wxCommute", on: true, go: "08:00", back: "18:00", weekdays: true, updatedAt: 1 }] });
+  let p = await open(b, "2026-11-16T10:00:00+09:00", { settings: [{ id: "wxCommute", on: true, go: "08:00", back: "18:00", weekdays: true, updatedAt: 1 },
+    { id: "wxHide", keys: ["take", "long", "words"], updatedAt: 1 }] }); // (the three hidden before they were taken out, 2026-11-25)
+  ok((await txt(p, "#wx7ShowSum")) === "天気のページに出す項目を選ぶ" && (await p.$$eval("#wx7ShowList input", (l) => l.every((x) => x.checked))), "sections taken out but kept hidden in the settings: not counted", await txt(p, "#wx7ShowSum"));
 
   // ② the day before, the day and the day after
   const three = await p.$$eval("#wx10Three [role=listitem]", (l) => l.map((x) => x.getAttribute("aria-label")));
@@ -43,13 +45,14 @@ async function open(b, when, more = {}) {
   // ① the page in brief
   await p.click('#wx7Jump [data-key="simple"]'); await p.waitForTimeout(400);
   const chips = await p.$$eval("#wx7Jump button", (l) => l.map((x) => x.textContent));
-  ok(JSON.stringify(chips) === JSON.stringify(["ぜんぶ表示", "1時間ごと", "雨", "服装", "持ち物", "1週間", "お知らせ・場所"]) && !(await p.$("#wx6Out")) && !!(await p.$(".wx-hours")), "① かんたん表示: five sections", chips);
+  ok(JSON.stringify(chips) === JSON.stringify(["ぜんぶ表示", "1時間ごと", "雨", "服装", "1週間", "お知らせ・場所"]) && !(await p.$("#wx6Out")) && !!(await p.$(".wx-hours")), "① かんたん表示: four sections (持ち物 taken out, 2026-11-25)", chips);
   await p.screenshot({ path: out + "/wx10-simple.png" });
   await p.click('#wx7Jump [data-key="simple"]'); await p.waitForTimeout(400);
   ok(!!(await p.$("#wx6Out")) && (await p.evaluate((P) => localStorage.getItem(P + "wxSimple"), P)) === null, "① ぜんぶ表示 again");
   // ⑧ which umbrella (11/19: 2 mm an hour, little wind)
   await p.click(".wx-days li:nth-child(4) button"); await p.waitForTimeout(400);
   ok((await txt(p, "#wx10Umb")) === "傘は、折りたたみで大丈夫そう（1時間に2mmほど）", "⑧ a folding one will do", await txt(p, "#wx10Umb"));
+  ok((await p.evaluate(() => { const c = document.getElementById("wx10Umb").closest(".wx-lines"); return c && c.previousElementSibling.textContent; })) === "雨", "⑧ in 雨's card (持ち物 taken out, 2026-11-25)");
   await p.click(".wx-days li:nth-child(1) button"); await p.waitForTimeout(400);
   ok(!(await p.$("#wx10Umb")), "⑧ none on a dry day");
 

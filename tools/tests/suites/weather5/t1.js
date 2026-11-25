@@ -39,10 +39,11 @@ async function open(b, when, more = {}, o = {}) {
   const near = (a, b) => Math.abs(Date.parse(a) - Date.parse(b)) < 6 * 60000;
   ok(ph.length === 4 && near(ph[0][1], "2026-11-09T07:02:42Z") && near(ph[1][1], "2026-11-24T14:54:04Z") && near(ph[2][1], "2026-12-09T00:52:31Z") && near(ph[3][1], "2026-12-24T01:28:45Z") && ph[1][0] === "満月",
     "⑨ the phases within 6 minutes of the reference", ph);
-  // ① the days 8 to 16 ahead
-  const lg = await p.$$eval("#wx5Long li", (l) => l.map((x) => [x.getAttribute("aria-label"), x.querySelector(".wx-d").className]));
-  ok(lg.length === 9 && lg[0][0] === "11月23日（月）、晴れ、最高14度、最低6度、降水確率10%" && lg[0][1].includes("sun") && lg[1][0] === "11月24日（火）、雨、最高13度、最低6度、降水確率60%", "① 11/23 (勤労感謝の日, red) to 12/1", lg.slice(0, 2));
-  ok(p.calls.some((u) => u.includes("forecast_days=16")), "① the 16 days asked for");
+  // ① the days 8 to 16 ahead: taken out at the user's call (2026-11-25, tools/REMOVED.md); the 16 days still asked for
+  // 休みの天気 (その11 ⑥), whose 3連休 runs past the week to 11/23
+  ok(!(await p.$("#wx5Long")) && !(await p.$("#wx14Long")) && !(await p.$$eval("#calPanelBody > h3.group-head", (l) => l.some((x) => x.textContent.startsWith("2週間")))), "① 2週間（8日目から） gone");
+  const rest = await p.$$eval("#wx11Rest li", (l) => l.map((x) => x.getAttribute("aria-label")));
+  ok(p.calls.some((u) => u.includes("forecast_days=16")) && rest.length === 3 && rest[2] === "11月23日（月）（勤労感謝の日）、晴れ、最高14度、最低6度、降水確率10%" && !(await p.$("#wx11Rest .wx11-none")), "① the 16 days still asked for 休みの天気 (11/23 from them)", rest);
   // ⑩ yesterday's forecast against what came, and the days before
   ok((await txt(p, "#wx5Check .wx5-check")) === "気温は2°ずれ、雨ははずれ（降らなかった）予報雨18°/9°・降水確率70%→実際16°/8°・雨0mm", "⑩ yesterday's: 2° off, no rain", await txt(p, "#wx5Check .wx5-check"));
   ok((await txt(p, "#wx5Check .wx5-score")) === "この4日の雨のあたり2/4日気温のずれは、平均1.3°", "⑩ the 4 days", await txt(p, "#wx5Check .wx5-score"));

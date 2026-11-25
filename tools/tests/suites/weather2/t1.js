@@ -16,7 +16,6 @@ const W = (p, f, ...a) => p.evaluate(({ f, a }) => window.__wx2[f](...a), { f, a
   const json = (body) => ({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(body) });
   await p.route("https://api.open-meteo.com/**", (r) => { calls.push(r.request().url()); return r.fulfill(json(D.forecast())); });
   await p.route("https://air-quality-api.open-meteo.com/**", (r) => { calls.push(r.request().url()); return r.fulfill(json(D.air())); });
-  await p.addInitScript(() => { navigator.share = async (d) => { window.__shared = d; }; });
   await seed(p, D.all(), "home"); await p.waitForTimeout(1200);
   ok(calls.some((u) => u.includes("pressure_msl") && u.includes("wind_gusts_10m_max") && u.includes("precipitation_sum") && u.includes("cloud_cover")), "the forecast asks for その2's more", calls[0]);
   await p.click('.tile[data-tile="weather"] .tile-head, .tile[data-tile="weather"]'); await p.waitForTimeout(1200);
@@ -43,15 +42,12 @@ const W = (p, f, ...a) => p.evaluate(({ f, a }) => window.__wx2[f](...a), { f, a
   ok(bars.length === 7 && bars[0].replace(/\s/g, "").startsWith("left:21.4%;width:57.1%"), "⑩ a bar for each day, on the week's range", bars);
   ok(flat(await p.evaluate(() => document.querySelector(".wx-days li").innerText)) === "きょう雨16°/8°70%", "⑩ the rows' words as before", await p.evaluate(() => document.querySelector(".wx-days li").innerText));
   await p.screenshot({ path: out + "/wx2-top.png", fullPage: false });
-  // ⑨ as words
-  await p.click(".wx2-share"); await p.waitForTimeout(300);
-  const sh = await p.evaluate(() => window.__shared);
-  ok(sh && sh.title === "11月13日（金）の天気（東京）" && sh.text.includes("雨 16° / 8°、降水確率 70%") && sh.text.includes("15時ごろから19時ごろまで雨の予報です") && sh.text.includes("これからの雨の量は 8 mm") && sh.text.includes("傘を持っていこう"), "⑨ the day as words", sh);
+  // ⑨ as words: taken out at the user's call (2026-11-25, tools/REMOVED.md); 画像で送る (その8 ②) stays at the line's end
+  ok(!(await p.$(".wx2-share")) && !(await p.$$eval(".wx-place-line button", (l) => l.some((x) => x.textContent.includes("文字で送る")))) && !!(await p.$(".wx-place-line #wx8Pic"))
+    && (await p.evaluate(() => { const b = document.getElementById("wx8Pic").getBoundingClientRect(), n = document.querySelector(".wx-place-line .wx-pl").getBoundingClientRect(); return b.left - n.right > 60; })), "⑨ 文字で送る gone, 画像で送る kept (at the right)");
   // another day pressed: its own
   await p.locator(".wx-days li button").nth(1).click(); await p.waitForTimeout(500);
   ok((await txt(p, ".wx-dl")).includes("風向き北の風") && !(await p.$(".wx2-plans")) && (await txt(p, ".wx2-night")).startsWith("その日の夜の月"), "another day: its wind, no plans, its night", await txt(p, ".wx-dl"));
-  await p.click(".wx2-share"); await p.waitForTimeout(300);
-  ok((await p.evaluate(() => window.__shared.title)) === "11月14日（土）の天気（東京）", "⑨ the day shown");
   for (const y of [0, 900, 1800]) { await p.evaluate((y) => document.getElementById("daySheet").scrollTo(0, y), y); await p.waitForTimeout(200); await p.screenshot({ path: `${out}/wx2-${y}.png` }); }
   // no width over the phone's
   ok(await p.evaluate(() => document.getElementById("daySheet").scrollWidth <= document.getElementById("daySheet").clientWidth + 1), "no sideways scroll");
