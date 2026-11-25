@@ -2049,7 +2049,6 @@ ul.wx13-plans { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none
 .wx10-three .wx10-d { font-size: var(--t-foot); color: var(--muted); }
 .wx10-three .wx10-hl { font-weight: 600; }
 .wx10-three .wx-p { font-size: var(--t-foot); color: var(--sat); }
-.wx-lines p.wx10-umb { font-size: var(--t-sub); color: var(--muted); }  /* (⑧ under 雨 since 持ち物 was taken out, 2026-11-25) */
 /* 天気 その9 */
 /* 天気 その8 */
 .wx-place-line { column-gap: 6px; }  /* (the line with 画像・更新 on one row) */
@@ -5207,19 +5206,7 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
 .bd2-quick-last { font-size: var(--t-foot); color: var(--muted); font-variant-numeric: tabular-nums; }
 .bd2-quick-btns { display: flex; flex-wrap: wrap; gap: 6px; }
 .bd2-quick-btns .chip-btn { min-width: 44px; padding: 0 10px; background: var(--fill); box-shadow: none; color: var(--fg); font-variant-numeric: tabular-nums; }
-/* ② あったこと (its buttons taken out 2026-11-25): the next day's weight by the tags kept */
-.bd2-eff { display: grid; gap: 8px; margin: 4px 0 6px; padding: 0; list-style: none; }
-.bd2-eff li { display: grid; grid-template-columns: minmax(5.5em, auto) 1fr auto auto; align-items: center; gap: 8px; font-size: var(--t-sub); }
-.bd2-eff-name { font-weight: 600; }
-.bd2-eff-bar { height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; }
-.bd2-eff-bar i { display: block; height: 100%; border-radius: 3px; }
-.bd2-eff-bar i.up { background: #ff9500; }
-.bd2-eff-bar i.down { background: var(--c-weight); }
-.bd2-eff-v { min-width: 5em; text-align: right; font-variant-numeric: tabular-nums; }
-/* (the value in the text's own color, bold when it stands out; the bar's color says which way) */
-.bd2-eff-v.up, .bd2-eff-v.down { font-weight: 700; }
-.bd2-eff-n { min-width: 2.6em; text-align: right; color: var(--muted); font-size: var(--t-foot); }
-#bd2Effects[hidden], #bd2Plateau[hidden], #bd2Cal[hidden] { display: none; }
+#bd2Plateau[hidden], #bd2Cal[hidden] { display: none; }
 /* ③ 停滞期 */
 .bd2-plateau { display: grid; gap: 6px; background: color-mix(in srgb, #ff9500 10%, var(--surface)); }
 .bd2-pl-head { margin: 0; font-weight: 700; }
@@ -8467,8 +8454,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             </div>
             <div class="ch-table"><div class="ch-scroll"><table id="wtReviewTable"></table></div></div>
           </div>
-          <!-- (からだ その2 ② あったことと次の日, ④ 体重カレンダー) -->
-          <div class="card pad" id="bd2Effects" hidden></div>
+          <!-- (からだ その2 ④ 体重カレンダー; ② あったことと、次の日の体重 taken out at the user's call, 2026-11-25) -->
           <div class="card pad bd2-cal" id="bd2Cal" hidden></div>
           <!-- ⑩ 体型の写真, on this device only: two side by side -->
           <div class="card pad wt-photos" id="wtPhotos">
@@ -24964,7 +24950,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月25日 16:26"; // 95fec4ad (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月25日 16:41"; // f1f66c24 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -45938,37 +45924,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ② あったこと: what may have moved the weight that day (外食, 飲み会 …), kept with the day's weight (tags). Its buttons
   // under the weight taken out at the user's call (2026-11-25, tools/REMOVED.md): the tags kept stay with their days (a day
-  // written again keeps them), and what reads them stays: each tag's next day against the usual, how much the weight went
-  // up or down to the next one (below), and ダイエット その12's 増えた日のわけ
+  // written again keeps them), and what reads them stays: ダイエット その12's 増えた日のわけ (体重が増えたときのヒント).
+  // (Each tag's next day against the usual, あったことと、次の日の体重: taken out at the user's call, the same day)
   const BD2_TAGS = [["eatout", "外食"], ["drink", "飲み会"], ["late", "夜おそく食べた"], ["salty", "塩分多め"], ["short", "寝不足"], ["swell", "むくみ"], ["bowel", "便秘"], ["move", "運動した"], ["period", "生理"]];
   const bd2TagsOf = (r) => (Array.isArray(r?.tags) ? r.tags.filter((k) => BD2_TAGS.some(([x]) => x === k)) : []);
   // with 記録する: the day's own kept (the form writes the day afresh)
   function bd2KeepTags(was) { const t = was ? bd2TagsOf(was) : []; return t.length ? { tags: t } : {}; }
-  // each tag's day against the next weight within 2 days, beside the usual change from one day to the next
-  function bd2TagEffects() {
-    const all = sortedWeights(), steps = [];
-    for (let i = 0; i + 1 < all.length; i++) {
-      const a = all[i], b = all[i + 1], gap = daysBetween(a.id, b.id);
-      if (gap >= 1 && gap <= 2) steps.push({ a, d: num(b.kg) - num(a.kg) });
-    }
-    if (steps.length < 5) return null;
-    const usual = sum(steps, (s) => s.d) / steps.length, out = [];
-    for (const [k, name] of BD2_TAGS) {
-      const xs = steps.filter((s) => bd2TagsOf(s.a).includes(k));
-      if (xs.length >= 2) out.push({ k, name, n: xs.length, d: sum(xs, (s) => s.d) / xs.length });
-    }
-    return out.length ? { usual, list: out.sort((a, b) => b.d - a.d) } : null;
-  }
-  function renderBd2Effects() {
-    const box = $("bd2Effects"), e = bd2TagEffects();
-    box.hidden = !e;
-    if (!e) { box.replaceChildren(); return; }
-    setChildren(box, el("div", { class: "card-head row-between" }, el("span", {}, "あったことと、次の日の体重"), el("span", { class: "muted small" }, `ふだん ${signed(e.usual, 2)} kg`)),
-      el("ul", { class: "bd2-eff" }, e.list.map((x) => el("li", {}, el("span", { class: "bd2-eff-name" }, x.name),
-        el("span", { class: "bd2-eff-bar" }, el("i", { class: x.d > e.usual ? "up" : "down", style: `width:${Math.min(100, Math.round((Math.abs(x.d - e.usual) / 1.2) * 100))}%` })),
-        el("span", { class: "bd2-eff-v" + (x.d - e.usual >= 0.2 ? " up" : x.d - e.usual <= -0.2 ? " down" : "") }, `${signed(x.d, 2)} kg`), el("span", { class: "bd2-eff-n" }, `${x.n}回`)))),
-      el("p", { class: "sub" }, "その日のタグと、次の日（2日以内）に測った体重の差の平均です。"));
-  }
 
   // ③ 停滞期: losing before (the 7日平均 down 0.5 kg and more over the two weeks before), and the last two weeks within 0.3 kg
   // of each other, with a goal below: said so, with what helps, until it moves again
@@ -46190,7 +46151,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   });
 
   // as からだ is drawn
-  function renderBodyTwo() { draw(renderBd2Quick); draw(renderBd2Daily); draw(renderBd2Effects); draw(renderBd2Plateau); draw(renderBd2Cal); }
+  function renderBodyTwo() { draw(renderBd2Quick); draw(renderBd2Daily); draw(renderBd2Plateau); draw(renderBd2Cal); }
   bodyTwo = true;
   // ---------- ToDo その5 ①〜⑩ (the user's calls, 2026-11-11): 重要と急ぎ as four boxes (①, taken off with 重要 at the
   // user's call, 2026-11-23), a 期限 from a class or a plan
@@ -53929,7 +53890,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren(body, head, wxSeven ? wx7DiffEl() : null, day, wxTen ? wx10Three(sel) : null, // (天気 その7 ⑦, その10 ②)
       hours ? [el("h3", { class: "group-head" }, sel === todayKey ? "1時間ごと（48時間）" : `1時間ごと（${relLabel(sel) || fmtMDW(sel)}）`), wx2Graph(hs, sel), wxThree ? wx3HourSeg() : null, hours, wxFour ? wx4HourPanel(hs) : null] : null, // (天気 その2 ①, その3 ⑨, その4 ⑤)
       el("h3", { class: "group-head" }, "雨"),
-      lines([line("rain", rain || (w.rain >= 30 ? `雨の可能性は低めです（いちばん高いときで ${w.rain}%）` : "雨の心配はなさそうです")), wxThirteen ? wx13Gap(sel) : null, wx2Amount(sel), ...(wxThree ? wx3RainMore(sel) : []), wxTen ? wx10Umbrella(sel) : null, // (天気 その2 ③, その3 ⑥⑦; その10 ⑧ here since 持ち物 was taken out, 2026-11-25)
+      lines([line("rain", rain || (w.rain >= 30 ? `雨の可能性は低めです（いちばん高いときで ${w.rain}%）` : "雨の心配はなさそうです")), wxThirteen ? wx13Gap(sel) : null, wx2Amount(sel), ...(wxThree ? wx3RainMore(sel) : []), // (天気 その2 ③, その3 ⑥⑦; その10 ⑧ 傘のえらび方 taken out, 2026-11-25)
         sel === todayKey ? el("a", { class: "link-btn wx-radar", href: radar, target: "_blank", rel: "noopener" }, "雨雲の動きを見る（気象庁）") : null, wxFour ? wx4WarnLink(place) : null]), // (天気 その4 ⑨)
       wxSix ? wx6Outside(sel) : null, // (天気 その6 ④⑤⑥)
       wxFour ? wx4ComRows(sel) : null, // (天気 その4 ③)
@@ -54228,8 +54189,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }).filter(Boolean);
     return rows.length ? [el("h3", { class: "group-head" }, "予定の時間の天気"), el("ul", { class: "list card wx2-plans" }, rows), turns.length > 6 ? el("p", { class: "group-foot" }, `ほか ${turns.length - 6} 件`) : null] : null;
   }
-  // ⑦ the air: PM2.5, 黄砂 (dust) and ozone, from Open-Meteo's air quality, kept for an hour, for 持ち物's マスク and
-  // 空気のお知らせ (its lines in 体調と空気 taken out at the user's call, 2026-11-18)
+  // ⑦ the air: PM2.5, 黄砂 (dust) and ozone, from Open-Meteo's air quality, kept for an hour, for
+  // 空気のお知らせ (its lines in 体調と空気 taken out at the user's call, 2026-11-18; 持ち物's マスク, 2026-11-25)
   async function wx2AirFetch(place) {
     const kept = lsJson(WX2_AIR);
     if (wx2AirBusy || !place) return;
@@ -54248,7 +54209,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     wxPageSync();
   }
   function wx2More(day, place) {
-    wx2AirFetch(place); // (the air for 持ち物's マスク and 空気のお知らせ, asked for as 体調と空気 did: that section taken out, 2026-11-18)
+    wx2AirFetch(place); // (the air for 空気のお知らせ, asked for as 体調と空気 did: that section taken out, 2026-11-18; 持ち物, 2026-11-25)
     return [...(wx2Plans(day) || []),
       el("h3", { class: "group-head" }, "夜の空"), el("div", { class: "card wx-lines" }, wx2Night(day), wxFive ? wx5MoonLine(day) : null), ...(wxFive ? wx5Events() : [])].filter(Boolean); // (天気 その5 ⑧⑨)
   }
@@ -55392,7 +55353,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   wxSeven = true;
 
-  // ---------- 天気 その8 ①〜⑩ (the user's calls, 2026-11-15): what to take (①, its section taken out 2026-11-25: the list kept for ②), the day as a picture to send (②), (③ the
+  // ---------- 天気 その8 ①〜⑩ (the user's calls, 2026-11-15): (① what to take: taken out, 2026-11-25), the day as a picture to send (②), (③ the
   // weather between two hours out: taken out, 2026-11-24), the days' names: 夏日・真夏日・冬日 and the rest (④), ozone: photochemical smog
   // (⑤), how long to sunburn (⑥), the bicycle and washing the car (⑦), the season's signs (⑧), the morning's notification
   // at another time on 土日・祝日 (⑨), and (⑩ the weather's words explained: taken out, 2026-11-25). From the forecast and the air as before (the
@@ -55400,30 +55361,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   var wxEight = false;
   const wx8Hours = (day, a, b) => wxHours(day + "T00:00", 24).filter((x) => x.d === day && x.h >= a && x.h <= b);
 
-  // ① what to take: an umbrella (or a folding one), sunscreen, a hat, something to drink, a layer, gloves, a warmer, a mask
-  // (the section 持ち物 taken out at the user's call, 2026-11-25, tools/REMOVED.md: this still makes the picture's 持ち物 line, ②)
+  // (① what to take: taken out at the user's call, 2026-11-25, its section and then the picture's 持ち物 line, tools/REMOVED.md)
+  // the air in the day's hours from 6時, the highest of each: for 空気のお知らせ (その13 ⑥)
   function wx8AirTop(day) {
     const a = lsJson(WX2_AIR), place = wxPlace();
     if (!a || !a.hourly || !Array.isArray(a.hourly.time) || !place || a.lat !== place.lat || a.lon !== place.lon) return null;
     const idx = a.hourly.time.map((t, i) => [t, i]).filter(([t]) => t.startsWith(day) && Number(t.slice(11, 13)) >= 6).map(([, i]) => i);
     const top = (k) => Math.max(0, ...idx.map((i) => (Array.isArray(a.hourly[k]) ? a.hourly[k][i] : null)).filter((v) => v != null).map(num));
     return { pm: top("pm2_5"), dust: top("dust"), ozone: top("ozone") };
-  }
-  function wx8Take(day) {
-    const w = wxDay(day), m = wxDayMore(day);
-    if (!w) return [];
-    const hs = wx8Hours(day, day === todayKey ? Math.max(7, new Date().getHours()) : 7, 21), feels = hs.map((x) => x.feel).filter((v) => v != null).map(num);
-    const fhi = feels.length ? Math.max(...feels) : w.hi, flo = feels.length ? Math.min(...feels) : w.lo, uv = m && m.uv != null ? num(m.uv) : 0;
-    const heat = wxFive ? wx5HeatTop(day) : null, air = wx8AirTop(day), out = [];
-    if (w.wet) out.push(["rain", "傘"]); else if (Math.max(0, ...hs.map((x) => x.rain)) >= 30) out.push(["rain", "折りたたみ傘"]);
-    if (uv >= 3) out.push(["sun", "日焼け止め"]);
-    if (uv >= 6 || fhi >= 28) out.push(["sun", "帽子か日傘"]);
-    if ((heat && heat.v >= 25) || fhi >= 28) out.push(["drop", "飲み物"]);
-    if (fhi - flo >= 8 && flo < 18) out.push(["sun", "羽織るもの"]);
-    if (flo <= 3) out.push(["snow", "手袋・マフラー"]);
-    if (flo <= 0) out.push(["snow", "カイロ"]);
-    if (air && (air.pm > 35 || air.dust >= 50)) out.push(["cloud", "マスク"]);
-    return out;
   }
 
   // ② the day as a picture (a card drawn here), sent where the phone can, saved otherwise
@@ -55443,10 +55388,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     g.font = font(64, 700); g.fillText(w.word, W / 2, 420);
     g.font = font(96, 700); g.fillText(`${w.hi}° / ${w.lo}°`, W / 2, 540);
     g.font = font(38); g.fillText(`降水確率 ${w.rain}%`, W / 2, 610);
-    const rain = wxRainWords(day), wear = wxWear(day), take = wx8Take(day).map(([, t]) => t);
+    const rain = wxRainWords(day), wear = wxWear(day); // (持ち物's line: taken out at the user's call, 2026-11-25, tools/REMOVED.md)
     let y = 690;
     g.font = font(30);
-    for (const t of [rain, wear ? `服装：${wear.main}` : "", take.length ? `持ち物：${take.join("・")}` : ""].filter(Boolean)) for (const part of wx8Wrap(g, t, W - 120)) { g.fillText(part, W / 2, y); y += 44; }
+    for (const t of [rain, wear ? `服装：${wear.main}` : ""].filter(Boolean)) for (const part of wx8Wrap(g, t, W - 120)) { g.fillText(part, W / 2, y); y += 44; }
     g.font = font(24); g.globalAlpha = 0.8; g.fillText("つみかさね", W / 2, H - 36);
     const blob = await new Promise((r) => c.toBlob(r, "image/png"));
     if (!blob) { flash("画像を作れませんでした"); return; }
@@ -55637,8 +55582,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ---------- 天気 その10 ①〜⑩ (the user's calls, 2026-11-16): the page in brief (①), yesterday, today and tomorrow side
   // by side (②), tomorrow first in the evening (③), a notification to drink on a hot day (④), the sky's: a glowing
-  // sunset, a starry night, a meteor shower (⑤), rain on the way back (⑥), (⑦ a trip's place in the morning: taken out, 2026-11-22), which
-  // umbrella (⑧), the first snow and the first frost (⑨), and quiet hours for the notifications (⑩). All from the
+  // sunset, a starry night, a meteor shower (⑤), rain on the way back (⑥), (⑦ a trip's place in the morning: taken out, 2026-11-22), (⑧ which
+  // umbrella: taken out, 2026-11-25), the first snow and the first frost (⑨), and quiet hours for the notifications (⑩). All from the
   // forecast kept; the choices on this device. Function declarations
   // and var ----------
   var wxTen = false;
@@ -55723,14 +55668,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // (⑦ a trip's place in the morning: taken out at the user's call, 2026-11-22, tools/REMOVED.md; its trip wxTrip and the week wxTripData kept on the device)
 
-  // ⑧ which umbrella: by the rain's hardest hour and the wind while it rains (from now on today, 7時〜21時)
-  function wx10Umbrella(day) {
-    const hs = wx8Hours(day, day === todayKey ? Math.max(7, new Date().getHours()) : 7, 21).filter((x) => wx4Wet(x));
-    if (!hs.length) return null;
-    const mm = Math.max(0, ...hs.map((x) => { const y = wx2H("precipitation", x.t, 1)[0]; return y && y.t === x.t && y.v != null ? y.v : 0; })), wind = Math.max(0, ...hs.map((x) => num(x.wind))), r1 = (v) => Math.round(v * 10) / 10;
-    return el("p", { class: "wx10-umb", id: "wx10Umb" }, wind >= 10 ? `風が強いので（${Math.round(wind)} m/s）、傘がこわれやすい日。レインコートもあると安心`
-      : mm >= 5 || wind >= 6 ? `傘は、しっかりした長い傘がおすすめ（${[mm >= 0.5 ? `1時間に ${r1(mm)} mm` : "", wind >= 6 ? `風 ${Math.round(wind)} m/s` : ""].filter(Boolean).join("、")}）` : `傘は、折りたたみで大丈夫そう（${mm >= 0.5 ? `1時間に ${r1(mm)} mm ほど` : "弱い雨"}）`); // (no 0 mm said: その13's)
-  }
+  // (⑧ which umbrella, 傘のえらび方: taken out at the user's call, 2026-11-25, tools/REMOVED.md)
 
   // ⑨ the first snow and the first frost (0° and under) of the winter, against the month gone by (その4's record), 10〜12月
   function wx10Firsts(place, days) {
@@ -60590,7 +60528,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function renderDt12When() {
     let box = $("dt12When");
-    if (!box) { box = el("div", { class: "card pad dt12-when", id: "dt12When", hidden: true }); ($("bd2Effects") || $("wtReview") || $("wtStats")).after(box); }
+    if (!box) { box = el("div", { class: "card pad dt12-when", id: "dt12When", hidden: true }); if ($("bd2Cal")) $("bd2Cal").before(box); else ($("wtReview") || $("wtStats")).after(box); } // (where it was, after あったことと、次の日の体重 until that was taken out, 2026-11-25)
     const w = dt12When();
     if (!w) { box.hidden = true; box.replaceChildren(); return; }
     box.hidden = false;

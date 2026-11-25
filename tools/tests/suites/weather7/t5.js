@@ -69,10 +69,8 @@ const ah = (rh) => { let s = 0, n = 0; for (let h = 7; h <= 21; h++) { const t =
   // chip, nor the day asked of the archive
   ok(!(await p.$("#wx11Past")) && !(await p.$("#wx7-past")) && !(await p.$$eval("#wx7Jump button", (l) => l.some((x) => x.textContent === "過去の天気"))) && !p.calls.some((u) => u.includes("start_date=2025-11-16&end_date=2025-11-16")), "⑩ gone");
   // ⑨ the user's own things: taken out (the user's call, 2026-11-22, tools/REMOVED.md): those kept (水筒 always,
-  // レインブーツ on a wet day) stay in the account's settings and aren't put in 持ち物 (the list: the section itself taken out, 2026-11-25)
-  const take = (d) => p.evaluate((d) => window.__wx8.take(d).join("｜"), d);
-  ok((await take("2026-11-16")) === "日焼け止め｜羽織るもの" && !(await p.$(".wx11-mine, #wx11TakeAdd")), "⑨ 水筒 not in 持ち物", await take("2026-11-16"));
-  ok(!/レインブーツ|水筒/.test(await take("2026-11-19")), "⑨ nor レインブーツ on a wet day", await take("2026-11-19"));
+  // レインブーツ on a wet day) stay in the account's settings, shown nowhere (持ち物 itself taken out at the user's call, 2026-11-25)
+  ok(!(await p.$("#wx8Take")) && !(await p.$(".wx11-mine, #wx11TakeAdd")) && !/レインブーツ|水筒/.test(await txt(p, "#calPanelBody")), "⑨ 水筒 nowhere on the page");
 
   // ⑥ the order: 1週間 moved up past 朝焼け・夕焼け, then back
   await p.locator("#wx11Order summary").scrollIntoViewIfNeeded();

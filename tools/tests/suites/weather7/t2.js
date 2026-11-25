@@ -31,11 +31,9 @@ async function open(b, when, more = {}, o = {}) {
   const b = await chromium.launch();
   const p = await open(b, "2026-11-16T10:00:00+09:00");
 
-  // ① what to take: the section 持ち物 taken out at the user's call (2026-11-25, tools/REMOVED.md); the list kept for the
-  // picture's 持ち物 line (②)
+  // ① what to take: taken out at the user's call (2026-11-25, tools/REMOVED.md): the section, then the picture's 持ち物 line (②)
   ok(!(await p.$("#wx8Take")) && !(await p.$$eval("#calPanelBody > h3.group-head", (l) => l.some((x) => x.textContent === "持ち物"))), "① 持ち物 gone from the page");
-  ok(JSON.stringify(await W(p, "take", "2026-11-16")) === JSON.stringify(["日焼け止め", "羽織るもの", "マスク"]), "① the picture's: sunscreen (UV 3), a layer (体感 9〜17°), a mask (PM2.5 50)", await W(p, "take", "2026-11-16"));
-  // ⑤ the air asks for ozone, for the picture's 持ち物 and 空気のお知らせ (⑤'s line in 体調と空気 and ⑥ to sunburn in 暮らしのひとこと: taken out 2026-11-18)
+  // ⑤ the air asks for ozone, for 空気のお知らせ (⑤'s line in 体調と空気 and ⑥ to sunburn in 暮らしのひとこと: taken out 2026-11-18)
   ok(p.calls.some((u) => u.includes("air-quality-api") && u.includes("hourly=pm2_5,dust,ozone")), "⑤ the air asks for ozone");
   // ⑧ the season
   ok((await txt(p, "#wx8Season")) === flat("季節のめやす：最高気温が15°を下回る日が続きます。そろそろ冬物（コート）を出す時期です。朝晩の暖房が必要な時期です。氷点下の朝があります。水道管や路面の凍結に気をつけて。"), "⑧ winter clothes, heating, a frozen morning", await txt(p, "#wx8Season"));
@@ -50,10 +48,12 @@ async function open(b, when, more = {}, o = {}) {
   // ⑩ the words: taken out at the user's call (2026-11-25, tools/REMOVED.md)
   ok(!(await p.$("#wx8Words")) && !(await p.$$eval("#calPanelBody > h3.group-head", (l) => l.some((x) => x.textContent === "天気のことば"))), "⑩ 天気のことば gone");
 
-  // ② the picture: saved where it can't be shared
-  await p.evaluate(() => Object.defineProperty(navigator, "canShare", { value: undefined, configurable: true }));
+  // ② the picture: saved where it can't be shared; its lines as drawn (持ち物's line taken out at the user's call, 2026-11-25)
+  await p.evaluate(() => { Object.defineProperty(navigator, "canShare", { value: undefined, configurable: true }); const f = CanvasRenderingContext2D.prototype.fillText; window.__drawn = []; CanvasRenderingContext2D.prototype.fillText = function (t, ...a) { window.__drawn.push(String(t)); return f.call(this, t, ...a); }; });
   const [dl] = await Promise.all([p.waitForEvent("download", { timeout: 10000 }), p.click("#wx8Pic")]);
   ok(dl.suggestedFilename() === "天気-2026-11-16.png", "② saved as a picture", dl.suggestedFilename());
+  const drawn = await p.evaluate(() => window.__drawn);
+  ok(drawn.some((t) => t.startsWith("服装：")) && drawn.some((t) => t.startsWith("降水確率")) && !drawn.some((t) => t.includes("持ち物")), "② its lines: 服装 and the rest, no 持ち物", drawn);
 
   // ⑨ the morning on 土日・祝日
   await p.locator("#wxMornOn").scrollIntoViewIfNeeded();

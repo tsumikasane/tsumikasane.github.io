@@ -49,12 +49,10 @@ async function open(b, when, more = {}) {
   await p.screenshot({ path: out + "/wx10-simple.png" });
   await p.click('#wx7Jump [data-key="simple"]'); await p.waitForTimeout(400);
   ok(!!(await p.$("#wx6Out")) && (await p.evaluate((P) => localStorage.getItem(P + "wxSimple"), P)) === null, "① ぜんぶ表示 again");
-  // ⑧ which umbrella (11/19: 2 mm an hour, little wind)
+  // ⑧ which umbrella (傘のえらび方): taken out at the user's call (2026-11-25, tools/REMOVED.md): none on 11/19's rain (2 mm an hour)
   await p.click(".wx-days li:nth-child(4) button"); await p.waitForTimeout(400);
-  ok((await txt(p, "#wx10Umb")) === "傘は、折りたたみで大丈夫そう（1時間に2mmほど）", "⑧ a folding one will do", await txt(p, "#wx10Umb"));
-  ok((await p.evaluate(() => { const c = document.getElementById("wx10Umb").closest(".wx-lines"); return c && c.previousElementSibling.textContent; })) === "雨", "⑧ in 雨's card (持ち物 taken out, 2026-11-25)");
+  ok(!(await p.$("#wx10Umb")) && !(await txt(p, "#calPanelBody")).includes("傘は、") && (await txt(p, "#calPanelBody")).includes("雨の予報です"), "⑧ gone, on a rainy day too");
   await p.click(".wx-days li:nth-child(1) button"); await p.waitForTimeout(400);
-  ok(!(await p.$("#wx10Umb")), "⑧ none on a dry day");
 
   // ④⑤⑥ the notifications
   await p.locator("#wx10NoteBox").scrollIntoViewIfNeeded();

@@ -60,9 +60,9 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   await p.evaluate(() => window.__wx8.redraw()); await p.waitForTimeout(300);
   ok(!(await p.$("#wx8Take")) && !(await p.$("#wx12PackNote")) && !(await p.$(".wx12-pack")) && JSON.stringify(await ls(p, "wxPacked")) === JSON.stringify({ "2026-11-16": ["折りたたみ傘"] }), "⑤ gone, what was ticked left alone", await ls(p, "wxPacked"));
   // ③ the umbrella's line: taken out (the user's call, 2026-11-22, tools/REMOVED.md): no box; the 30% kept from before
-  // is left as it is and not used (today's 40% is no wet day: 折りたたみ傘, as at 50%)
-  ok(!(await p.$("#wx12UmbBox")) && !(await p.$("#wx12UmbAt")) && (await p.evaluate(() => window.__wx8.take("2026-11-16")))[0] === "折りたたみ傘" && JSON.stringify(await setting(p, "wxUmbAt")).includes('"at":30'),
-    "③ 傘の基準: gone, 50% as before, the kept 30% left alone", [await p.evaluate(() => window.__wx8.take("2026-11-16")), await setting(p, "wxUmbAt")]);
+  // is left as it is and not used (today's 40% is no wet day, as at 50%)
+  ok(!(await p.$("#wx12UmbBox")) && !(await p.$("#wx12UmbAt")) && !(await txt(p, "#wx7Sum")).includes("傘を持っていこう") && JSON.stringify(await setting(p, "wxUmbAt")).includes('"at":30'),
+    "③ 傘の基準: gone, 50% as before (today's 40%: no 傘を持っていこう), the kept 30% left alone", [await txt(p, "#wx7Sum"), await setting(p, "wxUmbAt")]);
   // ⑧ snow tomorrow from 4時 (6 cm): told at 20:00 tonight
   await p.locator("#wx10NoteBox").scrollIntoViewIfNeeded();
   await p.click("#wx12SnowOn"); await p.waitForTimeout(300);

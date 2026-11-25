@@ -27,8 +27,8 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   // ---- nothing recorded yet: only 睡眠 shows (水分 taken out 2026-11-20)
   const e = await mk();
   await seed(e, {}, "weight"); await e.waitForTimeout(900);
-  const vis = await e.evaluate(() => ["bd2Quick", "bd2Effects", "bd2Plateau", "bd2Cal", "bd2Daily"].map((id) => { const x = document.getElementById(id); return !x.hidden && x.offsetHeight > 0; }));
-  ok(JSON.stringify(vis) === "[false,false,false,false,true]", "nothing yet: only 睡眠", vis);
+  const vis = await e.evaluate(() => ["bd2Quick", "bd2Plateau", "bd2Cal", "bd2Daily"].map((id) => { const x = document.getElementById(id); return !x.hidden && x.offsetHeight > 0; }));
+  ok(JSON.stringify(vis) === "[false,false,false,true]", "nothing yet: only 睡眠", vis);
   ok(!(await e.$(".bd2-water-v")) && (await txt(e, ".bd2-sleep-v")) === "—" && (await txt(e, ".bd2-sleep-note")).startsWith("きょうの朝までの夜です。"), "nothing yet: no 水分 (taken out), no sleep",
     [await txt(e, ".bd2-sleep-v"), await txt(e, ".bd2-sleep-note")]);
   ok(!(await e.$("#bd2Daily .bd2-less")) && !(await e.$("#bd2Tags")), "nothing yet: no −200; no あったこと (taken out)");
@@ -45,7 +45,7 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   // ⑤ no goal: a first weight crosses nothing; ① then hidden
   await e.fill("#wtInput", "70.0"); await e.click("#wtSubmit"); await e.waitForTimeout(800);
   ok((await wt(e, "2026-11-11"))?.kg === 70 && !/kg台|半分|届きました/.test(await status(e)) && !(await e.isVisible("#bd2Quick")), "⑤ a first weight, no goal: nothing said", await status(e));
-  ok(await e.isVisible("#bd2Cal") && !(await e.isVisible("#bd2Effects")), "④ one weight: the calendar; ② too few for the next day");
+  ok(await e.isVisible("#bd2Cal") && !(await e.$("#bd2Effects")), "④ one weight: the calendar (② あったことと、次の日の体重: taken out 2026-11-25)");
 
   // ---- あったこと's buttons taken out at the user's call (2026-11-25, tools/REMOVED.md): none for 女性 either (生理 went with
   // them); a weight in, no tags; the day before as it was

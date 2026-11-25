@@ -39,11 +39,8 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   await p.fill("#wtInput", was6.kg.toFixed(1)); await p.click("#wtSubmit"); await p.waitForTimeout(700);
   ok(JSON.stringify((await wt(p, "2026-11-06")).tags) === '["drink"]' && (await wt(p, "2026-11-06")).updatedAt > was6.updatedAt, "② kept as the day is written again", await wt(p, "2026-11-06"));
   await goDay(p, "2026-11-11"); await p.waitForTimeout(500);
-  // what came of the tags kept (still drawn): 飲み会 up, 運動 down
-  const eff = await W(p, "effects");
-  const drink = eff?.list.find((x) => x.k === "drink"), move = eff?.list.find((x) => x.k === "move");
-  ok(drink && move && drink.d > 0.3 && move.d < -0.1 && drink.n >= 4, "② 飲み会 the next day up, 運動した down", eff);
-  ok((await txt(p, "#bd2Effects")).includes("飲み会") && (await txt(p, "#bd2Effects")).includes("運動した"), "② said on the page", await txt(p, "#bd2Effects"));
+  // あったことと、次の日の体重 (each tag's next day): taken out at the user's call (2026-11-25, tools/REMOVED.md); the tags kept
+  ok(!(await p.$("#bd2Effects")) && !(await p.$(".bd2-eff")) && !(await p.evaluate(() => document.body.innerText)).includes("あったことと"), "② あったことと、次の日の体重: gone (睡眠・食べたもの・運動と次の日の体重 are their own)");
 
   // ③ 停滞期: two weeks flat after losing, with a goal below
   const pl = await W(p, "plateau");
