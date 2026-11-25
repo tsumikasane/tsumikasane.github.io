@@ -46,7 +46,7 @@ function forecast() {
   ok((await order(p)).startsWith("review,tomorrow,weather,todo,calendar,countdown,"), "21:00: " + await order(p));
   const rv = await tileText(p, "review");
   ok(rv === "きょうのふりかえり 6こ きょう積んだブロック ToDo 1件 完了 勉強 1時間 30分 運動 ラン 4 km・筋トレ 3セット 食事 2回・1,350 kcal 体重 65.2 kg 支出 1,200円 日記を書く"
-    || /^きょうのふりかえり 7こ きょう積んだブロック ToDo 1件 完了 勉強 1 時間 30 分 運動 ラン 4 km・筋トレ 3セット 食事 2回・1,350 kcal 体重 65.2 kg 支出 1,200 円 日記を書く( 文字で送る)?$/.test(rv), "⑧ " + rv); // (文字で送る: きょう その2, 2026-11-13)
+    || /^きょうのふりかえり 6こ きょう積んだブロック ToDo 1件 完了 勉強 1 時間 30 分 運動 ラン 4 km・筋トレ 3セット 食事 2回・1,350 kcal 体重 65.2 kg 支出 1,200 円 日記を書く( 文字で送る)?$/.test(rv), "⑧ " + rv); // (文字で送る: きょう その2, 2026-11-13; 6こ: 食事 one block a day since 2026-11-25, its 2 meals in one)
   const tm = await tileText(p, "tomorrow");
   ok(tm.includes("予定 09:00 ゼミ、13:00 面談") && tm.includes("ToDo レポート提出、本を返す") && tm.includes("バイト 17:00〜22:00") && tm.includes("運動 ラン 4 km・レッグカール・ラットプルダウン・アームカール") && tm.includes("天気 晴れ 20° / 11°・降水確率 10%"), "⑨ " + tm);
   const cd = await tileText(p, "countdown");

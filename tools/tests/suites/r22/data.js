@@ -1,4 +1,6 @@
-// a year and more of records, as the user's might be: every kind, at times of day of their own
+// a year and more of records, as the user's might be: every kind, at times of day of their own. 食事 is one block a day
+// since 2026-11-25 (the user's call): so the blocks stay as they were, a day's second 食事 is a ToDo done at its time, and
+// the last day's (until's) 食事 ToDos too, so one recorded from ＋ on it drops in as a block of its own
 const addDays = (d, n) => { const x = new Date(d + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const T = (d, h = 9, m = 0) => Date.parse(`${d}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00+09:00`);
 function make(until = "2026-11-10", from = "2025-09-01") {
@@ -11,8 +13,10 @@ function make(until = "2026-11-10", from = "2025-09-01") {
   for (let d = from; d <= until; d = addDays(d, 1), i++) {
     const wd = new Date(d + "T12:00:00Z").getUTCDay();
     if (rnd() < 0.7) D.journal.push({ id: d, date: d, text: `${d} の日記。きょうもがんばった`, createdAt: T(d, 22, 10) });
-    if (rnd() < 0.8) D.meals.push({ id: "m" + i + "a", date: d, slot: "朝食", text: "トーストとコーヒー", kcal: 350, createdAt: T(d, 7, 30) });
-    if (rnd() < 0.8) D.meals.push({ id: "m" + i + "b", date: d, slot: "夕食", text: "カレー", kcal: 750, createdAt: T(d, 19, 15) });
+    const meal = (id, slot, text, kcal, at) => (d !== until && !D.meals.some((m) => m.date === d) ? D.meals.push({ id, date: d, slot, text, kcal, createdAt: at })
+      : D.todos.push({ id, text, done: true, doneAt: at, createdAt: at }));
+    if (rnd() < 0.8) meal("m" + i + "a", "朝食", "トーストとコーヒー", 350, T(d, 7, 30));
+    if (rnd() < 0.8) meal("m" + i + "b", "夕食", "カレー", 750, T(d, 19, 15));
     if (rnd() < 0.5) D.todos.push({ id: "t" + i, text: `レポート ${i}`, done: true, doneAt: T(d, 16, 5), createdAt: T(d, 8) });
     if (rnd() < 0.6) D.study.push({ id: "s" + i, date: d, minutes: 30 + Math.round(rnd() * 90), subjectId: "sb1", createdAt: T(d, 21, 0) });
     if (wd === 1 || wd === 4) { if (i % 14 === 1) bench += 2.5; D.workouts.push({ id: "w" + i, date: d, type: "筋トレ", exercise: "ベンチプレス", sets: 3, kg: bench, reps: 8, createdAt: T(d, 18, 30) }); }

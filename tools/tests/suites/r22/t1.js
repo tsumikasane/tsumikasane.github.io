@@ -161,11 +161,15 @@ async function addMeal(p, text = "おにぎり") {
   await p.close();
 
   // ---------- few records, with gaps (149 blocks), nothing today yet; 2026-11-10 20:30 ----------
-  const F = { meals: [], settings: [] };
+  // (three a day: a 食事 and two ToDos done, 食事 being one block a day since 2026-11-25)
+  const F = { meals: [], todos: [], settings: [] };
   let k = 0;
   for (let d = "2026-09-19"; d < "2026-11-10" && k < 149; d = addDays(d, 1)) {
     if (["2026-11-03", "2026-11-05"].includes(d)) continue;
-    for (let j = 0; j < 3 && k < 149; j++, k++) F.meals.push({ id: "f" + k, date: d, slot: "朝食", text: "パン" + k, kcal: 300, createdAt: T(d, 7 + j * 5) });
+    for (let j = 0; j < 3 && k < 149; j++, k++) {
+      if (!j) F.meals.push({ id: "f" + k, date: d, slot: "朝食", text: "パン" + k, kcal: 300, createdAt: T(d, 7 + j * 5) });
+      else F.todos.push({ id: "f" + k, text: "パン" + k, done: true, doneAt: T(d, 7 + j * 5), createdAt: T(d, 7 + j * 5) });
+    }
   }
   p = await phone(b, at("20:30", "2026-11-10"), { deviceScaleFactor: 1 });
   await seed(p, F, "tsumi"); await p.waitForTimeout(1500);

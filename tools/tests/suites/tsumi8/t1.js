@@ -19,7 +19,8 @@ async function open(b, data, hm) {
   return p;
 }
 
-// as tsumi7's: 59 days before today, 朝食 at 07:30, 勉強 at 21:10, 運動 at 18:00 every 3rd day; today 4 食事 and a 運動.
+// as tsumi7's: 59 days before today, 朝食 at 07:30, 勉強 at 21:10, 運動 at 18:00 every 3rd day; today 4 食事 (one block since
+// 2026-11-25, the user's call) and a 運動: 2 blocks, under the 3 of a day with 運動 (tsumi7's からだ・ToDo・家計簿 left out).
 // 今日のめあて 食事・運動・日記; つみねこ petted 45 times on this device
 const meals = [], study = [], workouts = [], per = new Map();
 const put = (d) => per.set(d, (per.get(d) || 0) + 1);
@@ -29,7 +30,8 @@ for (let i = 1; i <= 59; i++) {
   study.push({ id: "s" + i, date: d, minutes: 30, createdAt: T(d, "21:10") }); put(d);
   if (i % 3 === 0) { workouts.push({ id: "w" + i, date: d, type: "ランニング", minutes: 30, km: 5, createdAt: T(d, "18:00") }); put(d); }
 }
-[["パン", "07:30", "朝食"], ["うどん", "12:00", "昼食"], ["カレー", "13:00", "間食"], ["そば", "15:00", "間食"]].forEach(([text, hm, slot], j) => { meals.push({ id: "t" + j, date: today, slot, text, kcal: 400, createdAt: T(today, hm) }); put(today); });
+[["パン", "07:30", "朝食"], ["うどん", "12:00", "昼食"], ["カレー", "13:00", "間食"], ["そば", "15:00", "間食"]].forEach(([text, hm, slot], j) => { meals.push({ id: "t" + j, date: today, slot, text, kcal: 400, createdAt: T(today, hm) }); });
+put(today); // (the day's 食事, one block)
 workouts.push({ id: "w0", date: today, type: "ランニング", minutes: 20, km: 3, createdAt: T(today, "18:00") }); put(today);
 const settings = [{ id: "tsumiNotes", words: { "meal:m2": "#旅行 おいしかった", "meal:m4": "#旅行", "meal:m6": "#ラーメン部 また行く" }, updatedAt: 1 },
   { id: "tsumiAims", days: { [today]: ["meal", "workout", "journal"] }, updatedAt: 1 }];
@@ -45,21 +47,21 @@ const DATA = { meals, study, workouts, settings, tsumiPets: { day: today, n: 0, 
   await p.click("#tsumiSettings"); await wait(p, 800);
   // 6 この30日の積み方
   const last30 = [...Array(30)].map((_, i) => addDays(today, -29 + i)).map((d) => per.get(d) || 0), avg = last30.reduce((a, b) => a + b, 0) / 30;
-  ok((await p.locator("#ts8Chart .ts8-bar").count()) === 30 && (await txt(p, "#ts8Chart .ts8-top")) === "5 こ", "6 thirty columns, the top 5", await txt(p, "#ts8Chart .ts8-top"));
-  ok((await txt(p, "#ts8ChartRead")) === `平均 ${(Math.round(avg * 10) / 10).toFixed(1)} こ・積んだ日 30 日・いちばん多い日 11/14（土） 5 こ`, "6 under it: the average, the days, the most", await txt(p, "#ts8ChartRead"));
+  ok((await p.locator("#ts8Chart .ts8-bar").count()) === 30 && (await txt(p, "#ts8Chart .ts8-top")) === "3 こ", "6 thirty columns, the top 3 (a day with 運動)", await txt(p, "#ts8Chart .ts8-top"));
+  ok((await txt(p, "#ts8ChartRead")) === `平均 ${(Math.round(avg * 10) / 10).toFixed(1)} こ・積んだ日 30 日・いちばん多い日 11/11（水） 3 こ`, "6 under it: the average, the days, the most", await txt(p, "#ts8ChartRead"));
   const hs = await p.evaluate(() => [...document.querySelectorAll("#ts8Chart .ts8-bar i")].map((i) => i.style.height));
-  ok(hs[29] === "100%" && hs[28] === "40%" && (await p.getAttribute("#ts8Chart .ts8-bar:last-child", "aria-label")) === "11月14日（土）、5 こ", "6 the heights, and each named with its day and count", hs.slice(-3));
+  ok(hs[29] === "67%" && hs[28] === "67%" && (await p.getAttribute("#ts8Chart .ts8-bar:last-child", "aria-label")) === "11月14日（土）、2 こ", "6 the heights, and each named with its day and count", hs.slice(-3));
   await p.locator("#ts8Chart .ts8-bar").nth(28).click(); await wait(p);
   ok((await txt(p, "#ts8ChartRead")) === "2 こ きのう・11月13日（金） 階段で見る" && (await p.locator("#ts8Chart .ts8-bar.on").count()) === 1, "6 a column pressed: its count first, and the way to it", await txt(p, "#ts8ChartRead"));
   // 7 連続の記録ベスト5
   ok(JSON.stringify(await rows(p, "#ts8Runs")) === JSON.stringify(["1位 9/16〜11/14 いま続いています 60 日"]), "7 the one run, going on", await rows(p, "#ts8Runs"));
   // 3 タイプ診断
   const type = await txt(p, "#ts8Type");
-  ok(type === "あなたは「夜のコツコツバランス型」 時刻のわかるブロックの 56% を、夜（17時〜朝4時）に積んでいます。 60 日のうち 60 日（100%）積みました。毎日のように積んでいます。 よく積むのは食事と勉強です。", "3 the type and why", type);
+  ok(type === "あなたは「夜のコツコツバランス型」 時刻のわかるブロックの 57% を、夜（17時〜朝4時）に積んでいます。 60 日のうち 60 日（100%）積みました。毎日のように積んでいます。 よく積むのは食事と勉強です。", "3 the type and why", type);
   // 4 種類ごとのペース
-  ok(JSON.stringify(await rows(p, "#ts8Pace")) === JSON.stringify(["食事 63 こ・あいた日なし 1日 1.1 こ", "勉強 59 こ・あいた日なし 1 日に 1 回", "運動 20 こ・いちばんあいたのは 2 日 3 日に 1 回"]), "4 how often each", await rows(p, "#ts8Pace"));
-  // 5 いつもの時間 (62 食事: one at 12:00 sharp is taken as one with no time kept, as つみかさね takes it)
-  ok(JSON.stringify(await rows(p, "#ts8Usual")) === JSON.stringify(["食事 まんなか 07:30・62 こから 07:30ごろ", "運動 まんなか 18:00・20 こから 18:00ごろ", "勉強 まんなか 21:10・59 こから 21:10ごろ"]), "5 each one's usual time, earliest first", await rows(p, "#ts8Usual"));
+  ok(JSON.stringify(await rows(p, "#ts8Pace")) === JSON.stringify(["食事 60 こ・あいた日なし 1日 1.0 こ", "勉強 59 こ・あいた日なし 1 日に 1 回", "運動 20 こ・いちばんあいたのは 2 日 3 日に 1 回"]), "4 how often each", await rows(p, "#ts8Pace"));
+  // 5 いつもの時間 (60 食事: a day's one block since 2026-11-25, at its first meal's time)
+  ok(JSON.stringify(await rows(p, "#ts8Usual")) === JSON.stringify(["食事 まんなか 07:30・60 こから 07:30ごろ", "運動 まんなか 18:00・20 こから 18:00ごろ", "勉強 まんなか 21:10・59 こから 21:10ごろ"]), "5 each one's usual time, earliest first", await rows(p, "#ts8Usual"));
   // 8 よくある積む順番
   ok(JSON.stringify(await rows(p, "#ts8Order")) === JSON.stringify(["その日の最初に積むのは 60 日のうち 60 日 食事", "食事 → 勉強 このあとに積んだ日 40 日", "食事 → 運動 このあとに積んだ日 20 日", "運動 → 勉強 このあとに積んだ日 19 日"]), "8 the first, and one after another", await rows(p, "#ts8Order"));
   // 10 なかよし度: taken out at the user's call (2026-11-21, tools/REMOVED.md); the pets kept in this browser left as they were

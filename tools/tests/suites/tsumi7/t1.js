@@ -18,7 +18,8 @@ async function open(b, data, hm) {
 }
 
 // 59 days before today: 朝食 at 07:30 (パン on even days back, ラーメン on odd), 勉強 at 21:10, 運動 at 18:00 every 3rd
-// day; today 4 食事 and a 運動 (5, past the 3 of any day before)
+// day; today 4 食事 (one block since 2026-11-25, the user's call), a 運動, a からだ, a ToDo and a 家計簿 (5, past the 3 of any
+// day before)
 const meals = [], study = [], workouts = [], per = new Map();
 const put = (d) => per.set(d, (per.get(d) || 0) + 1);
 for (let i = 1; i <= 59; i++) {
@@ -27,10 +28,14 @@ for (let i = 1; i <= 59; i++) {
   study.push({ id: "s" + i, date: d, minutes: 30, createdAt: T(d, "21:10") }); put(d);
   if (i % 3 === 0) { workouts.push({ id: "w" + i, date: d, type: "ランニング", minutes: 30, km: 5, createdAt: T(d, "18:00") }); put(d); }
 }
-[["パン", "07:30", "朝食"], ["うどん", "12:00", "昼食"], ["カレー", "13:00", "間食"], ["そば", "15:00", "間食"]].forEach(([text, hm, slot], j) => { meals.push({ id: "t" + j, date: today, slot, text, kcal: 400, createdAt: T(today, hm) }); put(today); });
+[["パン", "07:30", "朝食"], ["うどん", "12:00", "昼食"], ["カレー", "13:00", "間食"], ["そば", "15:00", "間食"]].forEach(([text, hm, slot], j) => { meals.push({ id: "t" + j, date: today, slot, text, kcal: 400, createdAt: T(today, hm) }); });
+put(today); // (the day's 食事, one block)
+const weights = [{ id: today, kg: 65, createdAt: T(today, "07:00") }], todos = [{ id: "td1", text: "資料を送る", done: true, doneAt: T(today, "10:00"), createdAt: T(today, "09:00") }];
+const expenses = [{ id: "e1", date: today, kind: "out", category: "食費", amount: 800, createdAt: T(today, "12:30") }];
+put(today); put(today); put(today);
 workouts.push({ id: "w0", date: today, type: "ランニング", minutes: 20, km: 3, createdAt: T(today, "18:00") }); put(today);
 const settings = [{ id: "tsumiNotes", words: { "meal:m2": "#旅行 おいしかった", "meal:m4": "#旅行", "meal:m6": "#ラーメン部 また行く" }, updatedAt: 1 }];
-const DATA = { meals, study, workouts, settings };
+const DATA = { meals, study, workouts, weights, todos, expenses, settings };
 const sumDays = (from, to) => [...per].filter(([d]) => d >= from && d <= to).reduce((a, [, n]) => a + n, 0);
 
 (async () => {
@@ -47,6 +52,11 @@ const sumDays = (from, to) => [...per].filter(([d]) => d >= from && d <= to).red
   await p.click("#ts7HourBtn"); await wait(p, 800);
   ok(await p.evaluate(() => document.getElementById("daySheet").open), "4 pressed: 勉強's sheet");
   await p.keyboard.press("Escape"); await wait(p, 700);
+  // 食事: today's 4 meals one block (the user's call, 2026-11-25): every meal in it, 朝食・昼食・間食 in turn, and きょうも同じ
+  // 食事を記録 for all four
+  for (let i = 0; i < 6 && !(await txt(p, "#tsumiTip") || "").startsWith("食事"); i++) { await p.click("#tsumiPrev"); await wait(p, 200); }
+  ok((await txt(p, "#tsumiTip")).startsWith("食事 4 回・1,600 kcal：朝食 パン、昼食 うどん、間食 カレー、間食 そば") && (await txt(p, "#tsumiAgain")) === "きょうも同じ食事を記録（4 回）", "食事: a day's one block, every meal in it", await txt(p, "#tsumiTip"));
+  await p.click("#tsumiToTop").catch(() => {}); await wait(p, 300);
 
   // the gear
   await p.click("#tsumiSettings"); await wait(p, 800);
@@ -60,7 +70,7 @@ const sumDays = (from, to) => [...per].filter(([d]) => d >= from && d <= to).red
   // 6 今週のふりかえり
   const rev = await p.evaluate(() => [...document.querySelectorAll("#ts7Rev li")].map((li) => li.innerText.replace(/\s+/g, " ").trim()));
   const n = sumDays("2026-11-08", today), was = sumDays("2026-11-01", "2026-11-07");
-  ok(rev[0] === `今週（11/8〜） 7 日積んだ・先週より +${n - was}（先週の11/1〜11/7は ${was} こ） ${n} こ` && rev[1] === "いちばん積んだ日 きょう・11月14日（土） 5 こ" && rev.includes("食事 先週より +3 10 こ") && rev.includes("運動 先週より +1 3 こ") && rev.includes("勉強 先週より −1 6 こ"), "6 this week against last", { rev, n, was });
+  ok(rev[0] === `今週（11/8〜） 7 日積んだ・先週より +${n - was}（先週の11/1〜11/7は ${was} こ） ${n} こ` && rev[1] === "いちばん積んだ日 きょう・11月14日（土） 5 こ" && rev.includes("食事 先週と同じ 7 こ") && rev.includes("運動 先週より +1 3 こ") && rev.includes("勉強 先週より −1 6 こ"), "6 this week against last", { rev, n, was });
   // 8 思い出クイズ
   const q = await txt(p, "#ts7Quiz .ts7-q");
   ok(/に積んだ(食事|運動|勉強)は、どれでしょう？$/.test(q) && (await p.locator("#ts7Quiz .ts7-choice").count()) === 3, "8 a question, three to pick from", q);
@@ -81,7 +91,7 @@ const sumDays = (from, to) => [...per].filter(([d]) => d >= from && d <= to).red
   // 10 日記に書き足す
   await p.click("#ts7Jn"); await wait(p, 600);
   let jn = (await ls(p, "journal")).find((j) => (j.date || j.id) === today);
-  ok(jn && jn.text === "きょうのつみかさね（5 こ）\n・食事：朝食・パン・400 kcal\n・食事：昼食・うどん・400 kcal\n・食事：間食・カレー・400 kcal\n・食事：間食・そば・400 kcal\n・運動：" + jn?.text.split("・運動：")[1] && jn.text.split("\n").length === 6 && (await toast(p)).includes("きょうのブロック 5 こを日記に書き足しました"), "10 today's blocks onto today's 日記", jn?.text);
+  ok(jn && jn.text.startsWith("きょうのつみかさね（5 こ）\n") && jn.text.includes("\n・食事：4 回・1,600 kcal：朝食 パン、昼食 うどん、間食 カレー、間食 そば\n") && jn.text.includes("\n・運動：") && jn.text.split("\n").length === 6 && (await toast(p)).includes("きょうのブロック 5 こを日記に書き足しました"), "10 today's blocks onto today's 日記", jn?.text);
   await wait(p, 3200);
   await p.click("#ts7Jn"); await wait(p, 500);
   ok((await toast(p)).includes("もう日記に入っています") && (await ls(p, "journal")).filter((j) => (j.date || j.id) === today).length === 1, "10 again: already there", await toast(p));

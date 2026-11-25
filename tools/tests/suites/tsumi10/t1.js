@@ -18,7 +18,8 @@ async function open(b, data, hm) {
   return p;
 }
 
-// as tsumi7's 59 days and today, a 食事 made twice on 11/12 (07:30 and 07:35), the calendar's plans, お休み on three
+// as tsumi7's 59 days and today (a day's 食事 one block since 2026-11-25, the user's call, at its first meal), a 食事 made
+// twice on 11/12 (07:30 and 07:35: one block), the calendar's plans, お休み on three
 // Saturdays, 1 and 2 years ago today, and きょうの目標 3 a day
 const meals = [], study = [], workouts = [], blocks = [];
 const put = (d, t, kind) => blocks.push({ d, t, kind });
@@ -28,8 +29,9 @@ for (let i = 1; i <= 59; i++) {
   study.push({ id: "s" + i, date: d, minutes: 30, createdAt: T(d, "21:10") }); put(d, T(d, "21:10"), "勉強");
   if (i % 3 === 0) { workouts.push({ id: "w" + i, date: d, type: "ランニング", minutes: 30, km: 5, createdAt: T(d, "18:00") }); put(d, T(d, "18:00"), "運動"); }
 }
-meals.push({ id: "dup", date: "2026-11-12", slot: "朝食", text: "パン", kcal: 500, createdAt: T("2026-11-12", "07:35") }); put("2026-11-12", T("2026-11-12", "07:35"), "食事");
-[["パン", "07:30", "朝食"], ["うどん", "12:00", "昼食"], ["カレー", "13:00", "間食"], ["そば", "15:00", "間食"]].forEach(([text, hm, slot], j) => { meals.push({ id: "t" + j, date: today, slot, text, kcal: 400, createdAt: T(today, hm) }); put(today, T(today, hm), "食事"); });
+meals.push({ id: "dup", date: "2026-11-12", slot: "朝食", text: "パン", kcal: 500, createdAt: T("2026-11-12", "07:35") }); // (in 11/12's 食事 block)
+[["パン", "07:30", "朝食"], ["うどん", "12:00", "昼食"], ["カレー", "13:00", "間食"], ["そば", "15:00", "間食"]].forEach(([text, hm, slot], j) => { meals.push({ id: "t" + j, date: today, slot, text, kcal: 400, createdAt: T(today, hm) }); });
+put(today, T(today, "07:30"), "食事"); // (today's 食事, one block)
 workouts.push({ id: "w0", date: today, type: "ランニング", minutes: 20, km: 3, createdAt: T(today, "18:00") }); put(today, T(today, "18:00"), "運動");
 meals.push({ id: "old", date: "2024-11-14", slot: "夕食", text: "カレー", createdAt: T("2024-11-14", "19:00") }); put("2024-11-14", T("2024-11-14", "19:00"), "食事");
 const journal = [{ id: "2025-11-14", date: "2025-11-14", text: "去年のきょう", createdAt: T("2025-11-14", "22:00") }]; put("2025-11-14", T("2025-11-14", "22:00"), "日記");
@@ -46,9 +48,9 @@ const avg = (xs) => (Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10
 (async () => {
   const b = await chromium.launch();
   let p = await open(b, DATA, "16:00");
-  // 1 きょうのペース: 16:00, the 28 days before by this time (a 食事 each, 11/12 two), today 5
+  // 1 きょうのペース: 16:00, the 28 days before by this time (a 食事 each), today 2 (its 食事 and 運動)
   const by = blocks.filter((x) => x.d >= addDays(today, -28) && x.d < today && (new Date(x.t).getUTCHours() + 9) % 24 < 16).length;
-  ok((await txt(p, "#ts10PaceBtn")) === `いつもよりいいペースです（いつもはこの時間までに ${(Math.round((by / 28) * 10) / 10).toFixed(1)} こ、きょうは 5 こ）`, "1 ahead of the usual pace", await txt(p, "#ts10PaceBtn"));
+  ok((await txt(p, "#ts10PaceBtn")) === `いつもよりいいペースです（いつもはこの時間までに ${(Math.round((by / 28) * 10) / 10).toFixed(1)} こ、きょうは 2 こ）`, "1 ahead of the usual pace", await txt(p, "#ts10PaceBtn"));
 
   await p.click("#tsumiSettings"); await wait(p, 800);
   // 2 時間ごとの積み方
@@ -93,14 +95,14 @@ const avg = (xs) => (Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10
   if (p.errs.length) errs.push(...p.errs);
   await p.close();
 
-  // 1 behind: 2 食事 a day before 9 for 20 days, none today, 16:00
-  const m2 = [];
-  for (let i = 1; i <= 20; i++) { const d = addDays(today, -i); m2.push({ id: "a" + i, date: d, slot: "朝食", text: "パン", createdAt: T(d, "07:30") }, { id: "c" + i, date: d, slot: "間食", text: "おにぎり", createdAt: T(d, "08:00") }); }
-  p = await open(b, { meals: m2 }, "16:00");
+  // 1 behind: a 食事 and a 勉強 a day before 9 for 20 days, none today, 16:00 (two 食事 are one block since 2026-11-25)
+  const m2 = [], s2 = [];
+  for (let i = 1; i <= 20; i++) { const d = addDays(today, -i); m2.push({ id: "a" + i, date: d, slot: "朝食", text: "パン", createdAt: T(d, "07:30") }); s2.push({ id: "c" + i, date: d, minutes: 30, createdAt: T(d, "08:00") }); }
+  p = await open(b, { meals: m2, study: s2 }, "16:00");
   ok((await txt(p, "#ts10PaceBtn")) === "いつもはこの時間までに 1.4 こ。きょうは 0 こです", "1 behind the usual pace", await txt(p, "#ts10PaceBtn"));
   if (p.errs.length) errs.push(...p.errs);
   await p.close();
-  p = await open(b, { meals: m2 }, "21:30");
+  p = await open(b, { meals: m2, study: s2 }, "21:30");
   ok(await p.isHidden("#ts10PaceLine"), "1 none after 9 at night");
   if (p.errs.length) errs.push(...p.errs);
   ok(!errs.length, "no errors: " + errs.join(" | "));

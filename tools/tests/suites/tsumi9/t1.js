@@ -35,7 +35,8 @@ for (let i = 1; i <= 59; i++) {
   }
 }
 for (const d of ["2025-03-10", "2025-11-01", "2025-11-20"]) { journal.push({ id: d, date: d, text: "去年の日記", createdAt: T(d, "22:00") }); put(d, T(d, "22:00"), "日記"); }
-[["パン", "07:30", "朝食"], ["うどん", "12:00", "昼食"], ["カレー", "13:00", "間食"], ["そば", "15:00", "間食"]].forEach(([text, hm, slot], j) => { meals.push({ id: "t" + j, date: today, slot, text, kcal: 400, createdAt: T(today, hm) }); put(today, T(today, hm), "食事"); });
+[["パン", "07:30", "朝食"], ["うどん", "12:00", "昼食"], ["カレー", "13:00", "間食"], ["そば", "15:00", "間食"]].forEach(([text, hm, slot], j) => { meals.push({ id: "t" + j, date: today, slot, text, kcal: 400, createdAt: T(today, hm) }); });
+put(today, T(today, "07:30"), "食事"); // (the day's 食事: one block since 2026-11-25, the user's call, at its first meal)
 workouts.push({ id: "w0", date: today, type: "ランニング", minutes: 20, km: 3, createdAt: T(today, "18:00") }); put(today, T(today, "18:00"), "運動");
 blocks.sort((a, b) => a.t - b.t);
 const settings = [{ id: "tsumiDayBest", days: { "2026-11-12": "meal:m2", "2026-11-10": "meal:m4" }, updatedAt: 1 }, { id: "tsumiFav", keys: ["meal:m6", "study:2026-11-11"], updatedAt: 1 }];
@@ -49,16 +50,16 @@ const count = (from, to) => blocks.filter((b) => b.d >= from && b.d <= to).lengt
   // 1 スタンプカード: 63 days with blocks: the 3rd card, 3 stamps
   ok((await txt(p, "#ts9Stamp")).startsWith("3 枚目 3 / 30") && (await txt(p, "#ts9Stamp .sub")) === "あと 27 日でいっぱい・いっぱいにしたカード 2 枚" && (await p.locator("#ts9Stamp .ts9-stamp.on").count()) === 3
     && (await p.getAttribute("#ts9Stamp .ts9-stamp:first-child", "aria-label")) === "1 こ目、11月12日（木）", "1 the card being filled", await txt(p, "#ts9Stamp"));
-  // 2 ゾロ目・連番: 165 blocks; the 123rd and the 111th
+  // 2 ゾロ目・連番: 162 blocks (today's 4 食事 one); the 123rd and the 111th
   const b123 = blocks[122], b111 = blocks[110], sp = await rows(p, "#ts9Special");
-  ok(blocks.length === 165 && sp[0] === "次は 222 こ目（ゾロ目） あと 57 こ" && sp[1].startsWith(`${b123.kind} 123 こ目（連番）・${long(b123.d)}`) && sp[2].startsWith(`${b111.kind} 111 こ目（ゾロ目）・${long(b111.d)}`) && sp.length === 3, "2 the next, and the ones passed, the latest first", { sp, b123, b111 });
-  // 3 きょうのいちばん: today's 5 to pick from; the days before
-  ok((await p.locator("#ts9BestToday .ts9-pick").count()) === 5 && (await p.locator('#ts9BestToday .ts9-pick[aria-pressed="true"]').count()) === 0, "3 today's blocks, none picked");
+  ok(blocks.length === 162 && sp[0] === "次は 222 こ目（ゾロ目） あと 60 こ" && sp[1].startsWith(`${b123.kind} 123 こ目（連番）・${long(b123.d)}`) && sp[2].startsWith(`${b111.kind} 111 こ目（ゾロ目）・${long(b111.d)}`) && sp.length === 3, "2 the next, and the ones passed, the latest first", { sp, b123, b111 });
+  // 3 きょうのいちばん: today's 2 to pick from (its 食事 one block); the days before (picked as 食事's own meal before 2026-11-25)
+  ok((await p.locator("#ts9BestToday .ts9-pick").count()) === 2 && (await p.locator('#ts9BestToday .ts9-pick[aria-pressed="true"]').count()) === 0, "3 today's blocks, none picked");
   const past = await rows(p, "#ts9BestPast");
   ok(past.length === 2 && past[0].startsWith("食事 11月12日（木） 朝食・パン") && past[1].startsWith("食事 11月10日（火） 朝食・パン"), "3 the days before, the latest first", past);
   await p.locator("#ts9BestToday .ts9-pick", { hasText: "カレー" }).click(); await wait(p, 300);
   let best = (await ls(p, "settings")).find((x) => x.id === "tsumiDayBest");
-  ok(best.days[today] === "meal:t2" && (await p.locator('#ts9BestToday .ts9-pick[aria-pressed="true"]').innerText()).includes("カレー"), "3 picked, kept with the account", best.days);
+  ok(best.days[today] === "meal:" + today && (await p.locator('#ts9BestToday .ts9-pick[aria-pressed="true"]').innerText()).includes("カレー"), "3 picked, kept with the account", best.days);
   await p.locator("#ts9BestToday .ts9-pick", { hasText: "カレー" }).click(); await wait(p, 300);
   best = (await ls(p, "settings")).find((x) => x.id === "tsumiDayBest");
   ok(!(today in best.days), "3 pressed again: put back", best.days);
@@ -76,7 +77,7 @@ const count = (from, to) => blocks.filter((b) => b.d >= from && b.d <= to).lengt
   // 7 今月・ことしを文字で送る
   await p.click("#ts9SendMonth"); await wait(p, 400);
   words = await p.evaluate(() => navigator.clipboard.readText());
-  ok(words.startsWith(`11月のつみかさね（11/1〜11/14）　${count("2026-11-01", today)} こ\n（${["日記", "食事", "運動", "勉強"].map((k) => `${k} ${blocks.filter((x) => x.d >= "2026-11-01" && x.kind === k).length}`).join("・")}）\n\n積んだ日 14 日・いちばん多い日 11/14（土） 5 こ`) && words.endsWith(`ぜんぶで ${blocks.length} こ`), "7 this month as words", words);
+  ok(words.startsWith(`11月のつみかさね（11/1〜11/14）　${count("2026-11-01", today)} こ\n（${["日記", "食事", "運動", "勉強"].map((k) => `${k} ${blocks.filter((x) => x.d >= "2026-11-01" && x.kind === k).length}`).join("・")}）\n\n積んだ日 14 日・いちばん多い日 11/11（水） 4 こ`) && words.endsWith(`ぜんぶで ${blocks.length} こ`), "7 this month as words", words);
   await p.click("#ts9SendYear"); await wait(p, 400);
   words = await p.evaluate(() => navigator.clipboard.readText());
   ok(words.startsWith(`2026年のつみかさね（きょうまで）　${now} こ`) && words.includes("\n1月 —\n") && words.includes(`\n10月 ${count("2026-10-01", "2026-10-31")} こ\n`) && words.includes("積んだ日 60 日"), "7 this year as words, a line a month", words);
@@ -97,13 +98,13 @@ const count = (from, to) => blocks.filter((b) => b.d >= from && b.d <= to).lengt
   await p.close();
 
   // 2 the 111th today, 6 three days from passing the longest: 6 a day 20〜29 days back (10 on end), 7 a day 1〜6 back,
-  // 9 today (7 on end now)
+  // 9 today (7 on end now); ToDos done, a block each (食事 is one block a day since 2026-11-25, the user's call)
   const m3 = [];
-  const add = (d, n) => { for (let j = 0; j < n; j++) m3.push({ id: `${d}-${j}`, date: d, slot: "朝食", text: "パン" + j, createdAt: T(d, `0${8 + Math.floor(j / 6)}:${String((j % 6) * 10).padStart(2, "0")}`) }); };
+  const add = (d, n) => { for (let j = 0; j < n; j++) { const at = T(d, `0${8 + Math.floor(j / 6)}:${String((j % 6) * 10).padStart(2, "0")}`); m3.push({ id: `${d}-${j}`, text: "パン" + j, done: true, doneAt: at, createdAt: at }); } };
   for (let i = 20; i <= 29; i++) add(addDays(today, -i), 6);
   for (let i = 1; i <= 6; i++) add(addDays(today, -i), 7);
   add(today, 9);
-  p = await open(b, { meals: m3 }, "10:00");
+  p = await open(b, { todos: m3 }, "10:00");
   ok(m3.length === 111 && (await txt(p, "#ts9SpecialBtn")) === "きょう 111 こ目（ゾロ目）を積みました！", "2 the 111th today: the line", await txt(p, "#ts9SpecialBtn"));
   ok((await txt(p, "#ts9LongBtn")) === "いちばん長い連続（10 日）を超えるまで、あと 4 日です（いま 7 日）", "6 the days to passing the longest", await txt(p, "#ts9LongBtn"));
   await wait(p, 900);
