@@ -1,6 +1,7 @@
 // 運動's ランレベル as gems by their rank (the user's call, 2026-11-24: the levels by 宝石のグレード, not colours; 案A 宝石の格):
 // 水晶・アメジスト・トパーズ・エメラルド・サファイア・ルビー・ダイヤモンド, from the same km as before, each its own cut; the card,
-// its page (the gem, the bar in its colour, every level, the ones ahead faded), a run that takes it up saying so
+// its page (the gem, the bar in its colour, every level, the ones ahead faded), a run that takes it up saying so; the
+// gems' shine (the user's call, 2026-11-25: 輝き and light on them), still with 動きを減らす
 process.env.URL0 = process.env.URL0 || "http://localhost:8765/";
 const { chromium } = require("playwright");
 const { P, phone, seed } = require("./lib");
@@ -55,6 +56,32 @@ const card = (p) => p.evaluate(() => {
   ok(JSON.stringify(pg.now) === JSON.stringify([null, null, "true", null, null, null, null]) && JSON.stringify(pg.here) === JSON.stringify([false, false, true, false, false, false, false]), "トパーズ: いまのレベル", pg);
   ok(JSON.stringify(pg.ahead) === JSON.stringify([false, false, false, true, true, true, true]), "the four ahead faded", pg.ahead);
   ok(!pg.pennant, "no pennant with a runner left");
+  // the shine: in the gems reached a light, facets flashing, a band of light sweeping, glints twinkling; none on the ones
+  // ahead nor on the next one's small badge. The large one before light rays and a glow, sparkles about it, coming in as
+  // the page opens, turned by the pointer (the light following), a press giving a burst of sparkles
+  const sh = await p.evaluate(() => {
+    const lit = (b) => !!b && b.classList.contains("lit") && !!b.querySelector(".rl-shine[clip-path]") && !!b.querySelector(".rl-sweep") && b.querySelectorAll(".rl-flash").length >= 2 && b.querySelectorAll(".rl-glint").length >= 2;
+    const st = document.querySelector("#runLevelHero .rl-stage"), rows = [...document.querySelectorAll("#runLevelList li .rl-badge")];
+    return { card: lit(document.querySelector("#runLevelCard .rl-badge")), hero: lit(st?.querySelector(".rl-badge")), spec: !!st?.querySelector(".rl-spec"),
+      stage: !!st && st.getAttribute("role") === "img" && !!st.querySelector(".rl-rays") && !!st.querySelector(".rl-glow") && st.querySelectorAll(".rl-spark").length === 7, coming: !!st?.classList.contains("rl-in"),
+      next: !!document.querySelector("#runLevelHero .rl-next .rl-badge.lit, #runLevelHero .rl-next .rl-shine"),
+      rows: rows.map((x) => x.classList.contains("lit") && !!x.querySelector(".rl-shine")), sweep: getComputedStyle(document.querySelector("#runLevelHero .rl-sweep")).animationName,
+      glow: getComputedStyle(document.querySelector("#runLevelHero .rl-glow")).animationName };
+  });
+  ok(sh.card && sh.hero && sh.spec && sh.stage && sh.coming && !sh.next, "the shine: on the card's gem and the page's, the stage about it", sh);
+  ok(JSON.stringify(sh.rows) === JSON.stringify([true, true, true, false, false, false, false]), "in the list: the three reached lit, the four ahead not", sh.rows);
+  ok(sh.sweep === "rl-sweep" && /rl-glow-in/.test(sh.glow), "moving: the sweep, the glow coming in", sh);
+  const stage = await p.$("#runLevelHero .rl-stage"), box = await stage.boundingBox();
+  await p.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.5); await p.waitForTimeout(200);
+  const turned = await p.evaluate(() => { const st = document.querySelector("#runLevelHero .rl-stage"); return [st.classList.contains("rl-held"), parseFloat(st.style.getPropertyValue("--ry")), parseFloat(st.style.getPropertyValue("--lx"))]; });
+  ok(turned[0] && turned[1] > 5 && turned[2] > 5, "turned by the pointer, the light following", turned);
+  await p.mouse.move(2, 2); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => { const st = document.querySelector("#runLevelHero .rl-stage"); return !st.classList.contains("rl-held") && !st.style.getPropertyValue("--ry"); }), "let go: back to its sway");
+  await stage.click(); await p.waitForTimeout(250);
+  const burst = await p.evaluate(() => [document.querySelectorAll("#runLevelHero .rl-burst").length, document.querySelector("#runLevelHero .rl-stage").classList.contains("rl-pop")]);
+  ok(burst.join() === "12,true", "a press: a burst of 12 sparkles", burst);
+  await p.waitForTimeout(1300);
+  ok(await p.evaluate(() => !document.querySelector("#runLevelHero .rl-burst") && !document.querySelector("#runLevelHero .rl-stage.rl-pop")), "and they are gone");
   ok(!p.errs.length, "no page errors", p.errs);
   await p.close();
   // 995 km, and a run of 10 km put in: up to エメラルド, said so
@@ -76,6 +103,20 @@ const card = (p) => p.evaluate(() => {
   ok(c.width === "100%" && /linear-gradient/.test(c.image), "its bar full, its colours running along it", c);
   await p.click("#runLevelCard"); await p.waitForTimeout(700);
   ok(await p.evaluate(() => !document.querySelector("#runLevelHero .rl-next") && !document.querySelector("#runLevelList li.ahead")), "nothing ahead: no next gem, none faded");
+  ok(await p.evaluate(() => document.querySelectorAll("#runLevelList .rl-badge.lit .rl-shine").length === 7 && document.querySelector("#runLevelHero .rl-stage").dataset.gem === "brilliant"
+    && document.querySelectorAll("#runLevelHero .rl-fire").length === 3), "all seven lit; ダイヤモンド's own rays, its fire");
+  ok(!p.errs.length, "no page errors", p.errs);
+  await p.close();
+  // 動きを減らす: the shine still, as the gems were drawn; no burst
+  p = await phone(b, new Date("2026-11-24T18:00:00+09:00"), { reducedMotion: "reduce" });
+  await seed(p, { workouts: runs(40, 8) }, "diet");
+  await p.evaluate((P) => localStorage.setItem(P + "dietPart", "workout"), P); await p.reload(); await p.waitForTimeout(900);
+  await p.click("#runLevelCard"); await p.waitForTimeout(700);
+  const still = await p.evaluate(() => ["#runLevelCard .rl-sweep", "#runLevelHero .rl-sweep", "#runLevelHero .rl-flash", "#runLevelHero .rl-glint", "#runLevelHero .rl-rays", "#runLevelHero .rl-spark", "#runLevelHero .rl-gem"]
+    .map((q) => getComputedStyle(document.querySelector(q)).animationName));
+  ok(still.every((n) => n === "none"), "動きを減らす: nothing moving", still);
+  await p.click("#runLevelHero .rl-stage"); await p.waitForTimeout(200);
+  ok(!(await p.$("#runLevelHero .rl-burst")), "動きを減らす: no burst");
   ok(!p.errs.length, "no page errors", p.errs);
   await p.close();
   await b.close();
