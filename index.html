@@ -6822,6 +6822,32 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 @keyframes nav-in-from-left { from { transform: translateX(-30%); opacity: .7; } }
 @keyframes nav-out-to-right { to { transform: translateX(100%); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+/* ---------- 動き (the user's call, 2026-11-25: Apple's Human Interface Guidelines for motion all over the app, the
+   charts drawn as infographics; the script's part is at 動き). Only while html has .mo: the script puts it there unless
+   視差効果を減らす (Reduce Motion) is on, or a test program drives the browser (its tests read the page as it is drawn).
+   Springs, short: a press gives a little at once and springs back (HIG: every control answers a touch), a message rises in,
+   a switch's knob crosses, a details' content and an action sheet come in. --m-spring's points are a damped spring's
+   (damping .7: a few % past its place and back) ---------- */
+:root { --m-out: cubic-bezier(.22, 1, .36, 1); --m-spring: cubic-bezier(.34, 1.3, .64, 1); }
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --m-spring: linear(0, 0.0566, 0.1887, 0.3523, 0.5177, 0.6669, 0.7908, 0.8867, 0.9559, 1.0019, 1.0292, 1.0425, 1.046, 1.0433, 1.0372, 1.0296, 1.022, 1.0152, 1.0095, 1.0051, 1.002, 0.9999, 0.9986, 0.998, 0.9979, 0.998, 0.9983, 0.9986, 1); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html.mo :is(.tile, .btn, .chip-btn, .seg button, .pagebar button, .menu button, .h4-day, .row-btn, .td-pick-btn, .cal-day, .ask-btn, .check) {
+    transition: transform .5s var(--m-spring), opacity .2s ease, background-color .25s ease, color .25s ease, box-shadow .25s ease;
+  }
+  html.mo .tile:not(:has(textarea, input:not([type=checkbox]))):active { transform: scale(.975); transition-duration: .12s; }
+  html.mo :is(.btn:not(:disabled), .chip-btn, .seg button, .pagebar button, .h4-day, .row-btn, .td-pick-btn, .cal-day, .ask-btn):active { transform: scale(.95); }
+  html.mo .menu button:active { transform: scale(.9); }
+  html.mo .check:active { transform: scale(.82); }
+  html.mo .toast { transform: translate(-50%, 18px) scale(.94); transition: opacity .22s ease, transform .55s var(--m-spring); }
+  html.mo .toast.show { transform: translate(-50%, 0); }
+  html.mo input.switch::before { transition: transform .45s var(--m-spring) !important; }
+  html.mo input.switch { transition: background-color .3s ease !important; }
+  html.mo details[open] > :not(summary) { animation: m-drop .36s var(--m-out); }
+  html.mo dialog.ask[open] { animation: ask-up .5s var(--m-spring); }
+}
+@keyframes m-drop { from { opacity: 0; transform: translateY(-6px); } }
 /* 目標 その6 ①〜⑩ (2026-11-14) */
 .six-list { display: grid; margin: 0; padding: 0; list-style: none; }
 .six-list > li { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 6px 0; font-size: var(--t-sub); }
@@ -11822,6 +11848,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (key === "trash") draw(renderTrash);
     if (key === "copies") draw(renderCopies);
     if (key === "sync") draw(renderSync);
+    moPage(key); // (動き: its cards rise in, its charts are drawn)
   }
   $("backBtn").addEventListener("click", () => { const up = parentOf(tab); if (up) showTab(up); });
   // a swipe in from the screen's left edge, rightwards, goes back as on iPhone (the user's call: the home-screen app has no
@@ -19049,6 +19076,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function presentSheet(byKey, opener, field) {
     sheetByKey = byKey; sheetOpener = opener;
     sheetEl.showModal();
+    moSheet(); // (動き: its charts drawn as new)
     sheetEl.scrollTop = 0;
     field?.focus();
     if (!reduceMotion.matches) sheetEl.animate(wideScreen.matches
@@ -24929,7 +24957,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月25日 20:09"; // 82b90290 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月25日 21:20"; // d1f6a114 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -69557,6 +69585,320 @@ ${parts.join("\n")}
   rt7Build();
   rt7Ready = true;
 
+  // ---------- 動き (the user's call, 2026-11-25: 「Apple の Human Interface Guidelines を参考に、サイト全体に UI・UX の
+  // アニメーションをふんだんに。グラフはインフォグラフィックのように動かして」) ----------
+  // Motion as the HIG has it: with a purpose (where a thing comes from, what a press did, how a figure is made up), quick
+  // and springy rather than long, never in the way (nothing waits for it, and what is drawn is there at once: a screen
+  // reader reads it, a finger presses it mid-motion), and none at all with 視差効果を減らす (Reduce Motion). All of it here:
+  //  - a page shown: its cards and headings rise in one after another (those below as they are scrolled to), their big
+  //    figures a beat after; the tab's icon bounces
+  //  - the charts, drawn as infographics the first time they come into sight on a page or in a sheet: bars grow from
+  //    their base, lines draw from left to right with their dots popping in as the line reaches them, areas rise, rings
+  //    sweep round, calendars' and heat maps' days come in as a wave. Drawn again with other figures, a bar slides from
+  //    its old value to the new one and a line draws again, quicker; a tile's figure that changes pops (the HIG: motion
+  //    that shows what changed)
+  //  - a check pops as it is pressed (the presses, the message, the switches and details: the CSS, at 動き)
+  // Animations only (the Web Animations API): the page's elements, their words and their places are as they are drawn.
+  // Off while a test program drives the browser (navigator.webdriver), unless the test asks for it (window.__moForce: the
+  // suite motion). Function declarations and var, as the page may draw before this part has run
+  var MO = { page: 0, sheet: 0, tab: "", acted: 0, pop: null, seen: new Map(), at: new Map(), sig: new Map(), wait: new Map(), pend: new Map(), delay: new WeakMap(), io: null };
+  var MO_OUT = "cubic-bezier(.22, 1, .36, 1)", MO_DRAW = "cubic-bezier(.65, 0, .35, 1)", MO_SPRING = "cubic-bezier(.34, 1.3, .64, 1)", MO_BOUNCE = "cubic-bezier(.34, 1.56, .64, 1)";
+  try {
+    if (CSS.supports("transition-timing-function", "linear(0, 1)")) { // (springs: damping .7, and .62 for a bounce)
+      MO_SPRING = "linear(0, 0.0566, 0.1887, 0.3523, 0.5177, 0.6669, 0.7908, 0.8867, 0.9559, 1.0019, 1.0292, 1.0425, 1.046, 1.0433, 1.0372, 1.0296, 1.022, 1.0152, 1.0095, 1.0051, 1.002, 0.9999, 0.9986, 0.998, 0.9979, 0.998, 0.9983, 0.9986, 1)";
+      MO_BOUNCE = "linear(0, 0.0574, 0.1944, 0.3674, 0.5447, 0.7058, 0.8395, 0.9415, 1.0125, 1.0562, 1.078, 1.0835, 1.0781, 1.0663, 1.0518, 1.037, 1.0237, 1.0127, 1.0044, 0.9986, 0.9951, 0.9934, 0.993, 0.9935, 0.9945, 0.9958, 0.997, 0.9981, 1)";
+    }
+  } catch {}
+  var MO_BLOCK = ".sec-head, .card, .group-head, .group-foot, .notice";
+  var MO_GRID = '[class*="grid"], [class*="cal"], [class*="heat"], [class*="year"], [class*="weeks"], [class*="days"], [class*="grass"], [class*="months"]';
+  function moAllowed() { return !reduceMotion.matches && typeof document.documentElement.animate === "function" && (!navigator.webdriver || !!window.__moForce); }
+  function moOn() { return moAllowed() && document.visibilityState === "visible"; }
+  function moAnim(el, kf, o) { try { return el.animate(kf, o); } catch { return null; } }
+  // (a figure that changes moves only just after a touch or a key: one changed by the clock or by another device doesn't)
+  function moActed() { return Date.now() - MO.acted < 2500; }
+  function moInView(el) { const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; }
+  function moShown(el) { return !!el && el.isConnected && el.getClientRects().length > 0; }
+  // a page or a sheet each has its own showing: a chart is drawn as new once in each
+  function moScope(el) { return el.closest("dialog") ? "s" + MO.sheet : "p" + MO.page; }
+  // which one it is, from the nearest element with an id: its kind, and its place among its like there
+  function moKey(el, kind) {
+    if (el.id) return kind + "#" + el.id;
+    let a = el.parentElement;
+    while (a && !a.id) a = a.parentElement;
+    const c = el.getAttribute("class") || "", tag = el.tagName.toLowerCase();
+    let n = 0;
+    if (a) for (const x of a.getElementsByTagName(tag)) { if (x === el) break; if ((x.getAttribute("class") || "") === c) n++; }
+    return `${a ? a.id : ""}|${kind}|${tag}.${c}|${n}`;
+  }
+  // the first showing of it on this page or in this sheet, or a drawing of it again just after (a page often draws a part
+  // once more as it opens: the calendar's days)
+  // (or one still out of sight, drawn again meanwhile: what it held moves onto what is drawn now)
+  function moFirst(k, scope) {
+    if (MO.seen.get(k) !== scope) { MO.seen.set(k, scope); MO.at.set(k, performance.now()); return true; }
+    const old = MO.pend.get(k);
+    if (old) { moDrop(old); MO.pend.delete(k); return true; }
+    return performance.now() - (MO.at.get(k) || 0) < 450;
+  }
+  // (the delay of the card it is in, rising as the page shows: what is in it starts a beat after)
+  function moDelayOf(el) {
+    for (let b = el.closest(MO_BLOCK); b; b = b.parentElement && b.parentElement.closest(MO_BLOCK)) { const d = MO.delay.get(b); if (d !== undefined) return d; }
+    return 0;
+  }
+
+  // one out of sight: held at its start until it is scrolled to, then played
+  function moLater(el, anims, after, key) {
+    const as = anims.filter(Boolean), io = moIO();
+    if (!io) { for (const a of as) a.cancel(); return; }
+    for (const a of as) a.pause();
+    const was = MO.wait.get(el);
+    if (was) for (const a of was.as) a.cancel();
+    MO.wait.set(el, { as, after, key });
+    if (key) MO.pend.set(key, el);
+    io.observe(el);
+  }
+  // one held no more (drawn again, or shown as it is)
+  function moDrop(el) {
+    const w = MO.wait.get(el);
+    if (!w) return;
+    for (const a of w.as) a.cancel();
+    MO.wait.delete(el);
+    if (MO.io) MO.io.unobserve(el);
+  }
+  function moIO() {
+    if (!MO.io && typeof IntersectionObserver === "function") MO.io = new IntersectionObserver((es) => {
+      for (const e of es) {
+        if (!e.isIntersecting) continue;
+        const w = MO.wait.get(e.target);
+        MO.io.unobserve(e.target); MO.wait.delete(e.target);
+        if (!w) continue;
+        if (w.key) MO.pend.delete(w.key);
+        for (const a of w.as) a.play();
+        if (w.after) w.after();
+      }
+    }, { rootMargin: "0px 0px -4% 0px" });
+    return MO.io;
+  }
+  // those still held, shown as they are (another page, printing, Reduce Motion turned on)
+  function moFlush() {
+    for (const [el, w] of MO.wait) { for (const a of w.as) a.cancel(); if (MO.io) MO.io.unobserve(el); }
+    MO.wait.clear(); MO.pend.clear();
+  }
+
+  // a page shown (setTab): its cards rise in, those below as they come; its charts drawn; the tab's icon bounces
+  function moPage(key) {
+    if (typeof MO === "undefined" || !MO) return;
+    MO.page++;
+    moFlush();
+    if (!moOn()) return;
+    const sec = $("sec-" + key);
+    if (!moShown(sec)) return;
+    if (!document.documentElement.dataset.nav) moEnter(sec); // (a push or a pop slides the page in already)
+    moScan(sec);
+    const top = parentOf(key) || key;
+    if (MO.tab && MO.tab !== top) { const mi = document.querySelector(".menu button.on .mi"); if (mi) moAnim(mi, [{ transform: "scale(.72)" }, { transform: "none" }], { duration: 560, easing: MO_BOUNCE }); }
+    MO.tab = top;
+  }
+  function moSheet() { if (typeof MO !== "undefined" && MO) MO.sheet++; }
+  function moEnter(root) {
+    const H = innerHeight, kf = [{ opacity: 0, transform: "translateY(18px) scale(.985)" }, { opacity: 1, transform: "none" }];
+    let i = 0;
+    for (const b of root.querySelectorAll(MO_BLOCK)) {
+      const up = b.parentElement && b.parentElement.closest(MO_BLOCK);
+      if ((up && root.contains(up)) || b.closest(".menu, .pagebar, dialog") || !b.getClientRects().length) continue;
+      const r = b.getBoundingClientRect();
+      if (r.bottom <= 0) continue;
+      if (r.top < H) {
+        const d = Math.min(i++, 10) * 45;
+        MO.delay.set(b, d);
+        moAnim(b, kf, { duration: 520, delay: d, easing: MO_OUT, fill: "backwards" });
+        moInner(b, d);
+      } else moLater(b, [moAnim(b, kf, { duration: 520, easing: MO_OUT, fill: "backwards" })], () => moInner(b, 0));
+    }
+  }
+  // in a card rising: its big figure a beat after, and a list's first rows one after another
+  function moInner(b, d) {
+    for (const n of b.querySelectorAll(".big")) moAnim(n, [{ opacity: 0, transform: "translateY(.4em) scale(.9)" }, { opacity: 1, transform: "none" }], { duration: 600, delay: d + 110, easing: MO_SPRING, fill: "backwards" });
+    if (b.matches("ul, ol")) {
+      let j = 0;
+      for (const li of b.children) { if (j > 8) break; moAnim(li, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], { duration: 400, delay: d + 70 + j++ * 30, easing: MO_OUT, fill: "backwards" }); }
+    }
+  }
+
+  // ---- the charts, in a part of the page drawn anew (or the page shown) ----
+  function moScan(root) {
+    if (!moOn() || !root || root.nodeType !== 1 || !moShown(root)) return;
+    for (const s of root.tagName.toLowerCase() === "svg" ? [root] : root.querySelectorAll("svg")) if (moIsChart(s)) moChart(s);
+    const bars = root.matches('[style*="%"]') ? [root] : [];
+    for (const x of root.querySelectorAll('[style*="%"]')) bars.push(x);
+    if (bars.length) moBars(bars);
+    for (const g of root.matches(MO_GRID) ? [root, ...root.querySelectorAll(MO_GRID)] : root.querySelectorAll(MO_GRID)) if (moIsGrid(g)) moGrid(g);
+    for (const n of root.matches(".tile .big") ? [root] : root.querySelectorAll(".tile .big")) moFigure(n);
+  }
+  function moIsChart(s) {
+    if (s.closest(".check, .menu, .sprite, .icon-btn, .neko, .rl-gem, .icon, .lc")) return false;
+    const c = s.getAttribute("class") || "";
+    return s.getAttribute("role") === "img" || /chart|graph|ring|trend|-svg/.test(c) || !!s.closest(".h3-ring");
+  }
+  // the figures it draws, for knowing whether they changed
+  function moSvgSig(s) {
+    let n = s.childElementCount, h = 0;
+    for (const x of s.querySelectorAll("path, polyline, polygon, rect, circle, line")) {
+      const v = (x.getAttribute("d") || x.getAttribute("points") || "") + (x.getAttribute("height") || "") + (x.getAttribute("cy") || "") + (x.getAttribute("y1") || "") + (x.getAttribute("stroke-dasharray") || "");
+      for (let i = 0; i < v.length; i += 5) h = (h * 31 + v.charCodeAt(i)) | 0;
+      n++;
+    }
+    return n + ":" + h;
+  }
+  function moChart(s) {
+    if (!moShown(s)) return;
+    const k = moKey(s, "svg"), scope = moScope(s), sig = moSvgSig(s), old = MO.sig.get(k);
+    MO.sig.set(k, sig);
+    if (moFirst(k, scope)) {
+      const as = moSvg(s, moDelayOf(s) + 80, 1);
+      if (!moInView(s)) moLater(s, as, null, k);
+    } else if (old !== undefined && old !== sig && moActed() && moInView(s)) moSvg(s, 0, .6);
+  }
+  // an SVG chart's parts, each in its way: grid lines drawn quickly, lines drawn from left to right, dots popping in as the
+  // line reaches them, bars and areas rising from their base, a ring's arc sweeping round, the words coming in last
+  function moSvg(s, d0, sp) {
+    const out = [], vb = s.viewBox && s.viewBox.baseVal, W = (vb && vb.width) || s.getBoundingClientRect().width || 1, X0 = (vb && vb.x) || 0;
+    const along = (n) => { try { const b = n.getBBox(); return Math.max(0, Math.min(1, (b.x + b.width / 2 - X0) / W)); } catch { return 0; } };
+    for (const n of s.querySelectorAll("path, polyline, polygon, line, rect, circle, ellipse, text, image, use")) {
+      if (n.closest("defs, clipPath, mask, marker, pattern, symbol") || n.getAttribute("visibility") === "hidden") continue;
+      const cs = getComputedStyle(n);
+      if (cs.visibility === "hidden" || cs.display === "none") continue;
+      const tag = n.tagName.toLowerCase(), cls = n.getAttribute("class") || "", turned = n.hasAttribute("transform");
+      const hollow = cs.fill === "none" || cs.fillOpacity === "0", stroked = cs.stroke !== "none" && parseFloat(cs.strokeWidth) > 0, dashed = !!cs.strokeDasharray && cs.strokeDasharray !== "none";
+      let a = null;
+      if (tag === "circle" && hollow && n.getAttribute("stroke-dasharray")) { // a ring's arc
+        const C = 2 * Math.PI * Number(n.getAttribute("r") || 0);
+        a = moAnim(n, [{ strokeDasharray: `0 ${C}` }, { strokeDasharray: n.getAttribute("stroke-dasharray") }], { duration: 1100 * sp, delay: d0, easing: MO_OUT, fill: "backwards" });
+      } else if ((tag === "path" || tag === "polyline" || tag === "line") && hollow && stroked && !dashed && typeof n.getTotalLength === "function") {
+        const L = n.getTotalLength(), grid = /grid|axis|tick|base|zero/.test(cls);
+        if (L > 0) a = moAnim(n, [{ strokeDasharray: `${L} ${L}`, strokeDashoffset: L }, { strokeDasharray: `${L} ${L}`, strokeDashoffset: 0 }],
+          { duration: (grid ? 450 : 1000) * sp, delay: d0 + (grid ? 0 : 120) * sp, easing: grid ? MO_OUT : MO_DRAW, fill: "backwards" });
+      } else if ((tag === "circle" || tag === "ellipse") && !turned) { // a dot
+        moBox(n, "50% 50%");
+        a = moAnim(n, [{ transform: "scale(0)", opacity: 0 }, { transform: "scale(1.3)", opacity: 1, offset: .65 }, { transform: "none", opacity: 1 }],
+          { duration: 460 * sp, delay: d0 + (160 + along(n) * 900) * sp, easing: MO_OUT, fill: "backwards" });
+      } else if ((tag === "rect" || ((tag === "path" || tag === "polygon") && !hollow)) && !turned) {
+        if (tag === "rect" && Number(n.getAttribute("width") || 0) > W * .5) a = moAnim(n, [{ opacity: 0 }, { opacity: 1 }], { duration: 500 * sp, delay: d0, easing: MO_OUT, fill: "backwards" });
+        else { // a bar or an area, from its base
+          moBox(n, "50% 100%");
+          a = moAnim(n, [{ transform: "scaleY(0)" }, { transform: "none" }], { duration: 800 * sp, delay: d0 + (80 + (tag === "rect" ? along(n) * 450 : 0)) * sp, easing: MO_OUT, fill: "backwards" });
+        }
+      } else a = moAnim(n, [{ opacity: 0 }, { opacity: 1 }], { duration: 450 * sp, delay: d0 + (tag === "text" ? 300 : 120) * sp, easing: MO_OUT, fill: "backwards" });
+      if (a) {
+        out.push(a);
+        if (n.style.transformBox) a.finished.then(() => moUnbox(n), () => moUnbox(n));
+      }
+    }
+    return out;
+  }
+  // (a part scaled from its own box, for the moment it moves)
+  function moBox(n, origin) { n.style.transformBox = "fill-box"; n.style.transformOrigin = origin; }
+  function moUnbox(n) { n.style.removeProperty("transform-box"); n.style.removeProperty("transform-origin"); if (!n.getAttribute("style")) n.removeAttribute("style"); }
+
+  // a bar: a part whose width or height is a share of its track's
+  var MO_BAR_RE = /(?:^|;)\s*(width|height)\s*:\s*(-?[\d.]+)%/;
+  function moBarOf(el) {
+    const m = MO_BAR_RE.exec(el.getAttribute("style") || "");
+    if (!m) return null;
+    const cls = (el.getAttribute("class") || "") + " " + ((el.parentElement && el.parentElement.getAttribute("class")) || "");
+    if (!/bar|track|stack|fill|meter|gauge|-cols?(?:\s|$)/.test(cls) || el.matches("input, textarea, select, button, img, video, canvas") || el.closest(".menu, .pagebar")) return null;
+    return { dim: m[1], v: Number(m[2]) };
+  }
+  function moBars(list) {
+    const groups = new Map();
+    for (const el of list) {
+      const b = moBarOf(el);
+      if (!b || !el.getClientRects().length) continue;
+      const k = moKey(el, "bar"), scope = moScope(el), old = MO.sig.get(k);
+      MO.sig.set(k, b.v);
+      if (moFirst(k, scope)) {
+        const g = el.closest("ul, ol, .card, [id]") || el.parentElement; // (the bars of one list or card, one after another)
+        if (!groups.has(g)) groups.set(g, []);
+        groups.get(g).push([el, b, k]);
+      } else if (old !== undefined && old !== b.v && moActed() && moInView(el)) moAnim(el, [{ [b.dim]: old + "%" }, { [b.dim]: b.v + "%" }], { duration: 600, easing: MO_SPRING });
+    }
+    for (const [g, xs] of groups) {
+      const d0 = moDelayOf(g) + 120;
+      xs.forEach(([el, b, k], i) => {
+        const a = moAnim(el, [{ [b.dim]: "0%" }, { [b.dim]: b.v + "%" }], { duration: 800, delay: d0 + Math.min(i, 14) * 55, easing: MO_OUT, fill: "backwards" });
+        if (a && !moInView(el)) moLater(el, [a], null, k);
+      });
+    }
+  }
+
+  // a calendar or a heat map: its days come in as a wave, from the top left
+  function moIsGrid(g) {
+    const c = g.getAttribute("class") || "";
+    return g.childElementCount >= 7 && /(?:grid|cal|heat|year|weeks|days|grass|months)(?:\s|$)/.test(c) && !g.closest(".menu, .pagebar");
+  }
+  function moGrid(g) {
+    if (!moShown(g)) return;
+    const k = moKey(g, "grid");
+    if (!moFirst(k, moScope(g))) return;
+    const kids = [...g.children].filter((x) => x.getClientRects().length), n = kids.length;
+    if (!n) return;
+    const cw = kids[0].getBoundingClientRect().width || 1, cols = Math.max(1, Math.min(n, Math.round(g.getBoundingClientRect().width / cw))), rows = Math.ceil(n / cols);
+    const span = Math.min(620, 40 + n * 14), d0 = moDelayOf(g) + 100, steps = Math.max(1, cols - 1 + rows - 1);
+    const as = kids.map((x, i) => moAnim(x, [{ opacity: 0, transform: "scale(.55)" }, { opacity: 1, transform: "none" }],
+      { duration: 440, delay: d0 + ((i % cols) + Math.floor(i / cols)) / steps * span, easing: MO_SPRING, fill: "backwards" }));
+    if (!moInView(g)) moLater(g, as, null, k);
+  }
+
+  // a tile's figure: pops when it changes (a record put in, a ToDo done)
+  function moFigure(n) {
+    const t = n.closest(".tile");
+    if (!t || !moShown(n)) return;
+    const k = "fig#" + (t.dataset.tile || moKey(t, "tile")), scope = moScope(n), v = n.textContent, old = MO.sig.get(k);
+    MO.sig.set(k, v);
+    if (MO.seen.get(k) !== scope) { MO.seen.set(k, scope); return; }
+    if (old !== undefined && old !== v && moActed() && moInView(n)) moAnim(n, [{ transform: "scale(1.16)", opacity: .6 }, { transform: "none", opacity: 1 }], { duration: 560, easing: MO_BOUNCE });
+  }
+
+  // what is drawn anew: its charts (the parts of an SVG chart, the chart itself)
+  var moWatch = typeof MutationObserver === "function" ? new MutationObserver((ms) => {
+    if (!moOn()) return;
+    const roots = new Set();
+    for (const m of ms) for (const n of m.addedNodes) {
+      if (m.target.nodeType === 1 && m.target.matches(MO_GRID)) roots.add(m.target); // (a calendar's days drawn again in it)
+      if (n.nodeType !== 1) continue;
+      let r = n;
+      if (n.ownerSVGElement) { r = n.ownerSVGElement; while (r.ownerSVGElement) r = r.ownerSVGElement; }
+      roots.add(r);
+    }
+    for (const r of roots) if (r.isConnected) moScan(r);
+    moPopAgain();
+  }) : null;
+  if (moWatch) moWatch.observe(document.body, { childList: true, subtree: true });
+  // a check pressed pops (a ToDo's, a ルーティーン's), as it is drawn again or where it is
+  document.addEventListener("click", (ev) => {
+    const c = ev.target.closest && ev.target.closest(".check, [data-check]");
+    if (!c || !moOn()) return;
+    // (the row it is in, by the id it carries: a ToDo's, a ルーティーン's, a pick's, a tile's)
+    const host = c.closest("[data-check], [data-rt], [data-id], [data-pick], [data-tile]"), attr = host && ["data-check", "data-rt", "data-id", "data-pick", "data-tile"].find((k) => host.hasAttribute(k));
+    const sel = attr ? `[${attr}="${CSS.escape(host.getAttribute(attr))}"]` : null, inside = !!host && host !== c;
+    // and the row drawn again with it (often a moment after, once the record is kept): the new one pops in its place
+    MO.pop = { sel, inside, c, box: c.closest("section, dialog") || document.body, until: performance.now() + 900 };
+    requestAnimationFrame(() => { if (c.isConnected) moPop(c); });
+  }, true);
+  function moPop(t) { moAnim(t, [{ transform: "scale(.6)" }, { transform: "none" }], { duration: 560, easing: MO_BOUNCE }); }
+  function moPopAgain() {
+    const pop = MO.pop;
+    if (!pop) return;
+    if (performance.now() > pop.until) { MO.pop = null; return; }
+    if (!pop.sel || pop.c.isConnected) return;
+    const h = pop.box.querySelector(pop.sel), t = h && (pop.inside ? h.querySelector(".check, [data-check]") : h);
+    if (t) { pop.c = t; moPop(t); }
+  }
+  for (const t of ["pointerup", "keydown", "change"]) addEventListener(t, () => { MO.acted = Date.now(); }, true);
+  function moClass() { document.documentElement.classList.toggle("mo", moAllowed()); }
+  moClass();
+  if (reduceMotion.addEventListener) reduceMotion.addEventListener("change", () => { moClass(); if (reduceMotion.matches) moFlush(); });
+  addEventListener("beforeprint", moFlush);
+
   // ---------- boot ----------
   function renderAll() {
     tsumiTallied = null; tsumiStale = true; tsumiGen++; rtIdx = null; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)
@@ -69600,6 +69942,7 @@ ${parts.join("\n")}
     draw(() => setTab(["records", "reclist", "recday", "trash", "copies", "sync", "tsumiyear"].includes(initial) ? "tsumi" : PAGES.some((p) => p.key === initial) || initial === "runlevel" ? initial : "home"));
     draw(loadJournalForm);
     renderAll();
+    draw(() => moPage(tab)); // (動き: the page as the app opens rises in, now that it is drawn)
     draw(runFixed); // 家計簿's 固定費 whose day has come
     // a notification pressed: its day first; a form being typed in is filled again under it (one being changed opens over it)
     if (linkDay) draw(() => openLink("#" + linkDay));
