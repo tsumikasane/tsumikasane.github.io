@@ -40,20 +40,17 @@ const putPhotos = (p, days) => p.evaluate(({ days, b64 }) => new Promise((res, r
   ok(JSON.stringify((await ls(p, "settings")).find((s) => s.id === "jnLater")?.days) === '["2026-11-10"]', "⑩ (the days marked before: kept)", await ls(p, "settings"));
 
   // ⑨ この1年: a square a day, the days written coloured
-  const heat = await p.evaluate(() => ({ all: document.querySelectorAll("#jn5Heat .jn5-c").length, wrote: [...document.querySelectorAll("#jn5Heat button.jn5-c")].filter((x) => !x.classList.contains("lv0")).length }));
-  ok(heat.all === 371 && heat.wrote === 5, "⑨ 53 weeks, 5 days written", heat);
+  const heat = await p.evaluate(() => { const bs = [...document.querySelectorAll("#jn5Heat button.jn5-c")], w = bs.filter((x) => x.classList.contains("wrote"));
+    return { all: document.querySelectorAll("#jn5Heat .jn5-c").length, wrote: w.length, steps: bs.some((x) => /\blv\d/.test(x.className)), colours: [...new Set(w.map((x) => getComputedStyle(x).backgroundColor))].length }; });
+  ok(heat.all === 371 && heat.wrote === 5 && !heat.steps && heat.colours === 1, "⑨ 53 weeks, 5 days written, in one colour however much (the user's call, 2026-11-25)", heat);
   ok((await txt(p, "#jn5HeatSum")).startsWith("5日"), "⑨ the sum", await txt(p, "#jn5HeatSum"));
   ok(await p.evaluate(() => !!document.querySelector('#jn5Heat button[aria-label^="2025年12月1日"]')), "⑨ last year's said with its year");
   await p.click('#jn5Heat button[aria-label^="11月12日"]'); await p.waitForTimeout(600);
   ok((await val(p)).startsWith("カフェで勉強"), "⑨ pressed: that day", await val(p));
 
-  // ③ 太字にする, and off again
+  // ③ 太字にする: taken out at the user's call (2026-11-25, tools/REMOVED.md)
   await pick(p, 0, 3); await p.waitForTimeout(150);
-  await p.click("#jn5Bold"); await p.waitForTimeout(150);
-  ok((await val(p)) === "**カフェ**で勉強。#カフェ", "③ 太字", await val(p));
-  await pick(p, 0, 7); await p.waitForTimeout(150);
-  await p.click("#jn5Bold"); await p.waitForTimeout(1600);
-  ok((await val(p)) === "カフェで勉強。#カフェ", "③ off again", await val(p));
+  ok(!(await p.$("#jn5Bold")) && !(await p.evaluate(() => document.getElementById("jn3Sel")?.textContent.includes("太字"))), "③ (taken out) no 太字にする");
 
   // ④ ことばのカード (the day's), 夜, and saved
   await p.click("#jn5DayCard"); await p.waitForTimeout(800);
@@ -74,16 +71,16 @@ const putPhotos = (p, days) => p.evaluate(({ days, b64 }) => new Promise((res, r
   await undo(p);
   ok((await entry(p, "2026-11-12")).text.endsWith("#カフェ") && (await entry(p, "2026-11-03")).text.startsWith("文化の日。#カフェ"), "⑦ 元に戻す");
 
-  // ③ 飾り in 月の日記を読む, and ① 縦書きで読む
+  // ③ 飾り in 月の日記を読む (taken out at the user's call (2026-11-25, tools/REMOVED.md): the marks as typed), and ① 縦書きで読む
   await go(p, "2026-11-01");
   await p.locator("#jn2Read button", { hasText: "続けて読む" }).click(); await p.waitForTimeout(300);
-  const deco = await p.evaluate(() => { const a = document.querySelector('#jn2Read .jn2-day[data-day="2026-11-01"]'); return { h: a.querySelector(".jn5-h")?.textContent, b: a.querySelector(".jn5-b")?.textContent, hr: !!a.querySelector(".jn5-hr"), href: a.querySelector(".jn5-link")?.getAttribute("href"), link: a.querySelector(".jn5-link")?.textContent, date: a.querySelector(".jn3-date-link")?.textContent, raw: a.querySelector(".jn2-read-text").textContent.includes("**") }; });
-  ok(deco.h === "11月のはじまり" && deco.b === "たのしい" && deco.hr && deco.href === "https://example.com/page" && deco.link === "example.com/page" && deco.date === "11/3" && !deco.raw, "③ 見出し, 太字, 区切り線, a link (and the date)", deco);
+  const deco = await p.evaluate(() => { const a = document.querySelector('#jn2Read .jn2-day[data-day="2026-11-01"]'), t = a.querySelector(".jn2-read-text"); return { marks: !!t.querySelector(".jn5-h, .jn5-b, .jn5-hr, .jn5-link, a[href^='http']"), text: t.textContent, date: a.querySelector(".jn3-date-link")?.textContent }; });
+  ok(!deco.marks && deco.text.startsWith("# 11月のはじまり\n**たのしい**一日だった。\n---\nhttps://example.com/page と 11/3 の話。") && deco.date === "11/3", "③ (taken out) no 見出し・太字・区切り線・リンク: the marks as typed (the date still a link)", deco);
   const snip = await p.evaluate(() => [...document.querySelectorAll("#jnTagList .jn-snip, #jnBack .jn-snip")].map((x) => x.textContent).join("|"));
-  ok(!/\*\*|^# /m.test(snip), "③ the marks left out elsewhere", snip);
+  ok(!snip.includes("たのしい") || snip.includes("**たのしい**"), "③ (taken out) elsewhere too, the marks as typed", snip);
   await p.click("#jn5Read"); await p.waitForTimeout(400);
   const rd = await p.evaluate(() => ({ open: document.getElementById("jn5Reader").open, mode: getComputedStyle(document.getElementById("jn5RdBody")).writingMode, title: document.getElementById("jn5RdTitle").textContent, tcy: [...document.querySelectorAll("#jn5RdBody .jn5-tcy")].map((x) => x.textContent).join(","), h: document.querySelector("#jn5RdBody .jn5-h")?.textContent }));
-  ok(rd.open && rd.mode === "vertical-rl" && rd.title === "2026年11月1日（日）" && rd.tcy.startsWith("11"), "① 縦書き, two digits upright", rd);
+  ok(rd.open && rd.mode === "vertical-rl" && rd.title === "2026年11月1日（日）" && rd.tcy.startsWith("11") && !rd.h, "① 縦書き, two digits upright (no 見出し: ③ taken out)", rd);
   await p.click("#jn5RdNext"); await p.waitForTimeout(300);
   ok((await txt(p, "#jn5RdTitle")) === "2026年11月3日（火）", "① ‹ 次に書いた日", await txt(p, "#jn5RdTitle"));
 

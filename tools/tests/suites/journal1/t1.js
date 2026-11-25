@@ -77,16 +77,9 @@ async function open(b, when) {
   await p.locator("#jnBack li").filter({ has: p.locator("strong", { hasText: /^1年前$/ }) }).locator("button", { hasText: "この日を開く" }).click(); await p.waitForTimeout(800);
   ok((await p.inputValue("#sec-journal .datenav input[type=date]")) === "2025-11-13" && (await p.inputValue("#journalText")).startsWith("1年前の日記"), "⑦ この日を開く: that day");
 
-  // ⑧ 日記カレンダー: back to today, the days written all in one colour (the user's call, 2026-11-19: no steps by
-  // letters any more); pressed, that day
+  // ⑧ 日記カレンダー: taken out at the user's call (2026-11-25, tools/REMOVED.md): no card (この1年, 日記 その5 ⑨, stays)
   await p.locator("#sec-journal .datenav .chip-btn", { hasText: "きょうへ" }).click(); await p.waitForTimeout(800);
-  const cal = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll("#jnCal button.jnc-d")].map((b) => [b.querySelector(".dn").textContent, (b.classList.contains("wrote") ? "wrote" : "-") + (/\blv\d/.test(b.className) ? "+lv" : "")])));
-  ok(cal["12"] === "wrote" && cal["11"] === "wrote" && cal["2"] === "-" && cal["13"] === "wrote", "⑧ the days written, in one colour (no steps)", cal);
-  ok((await txt(p, "#jnCalKey")).includes("書いた日6日"), "⑧ the month's days", await txt(p, "#jnCalKey"));
-  await p.locator("#jnCal button.jnc-d", { hasText: /^\s*10/ }).first().click(); await p.waitForTimeout(800);
-  ok((await p.inputValue("#journalText")).startsWith("友だちとカフェへ"), "⑧ pressed: that day", await p.inputValue("#journalText"));
-  await p.click("#jnCalNav [aria-label=前の月]"); await p.waitForTimeout(200);
-  ok((await txt(p, "#jnCalNav")).includes("2026年10月"), "⑧ ‹: the month before", await txt(p, "#jnCalNav"));
+  ok(!(await p.$("#jnCalCard")) && !(await p.$("#jnCal")) && !(await p.evaluate(() => document.getElementById("sec-journal").innerText.includes("日記カレンダー"))) && !!(await p.$("#jn5HeatCard")), "⑧ (taken out) no 日記カレンダー; この1年 there");
   await p.screenshot({ path: "journal1-cards.png", fullPage: true });
 
   // ⑨ (its alarms: 毎日の記録のお知らせ's since 2026-11-23, suites/recremind) a 日記 written today, its old setting kept

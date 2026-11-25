@@ -136,8 +136,8 @@ const png = (file) => { const b = fs.readFileSync(file); return b.slice(0, 8).eq
   ok((await toast(p)).includes("ふだんやる時刻の順に並べました"), "⑧ said, with 元に戻す");
   await undo(p);
   ok((await order()) === "日記を書く,ストレッチ,歯みがき,水を飲む", "⑧ 元に戻す", await order());
-  // ⑩ off at first; ふるえ where the device buzzes
-  ok(!(await p.isChecked("#rt6SoundOn")) && await shown(p, "#rt6BuzzOn") && !(await p.isChecked("#rt6BuzzOn")), "⑩ off at first");
+  // ⑩ ふるえ where the device buzzes, off at first (its 音: taken out at the user's call (2026-11-25, tools/REMOVED.md))
+  ok(!(await p.$("#rt6SoundOn")) && await shown(p, "#rt6BuzzOn") && !(await p.isChecked("#rt6BuzzOn")) && (await p.evaluate(() => { const t = document.getElementById("rtGroup").textContent; return t.includes("チェックのふるえ") && !t.includes("チェックの音"); })), "⑩ ふるえ alone (音 taken out), off at first");
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
 
   // ② 長押し: 日記を書く held down
@@ -194,28 +194,28 @@ const png = (file) => { const b = fs.readFileSync(file); return b.slice(0, 8).eq
   ok((await names(p)) === "日記を書く,ストレッチ,歯みがき,水を飲む", "③ 元に戻す");
   ok(JSON.stringify(await p.evaluate(() => window.__rt6.lines("1) ストレッチ\n- 腕立て 20回\n✓ 日記を書く\n□ 掃除"))) === JSON.stringify({ out: [{ name: "腕立て 20回", emoji: "" }, { name: "掃除", emoji: "" }], same: 2 }), "③ the marks a list begins with", await p.evaluate(() => window.__rt6.lines("1) ストレッチ\n- 腕立て 20回\n✓ 日記を書く\n□ 掃除")));
 
-  // ⑩ 音・ふるえ: none while off; on, a sound as one is checked, a softer one for one more, another as all are done
-  await p.evaluate(() => { window.__tones = []; window.__buzz = []; });
+  // ⑩ ふるえ: none while off; on, a buzz as one is checked, a lighter one for one more, another as all are done. Its sound
+  // taken out at the user's call (2026-11-25, tools/REMOVED.md): none heard, on before (rt6Sound) or not
+  await p.evaluate((P) => { window.__tones = []; window.__buzz = []; localStorage.setItem(P + "rt6Sound", "1"); }, P);
   await row(p, "r1").locator(".check").click(); await p.waitForTimeout(300);
-  ok((await p.evaluate(() => window.__tones.length)) === 0 && (await p.evaluate(() => window.__buzz.length)) === 0, "⑩ off: no sound");
+  ok((await p.evaluate(() => window.__tones.length)) === 0 && (await p.evaluate(() => window.__buzz.length)) === 0, "⑩ off: nothing (no sound, 音 on before)");
   await row(p, "r1").locator(".check").click(); await p.waitForTimeout(300);
   await p.click("#rtSettings"); await p.waitForTimeout(600);
-  await p.locator("#rt6SoundOn").click(); await p.waitForTimeout(200);
   await p.locator("#rt6BuzzOn").click(); await p.waitForTimeout(200);
-  ok(await p.evaluate((P) => localStorage.getItem(P + "rt6Sound") === "1" && localStorage.getItem(P + "rt6Buzz") === "1", P) && (await p.evaluate(() => window.__tones.join())) === "880,1320" && (await p.evaluate(() => window.__buzz.join())) === "14", "⑩ turned on: heard and felt at once", await p.evaluate(() => [window.__tones, window.__buzz]));
+  ok(await p.evaluate((P) => localStorage.getItem(P + "rt6Buzz") === "1", P) && (await p.evaluate(() => window.__tones.length)) === 0 && (await p.evaluate(() => window.__buzz.join())) === "14", "⑩ turned on: felt at once, nothing heard", await p.evaluate(() => [window.__tones, window.__buzz]));
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   await p.evaluate(() => { window.__tones = []; window.__buzz = []; });
   await row(p, "r1").locator(".check").click(); await p.waitForTimeout(300);
-  ok((await p.evaluate(() => window.__tones.join())) === "880,1320" && (await p.evaluate(() => window.__buzz.join())) === "14", "⑩ a check", await p.evaluate(() => [window.__tones, window.__buzz]));
+  ok((await p.evaluate(() => window.__tones.length)) === 0 && (await p.evaluate(() => window.__buzz.join())) === "14", "⑩ a check: a buzz, no sound", await p.evaluate(() => [window.__tones, window.__buzz]));
   await p.evaluate(() => { window.__tones = []; window.__buzz = []; });
   await row(p, "r4").locator(".check").click(); await p.waitForTimeout(300);
-  ok((await p.evaluate(() => window.__tones.join())) === "660" && (await p.evaluate(() => window.__buzz.join())) === "8", "⑩ one more of a counted one: softer", await p.evaluate(() => [window.__tones, window.__buzz]));
+  ok((await p.evaluate(() => window.__tones.length)) === 0 && (await p.evaluate(() => window.__buzz.join())) === "8", "⑩ one more of a counted one: lighter", await p.evaluate(() => [window.__tones, window.__buzz]));
   await p.evaluate(() => { window.__tones = []; window.__buzz = []; });
   await hold(p, "r4"); await p.click("#rt6MenuGroup .ask-btn:has-text('できた')"); await p.waitForTimeout(400);
-  ok((await p.evaluate(() => window.__tones.join())) === "784,988,1175,1568" && (await p.evaluate(() => JSON.stringify(window.__buzz))) === "[15,[20,50,20,50,40]]" && (await txt(p, ".rt-all")).includes("ぜんぶできました"), "⑩ the last: all done's sound", await p.evaluate(() => [window.__tones, window.__buzz]));
+  ok((await p.evaluate(() => window.__tones.length)) === 0 && (await p.evaluate(() => JSON.stringify(window.__buzz))) === "[15,[20,50,20,50,40]]" && (await txt(p, ".rt-all")).includes("ぜんぶできました"), "⑩ the last: all done's buzz, no sound", await p.evaluate(() => [window.__tones, window.__buzz]));
   await p.evaluate(() => { window.__tones = []; window.__buzz = []; });
   await row(p, "r1").locator(".check").click(); await p.waitForTimeout(300);
-  ok((await p.evaluate(() => window.__tones.length)) === 0, "⑩ none as a check is taken off");
+  ok((await p.evaluate(() => window.__tones.length)) === 0 && (await p.evaluate(() => window.__buzz.length)) === 0, "⑩ none as a check is taken off");
   ok(!p.errs.length, "no error on the way", p.errs);
   await p.close();
 

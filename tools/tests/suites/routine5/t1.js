@@ -27,11 +27,12 @@ async function open(b, data, hm = "09:00") {
   let p = await open(b, D.all());
   await p.screenshot({ path: "routine5-top.png" });
 
-  // ③ おまもり: 散歩 (11/10〜11/13) not done 11/14: made パス by itself, said with 元に戻す
+  // ③ おまもり: taken out at the user's call (2026-11-25, tools/REMOVED.md): 散歩 (11/10〜11/13) not done 11/14 is left as it
+  // is, nothing said; what was set (rtCharm) kept
   let d14 = await day(p, "2026-11-14");
-  ok(d14.skip?.join() === "r5" && d14.charm?.join() === "r5" && (await toast(p)).includes("「散歩」（11/14）の連続を、おまもりで守りました"), "③ おまもり on 11/14", { d14, t: await toast(p) });
-  ok((await rowText(p, "r5")).includes("4日連続"), "③ 散歩's run kept", await rowText(p, "r5"));
-  ok((await p.locator('#rtWeek tbody tr', { hasText: "散歩" }).locator("td").nth(5).innerText()).includes("パス"), "③ パス in the week's table");
+  ok(!d14.skip?.length && !d14.charm && !(await toast(p)).includes("おまもり") && !!(await ls(p, "settings")).find((x) => x.id === "rtCharm"), "③ (taken out) 11/14 left as it is, nothing said, rtCharm kept", { d14, t: await toast(p) });
+  ok(!(await rowText(p, "r5")).includes("4日連続"), "③ (taken out) 散歩's run not kept by itself", await rowText(p, "r5"));
+  ok(!(await p.locator('#rtWeek tbody tr', { hasText: "散歩" }).locator("td").nth(5).innerText()).includes("パス"), "③ (taken out) no パス in the week's table");
   // ④ はじめの日・おわりの日: テスト勉強 (from 11/20) and 水やり (till 11/10) not in the day's list, listed apart
   ok((await names(p)) === "ストレッチ,英単語,薬を飲む,読書,散歩,水を飲む" && (await txt(p, "#rt5SpanList")).includes("水やり11月10日（火）でおわり") && (await txt(p, "#rt5SpanList")).includes("テスト勉強11月20日（金）から"), "④ the items outside their days", { n: await names(p), l: await txt(p, "#rt5SpanList") });
   // ⑨ きょうのタイムライン
@@ -57,8 +58,8 @@ async function open(b, data, hm = "09:00") {
   // ⑧ 水's 30 days
   const ch = await p.evaluate(() => { const li = [...document.querySelectorAll("#rtStats li.rt-stat")].find((x) => x.innerText.includes("水を飲む")); return { bars: li?.querySelectorAll(".rt5-count-bar").length, full: li?.querySelectorAll(".rt5-count-bar.full").length, label: li?.querySelector(".rt5-count-bars")?.getAttribute("aria-label") }; });
   ok(ch.bars === 30 && ch.full === 15 && ch.label === "最近30日の平均 5.6杯（8杯まで）", "⑧ a bar a day, the average", ch);
-  // ③ おまもり left this month in the record
-  ok(flat(await p.locator("#rtStats li.rt-stat", { hasText: "散歩" }).innerText()).includes("今月のおまもりのこり0回"), "③ none left this month for 散歩");
+  // ③ おまもり left this month in the record: none (taken out)
+  ok(!flat(await p.locator("#rtStats li.rt-stat", { hasText: "散歩" }).innerText()).includes("おまもり"), "③ (taken out) none said in the record for 散歩");
   // ⑥ 声でチェック: the names heard
   ok(JSON.stringify(await p.evaluate(() => window.__rt5.hear("ストレッチとくすりを飲む"))) === "[]" && JSON.stringify(await p.evaluate(() => window.__rt5.hear("薬を飲むと水を飲む"))) === JSON.stringify(["薬を飲む", "水を飲む"]), "⑥ matched by name (ストレッチ already done)");
   await p.evaluate(() => window.__rt5.heard("英単語と薬を飲む")); await p.waitForTimeout(300);
@@ -83,11 +84,20 @@ async function open(b, data, hm = "09:00") {
   await p.fill("#rtiUrl", ""); await p.fill("#rtiUntil", "2026-11-25"); await p.fill("#rtiMini", "5語だけ"); await p.click("#recSave"); await p.waitForTimeout(500);
   const r2 = await item(p, "r2");
   ok(r2.until === "2026-11-25" && r2.mini === "5語だけ" && !r2.url && (await rowText(p, "r2")).includes("11/25まで"), "④⑩ saved from ⋯", { r2, t: await rowText(p, "r2") });
-  // ③ おまもり in the gear
+  // ③ おまもり in the gear: none (taken out)
   await p.click("#rtSettings"); await p.waitForTimeout(400);
-  ok((await p.inputValue("#rt5CharmN")) === "1" && await shown(p, "#rt5RewardForm"), "①③ in the gear");
+  ok(!(await p.$("#rt5CharmN")) && !(await p.evaluate(() => document.getElementById("rtGroup").textContent.includes("おまもり"))) && await shown(p, "#rt5RewardForm"), "① in the gear (③ おまもり taken out: not there)");
   await p.keyboard.press("Escape"); await p.waitForTimeout(400);
   ok(!p.errs.length, "no errors (1)", p.errs);
+  // ③ a day made パス by おまもり before it was taken out: パス as before, its row saying おまもり (what it set, kept)
+  {
+    const d = D.all(); d.routineDays = d.routineDays.map((x) => (x.id === "2026-11-14" ? { ...x, skip: ["r5"], charm: ["r5"] } : x));
+    const q = await open(b, d);
+    await q.fill("#sec-routine .datenav input[type=date]", "2026-11-14"); await q.dispatchEvent("#sec-routine .datenav input[type=date]", "change"); await q.waitForTimeout(500);
+    ok((await rowText(q, "r5")).includes("おまもり"), "③ a day made パス by おまもり before: おまもり on its row, as before", await rowText(q, "r5"));
+    ok(!q.errs.length, "no errors (おまもり's day)", q.errs);
+    await q.close();
+  }
   await p.close();
 
   // ① ごほうび: two items done 11/13 and 11/14; today all done makes 3 → ごほうびの日
