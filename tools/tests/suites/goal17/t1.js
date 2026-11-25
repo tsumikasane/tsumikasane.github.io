@@ -79,7 +79,7 @@ const J = (d, hm) => Date.parse(`${d}T${hm}:00+09:00`);
   ok((await p.evaluate(() => document.getElementById("mLowOpen").classList.contains("g17-low-hi"))), "⑥ the day's やる気 low: it stands out");
   await p.click("#mLowOpen"); await p.waitForTimeout(300);
   const low = await txt(p, "#mLow");
-  ok(low.includes("なぜこの目標？ 海外で働きたいから") && low.includes("ごほうび 50%で「ケーキを食べる」・達成で「旅行に行く」") && low.includes("最近のふりかえり 単語を毎日続けられた") && /あと少し あと \d+マスで (50|75)%です（いま \d+%）。/.test(low) && low.includes("まずは小さく 模試2回目"), "⑥ what to look at", low);
+  ok(low.includes("なぜこの目標？ 海外で働きたいから") && !low.includes("ごほうび") && low.includes("最近のふりかえり 単語を毎日続けられた") && /あと少し あと \d+マスで (50|75)%です（いま \d+%）。/.test(low) && low.includes("まずは小さく 模試2回目"), "⑥ what to look at (its ごほうび taken out at the user's call, 2026-11-25)", low);
   ok((await txt(p, "#mLowOpen")) === "閉じる", "⑥ open, closed from its own button");
   // ⑩: the first three, one changed
   await p.click("#mBatchStart"); await p.waitForTimeout(400);

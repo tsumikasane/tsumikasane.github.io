@@ -19485,7 +19485,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const patch = { mandala: chart, depth, done }, keep = byHand && !byCells && kidsOf({ c: chart }, depth).length > 0;
     if (keep || g.doneByHand) patch.doneByHand = keep;
     if (done && g.pausedAt) patch.pausedAt = null; // achieved, it is on hold no more
-    if (done && !g.done) { patch.doneAt = Date.now(); said = (said ? said + "。" : "") + `「${oneLine(g.title)}」を達成しました`; setTimeout(celebrate, 200); } // (confetti: the user's call; その3 ⑧ its ごほうび)
+    if (done && !g.done) { patch.doneAt = Date.now(); said = (said ? said + "。" : "") + `「${oneLine(g.title)}」を達成しました`; setTimeout(celebrate, 200); } // (confetti: the user's call; その3 ⑧ its ごほうび taken out, 2026-11-25)
     if (goalNine && done && !g.done) said = nineNextStart(g, said); // (目標 その9 ③ 次の目標)
     else if (!done && goalTwo) { const m = goalMiles(g, chart, depth); if (m) { patch.miles = m.miles; if (m.words) { said = (said ? said + "。" : "") + m.words; setTimeout(celebrate, 200); } } } // (目標 その2 ⑤ 節目: 25・50・75%, an element finished)
     if (goalSix) said = sixMsCheck(g, chart, depth, patch, said); // (目標 その6 ① 中間目標)
@@ -39667,8 +39667,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ⑧ ごほうび (g.rewards: { half, done }, set under the goal, shown in its 進み具合 and said with the 紙ふぶき at 50% and when
-  // achieved): taken out at the user's call, 2026-11-25, tools/REMOVED.md. What was set stays; やる気が出ないとき and すごろく read it still
-  const rewardOf = (g, key) => (typeof g?.rewards?.[key] === "string" ? g.rewards[key].trim() : "");
+  // achieved): taken out at the user's call, 2026-11-25, tools/REMOVED.md. What was set stays, read by nothing (やる気が出ないとき's
+  // and すごろく's, which read it, taken out after it the same day)
 
   // ⑨ ways to write ふりかえり: よかったこと・うまくいかなかったこと・次にやること, or the week in figures to start from
   function putReflect(text, caretAfter) {
@@ -43309,9 +43309,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       ["見積もりをまとめて・空き時間とくらべる", "見積もりのないマスにまとめて付ける。この1週間の空き時間と、見積もりの合計をくらべる。"],
       ["要素ごとの見込み", "要素ごとに、このペースならいつ終わるか、期限に間に合うかを出します。"],
       ["見積もりを実績で直す", "終わったマスが見積もりより長く（短く）かかっているとき、のこりの見積もりをまとめて直せます。"],
-      ["すごろく", "目標を、マスの数だけのすごろくで見られます。ごほうびのマスもあります。"],
+      ["すごろく", "目標を、マスの数だけのすごろくで見られます。"],
       ["やる気と進み", "やる気が高い日と低い日に、それぞれ何マス進めたかをくらべます。"],
-      ["やる気が出ないとき", "なぜ・ごほうび・★のふりかえり・あと少しの節目と、次のマスの小さな一歩を出します。"],
+      ["やる気が出ないとき", "なぜ・★のふりかえり・あと少しの節目と、次のマスの小さな一歩を出します。"],
       ["期限を延ばす・期限の変更", "期限が近い・過ぎた目標を1週間〜3か月延ばせます。変えた記録と理由も残ります。"],
       ["目標の内容", "名前・達成基準・期限・メモ。達成基準のチェックリストや「なぜこの目標？」も。"],
       ["中間目標・もし〜なら・やらないこと", "途中の目標や、つまずいたときの決め事、やらないことを書けます。"],
@@ -44167,7 +44167,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ⑥ やる気が出ないとき: under the goal's やる気, a press away (stood out on a day its やる気 is low): why it is wanted, what it
-  // will be like, its ごほうび, a ★ ふりかえり, the next 節目, and the next cell made small (its 小さな一歩) with the focus timer
+  // will be like, a ★ ふりかえり, the next 節目, and the next cell made small (its 小さな一歩) with the focus timer (its ごほうび:
+  // taken out with ごほうび at the user's call, 2026-11-25, tools/REMOVED.md)
   let lowFor = null;
   function renderLow(g) {
     const row = $("mLowRow"), box = $("mLow"), btn = $("mLowOpen"), open = lowFor === g.id && !g.done, mood = num(moodOf(g)[todayKey]);
@@ -44181,8 +44182,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const vision = typeof g.vision === "string" ? oneLine(g.vision) : "";
     if (whyOf(g)) out.push(sec("なぜこの目標？", whyOf(g)));
     if (vision) out.push(sec("達成したら", vision));
-    const rw = [rewardOf(g, "half") ? `50%で「${rewardOf(g, "half")}」` : "", rewardOf(g, "done") ? `達成で「${rewardOf(g, "done")}」` : ""].filter(Boolean);
-    if (rw.length) out.push(sec("ごほうび", rw.join("・")));
     const notes = goalNotes(g).sort((a, b) => Number(!!b.star) - Number(!!a.star) || num(b.at) - num(a.at)), note = notes[0];
     if (note) out.push(sec(note.star ? "★のふりかえり" : "最近のふりかえり", clip(oneLine(note.text), 80)));
     const p = cellProgress(nodeAt(g, []), goalDepth(g)), mile = kidsOf(nodeAt(g, []), goalDepth(g)).length ? [0.25, 0.5, 0.75, 1].find((m) => p < m - 1e-9) : null, k = mile ? cellsToMile(g, mile) : null;
@@ -45310,14 +45309,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ⑩ すごろく: the goal as a board game: a square a cell (those done first, in order), the piece on the next, ゴール at the end;
-  // 25・75% ★, 50% and the end its ごほうび 🎁 when it has them
+  // 25・75% ★ (50%'s 🎁, its ごほうび: taken out with ごほうび at the user's call, 2026-11-25, tools/REMOVED.md)
   function renderSugoroku(g) {
     const box = $("mSugo"), lv = goalLeaves2(g).filter((l) => !(goalThree && linkOf(l.cell)));
     $("mSugoHead").hidden = box.hidden = lv.length < 3;
     if (lv.length < 3) { box.replaceChildren(); return; }
     const n = lv.length, done = lv.filter((l) => cellDone(l.cell, 0)).length, mark = (i) => { // i: 1 to n
       if (i === n) return "🏁";
-      if (i === Math.round(n / 2) && rewardOf(g, "half")) return "🎁";
       if (i === Math.round(n / 4) || i === Math.round((n * 3) / 4)) return "★";
       return "";
     };
@@ -45331,7 +45329,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     setChildren(box, el("div", { class: "g20-sugo", role: "img", "aria-label": `すごろく：${n}マスのうち ${done}マス目まで進んでいます` }, sq.map((i) => !i ? el("span", { class: "g20-sq empty" })
       : el("span", { class: "g20-sq" + (i <= done ? " done" : "") + (i === done + 1 ? " here" : "") + (i === n ? " goal" : "") }, el("small", {}, String(i)), i === done + 1 && done < n ? "🙂" : mark(i)))),
-      el("p", { class: "sub" }, done >= n ? "ゴールしました！" : `いま ${done}マス目・ゴールまで あと ${n - done}マス` + (rewardOf(g, "half") && done < Math.round(n / 2) ? `（🎁 ${Math.round(n / 2)}マス目で「${clip(rewardOf(g, "half"), 12)}」）` : "")));
+      el("p", { class: "sub" }, done >= n ? "ゴールしました！" : `いま ${done}マス目・ゴールまで あと ${n - done}マス`));
   }
 
   // the chart's own: ① ⑨

@@ -85,8 +85,8 @@ const bulk = (p) => p.$$eval("#mDoBulk .g17-batch li", (xs) => xs.map((x) => (x.
 
   // TOEIC
   await open(p, "TOEIC 800点");
-  // ⑩ すごろく: 13 cells, 6 done; 🎁 at the 7th
-  ok((await txt(p, "#mSugo .sub")) === "いま 6マス目・ゴールまで あと 7マス（🎁 7マス目で「ケーキを食べる」）" && (await p.$$("#mSugo .g20-sq.done")).length === 6
+  // ⑩ すごろく: 13 cells, 6 done (🎁 at the 7th, its ごほうび: taken out at the user's call, 2026-11-25)
+  ok((await txt(p, "#mSugo .sub")) === "いま 6マス目・ゴールまで あと 7マス" && !(await txt(p, "#mSugo")).includes("🎁") && (await p.$$("#mSugo .g20-sq.done")).length === 6
     && (await txt(p, "#mSugo .g20-sq.here")) === "7 🙂" && (await txt(p, "#mSugo .g20-sq.goal")) === "13 🏁" && JSON.stringify(await p.$$eval("#mSugo .g20-sq", (xs) => xs.filter((x) => x.textContent.includes("★")).map((x) => x.firstChild.textContent))) === '["3","10"]',
     "⑩ the board", await txt(p, "#mSugo"));
   // ⑤ 見積もりを実績で直す: 1時間 each, 1時間30分 each
