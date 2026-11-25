@@ -27,10 +27,13 @@ const TODOS = [
   const p = await phone(b, new Date("2026-11-11T08:30:00+09:00"), { deviceScaleFactor: 1 });
   await seed(p, { todos: TODOS }, "todo"); await p.waitForTimeout(900);
 
-  // the morning: the card over the list offers to pick, and the one left from yesterday
+  // the morning: the card over the list offers to pick. The one left from yesterday is back in the list under its 期限, not
+  // asked about (前の日の「…」が残っています with きょうも入れる・入れない: taken out at the user's call, 2026-11-25)
   let c = await card(p);
-  ok(!!c && c.includes("おはようございます") && c.includes("きょうやるを選ぶ") && c.includes("きょうは選ばない") && c.includes("前の日の「ゼミの資料を読む」が残っています"), "the morning card: pick, not today, yesterday's left", c);
-  ok(!(await p.evaluate(() => !!document.querySelector("#todoList > li.td-carry"))), "yesterday's offered in the card, not in the list");
+  ok(!!c && c.includes("おはようございます") && c.includes("きょうやるを選ぶ") && c.includes("きょうは選ばない") && !c.includes("残っています") && !c.includes("きょうも入れる") && !c.includes("入れない"), "the morning card: pick, not today; yesterday's not asked about", c);
+  ok(!(await p.evaluate(() => !!document.querySelector("#todoList > li.td-carry, .td-fc-carry"))) && (await rows(p)).includes("h") && (await todo(p, "h")).today === "2026-11-10", "yesterday's in the list as it was (its day kept)", await rows(p));
+  const hHead = await p.evaluate(() => { let x = document.querySelector('#todoList > li [data-check="h"]').closest("li").previousElementSibling; while (x && !x.classList.contains("dayhead")) x = x.previousElementSibling; return x ? x.textContent.replace(/\s+/g, "") : null; });
+  ok(/^きょう\d/.test(hHead || ""), "under its 期限 (きょう), not きょうやる", hHead);
   ok(await vis(p, "#todoSearchBox") && await vis(p, "#todoTabs"), "the list as ever under it");
   // その他 has it too
   await p.click("#todoMore"); await p.waitForTimeout(300);
@@ -74,7 +77,7 @@ const TODOS = [
   let r = await rows(p);
   ok(r.length === 4 && ["a", "b", "c", added.id].every((id) => r.includes(id)), "only today's in the list", r);
   c = await card(p);
-  ok(c.includes("すべてのToDoに戻る") && c.includes("11月11日（水）・4 件中 0 件完了") && c.includes("選び直す") && c.includes("きょうの時間割") && c.includes("前の日の「ゼミの資料を読む」が残っています") && !c.includes("ごろに終わります") && !c.includes("入りきりません"), "its head: the day, how far, 選び直す, 時間割, yesterday's (no 終わる時刻: taken off 2026-11-23)", c);
+  ok(c.includes("すべてのToDoに戻る") && c.includes("11月11日（水）・4 件中 0 件完了") && c.includes("選び直す") && c.includes("きょうの時間割") && !c.includes("残っています") && !c.includes("きょうも入れる") && !c.includes("ごろに終わります") && !c.includes("入りきりません"), "its head: the day, how far, 選び直す, 時間割, yesterday's (no 終わる時刻: taken off 2026-11-23)", c);
   // kept for the day (a reload)
   await p.reload(); await p.waitForTimeout(900);
   ok((await rows(p)).length === 4 && !(await vis(p, "#todoSearchBox")), "kept as the page opens again");
@@ -126,13 +129,20 @@ const TODOS = [
   ok(p.errs.length === 0, "no errors on the page", p.errs);
   await p.context().close();
 
-  // the next day: not kept; yesterday's offered again
+  // the next day: きょうやるだけ not kept; yesterday's undone one back in the list with the rest, not in today's きょうやる,
+  // and nothing asks about it (きょうも入れる・入れない: taken out at the user's call, 2026-11-25)
   const q = await phone(b, new Date("2026-11-12T09:00:00+09:00"), { deviceScaleFactor: 1 });
   await seed(q, { todos: [{ id: "x", text: "きのうの", done: false, today: "2026-11-11", createdAt: T("2026-11-10") }, { id: "y", text: "ほか", done: false, createdAt: T("2026-11-10") }] }, "todo");
   await q.evaluate(({ P }) => localStorage.setItem(P + "tdFocus", "2026-11-11"), { P }); await q.reload(); await q.waitForTimeout(900);
-  ok(await vis(q, "#todoSearchBox") && (await card(q)).includes("前の日の「きのうの」が残っています"), "the next day: the list, yesterday's offered", await card(q));
-  await q.locator("#tdFocusCard button", { hasText: "きょうも入れる" }).click(); await q.waitForTimeout(500);
-  ok((await todo(q, "x")).today === "2026-11-12" && (await card(q)).startsWith("きょうやる 0/1"), "きょうも入れる: today's again", await card(q));
+  c = await card(q);
+  ok(await vis(q, "#todoSearchBox") && (await rows(q)).sort().join() === "x,y" && !c.includes("きょうやる 0/1") && !c.includes("残っています") && !c.includes("きょうも入れる") && !(await q.$(".td-fc-carry, #todoList > li.td-carry")),
+    "the next day: yesterday's in the list, not in きょうやる, not asked about", [await rows(q), c]);
+  ok((await todo(q, "x")).today === "2026-11-11", "its day kept as it was (read by the days before)", await todo(q, "x"));
+  await q.screenshot({ path: (process.argv[2] || __dirname) + "/td-next-day.png" });
+  // きょうやるを選ぶ's 前の日の残り (kept): one press puts it in today's
+  await q.locator("#tdFocusCard button", { hasText: "きょうやるを選ぶ" }).click(); await q.waitForTimeout(700);
+  await q.locator("#tdPanelBody .td-pick-quick button", { hasText: "前の日の残り 1 件を選ぶ" }).click(); await q.waitForTimeout(500);
+  ok((await todo(q, "x")).today === "2026-11-12", "きょうやるを選ぶ: 前の日の残り 1 件を選ぶ, kept", await todo(q, "x"));
   ok(q.errs.length === 0, "no errors on the page (next day)", q.errs);
   await b.close();
   console.log(fails ? `${fails} FAILED` : "ALL OK");

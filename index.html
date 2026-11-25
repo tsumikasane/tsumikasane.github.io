@@ -4173,10 +4173,6 @@ ul.list.td20-time > li { display: grid; grid-template-columns: minmax(0, 7em) mi
    the list; ⑦⑨⑩ on a row: the one it comes after, a repeat's run, ごほうび; ⑥ the last 経過メモ; ⑤ やめた's mark */
 .td-today-head { display: inline-flex; align-items: center; gap: 4px; }
 .td-today-head .icon { color: var(--c-meal); }
-#todoList > li.td-carry { flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-block: 4px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--c-meal) 10%, var(--surface)); }
-#todoList > li.td-carry::before { display: none; }
-.td-carry-text { flex: 1 1 14em; min-width: 0; font-size: var(--t-sub); }
-.td-carry-acts { display: flex; flex-wrap: wrap; gap: 8px; }
 .td-x.td-after { color: var(--muted); }
 .td-x.td-run { color: var(--accent); font-weight: 600; }
 .td-x.td-run.now { color: var(--c-meal); }
@@ -4837,14 +4833,9 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
 .td-fc-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .td-fc-acts .link-btn { min-height: 36px; }
 .td-focus-card .chip-btn { background: var(--surface); }
-.td-fc-carry { display: grid; gap: 6px; padding: 8px 10px; border-radius: 12px; background: var(--surface); font-size: var(--t-sub); }
-.td-fc-carry .td-fc-acts { gap: 8px; }
-.td-fc-carry .chip-btn { background: var(--fill); box-shadow: none; }
 #sec-todo.td-focus #todoSearchBox, #sec-todo.td-focus #todoTabs, #sec-todo.td-focus .td-tools, #sec-todo.td-focus #todoSwipeHint { display: none !important; }
 #sec-todo.td-focus .td-focus-card { background: var(--surface); }
 #sec-todo.td-focus .td-focus-card .chip-btn { background: var(--fill); box-shadow: none; }
-#sec-todo.td-focus .td-fc-carry { background: color-mix(in srgb, var(--c-meal) 9%, var(--surface)); }
-#sec-todo.td-focus .td-fc-carry .chip-btn { background: var(--surface); }
 #todoList > li.empty .td-fc-empty-acts { display: flex; justify-content: center; width: 100%; margin-top: 10px; }
 /* きょうやるを選ぶ: each still to do with its ring, filled once picked; the button to show them alone at the foot */
 .td-pick-quick { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -12469,9 +12460,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     list.replaceChildren();
     tdShownIds = [];
     list.classList.toggle("picking", picking);
-    // (その3 ① those put in きょうやる on a day before and still to do, offered again over the list)
-    const carry = !todayTwo && todoPart === "open" && !words.length && !picking && !tdSort ? tdCarryRow() : null; // (with きょうやる's card: offered in it)
-    if (carry) list.append(carry);
+    // (その3 ① those put in きょうやる on a day before and still to do, offered again over the list: taken out at the user's
+    // call, 2026-11-25; they are in the list as they were)
     if (!shown.length) {
       tdSelSync(); tdSortSync();
       list.append(el("li", { class: "empty", tabindex: -1 }, todoPart === "done" ? (words.length ? `「${todoQuery.trim()}」に合うToDoはありません。` : "完了したToDoは、まだありません。") // (完了)
@@ -24946,7 +24936,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月25日 18:31"; // f196ca06 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月25日 19:57"; // fa6f1c68 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -32606,7 +32596,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // (③), the number on the app's icon (④), やめた (⑤), 経過メモ (⑥), one after another (⑦), today's timetable (⑧), a
   // repeat's run (⑨) and ごほうび (⑩) ----------
   // ① きょうやる: one put in today's own list whatever its 期限 (today: the day it was put in), first in the list under its
-  // own heading with the sun. Put in on a day before and left undone, it is offered again over the list
+  // own heading with the sun. Put in on a day before and left undone, it is back in its list the next day as it was (under
+  // its 期限, in its own list), not in today's: nothing asks about it (the user's call, 2026-11-25: 「前の日の…が残って
+  // います」 with きょうも入れる・入れない taken out, tools/REMOVED.md). The day it was put in stays on it (today), as the days
+  // before are read from it (毎日記録するもの's きょうやるToDo) and きょうやるを選ぶ says 前の日の残り by it
   function tdToday(t) { return !!t && t.today === todayKey; }
   function tdSetToday(t, on) {
     const x = todos.get(t.id);
@@ -32614,21 +32607,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const was = x.today;
     act(() => todos.update(x.id, { today: on ? todayKey : undefined }));
     flash(on ? `「${clip(x.text, 40)}」をきょうやるに入れました` : `「${clip(x.text, 40)}」をきょうやるから外しました`, () => act(() => todos.update(x.id, { today: was })));
-  }
-  function tdCarryList() { return todos.items.filter((t) => !t.done && isDay(t.today || "") && t.today < todayKey && !tdLater(t) && !tdWaiting(t) && inTodoTab(t)); }
-  function tdCarryAll(on) {
-    const list = tdCarryList();
-    if (!list.length) return;
-    const was = list.map((t) => [t.id, { today: t.today }]);
-    act(() => todos.updateMany(list.map((t) => [t.id, { today: on ? todayKey : undefined }])));
-    flash(on ? `${list.length} 件をきょうやるに入れました` : `${list.length} 件を、きょうやるに入れないことにしました`, () => act(() => todos.updateMany(was)));
-  }
-  function tdCarryRow() {
-    const list = tdCarryList();
-    if (!list.length) return null;
-    const first = `「${clip(oneLine(list[0].text), 16)}」`; // (one: its name; more: how many, the first named)
-    return el("li", { class: "td-carry" }, el("span", { class: "td-carry-text" }, el("span", { class: "phrase" }, list.length === 1 ? `前にきょうやるに入れた${first}が、` : `前にきょうやるに入れた ${list.length} 件（${first}など）が、`), el("span", { class: "phrase" }, "まだ残っています")),
-      el("span", { class: "td-carry-acts" }, el("button", { type: "button", class: "chip-btn", onclick: () => tdCarryAll(true) }, "きょうも入れる"), el("button", { type: "button", class: "chip-btn", onclick: () => tdCarryAll(false) }, "入れない")));
   }
 
   // ② お知らせ ahead of the 期限: 10分前 to 1週間前 of its time, or with no time the days before, at the morning's time set
@@ -39291,19 +39269,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // over the list (#tdFocusCard): in the list, きょうやる's card (pick them, or how far they have got and きょうやるだけ表示);
-  // under きょうやるだけ, its head (the day, how far, 選び直す, きょうの時間割, すべてのToDoに戻る). Those left from a day
-  // before are offered again in it (その3 ①'s きょうも入れる)
+  // under きょうやるだけ, its head (the day, how far, 選び直す, きょうの時間割, すべてのToDoに戻る). (Those left from a day
+  // before, offered again in it with その3 ①'s きょうも入れる・入れない: taken out at the user's call, 2026-11-25)
   function renderTdFocus(looking, picking) {
     const box = $("tdFocusCard"), sec = $("sec-todo");
     if (!box) return;
     const focus = tdFocusOn();
     sec.classList.toggle("td-focus", focus);
     document.documentElement.classList.toggle("td-focusing", focus); // (the bar at the foot put away with the tools)
-    const st = tdTodayStats(), carry = tdCarryList(), open = todos.items.some((t) => !t.done && typeof t.text === "string" && !tdLater(t) && !tdWaiting(t));
+    const st = tdTodayStats(), open = todos.items.some((t) => !t.done && typeof t.text === "string" && !tdLater(t) && !tdWaiting(t));
     const bar = () => el("span", { class: "bar-track td-fc-bar", role: "img", "aria-label": `${st.n} 件中 ${st.done} 件完了` }, el("i", { style: `width:${st.n ? Math.round((st.done / st.n) * 100) : 0}%` }));
     const pickBtn = (words, cls = "btn sm") => el("button", { type: "button", class: cls, "aria-haspopup": "dialog", onclick: (ev) => openTdPanel("pick", ev.detail === 0) }, words);
-    const carryRow = carry.length ? el("div", { class: "td-fc-carry" }, el("span", { class: "phrase" }, carry.length === 1 ? `前の日の「${clip(oneLine(carry[0].text), 14)}」が残っています。` : `前の日のきょうやるが ${carry.length} 件残っています。`),
-      el("span", { class: "td-fc-acts" }, el("button", { type: "button", class: "chip-btn", onclick: () => tdCarryAll(true) }, "きょうも入れる"), el("button", { type: "button", class: "chip-btn", onclick: () => tdCarryAll(false) }, "入れない"))) : null;
     const head = (...more) => el("div", { class: "td-fc-head" }, el("span", { class: "td-fc-sun", "aria-hidden": "true" }, icon("sun", 20)), el("h3", { class: "td-fc-title" }, "きょうやる"), ...more);
     if (focus) {
       const when = [fmtMDW(todayKey), st.n ? `${st.n} 件中 ${st.done} 件完了` : "", st.mins && st.left ? `のこり ${keepUnits(durText(st.mins))}` : ""].filter(Boolean).join("・");
@@ -39311,18 +39287,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("p", { class: "td-fc-text" }, when),
         st.n ? bar() : null, // (その9 ⑥ 終わる時刻: taken off 2026-11-23)
         st.n && !st.left ? el("p", { class: "td-fc-done", role: "status" }, "きょうやるを、ぜんぶ終えました！") : null,
-        carryRow,
         el("div", { class: "td-fc-acts" }, pickBtn(st.n ? "選び直す" : "きょうやるを選ぶ", "chip-btn"), st.left ? el("button", { type: "button", class: "chip-btn", "aria-haspopup": "dialog", onclick: (ev) => openTdPanel("plan", ev.detail === 0) }, "きょうの時間割") : null));
       box.hidden = false;
       return;
     }
     // in the list: none while words are looked for or ToDos picked; none picked, the offer to pick (until きょうは選ばない)
-    if (looking || picking || tdSort || (!st.n && (!open || lsIsToday(TD_SKIP_KEY)) && !carryRow)) { box.hidden = true; box.replaceChildren(); return; }
+    if (looking || picking || tdSort || (!st.n && (!open || lsIsToday(TD_SKIP_KEY)))) { box.hidden = true; box.replaceChildren(); return; }
     if (!st.n) {
       const morning = new Date().getHours() < 11;
       setChildren(box, head(),
         el("p", { class: "td-fc-text" }, morning ? "おはようございます。きょうやるToDoを選んで、1日を始めましょう。選んだものだけを表示して集中できます。" : "きょうやるToDoを選ぶと、それだけを表示して集中できます。"),
-        carryRow,
         el("div", { class: "td-fc-acts" }, open ? pickBtn("きょうやるを選ぶ") : null, open ? el("button", { type: "button", class: "link-btn", onclick: () => { lsSetToday(TD_SKIP_KEY, true); renderTodos(); } }, "きょうは選ばない") : null));
       box.hidden = false;
       return;
@@ -39331,7 +39305,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // user's call)
     setChildren(box, head(el("span", { class: "td-fc-n" }, `${st.done}/${st.n}`)), bar(),
       st.left ? null : el("p", { class: "td-fc-text" }, "きょうやるを、ぜんぶ終えました！"),
-      carryRow,
       el("div", { class: "td-fc-acts" }, el("button", { type: "button", class: "btn sm", onclick: () => setTdFocus(true) }, "きょうやるだけ表示"), pickBtn("選び直す", "link-btn")));
     box.hidden = false;
   }
