@@ -47,7 +47,7 @@ const OLD = [
   let a = await alarms(p);
   ok(a.length === 40 && new Date(a[0].at).toISOString() === "2026-11-23T12:30:00.000Z" && a[0].title === "記録のお知らせ" && a[0].body === "きょうは日記の記録がまだです" && a[0].url === "./#journal" && a[0].tag === "rec-remind:" + today,
     "today at 21:30: 日記 alone (食事 in), its page; no 1 on the icon (a block today)", a.slice(0, 1));
-  ok(a[1].tag === "tsumi-remind:" + tomorrow && a[1].body === "きょうは日記と食事の記録がまだです" && a[1].url === "./#home", "a day to come: both, きょう; with the icon's 1", a[1]);
+  ok(a[1].tag === "tsumi-remind:" + tomorrow && a[1].body === "きょうは日記と食事の記録がまだです" && a[1].url === "./#tsumi:recs", "a day to come: both, つみかさね's きょうの記録 (きょう's till it moved there, 2026-11-26); with the icon's 1", a[1]);
   const olds = await p.evaluate(() => window.__alarmTimes(Date.now()).filter((x) => /^(?:meal-remind|weight-remind|jn-remind|mo2-remind|tsumi-remind-x):/.test(x.tag)).length);
   ok(olds === 0, "none of the five's own, though theirs are on", olds);
 
@@ -60,7 +60,7 @@ const OLD = [
   ok(JSON.stringify(st.times) === '["21:00","21:30"]' && await p.evaluate(() => document.activeElement?.value) === "21:00", "時刻を追加: 21:00, in order, given the focus", st.times);
   ok(JSON.stringify((await setting(p, "recRemind")).times) === '["21:00","21:30"]', "saved in order");
   a = await alarms(p);
-  ok(a.length === 80 && a[0].body === "きょうは日記と家計簿の記録がまだです" && a[0].url === "./#home" && new Date(a[0].at).toISOString() === "2026-11-23T12:00:00.000Z" && a[2].body === "きょうは日記、食事と家計簿の記録がまだです",
+  ok(a.length === 80 && a[0].body === "きょうは日記と家計簿の記録がまだです" && a[0].url === "./#tsumi:recs" && new Date(a[0].at).toISOString() === "2026-11-23T12:00:00.000Z" && a[2].body === "きょうは日記、食事と家計簿の記録がまだです",
     "each time each day; two or more: きょう; three: 日記、食事と家計簿", a.slice(0, 3).map((x) => x.body));
   await p.click("#recRemindTimes .rec-remind-add"); await p.waitForTimeout(300);
   st = await state(p);
@@ -96,7 +96,7 @@ const OLD = [
   await put(p, "todos", [{ id: "t1", text: "レポート", today, createdAt: T(today) }, { id: "t2", text: "買い物", today, createdAt: T(today), done: true, doneAt: T(today, "10:00") }]);
   await reload(p);
   a = await alarms(p);
-  ok(a[0].body === "きょうは家計簿の記録と、きょうやるToDoがまだです" && a[0].url === "./#home", "きょうやるToDo: 「…の記録と、きょうやるToDoがまだです」", a[0]);
+  ok(a[0].body === "きょうは家計簿の記録と、きょうやるToDoがまだです" && a[0].url === "./#tsumi:recs", "きょうやるToDo: 「…の記録と、きょうやるToDoがまだです」", a[0]);
   await put(p, "expenses", [{ id: "e1", date: today, kind: "out", category: "食費", amount: 500, createdAt: T(today) }]);
   await reload(p);
   a = await alarms(p);
@@ -110,7 +110,7 @@ const OLD = [
   await put(p, "bodyDays", [{ id: today, date: today, bed: "23:30", createdAt: T("2026-11-22", "23:30") }]);
   await reload(p);
   a = await alarms(p);
-  ok(a[0].body === "きょうは目標と睡眠の記録がまだです" && a[0].url === "./#home", "目標 and 睡眠 not in (a goal moved yesterday, today's bed alone)", a[0]);
+  ok(a[0].body === "きょうは目標と睡眠の記録がまだです" && a[0].url === "./#tsumi:recs", "目標 and 睡眠 not in (a goal moved yesterday, today's bed alone)", a[0]);
   await put(p, "bodyDays", [{ id: today, date: today, bed: "23:30", wake: "07:00", createdAt: T("2026-11-22", "23:30") }]);
   await reload(p);
   a = await alarms(p);
@@ -179,6 +179,25 @@ const OLD = [
   await p.click("#tsumiRemindTipBtn"); await p.waitForTimeout(400);
   ok(JSON.stringify((await setting(p, "recRemind")).times) === '["22:30"]' && await p.isHidden("#tsumiRemindTip") && JSON.stringify((await state(p)).times) === '["22:30"]', "pressed: 22:30, the suggestion gone");
   ok(!p.errs.length, "no page errors (6)", p.errs);
+
+  // ---- 7 on, this device getting them: no words on what comes when (「毎日 21:00 に、…この端末に届きます。…」 and how
+  // ルーティーン, 家計簿, きょうやるToDo, 目標 and 睡眠 count), nor on the icon's 1: taken out at the user's call (2026-11-26,
+  // tools/REMOVED.md); the notifications as before. The notification server here one of the test's own ----
+  const q = await phone(b, new Date(`${today}T12:00:00+09:00`), { deviceScaleFactor: 1 });
+  await q.context().addInitScript(() => { window.__pushServer = "https://push.example.test"; try { Object.defineProperty(Notification, "permission", { get: () => "granted" }); } catch {} }); // (notifications allowed, as on a phone that gets them)
+  await q.context().route("https://push.example.test/**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"sub":true,"alarms":0}' }));
+  await seed(q, { settings: [{ id: "recRemind", on: true, times: ["21:00"], kinds: ["journal", "routine", "money", "todo", "goal", "sleep"], updatedAt: 1 }] }, "tsumi");
+  // (this device's notifications on: put in once the page has looked for them, as sync1 does; the browser here has none)
+  await q.evaluate((P) => localStorage.setItem(P + "push", JSON.stringify({ id: "dev1", endpoint: "https://web.push.apple.com/x" })), P);
+  await q.click("#tsumiSettings"); await q.waitForTimeout(800);
+  await q.click("label[for=recKind_meal]"); await q.waitForTimeout(400); // (食事 added: the part drawn again, this device's notifications on)
+  const qs = await state(q), qg = await txt(q, "#tsumiGroup");
+  ok(qs.on && JSON.stringify(qs.times) === '["21:00"]' && qs.foot === "" && await q.isHidden("#recRemindFoot") && !qg.includes("この端末に届きます。お休みの日は届きません") && !qg.includes("記録したことになります")
+    && !qg.includes("ぜんぶできるまで「まだ」") && !qg.includes("ホーム画面のアイコンに「1」"), "on: no words on what comes when, nor on the icon's 1", { foot: qs.foot });
+  ok((await alarms(q)).some((a) => a.tag.startsWith("rec-remind:") || a.tag.startsWith("tsumi-remind:")), "on: the notifications made as before");
+  await q.click("#recRemindOn"); await q.waitForTimeout(400);
+  ok((await state(q)).foot.startsWith("決めた時刻に、毎日記録するもののうち") && await q.isVisible("#recRemindFoot"), "off: what it does, said as before", (await state(q)).foot);
+  ok(!q.errs.length, "no page errors (7)", q.errs);
   await b.close();
   console.log(fails ? `${fails} FAILED` : "ALL OK");
   process.exit(fails ? 1 : 0);

@@ -9676,7 +9676,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <p class="group-foot" id="recRemindFoot"></p>
         <!-- お知らせの時刻のおすすめ (the user's call) -->
         <p class="group-foot" id="tsumiRemindTip" hidden><span id="tsumiRemindTipText"></span> <button type="button" class="link-btn" id="tsumiRemindTipBtn"></button></p>
-        <p class="group-foot">きょうまだ積んでいない日は、ホーム画面のアイコンに「1」のしるしが付きます（通知を受け取っている iPhone などで）。</p>
+        <!-- (the words on the icon's 1, きょうまだ積んでいない日は、ホーム画面のアイコンに「1」のしるしが付きます: taken out at the
+             user's call, 2026-11-26, tools/REMOVED.md; the 1 itself stays) -->
         <!-- 1日のまとめのお知らせ (the user's call): each night at the time, today's count and kinds -->
         <h3 class="group-head">1日のまとめのお知らせ</h3>
         <form class="add" id="tsumiDayForm" autocomplete="off" onsubmit="return false">
@@ -23605,14 +23606,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!list.children.length) setChildren(list, REC_KINDS.map(([k, name]) => el("li", { class: "td9-show-row" }, el("label", { class: "td9-show-name", for: "recKind_" + k }, name),
       switchEl({ id: "recKind_" + k, checked: r.kinds.includes(k), onchange: (ev) => recRemindPut({ kinds: [...recRemind().kinds.filter((x) => x !== k), ...(ev.target.checked ? [k] : [])] }) }))));
     else for (const [k] of REC_KINDS) { const x = $("recKind_" + k); if (x) x.checked = r.kinds.includes(k); }
-    const notes = [r.kinds.includes("routine") ? "ルーティーンは、その日の項目がぜんぶできるまで「まだ」です。" : "", r.kinds.includes("money") ? "家計簿は、使わなかった日に家計簿のページで「きょうは使っていない」を押すと、その日はお知らせしません。" : "",
-      r.kinds.includes("todo") ? "きょうやるToDoは、その日に選んだものがぜんぶ終わるまで「まだ」です（選んでいない日も）。" : "",
-      r.kinds.includes("goal") ? "目標は、その日にマスを1つでも進める（チェック・数える・取り組んだ時間）と記録したことになります。" : "",
-      r.kinds.includes("sleep") ? "睡眠は、ゆうべ寝た時刻とけさ起きた時刻の両方で記録したことになります。" : ""].filter(Boolean).join("");
-    $("recRemindFoot").textContent = !r.on ? "決めた時刻に、毎日記録するもののうち、その日まだ記録していないものを1つの通知でお知らせします（「きょうは日記と食事の記録がまだです」のように）。お休みの日は届きません。"
+    // (while it is on and this device gets them, the words on what comes when — 毎日 21:00 に、…のうち、その日まだ記録していない
+    // ものがあれば、この端末に届きます。お休みの日は届きません。, with how ルーティーン, 家計簿, きょうやるToDo, 目標 and 睡眠 count as
+    // recorded — taken out at the user's call, 2026-11-26, tools/REMOVED.md; the notifications are as before)
+    const foot = !r.on ? "決めた時刻に、毎日記録するもののうち、その日まだ記録していないものを1つの通知でお知らせします（「きょうは日記と食事の記録がまだです」のように）。お休みの日は届きません。"
       : !r.kinds.length ? "毎日記録するものを選んでください。"
-      : st === "on" ? `毎日 ${r.times.join("・")} に、${r.kinds.length > 1 ? `${recNames(r.kinds)}のうち、その日まだ記録していないものがあれば` : `その日の${recNames(r.kinds)}の記録がまだなら`}、この端末に届きます。お休みの日は届きません。` + notes
+      : st === "on" ? ""
       : pushWords(st).replace("通知アラーム", "お知らせ");
+    $("recRemindFoot").textContent = foot;
+    $("recRemindFoot").hidden = !foot;
   }
   $("recRemindOn").addEventListener("change", (ev) => {
     const on = ev.target.checked;
@@ -24906,7 +24908,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月26日 21:22"; // da519f80 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 0:07"; // 9905c4a7 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
