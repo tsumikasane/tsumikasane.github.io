@@ -1,12 +1,12 @@
-// バイト その12 ①⑤⑥⑦⑧: what is shown (⑩ と ⑦ のシフト希望、③ ふりかえりの傾向 と ④ かかったお金 は使う人が消した: 2026-11-18)
+// バイト その12 ①⑤⑥⑦⑧: what is shown (⑩ と ⑦ のシフト希望、③ ふりかえりの傾向 と ④ かかったお金 は使う人が消した: 2026-11-18;
+// ⑥⑦⑧ の勤務の行のことばは、勤務の一覧といっしょに: 2026-11-26)
 process.env.URL0 = process.env.URL0 || "http://localhost:8863/";
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, shiftRow } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
 const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerText.replace(/\s+/g, " ").trim() || "", sel);
-const row = (p, id) => txt(p, `#shiftList li[data-shift="${id}"]`);
 (async () => {
   const b = await chromium.launch();
   const p = await phone(b, at("12:00", today));
@@ -14,12 +14,11 @@ const row = (p, id) => txt(p, `#shiftList li[data-shift="${id}"]`);
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
   // ⑤ 次のバイト: both
   ok((await txt(p, "#bt3Next .bt12-acts")) === "遅れる連絡 休む連絡", "⑤ " + (await txt(p, "#bt3Next .bt12-acts")));
-  ok(!(await p.$("#bt12Feel")) && !(await p.$("#bt12Cost")) && !(await row(p, "f5")).includes("しんどかった"), "③④ gone; no ふりかえり on a row");
-  // ⑥⑦⑧ the rows
-  ok((await row(p, "c1")).includes("変更あり（前は 18:00〜22:00）"), "⑥ " + (await row(p, "c1")));
-  ok((await row(p, "w1")).includes("カフェの定休日（水曜）の勤務") && (await row(p, "h1")).includes("カフェの定休日（祝日）の勤務") && !(await row(p, "n1")).includes("定休日") && !(await row(p, "s1")).includes("定休日"), "⑦ the rows");
-  const p1 = await row(p, "p1");
-  ok(p1.includes("場所：新宿店（ヘルプ）・交通費 500円") && p1.includes("5,500 円"), "⑧ " + p1);
+  ok(!(await p.$("#bt12Feel")) && !(await p.$("#bt12Cost")) && !(await shiftRow(p, "f5")).includes("しんどかった"), "③④ gone; no ふりかえり on a row");
+  // ⑥ 変更あり（前は…）, ⑦ ○○の定休日（水曜）の勤務, ⑧ 場所：… on each shift's row: went with the month's list at the user's
+  // call (2026-11-26, tools/REMOVED.md); ⑧ its pay with its own 交通費, in 勤務カレンダー's day
+  const p1 = await shiftRow(p, "p1");
+  ok(p1.includes("5,500 円"), "⑧ " + p1);
   // ① 締め日: カフェ 11/30, 塾 12/15, at 21:00
   const al = await p.evaluate(() => window.__bt12.alarms(Date.now()).filter((a) => a.tag.startsWith("bt12-cut")).map((a) => ({ tag: a.tag, at: new Date(a.at).toISOString(), title: a.title, body: a.body })));
   const c = al.find((a) => a.tag === "bt12-cut:j1:2026-11-30"), j = al.find((a) => a.tag === "bt12-cut:j2:2026-12-15");

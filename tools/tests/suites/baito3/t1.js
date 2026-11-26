@@ -24,8 +24,7 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   ok(sum.includes("1時間あたり 1,267 円（交通費をのぞくと 1,200 円）"), "⑦ an hour: " + sum);
   ok(/先月より \+7\s回・\+30.5\s時間・\+38,700\s円/.test(sum), "⑩ against October: " + sum);
   ok(sum.includes("6 連勤があります（11/2〜11/7）"), "③ 6 in a row: " + sum);
-  const row = await txt(p, '#shiftList li:has([data-edit="n9"])');
-  ok(row.includes("休憩が足りないかも（6時間をこえたら45分）"), "③ rest: " + row);
+  // (③ 休憩が足りないかも on a shift's row: went with the month's list at the user's call, 2026-11-26, tools/REMOVED.md)
   // ② ひとことでシフト: taken out at the user's call (2026-11-18, tools/REMOVED.md)
   ok(!(await p.$("#bt3QuickText")) && !(await p.$("#bt3QuickSay")), "② (taken out) ひとことでシフト: gone");
   // ④ a shift past the week's limit, put in from the form (11/14 is this week's 土): said

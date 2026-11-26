@@ -25,4 +25,18 @@ async function seed(p, data, hash = "home") {
   await p.goto(URL0 + "#" + hash); await p.reload(); await p.waitForTimeout(700);
 }
 const T0 = Date.parse("2026-11-01T09:00:00+09:00");
-module.exports = { URL0, P, at, phone, seed, T0 };
+// a shift opened to be changed: from 勤務カレンダー, its day pressed (the month's list of shifts under the form, where it
+// was opened before, was taken out at the user's call, 2026-11-26)
+async function openShift(p, id) {
+  const d = await p.evaluate(({ P, id }) => (JSON.parse(localStorage.getItem(P + "shifts") || "[]").find((x) => x.id === id) || {}).date, { P, id });
+  if (!(await p.$(`#bt6Cal [data-edit="${id}"]`))) { await p.click(`#bt6Cal button[data-day="${d}"]`); await p.waitForTimeout(300); }
+  await p.click(`#bt6Cal [data-edit="${id}"]`); await p.waitForTimeout(500);
+}
+// a shift's row in 勤務カレンダー's day (its day pressed): its times, hours, 仮, メモ and pay (the month's list, with its
+// words for each shift, was taken out at the user's call, 2026-11-26)
+async function shiftRow(p, id) {
+  const d = await p.evaluate(({ P, id }) => (JSON.parse(localStorage.getItem(P + "shifts") || "[]").find((x) => x.id === id) || {}).date, { P, id });
+  if (!(await p.$(`#bt6Cal [data-edit="${id}"]`))) { await p.click(`#bt6Cal button[data-day="${d}"]`); await p.waitForTimeout(300); }
+  return p.evaluate((id) => document.querySelector(`#bt6Cal li:has([data-edit="${id}"])`)?.innerText.replace(/\s+/g, " ").trim() || "", id);
+}
+module.exports = { URL0, P, at, phone, seed, T0, openShift, shiftRow };

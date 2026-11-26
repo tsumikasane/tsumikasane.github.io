@@ -1,7 +1,7 @@
 // バイト その10 ②⑦⑧: what is pressed and typed (④⑨ は使う人が消した: 2026-11-18; ①⑩ は出勤・退勤といっしょに)
 process.env.URL0 = process.env.URL0 || "http://localhost:8869/";
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, openShift } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -20,12 +20,12 @@ const shift = async (p, id) => (await ls(p, "shifts")).find((x) => x.id === id);
   const td = await shift(p, "td");
   ok(td.start === "12:00" && td.end === "17:00" && td.rest === 0 && !("clocked" in td), "①⑩ the shift of today as it was: " + JSON.stringify(td));
   // ② いっしょ in the sheet
-  await p.click('#shiftList [data-edit="c3"]'); await p.waitForTimeout(500);
+  await openShift(p, "c3");
   ok((await p.inputValue("#reShiftWith")) === "田中", "② in the sheet");
   await p.fill("#reShiftWith", "田中、 鈴木・田中"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   ok(JSON.stringify((await shift(p, "c3")).with) === JSON.stringify(["田中", "鈴木"]), "② kept: " + JSON.stringify((await shift(p, "c3")).with));
   // ⑦ 件数 in the sheet
-  await p.click('#shiftList [data-edit="d1"]'); await p.waitForTimeout(500);
+  await openShift(p, "d1");
   ok((await p.inputValue("#reShiftUnits")) === "12", "⑦ in the sheet");
   await p.fill("#reShiftUnits", "15"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   ok((await shift(p, "d1")).units === 15, "⑦ kept");

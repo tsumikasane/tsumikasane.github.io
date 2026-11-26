@@ -42,13 +42,13 @@ const shown = (p, id) => p.evaluate((id) => getComputedStyle(document.getElement
   ok((await txt(p, "#bt3Next")).includes("16:30 に出ると間に合います（通勤 30 分）"), "⑤ no minutes early: " + (await txt(p, "#bt3Next")));
   ok((await p.isHidden("#bt16Pass")) && JSON.stringify((await tags(p)).filter((t) => t.startsWith("bt16-pass"))) === JSON.stringify(["bt16-pass:j1:2026-12-31:3"]), "③ 12/31: " + JSON.stringify(await tags(p)));
   ok(!(await p.$("#bt16Min")), "⑨ 最低賃金: gone");
-  // ⑩ 9:00〜1:00 (16 時間): said as it goes in, and on its row
+  // ⑩ 9:00〜1:00 (16 時間): said as it goes in (on its row too, till the month's list was taken out, 2026-11-26)
   await p.clock.setFixedTime(at("12:01", today));
   await p.selectOption("#shiftJob", "j1"); await p.fill("#shiftDate", "2026-11-28"); await p.fill("#shiftStart", "09:00"); await p.fill("#shiftEnd", "01:00"); await p.fill("#shiftRest", "0");
   await p.locator('#shiftForm button[type="submit"]').click(); await p.waitForTimeout(500);
   ok((await txt(p, "#status")).includes("09:00〜01:00は 16 時間の勤務です（次の日の 01:00 まで）。時刻をたしかめてください"), "⑩ said: " + (await txt(p, "#status")));
   const nw = (await ls(p, "shifts")).find((x) => x.date === "2026-11-28");
-  ok(nw && (await txt(p, `#shiftList li[data-shift="${nw.id}"]`)).includes("長い勤務（16 時間）"), "⑩ on its row");
+  ok(nw && nw.start === "09:00" && nw.end === "01:00", "⑩ it went in: " + JSON.stringify(nw));
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

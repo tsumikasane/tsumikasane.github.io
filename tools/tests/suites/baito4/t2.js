@@ -1,6 +1,6 @@
 // バイト その4 ④⑤⑦ and the job's settings (①②③⑥): what is typed in
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, openShift, shiftRow } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -22,11 +22,11 @@ const job = async (p, id) => (await setting(p, "jobs")).items.find((j) => j.id =
   let sh = (await ls(p, "shifts")).find((x) => x.date === "2026-11-29");
   ok(sh && sh.memo === "代わり（田中さん）" && (await p.inputValue("#shiftMemo")) === "", "④ the form's メモ: " + JSON.stringify(sh));
   // and changed in its sheet
-  await p.click(`#shiftList [data-edit="${sh.id}"]`); await p.waitForTimeout(500);
+  await openShift(p, sh.id);
   ok((await p.inputValue("#reShiftMemo")) === "代わり（田中さん）", "④ in the sheet");
   await p.fill("#reShiftMemo", "代わり"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   ok((await ls(p, "shifts")).find((x) => x.id === sh.id).memo === "代わり", "④ changed");
-  await p.click(`#shiftList [data-edit="${sh.id}"]`); await p.waitForTimeout(500);
+  await openShift(p, sh.id);
   await p.fill("#reShiftMemo", ""); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   ok(!("memo" in (await ls(p, "shifts")).find((x) => x.id === sh.id)), "④ taken off");
   // ⑤ 休憩の目安: off, nothing; on, by the length, till one is typed
@@ -46,7 +46,8 @@ const job = async (p, id) => (await setting(p, "jobs")).items.find((j) => j.id =
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   if (await p.evaluate(() => !!document.querySelector("dialog[open]"))) { await p.click("#sheetClose").catch(() => {}); await p.waitForTimeout(400); }
   // ① off: 11/2's 9 時間 is 9,000 (no 250), ③ none taken
-  ok((await txt(p, '#shiftList li:has([data-edit="n1"])')).includes("9,000 円"), "① off: " + (await txt(p, '#shiftList li:has([data-edit="n1"])')));
+  const n1 = await shiftRow(p, "n1");
+  ok(n1.includes("9,000 円"), "① off: " + n1);
   // ⑤ on: 9:00〜18:00 is 60, 9:00〜16:00 45; one typed stays
   await p.fill("#shiftRest", ""); await p.fill("#shiftStart", "09:00"); await p.fill("#shiftEnd", "18:00"); await p.dispatchEvent("#shiftEnd", "change");
   ok((await p.inputValue("#shiftRest")) === "60", "⑤ 9 時間: 60");

@@ -1,4 +1,5 @@
-// バイト その11 ①②③④⑤⑨⑩: what is shown
+// バイト その11 ①②③④⑤⑨⑩: what is shown (③ and the words on each shift's row: taken out with the month's list of shifts
+// at the user's call, 2026-11-26)
 process.env.URL0 = process.env.URL0 || "http://localhost:8862/";
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
@@ -6,7 +7,6 @@ const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
 const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerText.replace(/\s+/g, " ").trim() || "", sel);
-const row = (p, id) => txt(p, `#shiftList li[data-shift="${id}"]`);
 (async () => {
   const b = await chromium.launch();
   const p = await phone(b, at("12:00", today));
@@ -16,23 +16,20 @@ const row = (p, id) => txt(p, `#shiftList li[data-shift="${id}"]`);
   const wx = await txt(p, "#bt3Next .bt11-wx");
   ok(wx === "行き 16:30 くもり 12℃・帰り 23:00 雨 8℃（雨 70%） 傘を持っていきましょう 家に着くのは 23:30 ごろ", "② " + wx);
   ok(await p.evaluate(() => document.querySelector("#bt3Next .bt11-wx p.warn")?.textContent === "傘を持っていきましょう"), "② 傘 in red");
-  // ① 8 時間 from 11/16's to 11/17's; not for 塾's later the same day
-  ok((await row(p, "g2")).includes("前の勤務から 8 時間（短め）"), "① g2: " + (await row(p, "g2")));
-  ok(!(await row(p, "s1")).includes("前の勤務から") && !(await row(p, "g1")).includes("前の勤務から"), "① not s1, g1");
-  // ③ シフト希望とのちがい
-  ok((await row(p, "x1")).includes("シフト希望では ×（入れない）の日") && !(await row(p, "g1")).includes("シフト希望"), "③ the row");
-  const ask = await txt(p, "#bt11AskSum");
-  ok(ask === "11月のシフト希望とくらべると： ○ 3 日のうち 2 日に勤務・ △ 1 日のうち 0 日に勤務・ × の日に勤務が 1 日" || ask === "11月のシフト希望とくらべると：○ 3 日のうち 2 日に勤務・△ 1 日のうち 0 日に勤務・× の日に勤務が 1 日", "③ " + ask);
-  ok(await p.evaluate(() => document.querySelector("#bt11AskSum .warn")?.textContent.replace(/\s+/g, " ") === "× の日に勤務が 1 日"), "③ the × in red");
+  // ① 前の勤務から 8 時間（短め） on a shift's row: went with the month's list at the user's call (2026-11-26,
+  // tools/REMOVED.md); said as a shift goes in (t2)
+  // ③ シフト希望とのちがい (11月のシフト希望とくらべると…, and シフト希望では × on a row): taken out with the month's list
+  ok(!(await p.$("#bt11AskSum")) && !(await p.$("#shiftList")) && !(await p.$("#shiftCard")), "③ gone, with the month's list");
   // ⑤ 休業手当: 8〜10月 12 回 × 5,300 円 → 平均賃金 3,180 円（日数で割ると 691 円）→ 6割 1,908 円
   const cafe = await p.evaluate(() => [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("カフェ"))?.querySelector(".bt11-notes")?.innerText.replace(/\s+/g, " ").trim() || "");
   ok(cafe.startsWith("お店の都合でなくなったのなら、休業手当が出ることがあります（めやす 約 1,908 円、1日あたり平均賃金の6割）"), "⑤ " + cafe);
   ok(!(await p.evaluate(() => [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("塾"))?.querySelector(".bt11-notes"))), "⑤ not 塾's");
-  // ⑨ colours: rows, blocks, the calendar's days
-  const st = await p.evaluate(() => ({ g1: document.querySelector('#shiftList li[data-shift="g1"]').getAttribute("style"), s1: document.querySelector('#shiftList li[data-shift="s1"]').getAttribute("style"),
-    c: document.querySelector('#shiftList li[data-shift="g1"]').classList.contains("bt11-c"), blk: [...document.querySelectorAll("#jobSum .job-block.bt11-c")].length,
+  // ⑨ colours: the jobs' blocks, the calendar's days (each shift's row: went with the month's list, 2026-11-26)
+  const st = await p.evaluate(() => ({ blk: [...document.querySelectorAll("#jobSum .job-block.bt11-c")].length,
+    cafe: [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("カフェ"))?.getAttribute("style") || "",
+    juku: [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("塾"))?.getAttribute("style") || "",
     dots: [...document.querySelectorAll('#bt6Cal .bt6-d[data-day="2026-11-17"] .bt11-dots i')].map((i) => i.getAttribute("style")) }));
-  ok(/--jc:\s*var\(--lc-blue\)/.test(st.g1) && /--lc-green/.test(st.s1) && st.c && st.blk === 2 && st.dots.length === 2 && /--lc-blue/.test(st.dots[0]) && /--lc-green/.test(st.dots[1]), "⑨ " + JSON.stringify(st));
+  ok(/--jc:\s*var\(--lc-blue\)/.test(st.cafe) && /--lc-green/.test(st.juku) && st.blk === 2 && st.dots.length === 2 && /--lc-blue/.test(st.dots[0]) && /--lc-green/.test(st.dots[1]), "⑨ " + JSON.stringify(st));
   // ④ 週のはじめ (日曜 8:00): 11/22's week; ⑩ 有給 3 日 on 11/30, 7 days before; ② 傘 in その7's
   const al = await p.evaluate(() => window.__bt11.alarms(Date.now()).filter((a) => /^(bt11|bt7)/.test(a.tag)).map((a) => ({ tag: a.tag, at: new Date(a.at).toISOString(), title: a.title, body: a.body })));
   const by = (t) => al.find((a) => a.tag === t);

@@ -37,7 +37,7 @@ async function open(b, data = DATA) {
   ok(bl.length === 3 && bl[0].includes("11月分・1回目（11/1〜11/15）の見込み") && bl[0].includes("8,000") && bl[0].includes("給料日 11月25日（水）") && bl[0].includes("収入に入れる")
     && bl[1].includes("11月分・2回目（11/16〜11/30）の見込み") && bl[1].includes("8,000") && bl[1].includes("給料日 12月10日（木）")
     && bl[2].includes("11月分（11/1〜11/30）の見込み") && !bl[2].includes("回目"), "the card: a block a pay", bl);
-  ok((await p.$$eval("#shiftList li[data-shift]", (l) => l.length)) === 5, "the month's shifts: all of them");
+  ok((await p.$$eval("#bt6Cal .bt6-d", (l) => l.reduce((n, d) => n + Number((d.getAttribute("aria-label").match(/勤務 (\d+) 回/) || [0, 0])[1]), 0))) === 5, "the month's shifts: all of them (in 勤務カレンダー: the month's list was taken out, 2026-11-26)");
   ok((await W(p, "year", 2026)) === 23000 && flat(await p.textContent("#jobYear")).includes("23,000"), "the year: each part by its 給料日 (4,000 + 8,000 + 8,000 + 塾 3,000)", await W(p, "year", 2026));
   // the お知らせ: each 給料日 and each 締め日
   const al = await W(p, "alarms", Date.parse("2026-11-20T12:00:00+09:00"));

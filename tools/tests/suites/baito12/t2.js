@@ -1,9 +1,8 @@
 // バイト その12 ①⑤⑥⑦⑧: what is pressed and typed (⑩ と ⑦ のシフト希望、③ ふりかえり は使う人が消した: 2026-11-18; ② 退勤のまとめ と
-// ⑨ 予定の終わりで退勤 は出勤・退勤といっしょに)
+// ⑨ 予定の終わりで退勤 は出勤・退勤といっしょに; ⑧ の .ics と ⑥⑦⑧ の勤務の行は、勤務の一覧といっしょに: 2026-11-26)
 process.env.URL0 = process.env.URL0 || "http://localhost:8863/";
-const fs = require("fs");
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, openShift, shiftRow } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -29,31 +28,29 @@ const shift = async (p, id) => (await ls(p, "shifts")).find((x) => x.id === id);
   await p.click('#bt3Next [data-msg="off"]'); await p.waitForTimeout(200);
   await p.click('#bt3Next .bt12-msg [data-m="send"]'); await p.waitForTimeout(300);
   ok((await p.evaluate(() => window.__copied)) === "おつかれさまです。きょう 17:00〜22:00のシフトですが、体調が悪く、お休みさせていただけないでしょうか。急な連絡になってしまい、申し訳ありません。", "⑤ off: " + (await p.evaluate(() => window.__copied)));
-  // ⑧ the .ics: the shift's own place
-  const [dl] = await Promise.all([p.waitForEvent("download"), p.click("#bt11Ics")]);
-  const ev = fs.readFileSync(await dl.path(), "utf8").split("BEGIN:VEVENT").find((e) => e.includes("UID:p1@")) || "";
-  ok(ev.includes("LOCATION:新宿店（ヘルプ）"), "⑧ .ics: " + JSON.stringify(ev));
+  // ⑧ the .ics with the shift's own place: taken out with the month's list (カレンダーに入れる（.ics）, 2026-11-26)
+  ok(!(await p.$("#bt11Ics")), "⑧ .ics: gone");
   // ⑨② 予定の終わりで退勤 and 退勤のまとめ: gone with 出勤・退勤 (2026-11-19)
   ok(!(await p.$("#bt2Clock")) && !(await p.$("#bt12PlanOut")) && !(await p.$(".bt12-done")), "⑨② gone");
   // ③ ふりかえり, no more in the sheet; one kept on a shift stays as the shift is changed there
-  await p.click('#shiftList [data-edit="f6"]'); await p.waitForTimeout(500);
+  await openShift(p, "f6");
   ok(!(await p.$("#reShiftFeel")), "③ none in the sheet");
   await p.fill("#reShiftMemo", "片づけ"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   const f6 = await shift(p, "f6");
   ok(f6.feel === "good" && f6.memo === "片づけ", "③ its ふりかえり kept: " + JSON.stringify(f6));
   // ⑥ c1 changed again in the sheet: both kept
-  await p.click('#shiftList [data-edit="c1"]'); await p.waitForTimeout(500);
+  await openShift(p, "c1");
   ok((await txt(p, ".bt12-changes")) === "変更の記録 11/20 に変更：前は 11/21（土） 18:00〜22:00", "⑥ in the sheet: " + (await txt(p, ".bt12-changes")));
   await p.fill("#reStart", "18:30"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   const c1 = await shift(p, "c1");
   ok(c1.start === "18:30" && c1.changes.length === 2 && c1.changes[1].start === "17:00" && c1.changes[1].date === "2026-11-21", "⑥ kept: " + JSON.stringify(c1.changes));
-  ok((await txt(p, '#shiftList li[data-shift="c1"]')).includes("変更あり（前は 17:00〜22:00）"), "⑥ the row");
+  // (⑥ 変更あり on its row: went with the month's list, 2026-11-26)
   // ⑧ p1: the 交通費 back to the job's, the place kept, no change kept
-  await p.click('#shiftList [data-edit="p1"]'); await p.waitForTimeout(500);
+  await openShift(p, "p1");
   ok((await p.inputValue("#reShiftFare")) === "500" && (await p.inputValue("#reShiftPlace")) === "新宿店（ヘルプ）", "⑧ in the sheet");
   await p.fill("#reShiftFare", ""); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   const p1 = await shift(p, "p1");
-  ok(!("fare" in p1) && p1.place === "新宿店（ヘルプ）" && !("changes" in p1) && (await txt(p, '#shiftList li[data-shift="p1"]')).includes("5,300 円"), "⑧ " + JSON.stringify(p1));
+  ok(!("fare" in p1) && p1.place === "新宿店（ヘルプ）" && !("changes" in p1) && (await shiftRow(p, "p1")).includes("5,300 円"), "⑧ " + JSON.stringify(p1));
   // ⑦ a shift on a Wednesday: said as it goes in
   await p.clock.setFixedTime(at("22:31", today));
   await p.fill("#shiftDate", "2026-12-02"); await p.fill("#shiftStart", "17:00"); await p.fill("#shiftEnd", "22:00"); await p.fill("#shiftRest", "0");

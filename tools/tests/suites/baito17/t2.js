@@ -1,7 +1,7 @@
 // バイト その17 ②④⑤: what is pressed and typed (⑨ と ⑩ 写真を見ながら入れる は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8879/";
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, openShift } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -28,7 +28,7 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   ok(nw && nw.role === "キッチン" && nw.jobId === "j1", "② kept: " + JSON.stringify(nw));
   ok((await txt(p, "#status")).includes("11月は 35 時間になり、上限の 20 時間をこえます。この週は 3 日になり、上限の 2 日をこえます"), "④ said: " + (await txt(p, "#status")));
   // ② under the edit: 11/9 キッチン → レジ
-  await p.click('#shiftList [data-edit="n2"]'); await p.waitForTimeout(500);
+  await openShift(p, "n2"); // (from 勤務カレンダー: the month's list was taken out, 2026-11-26)
   ok((await p.inputValue("#reShiftRole")) === "キッチン", "② in the sheet");
   await p.selectOption("#reShiftRole", "レジ"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   ok((await ls(p, "shifts")).find((x) => x.id === "n2").role === "レジ", "② changed");

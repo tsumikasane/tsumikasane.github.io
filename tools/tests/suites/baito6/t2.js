@@ -2,7 +2,7 @@
 // いっしょに: 2026-11-18; ⑥ シフトのパターン: 2026-11-19)
 process.env.URL0 = process.env.URL0 || "http://localhost:8866/";
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, openShift } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -21,12 +21,12 @@ const setting = async (p, id) => (await ls(p, "settings")).find((s) => s.id === 
   await p.locator('#shiftForm button[type="submit"]').click(); await p.waitForTimeout(500);
   ok((await ls(p, "shifts")).some((x) => x.date === "2026-11-29" && x.tentative === true), "⑧ the form's 仮");
   // ⑧ in the sheet (⑨ its ふりかえり no more there)
-  await p.click('#shiftList [data-edit="n1"]'); await p.waitForTimeout(500);
+  await openShift(p, "n1");
   ok(!(await p.$("#reShiftFeel")), "⑨ no ふりかえり in the sheet");
   await p.evaluate(() => { document.getElementById("reShiftTent").checked = true; }); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   let n1 = (await ls(p, "shifts")).find((x) => x.id === "n1");
   ok(n1.tentative === true, "⑧ the sheet: " + JSON.stringify(n1));
-  await p.click('#shiftList [data-edit="n1"]'); await p.waitForTimeout(500);
+  await openShift(p, "n1");
   await p.evaluate(() => { document.getElementById("reShiftTent").checked = false; }); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   n1 = (await ls(p, "shifts")).find((x) => x.id === "n1");
   ok(!("tentative" in n1), "⑧ taken off");

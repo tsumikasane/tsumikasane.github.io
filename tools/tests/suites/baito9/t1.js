@@ -12,10 +12,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
   // ④ ここまでの給料 (at work): gone with 出勤・退勤
   ok(!(await p.$("#bt2Clock")), "④ gone");
-  // ⑥ 祝日, ⑤ 重なり
-  ok((await txt(p, '#shiftList li:has([data-edit="h23"])')).includes("祝日（勤労感謝の日）"), "⑥");
-  ok((await txt(p, '#shiftList li:has([data-edit="o1"])')).includes("ほかの勤務（14:00〜16:00）と重なっています") && (await txt(p, '#shiftList li:has([data-edit="o2"])')).includes("ほかの勤務（10:00〜15:00）と重なっています"), "⑤");
-  ok(!(await txt(p, '#shiftList li:has([data-edit="a1"])')).includes("重なって"), "⑤ not on the others");
+  // ⑥ 祝日, ⑤ 重なり: said on each shift's row of the month's list, taken out with it at the user's call (2026-11-26,
+  // tools/REMOVED.md)
   // ⑨ カフェ's November: 28 時間 × 1,000 + 深夜 1 時間 × 250 + 交通費 6 × 300 = 30,050
   const blk = (await p.$$("#jobSum .job-block"))[0];
   await blk.evaluate((b) => { b.querySelector("details.bt9-parts").open = true; });

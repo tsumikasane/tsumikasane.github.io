@@ -1,7 +1,7 @@
 // バイト その7 ③④⑥⑦⑧⑩: what is typed in (⑤ シフト表の写真 は使う人が消した: 2026-11-18; ⑨ ほかの日にもコピー: 2026-11-19)
 process.env.URL0 = process.env.URL0 || "http://localhost:8867/";
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, openShift } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -27,13 +27,15 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   let sh = (await ls(p, "shifts")).find((x) => x.date === "2026-11-28");
   ok(sh && sh.dayPay === 9000 && !("wage" in sh), "③ put in: " + JSON.stringify(sh));
   await p.click("#bt7PayKind"); // (back to 時給)
-  // ⑩ one put in 1 day before 試験 (from the form; ひとことでシフト taken out 2026-11-19)
+  // ⑩ one put in 1 day before 試験 (from the form; ひとことでシフト taken out 2026-11-19): said as it goes in (on its row too,
+  // till the month's list was taken out, 2026-11-26)
+  await p.clock.setFixedTime(at("12:01", today)); // (the one put in last, by its time)
   await p.fill("#shiftDate", "2026-12-11"); await p.fill("#shiftStart", "17:00"); await p.fill("#shiftEnd", "22:00");
   await p.locator('#shiftForm button[type="submit"]').click(); await p.waitForTimeout(500);
   ok((await p.evaluate(() => document.body.innerText)).includes("試験「数学」の1日前です"), "⑩ said as it goes in");
   if ((await txt(p, "#monthNav")).includes("12月")) { await p.click("#monthNav .navbtn"); await p.waitForTimeout(300); } // (back to 11月)
   // ⑨ この勤務をほかの日にもコピー: taken out at the user's call (2026-11-19, tools/REMOVED.md)
-  await p.click('#shiftList [data-edit="n1"]'); await p.waitForTimeout(500);
+  await openShift(p, "n1");
   ok((await p.evaluate(() => document.querySelectorAll("dialog[open]").length)) === 1 && !(await p.$("#bt7CopyDay")) && !(await txt(p, "dialog[open]")).includes("ほかの日にもコピー"), "⑨ gone from the sheet");
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   if (await p.evaluate(() => !!document.querySelector("dialog[open]"))) { await p.click("#discardGo").catch(() => {}); await p.waitForTimeout(400); }

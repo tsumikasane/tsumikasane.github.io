@@ -2,7 +2,7 @@
 // went with 出勤・退勤)
 process.env.URL0 = process.env.URL0 || "http://localhost:8864/";
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, openShift } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -30,11 +30,11 @@ const tags = (p) => p.evaluate(() => window.__bt13.alarms(Date.now()).filter((a)
   await p.click(".toast.show .toast-undo"); await p.waitForTimeout(300);
   ok((await setting(p, "bt13Goal")).items.length === 2, "② back");
   // ⑥ 佐藤 taken off r2; 鈴木 covered 11/7
-  await p.click('#shiftList [data-edit="r2"]'); await p.waitForTimeout(500);
+  await openShift(p, "r2"); // (from 勤務カレンダー: the month's list was taken out, 2026-11-26)
   ok((await p.inputValue("#reShiftCover")) === "佐藤", "⑥ in the sheet");
   await p.fill("#reShiftCover", ""); await p.locator("#recSave").click(); await p.waitForTimeout(500);
   ok(!("coverFor" in (await shift(p, "r2"))) && !(await txt(p, "#bt13Swap")).includes("佐藤"), "⑥ taken off");
-  await p.click('#shiftList [data-edit="p2026-11-07"]'); await p.waitForTimeout(500);
+  await openShift(p, "p2026-11-07");
   await p.fill("#bt13SwapBy", "鈴木さん"); await p.click('[data-off="swap"]'); await p.waitForTimeout(500);
   const off = (await setting(p, "bt5Off")).items.find((o) => o.shift.id === "p2026-11-07");
   ok(off && off.why === "swap" && off.by === "鈴木さん" && (await txt(p, "#bt13Swap")).includes("鈴木 代わりに入った 0 回・代わってもらった 1 回 してもらったほうが 1 回多い"), "⑥ 鈴木: " + JSON.stringify(off));

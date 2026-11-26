@@ -1,7 +1,7 @@
-// バイト その14 ①②③④⑤⑥⑦⑧⑨: what is shown
+// バイト その14 ①②③④⑤⑥⑦⑧⑨: what is shown (⑨ これからとすんだ: taken out with the month's list of shifts, 2026-11-26)
 process.env.URL0 = process.env.URL0 || "http://localhost:8865/";
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, shiftRow } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -18,7 +18,7 @@ const block = (p, name) => p.evaluate((name) => [...document.querySelectorAll("#
   ok(cafe.pay === "63,500円", "①② the month: " + cafe.pay);
   ok(cafe.notes === "週40時間をこえた分：12 時間・+3,000 円 交通費は1か月 1,000 円 まで：−1,400 円", "①② notes: " + cafe.notes);
   ok(cafe.parts.includes("週40時間をこえた分の割増 3,000 円") && cafe.parts.includes("8時間をこえた分の割増 500 円") && cafe.parts.includes("交通費 2,400 円") && cafe.parts.includes("交通費の上限 −1,400 円") && cafe.parts.includes("合計 63,500 円"), "①② parts: " + JSON.stringify(cafe.parts));
-  ok((await txt(p, '#shiftList li[data-shift="w21"]')).includes("12,800 円") && (await txt(p, '#shiftList li[data-shift="w20"]')).includes("5,300 円") && (await txt(p, '#shiftList li[data-shift="w19"]')).includes("8,300 円"), "① each shift");
+  ok((await shiftRow(p, "w21")).includes("12,800 円") && (await shiftRow(p, "w20")).includes("5,300 円") && (await shiftRow(p, "w19")).includes("8,300 円"), "① each shift (in 勤務カレンダー's day)");
   // ④ お知らせ: 12/1 に年の目安 (73,300 / 90,000); ③ 給料の入金のたしかめ (給料日の次の朝) taken out at the user's call
   // (2026-11-25, tools/REMOVED.md): none, though its switch (payChk) stays saved on
   const al = await p.evaluate(() => window.__bt14.alarms(Date.now()).filter((a) => /^bt14-/.test(a.tag)).map((a) => [a.tag, new Date(a.at).toISOString(), a.title, a.body]));
@@ -28,9 +28,8 @@ const block = (p, name) => p.evaluate((name) => [...document.querySelectorAll("#
   // ⑧ 塾, left on 10/31
   const lf = await txt(p, "#bt14Left");
   ok(lf === "やめたあとにすること 塾（10/31にやめた） ・ 最後の給料日 11月25日（水）（10月分 約 4,500 円） あと 5 日", "⑧ (返していないもの と 源泉徴収票 は消した: 2026-11-18) " + lf);
-  // ⑨ これからとすんだ
-  const seps = await p.evaluate(() => [...document.querySelectorAll("#shiftList > li")].map((li) => li.classList.contains("bt14-sep") ? "|" + li.textContent.replace(/\s+/g, " ") : li.dataset.shift));
-  ok(JSON.stringify(seps) === JSON.stringify(["|これからの勤務（2）", "w21", "w20", "|すんだ勤務（6）", "w19", "w18", "w17", "w16", "w15", "n2"]), "⑨ " + JSON.stringify(seps));
+  // ⑨ これからとすんだ (the month's list in two parts): taken out with the list at the user's call (2026-11-26, tools/REMOVED.md)
+  ok(!(await p.$("#shiftList")) && !(await p.$(".bt14-sep")), "⑨ gone, with the month's list");
   // ⑤ 連絡先
   await p.click("#bt14People summary"); await p.waitForTimeout(300);
   const pe = await p.evaluate(() => [...document.querySelectorAll('#bt14PeopleBody [data-job="j1"] li')].map((li) => [li.querySelector("span").textContent, li.querySelector("a")?.getAttribute("href") || ""]));

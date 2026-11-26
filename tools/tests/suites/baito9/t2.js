@@ -1,6 +1,6 @@
 // バイト その9 ⑦⑩: what is pressed and typed (② 源泉徴収票 は使う人が消した: 2026-11-18)
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, openShift } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -14,10 +14,10 @@ const setting = async (p, id) => (await ls(p, "settings")).find((s) => s.id === 
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
   // ⑩ 選ぶ (and その11 ⑥ 時刻を変える in it): taken out at the user's call (2026-11-19, tools/REMOVED.md)
   ok(!(await p.$("#bt9Pick")) && !(await p.$("#bt9Sel")) && !(await p.$("#bt11Time")) && !(await p.$("#shiftList input[type=checkbox]")), "⑩ 選ぶ: gone");
-  await p.click('#shiftList [data-edit="a1"]'); await p.waitForTimeout(500);
+  await openShift(p, "a1"); // (from 勤務カレンダー: the month's list was taken out, 2026-11-26)
   ok((await p.evaluate(() => document.querySelectorAll("dialog[open]").length)) === 1 && !(await p.$("#bt7CopyDay")), "a row opens its sheet (その7 ⑨ ほかの日にもコピー: gone)");
+  ok(await p.evaluate(() => !document.getElementById("recDelete").closest(".card").hidden), "its sheet's 削除 there (each row's 削除 went with the month's list, 2026-11-26)");
   await p.keyboard.press("Escape"); await p.waitForTimeout(400);
-  ok(!!(await p.$('#shiftList li[data-shift="a1"] .del, #shiftList li[data-shift="a1"] button[aria-label*="削除"]')), "a row's 削除 there");
   ok(!(await p.$("#bt9GensenCard")), "② 源泉徴収票: gone");
   // ⑦ やめた: undone for 塾; カフェ asked first
   await p.click("#moneySettings"); await p.waitForTimeout(500);

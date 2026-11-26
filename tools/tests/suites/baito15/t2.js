@@ -1,7 +1,7 @@
 // バイト その15 ①②③⑧⑩: what is pressed and typed (⑦ 年末調整と源泉徴収票 は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8876/";
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, shiftRow } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -36,7 +36,7 @@ const copied = (p) => p.evaluate(() => window.__copied);
   ok(!("round" in (await job(p, "j1"))) && (await job(p, "j1")).fuyo === true, "② each minute; ⑦'s tick kept");
   ok(!(await p.$("#bt15HuntChk")) && (await setting(p, "bt15")).taxChk === true && !(await tags(p)).length, "⑧ its お知らせ gone (⑦'s taxChk kept, nothing sent): " + JSON.stringify(await tags(p)));
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
-  ok((await txt(p, '#shiftList li[data-shift="c2"]')).includes("4,896 円") && !(await p.$("#jobSum .bt15-notes")), "② the 11/9 shift: " + (await txt(p, '#shiftList li[data-shift="c2"]')));
+  ok((await shiftRow(p, "c2")).includes("4,896 円") && !(await p.$("#jobSum .bt15-notes")), "② the 11/9 shift: " + (await shiftRow(p, "c2")));
   // ⑧ バイト探し: taken out at the user's call (2026-11-19, tools/REMOVED.md); what was put in stays
   ok(!(await p.$("#bt15Hunt")) && (await setting(p, "bt15")).hunt.some((x) => x.name === "本屋"), "⑧ gone, what was put in kept");
   ok(!p.errs.length, "no page errors", p.errs);

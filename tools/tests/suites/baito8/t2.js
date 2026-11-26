@@ -1,7 +1,7 @@
 // バイト その8 ⑨⑩: what is pressed and typed (④ は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8868/";
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, openShift } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -14,14 +14,14 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
   // ⑨ 代わりのお願い from the sheet
-  await p.click('#shiftList [data-edit="t27"]'); await p.waitForTimeout(500);
+  await openShift(p, "t27");
   await p.click("#bt8SwapSend"); await p.waitForTimeout(400);
   ok((await p.evaluate(() => window.__copied)) === "11月27日（金） 17:00〜22:00のシフトに、入れなくなってしまいました。\n代わりに入っていただける方はいませんか？よろしくお願いします。", "⑨ the words: " + JSON.stringify(await p.evaluate(() => window.__copied)));
   ok((await ls(p, "shifts")).find((x) => x.id === "t27").seeking === true && await p.isChecked("#reShiftSeek"), "⑨ marked");
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   ok(!(await p.evaluate(() => document.querySelector("dialog[open]"))), "⑨ closed without a word");
-  ok((await txt(p, '#shiftList li:has([data-edit="t27"])')).includes("代わりを探し中"), "⑨ in the list");
-  await p.click('#shiftList [data-edit="t27"]'); await p.waitForTimeout(500);
+  // (「代わりを探し中」 on its row: the month's list was taken out at the user's call, 2026-11-26; the mark is kept, above)
+  await openShift(p, "t27");
   await p.evaluate(() => { const c = document.getElementById("reShiftSeek"); c.checked = false; c.dispatchEvent(new Event("change")); }); await p.waitForTimeout(300);
   await p.locator("#recSave").click(); await p.waitForTimeout(500);
   ok(!("seeking" in (await ls(p, "shifts")).find((x) => x.id === "t27")), "⑨ taken off");

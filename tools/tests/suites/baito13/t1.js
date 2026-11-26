@@ -18,7 +18,7 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   // ⑥ 代わりの貸し借り: 田中 1 and 1, 佐藤 1 and 0
   const sw = await txt(p, "#bt13Swap");
   ok(sw.startsWith("代わりの貸し借り（この1年） 田中 代わりに入った 1 回・代わってもらった 1 回 おあいこ 佐藤 代わりに入った 1 回・代わってもらった 0 回 入ったほうが 1 回多い"), "⑥ " + sw);
-  ok((await txt(p, '#shiftList li[data-shift="r1"]')).includes("代わり：田中さん"), "⑥ the row");
+  // (⑥ 代わり：田中さん on its row: went with the month's list at the user's call, 2026-11-26, tools/REMOVED.md)
   // ⑦⑧ がんばりの記録 and ⑨ 1週間の勤務: taken out at the user's call (2026-11-19, tools/REMOVED.md)
   ok(!(await p.$("#bt13Miles")) && !(await p.$("#bt13Week")), "⑦⑧⑨ がんばりの記録・1週間の勤務: gone");
   // ①④ お知らせ: 来週のぶん (金曜 20:00), 11/19〜11/21 は休む

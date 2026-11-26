@@ -1,7 +1,7 @@
 // バイト その8 ⑤⑦⑧: what is shown (①②③ and ⑩ taken out 2026-11-19, the user's call; ⑥ 出勤の押し忘れ went with 出勤・退勤)
 process.env.URL0 = process.env.URL0 || "http://localhost:8868/";
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, shiftRow } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -25,7 +25,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ok(!(await p.evaluate(() => window.__bt8.alarms(Date.now()).some((a) => String(a.tag).startsWith("bt8-in:")))), "⑥ none");
   // ⑩ 12/3 at the job's own 1,000円 (wageNext kept, not read)
   await p.click("#monthNav .navbtn:nth-of-type(2)"); await p.waitForTimeout(400);
-  ok((await txt(p, '#shiftList li:has([data-edit="d03"])')).includes("5,000 円"), "⑩ 12/3: " + (await txt(p, '#shiftList li:has([data-edit="d03"])')));
+  const d03 = await shiftRow(p, "d03");
+  ok(d03.includes("5,000 円"), "⑩ 12/3: " + d03);
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

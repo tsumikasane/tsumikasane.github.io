@@ -1,7 +1,7 @@
 // バイト その15 ①②④⑤⑥⑧⑨⑩: what is shown (⑦ 年末調整と源泉徴収票 は使う人が消した: 2026-11-18; its ticks stay in the data)
 process.env.URL0 = process.env.URL0 || "http://localhost:8876/";
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, shiftRow } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -17,11 +17,9 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ok(cafe.pay === "24,625円", "② the month: " + cafe.pay);
   ok(cafe.notes === "15分ごとに数えて：−19 分・−346 円（本当は1分ごとに払う決まりです）", "② notes: " + cafe.notes);
   ok(cafe.parts.includes("端数の切り捨て（15分ごと） −346 円") && cafe.parts.includes("引かれる額 −1,000 円") && cafe.parts.includes("合計 24,625 円"), "② parts: " + JSON.stringify(cafe.parts));
-  ok((await txt(p, '#shiftList li[data-shift="c2"]')).includes("4,550 円"), "② the shift: " + (await txt(p, '#shiftList li[data-shift="c2"]')));
-  // ① 終電 and ⑨ the plans before and after, on the rows to come
-  const c4 = await txt(p, '#shiftList li[data-shift="c4"]'), c5 = await txt(p, '#shiftList li[data-shift="c5"]');
-  ok(c4.includes("終電（23:40）に間に合わないかも") && !c5.includes("終電"), "① " + c4);
-  ok(c4.includes("次の日のサークル（9:00）まで 9 時間") && c5.includes("ゼミ（〜16:40）のあと 20 分・通勤 30 分") && !(await txt(p, '#shiftList li[data-shift="c3"]')).includes("のあと"), "⑨ " + JSON.stringify([c4, c5]));
+  ok((await shiftRow(p, "c2")).includes("4,550 円"), "② the shift: " + (await shiftRow(p, "c2")));
+  // ① 終電 and ⑨ the plans before and after, on the rows to come: went with the month's list at the user's call (2026-11-26,
+  // tools/REMOVED.md); still said as a shift goes in (t2)
   // ④ 掛け持ち: 11/14 は合わせて 10 時間
   const mu = await txt(p, "#bt15Multi");
   ok(mu.startsWith("11月の掛け持ちの日 11/14（土） カフェ 5 時間＋塾 5 時間 ＝ 10 時間 合わせて8時間をこえています") && mu.endsWith("あとから雇ったお店が払います。") && (await p.$$("#bt15Multi li")).length === 1, "④ " + mu);

@@ -1,6 +1,6 @@
 // バイト その5 ①②③④⑤⑥: what is typed in
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, openShift } = require("./lib");
 const { DATA, today, job } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -22,18 +22,18 @@ const setting = async (p, id) => (await ls(p, "settings")).find((s) => s.id === 
   let sh = (await ls(p, "shifts")).find((x) => x.date === "2026-11-29");
   ok(sh && sh.wage === 1300 && (await p.inputValue("#shiftWage")) === "" && (await est()) === base + 5200, "① the form: " + JSON.stringify(sh));
   // in the sheet: set and taken off
-  await p.click('#shiftList [data-edit="n1"]'); await p.waitForTimeout(500);
+  await openShift(p, "n1");
   ok((await p.inputValue("#reShiftWage")) === "", "① n1 has none");
   await p.fill("#reShiftWage", "1100"); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   ok((await ls(p, "shifts")).find((x) => x.id === "n1").wage === 1100, "① set in the sheet");
-  await p.click('#shiftList [data-edit="n1"]'); await p.waitForTimeout(500);
+  await openShift(p, "n1");
   await p.fill("#reShiftWage", ""); await p.locator("#recSave").click(); await p.waitForTimeout(600);
   ok(!("wage" in (await ls(p, "shifts")).find((x) => x.id === "n1")), "① taken off");
   // ひとことでシフト: taken out (2026-11-18, the user's call); a shift's own 時給 is the form's, above
   ok(!(await p.$("#bt3QuickText")), "① (taken out) ひとことでシフト: gone");
   // ⑥ 行かなかった: from its sheet, out of the pay; もどす puts it back
   const before = await est();
-  await p.click('#shiftList [data-edit="n3"]'); await p.waitForTimeout(500);
+  await openShift(p, "n3");
   await p.click('#recForm [data-off="absent"]'); await p.waitForTimeout(600);
   const off = (await setting(p, "bt5Off")).items[0];
   ok(!(await ls(p, "shifts")).some((x) => x.id === "n3") && off.why === "absent" && off.shift.id === "n3" && off.shift.memo === "研修" && (await est()) === before - 5000, "⑥ out: " + JSON.stringify(off));

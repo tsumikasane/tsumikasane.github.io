@@ -1,6 +1,6 @@
 // バイト その5 ①②③⑤⑥⑦⑩ and ④⑤ in 次のバイト: what is shown (⑧ 勤務を探す と ⑨ は使う人が消した: 2026-11-18)
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, shiftRow } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -11,8 +11,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(800);
   // ① 11/9 at its own 1,500円: 7,500
-  const r2 = await txt(p, '#shiftList li:has([data-edit="n2"])');
-  ok(r2.includes("時給 1,500円") && r2.includes("7,500 円"), "① この回だけの時給: " + r2);
+  const r2 = await shiftRow(p, "n2"); // (its 「時給 1,500円」 was the month's list's, taken out 2026-11-26)
+  ok(r2.includes("7,500 円"), "① この回だけの時給: " + r2);
   // ② November: 22,500 of shifts + 有給 5 時間 5,000 = 27,500; その3 ⑦ without the 有給
   const sum = await txt(p, "#jobSum");
   ok(/見込み 27,500\s?円/.test(sum) && /有給 1\s日（5\s時間・\+5,000\s円）/.test(sum), "② 有給 in the month: " + sum);
@@ -21,7 +21,7 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ok(/移動もふくめると 1時間あたり 938\s円（通勤 往復 1\s時間 × 4\s回）/.test(sum), "⑤ " + sum);
   // ⑥ 行かなかった勤務
   ok(/行かなかった勤務 1\s回：/.test(sum) && sum.includes("11/12 代わってもらった") && sum.includes("もどす"), "⑥ " + sum);
-  ok(!(await p.$('#shiftList [data-edit="n9"]')), "⑥ not in the list");
+  ok(!(await p.$('#moneyJob [data-edit="n9"]')), "⑥ not among the shifts");
   // ④⑤ 次のバイト: あした 17:00, 16:30 に出る, 持ち物, 電話・地図
   const nx = await txt(p, "#bt3Next");
   ok(nx.includes("16:30 に出ると間に合います（通勤 30 分）") && nx.includes("持ち物：エプロン、名札"), "④⑤ next: " + nx);

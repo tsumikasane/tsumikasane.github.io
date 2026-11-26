@@ -1,7 +1,7 @@
 // バイト その6 ①③④⑤⑧⑩: what is shown, and pressed on the page (⑨ ふりかえり は使う人が消した: 2026-11-18)
 process.env.URL0 = process.env.URL0 || "http://localhost:8866/";
 const { chromium } = require("playwright");
-const { P, at, phone, seed } = require("./lib");
+const { P, at, phone, seed, shiftRow } = require("./lib");
 const { DATA, today } = require("./data");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
@@ -15,9 +15,9 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   // ③ November: 3 回 × 5,000 + 交通費 1か月 300 (not each time)
   let sum = await txt(p, "#jobSum");
   ok(/見込み 15,300\s?円/.test(sum) && /交通費（1か月分）：\+300\s円/.test(sum), "③ " + sum);
-  ok((await txt(p, '#shiftList li:has([data-edit="n1"])')).includes("5,000 円"), "③ a shift without its 交通費");
+  ok((await shiftRow(p, "n1")).includes("5,000 円"), "③ a shift without its 交通費");
   // ⑧ 仮: said, in the list, and settled at once
-  ok(/仮のシフト 1\s回をふくみます。/.test(sum) && (await txt(p, '#shiftList li:has([data-edit="n2"])')).includes("仮"), "⑧ 仮 said");
+  ok(/仮のシフト 1\s回をふくみます。/.test(sum) && (await shiftRow(p, "n2")).includes("仮"), "⑧ 仮 said");
   ok(await p.evaluate(() => document.querySelector('#bt6Cal [data-day="2026-11-09"]').classList.contains("tent")), "⑧ dashed in the calendar");
   await p.click("#jobSum .bt6-tent .link-btn"); await p.waitForTimeout(500);
   ok(!("tentative" in (await ls(p, "shifts")).find((x) => x.id === "n2")) && !(await txt(p, "#jobSum")).includes("仮のシフト"), "⑧ ぜんぶ確定にする");
@@ -35,7 +35,8 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   ok(/130万の壁（1,300,000\s円）まで、あと 1,284,700\s円/.test(yr) && yr.includes("目安の 1,030,000 円"), "⑤ " + yr);
   // ④ 12/30: +200円 an hour
   await p.click("#monthNav .navbtn:nth-of-type(2)"); await p.waitForTimeout(400);
-  ok((await txt(p, '#shiftList li:has([data-edit="d1"])')).includes("6,000 円"), "④ " + (await txt(p, '#shiftList li:has([data-edit="d1"])')));
+  const d1 = await shiftRow(p, "d1");
+  ok(d1.includes("6,000 円"), "④ " + d1);
   await p.click("#monthNav .navbtn"); await p.waitForTimeout(400);
   // ⑩ the job's notes
   await p.click("#bt6Notes summary"); await p.waitForTimeout(300);

@@ -15,8 +15,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ok(await p.evaluate(() => [...document.querySelectorAll("#bt3Next a.bt17-app")].map((a) => a.getAttribute("href")).join() === "https://shift.example.com/cafe"), "① the next shift's card");
   const cafe = () => p.evaluate(() => [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("カフェ")));
   ok(await p.evaluate(() => { const b = [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("カフェ")); const t = [...document.querySelectorAll("#jobSum .job-block")].find((x) => x.innerText.includes("塾")); return !!b.querySelector(".bt17-notes a.bt17-app") && !t.querySelector(".bt17-notes"); }), "① カフェ's month, not 塾's");
-  // ② 担当 on the rows, and the last 3 months' hours of each
-  ok((await txt(p, '#shiftList li[data-shift="n2"]')).includes("担当：キッチン") && !(await txt(p, '#shiftList li[data-shift="n4"]')).includes("担当"), "② on the rows");
+  // ② the last 3 months' hours of each 担当 (担当：○○ on each shift's row: went with the month's list at the user's call,
+  // 2026-11-26, tools/REMOVED.md)
   ok((await txt(p, "#bt17Roles")) === "担当ごとの時間（この3か月） カフェ レジ 15 時間 キッチン 5 時間 担当なし 15 時間", "② " + (await txt(p, "#bt17Roles")));
   // ③ 100 時間 for +30 円: 70 時間 since the first shift
   ok((await txt(p, "#bt17Raise")) === "時給アップまで カフェ：あと 30 時間（いつもの勤務で約 6 回） で +30 円 2025/11/25から 70 時間・100 時間で時給アップ", "③ " + (await txt(p, "#bt17Raise")));
