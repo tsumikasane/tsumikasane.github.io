@@ -13990,16 +13990,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("span", { class: "sub" }, l ? (ago === 0 ? "最後はこの日" : `最後は${ago}日前`) + (ago >= 7 ? "・しばらくやっていません" : "") : "まだやっていません"));
     }));
   }
-  // ⑧ the month's runs against its goal (the settings', 運動's gear), what is left and, this month, a day's share of it
+  // ⑧ the month's runs against its goal (the settings', 運動's gear). What was left under it (あと ○ km, and this month
+  // ・1日あたり ○ km（残り ○ 日）) taken out at the user's call (2026-11-26, tools/REMOVED.md): the goal reached is still said
   const runGoal = () => num((settings.get("runGoal") || {}).km);
   function renderRunMonth() {
     const ym = monthOf(viewDate), km = Math.round(sum(workouts.items.filter((w) => w.type === "ランニング" && monthOf(w.date) === ym), (w) => num(w.km)) * 10) / 10, goal = runGoal();
-    const mo = `${Number(ym.slice(5))}月`, cur = ym === monthOf(todayKey), left = Math.max(0, goal - km);
-    const days = cur ? daysInMonth(ym) - parseYmd(todayKey).getDate() + 1 : 0;
+    const mo = `${Number(ym.slice(5))}月`;
     setChildren($("runMonthCard"),
       el("div", { class: "card-head row-between" }, el("span", {}, `${mo}のラン`), el("span", { class: "num" }, goal ? `${fmtNum(km)} / ${fmtNum(goal)} km` : `${fmtNum(km)} km`)),
       goal ? el("div", { class: "bar-track", role: "img", "aria-label": `${Math.min(100, Math.round((km / goal) * 100))}%` }, el("i", { class: km >= goal ? "done" : "", style: `width:${Math.min(100, Math.round((km / goal) * 100))}%` })) : null,
-      el("p", { class: "sub" }, goal ? (km >= goal ? `目標の ${fmtNum(goal)} km に届きました` : [`あと ${fmtNum(left)} km`, cur && days > 0 ? `・1日あたり ${fmtNum(Math.ceil((left / days) * 10) / 10)} km（残り ${days} 日）` : ""].join(""))
+      goal && km < goal ? null : el("p", { class: "sub" }, goal ? `目標の ${fmtNum(goal)} km に届きました`
         : el("button", { type: "button", class: "link-btn", onclick: (ev) => openSettings(ev.detail === 0, "workout", $("runGoal")) }, "月の目標を決める")));
   }
   // ⑤ how it has gone: the runs' km a week (the last 12), their pace run by run, or a move's heaviest (else most 回・秒)
@@ -24974,7 +24974,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月26日 12:26"; // 78fea7c4 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月26日 12:40"; // fc0dfc29 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }

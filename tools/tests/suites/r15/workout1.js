@@ -38,7 +38,8 @@ const DATA = {
   await p.fill("#runGoal", "50"); await p.selectOption("#restSec", "60"); await p.waitForTimeout(200);
   await p.locator("#sheetDone").click(); await p.waitForTimeout(600);
   rm = await txt(p, "#runMonthCard");
-  ok(rm.startsWith("11月のラン 17 / 50 km") && rm.includes("あと 33 km・1日あたり 1.6 km（残り 21 日）"), "⑧ with a goal: " + rm);
+  // (あと ○ km・1日あたり ○ km（残り ○ 日） taken out at the user's call, 2026-11-26, tools/REMOVED.md: the head and the bar only)
+  ok(rm === "11月のラン 17 / 50 km" && !/あと|1日あたり|残り/.test(rm) && await p.isVisible("#runMonthCard .bar-track"), "⑧ with a goal: " + rm);
   const st = await ls(p, "settings");
   ok(st.find((x) => x.id === "runGoal")?.km === 50 && st.find((x) => x.id === "woRest")?.sec === 60, "⑧⑨ kept: " + JSON.stringify(st.filter((x) => /runGoal|woRest/.test(x.id))));
   // ② the menu (火曜): レッグカール did 3 × 20 last time, ラットプルダウン not
