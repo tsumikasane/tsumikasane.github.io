@@ -1297,11 +1297,15 @@ dialog.jn4-show::backdrop { background: #000000; }
 #jnCard .row-between > .row-tail { flex-wrap: wrap; justify-content: flex-end; row-gap: 2px; }
 #jnCard .row-tail .link-btn { white-space: nowrap; }
 .jn5-tools { margin-top: 0; }
-.jn5-heat-wrap { overflow-x: auto; padding: 4px var(--space-2) 12px; scrollbar-width: thin; }
-.jn5-heat-mo, .jn5-heat { display: grid; grid-template-columns: repeat(53, 13px); column-gap: 3px; width: max-content; }
-.jn5-heat-mo { height: 16px; font-size: 10px; line-height: 16px; color: var(--muted); white-space: nowrap; }
-.jn5-heat { grid-template-rows: repeat(7, 13px); grid-auto-flow: column; row-gap: 3px; }
-.jn5-c { display: block; width: 13px; height: 13px; padding: 0; border: 0; border-radius: 3px; background: var(--fill); cursor: pointer; }
+/* この1年: twelve small months, three to a row (four on a wide card), the whole year seen without scrolling (the user's
+   call, 2026-11-27: the 53 weeks side by side, scrolled across, before) */
+.jn5-heat-wrap { padding: 4px var(--space-2) 14px; container-type: inline-size; }
+.jn5-heat { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 12px; }
+@container (min-width: 37em) { .jn5-heat { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 18px; } }
+.jn5-mon { min-width: 0; }
+.jn5-mon-head { margin: 0 0 5px; font-size: 11px; line-height: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.jn5-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.jn5-c { display: block; width: 100%; height: auto; aspect-ratio: 1; padding: 0; border: 0; border-radius: 22%; background: var(--fill); cursor: pointer; }
 .jn5-c.none { background: transparent; cursor: default; }
 .jn5-c.wrote { background: var(--c-journal); }  /* (a day written, however much: the user's call, 2026-11-25) */
 .jn5-c.today { box-shadow: inset 0 0 0 1.5px var(--fg); }
@@ -8263,7 +8267,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- (日記 その5 ⑨ この1年: a square a day) -->
         <div class="card" id="jn5HeatCard" hidden>
           <div class="card-head row-between"><span>この1年</span><span class="muted small" id="jn5HeatSum"></span></div>
-          <div class="jn5-heat-wrap" id="jn5HeatWrap"><div class="jn5-heat-mo" id="jn5HeatMo" aria-hidden="true"></div><div class="jn5-heat" id="jn5Heat" role="group" aria-label="この1年の日記"></div></div>
+          <div class="jn5-heat-wrap" id="jn5HeatWrap"><div class="jn5-heat" id="jn5Heat" role="group" aria-label="この1年の日記"></div></div>
         </div>
         <!-- (日記 その2 ⑦ 月の日記を続けて読む) -->
         <div class="card" id="jn2ReadCard" hidden>
@@ -24908,7 +24912,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 0:07"; // 9905c4a7 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 2:03"; // 3175b0ba (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -64976,35 +64980,36 @@ ${parts.join("\n")}
   // ⑧ 紙 (罫線・方眼・生成り, this device's): taken out at the user's call (2026-11-24, tools/REMOVED.md). What was chosen
   // (localStorage's jnPaper) kept, not used: the field as it is
 
-  // ⑨ この1年: the 53 weeks to this one, a square a day, in 日記's colour on a day written however much (the user's call,
-  // 2026-11-25; four steps by the letters before), the months over them; pressed, that day. It opens at its right end (this week)
+  // ⑨ この1年: the twelve months to this one, each a small calendar (a week a row, from 週のはじまり), a square a day, in
+  // 日記's colour on a day written however much (the user's call, 2026-11-25; four steps by the letters before); pressed,
+  // that day. Three months to a row, four on a wide card, so the whole year is seen at once (the user's call, 2026-11-27:
+  // the 53 weeks side by side, scrolled across from this week at its right end, before)
   function renderJn5Heat(days) {
     const card = $("jn5HeatCard");
     card.hidden = !days.size;
     if (!days.size) return;
-    const ws = weekStart(), t = parseYmd(todayKey), end = addDays(todayKey, 6 - ((t.getDay() - ws + 7) % 7)), start = addDays(end, -7 * 53 + 1);
-    const cells = [], seen = [];
+    const ws = weekStart(), [y, m] = todayKey.split("-").map(Number), months = [];
+    for (let k = 11; k >= 0; k--) { const t = new Date(y, m - 1 - k, 1); months.push(`${t.getFullYear()}-${pad(t.getMonth() + 1)}`); }
+    const seen = [];
     let wrote = 0, letters = 0;
-    for (let i = 0; i < 53 * 7; i++) {
-      const d = addDays(start, i), n = d <= todayKey ? jnLen(days.get(d)) : -1;
-      if (n > 0) { wrote++; letters += n; }
-      seen.push([d, n < 0 ? -1 : n > 0 ? 1 : 0]);
+    for (const ym of months) for (let i = 1, n = daysInMonth(ym); i <= n; i++) {
+      const d = `${ym}-${pad(i)}`, len = d <= todayKey ? jnLen(days.get(d)) : -1;
+      if (len > 0) { wrote++; letters += len; }
+      seen.push([d, len < 0 ? -1 : len > 0 ? 1 : 0]);
     }
     if (jn5Same("heat", [seen, viewDate, ws])) return;
-    for (const [d, lv] of seen) {
-      if (lv < 0) { cells.push(el("span", { class: "jn5-c none" })); continue; }
-      cells.push(el("button", { type: "button", class: "jn5-c" + (lv ? " wrote" : "") + (d === viewDate ? " on" : "") + (d === todayKey ? " today" : ""), "aria-label": `${d.slice(0, 4) !== todayKey.slice(0, 4) ? `${Number(d.slice(0, 4))}年` : ""}${fmtMDW(d)} ${lv ? "日記あり" : "日記なし"}`, onclick: () => jnGo(d) })); // (the year said for last year's)
-    }
-    setChildren($("jn5Heat"), cells);
-    const mo = [];
-    for (let w = 0; w < 53; w++) {
-      const first = addDays(start, w * 7), m = Array.from({ length: 7 }, (_, i) => addDays(first, i)).find((d) => d.slice(8) === "01");
-      mo.push(el("span", { style: `grid-column:${w + 1}` }, m ? `${Number(m.slice(5, 7))}月` : ""));
-    }
-    setChildren($("jn5HeatMo"), mo);
+    const lvOf = new Map(seen), yearOf = (d) => (d.slice(0, 4) !== todayKey.slice(0, 4) ? `${Number(d.slice(0, 4))}年` : ""); // (the year said for last year's)
+    setChildren($("jn5Heat"), months.map((ym) => {
+      const lead = (parseYmd(ym + "-01").getDay() - ws + 7) % 7, cells = Array.from({ length: lead }, () => el("span", { "aria-hidden": "true" }));
+      for (let i = 1, n = daysInMonth(ym); i <= n; i++) {
+        const d = `${ym}-${pad(i)}`, lv = lvOf.get(d);
+        cells.push(lv < 0 ? el("span", { class: "jn5-c none" })
+          : el("button", { type: "button", class: "jn5-c" + (lv ? " wrote" : "") + (d === viewDate ? " on" : "") + (d === todayKey ? " today" : ""), "aria-label": `${yearOf(d)}${fmtMDW(d)} ${lv ? "日記あり" : "日記なし"}`, onclick: () => jnGo(d) }));
+      }
+      const name = `${yearOf(ym)}${Number(ym.slice(5))}月`;
+      return el("div", { class: "jn5-mon", role: "group", "aria-label": name }, el("div", { class: "jn5-mon-head", "aria-hidden": "true" }, name), el("div", { class: "jn5-days" }, cells));
+    }));
     $("jn5HeatSum").textContent = `${wrote} 日・${fmtN(letters)} 字`;
-    const wrap = $("jn5HeatWrap");
-    requestAnimationFrame(() => { wrap.scrollLeft = wrap.scrollWidth; });
   }
 
   // ⑩ あとで書く: taken out at the user's call (2026-11-19, tools/REMOVED.md), its button and its card あとで書く日. The days marked stay

@@ -39,10 +39,16 @@ const putPhotos = (p, days) => p.evaluate(({ days, b64 }) => new Promise((res, r
   ok(!(await p.$("#jn5Later")) && !(await p.$("#jn5LaterList")) && !(await p.$("#jn5LaterCard")), "⑩ (taken out) no あとで書く");
   ok(JSON.stringify((await ls(p, "settings")).find((s) => s.id === "jnLater")?.days) === '["2026-11-10"]', "⑩ (the days marked before: kept)", await ls(p, "settings"));
 
-  // ⑨ この1年: a square a day, the days written coloured
+  // ⑨ この1年: the twelve months to this one, a small calendar each, three to a row on a phone, so the whole year is seen
+  // without scrolling (the user's call, 2026-11-27: the 53 weeks side by side, scrolled across, before); a square a day,
+  // the days written coloured
   const heat = await p.evaluate(() => { const bs = [...document.querySelectorAll("#jn5Heat button.jn5-c")], w = bs.filter((x) => x.classList.contains("wrote"));
-    return { all: document.querySelectorAll("#jn5Heat .jn5-c").length, wrote: w.length, steps: bs.some((x) => /\blv\d/.test(x.className)), colours: [...new Set(w.map((x) => getComputedStyle(x).backgroundColor))].length }; });
-  ok(heat.all === 371 && heat.wrote === 5 && !heat.steps && heat.colours === 1, "⑨ 53 weeks, 5 days written, in one colour however much (the user's call, 2026-11-25)", heat);
+    const wrap = document.getElementById("jn5HeatWrap"), card = document.getElementById("jn5HeatCard").getBoundingClientRect(), mons = [...document.querySelectorAll("#jn5Heat .jn5-mon")], top = (m) => Math.round(m.getBoundingClientRect().top);
+    return { all: document.querySelectorAll("#jn5Heat .jn5-c").length, wrote: w.length, steps: bs.some((x) => /\blv\d/.test(x.className)), colours: [...new Set(w.map((x) => getComputedStyle(x).backgroundColor))].length,
+      months: mons.map((m) => m.querySelector(".jn5-mon-head").textContent).join(" "), rows: new Set(mons.map(top)).size, firstRow: mons.filter((m) => top(m) === top(mons[0])).length,
+      across: wrap.scrollWidth <= wrap.clientWidth, h: Math.round(card.height) }; });
+  ok(heat.all === 365 && heat.wrote === 5 && !heat.steps && heat.colours === 1, "⑨ 2025年12月〜11月, a square a day, 5 days written, in one colour however much (the user's call, 2026-11-25)", heat);
+  ok(heat.months === "2025年12月 1月 2月 3月 4月 5月 6月 7月 8月 9月 10月 11月" && heat.firstRow === 3 && heat.rows === 4 && heat.across && heat.h < 600, "⑨ three months to a row, four rows: nothing to scroll across, the whole year within the screen", heat);
   ok((await txt(p, "#jn5HeatSum")).startsWith("5日"), "⑨ the sum", await txt(p, "#jn5HeatSum"));
   ok(await p.evaluate(() => !!document.querySelector('#jn5Heat button[aria-label^="2025年12月1日"]')), "⑨ last year's said with its year");
   await p.click('#jn5Heat button[aria-label^="11月12日"]'); await p.waitForTimeout(600);
