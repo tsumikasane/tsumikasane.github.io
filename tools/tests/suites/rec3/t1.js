@@ -1,4 +1,4 @@
-// 記録 その3 ①〜⑩ (⑧ 最近の記録: taken out at the user's call, 2026-11-26)
+// 記録 その3 ①〜⑩ (⑧ 最近の記録 and ⑨ よく記録するもの: taken out at the user's calls, 2026-11-26 and 2026-11-27)
 const { chromium } = require("playwright");
 const fs = require("fs");
 const { URL0, P, at, phone, seed } = require("./lib");
@@ -40,10 +40,11 @@ const DATA = {
   await seed(p, DATA, "records"); await wait(p, 1200);
   // ⑧ 最近の記録: taken out at the user's call (2026-11-26, tools/REMOVED.md); the records stay
   ok(!(await p.$('#sumCards [data-card="recent"]')) && !(await txt(p, "#sumCards")).includes("最近の記録") && (await ls(p, "journal")).length > 0, "⑧ 最近の記録: gone (the records kept)");
-  // ⑨ よく記録するもの
-  ok((await txt(p, '#sumCards [data-card="often"]')) === "よく記録するもの 食事 パン 3 回 ラーメン 3 回 運動 ランニング 2 回", "⑨ the foods and the kinds recorded most", await txt(p, '#sumCards [data-card="often"]'));
-  await p.locator('#sumCards [data-card="often"] .chip-btn', { hasText: "ラーメン" }).click(); await wait(p, 800);
-  ok(await tab(p) === "reclist" && await p.inputValue("#recSearch") === "ラーメン" && (await txt(p, "#recListNote")).startsWith("「ラーメン」の記録 3 件"), "⑨ pressed: 食事's list with it looked for", await txt(p, "#recListNote"));
+  // ⑨ よく記録するもの: taken out at the user's call (2026-11-27, tools/REMOVED.md); the records stay. 食事's list from its own card
+  ok(!(await p.$('#sumCards [data-card="often"]')) && !(await txt(p, "#sumCards")).includes("よく記録するもの") && (await ls(p, "meals")).length > 0, "⑨ よく記録するもの: gone (the records kept)");
+  await p.locator('#sumCards .sum-open[data-kind="meal"]').click(); await wait(p, 800);
+  await p.fill("#recSearch", "ラーメン"); await wait(p, 400);
+  ok(await tab(p) === "reclist" && (await txt(p, "#recListNote")).startsWith("「ラーメン」の記録 3 件"), "食事's list from its card, a word looked for there", await txt(p, "#recListNote"));
   // ③ the words looked for often there
   await p.click("#recSearchClear"); await wait(p);
   ok(JSON.stringify(await rows(p, "#rec3Sug .chip-btn")) === JSON.stringify(["パン", "ラーメン"]) && await p.isVisible("#rec3Sug"), "③ the words, under the empty field", await rows(p, "#rec3Sug .chip-btn"));

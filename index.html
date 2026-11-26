@@ -3114,10 +3114,7 @@ ul.list li.rec3-none { min-height: 36px; font-size: var(--t-foot); color: var(--
 .rec3-ago { display: flex; flex-wrap: wrap; gap: 8px; margin: -2px 0; }
 .rec3-ago .chip-btn { min-height: 34px; background: var(--fill); box-shadow: none; }
 .rec3-kind { font-weight: 600; color: var(--kc, var(--fg)); }
-.rec3-often + .rec3-often { border-top: .5px solid var(--separator); }
-.rec3-often-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0 8px; }
-.rec3-often-row .chip-btn { min-height: 34px; background: var(--fill); box-shadow: none; }
-.rec3-often-row .chip-btn small { font-weight: 400; color: var(--muted); }
+/* (記録 その3 ⑨ よく記録するもの's card: taken out at the user's call, 2026-11-27, tools/REMOVED.md) */
 .rec3-range { display: flex; flex-direction: column; gap: 4px; }
 .rec3-range .link-btn { align-self: flex-start; min-height: 36px; padding: 0; }
 /* 記録 その4 (2026-11-14). ① the days' fields; ② the days between, over the list and at each day's end; ③ the table's
@@ -24252,7 +24249,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         rtDays.length ? `${rtDays.length} 日チェック` : "まだチェックしていません", "list", topList(byRoutine, () => "var(--c-routine)", (n) => `${n} 回`), "routine"), "routine"),
       money: () => withStreak(sumCard("var(--c-money)", "money", "家計簿", fmtN(Math.round(out)), "円 支出", `収入 ${fmtYen(inn)}・収支 ${net > 0 ? "+" : ""}${fmtYen(net)}`, "list",
         topList(byCat, () => "var(--c-money)", fmtYen), "money"), "money"),
-      memory: recMemoryCard, first: rec2FirstCard, often: rec3OftenCard, pick: rec5PickCard, marks: rec7MarksCard, tags: rec8TagsCard, // (その5 ⑨, その7 ⑦, その8 ⑦; その3 ⑧ 最近の記録: taken out, 2026-11-26)
+      memory: recMemoryCard, first: rec2FirstCard, pick: rec5PickCard, marks: rec7MarksCard, tags: rec8TagsCard, // (その5 ⑨, その7 ⑦, その8 ⑦; その3 ⑧ 最近の記録: taken out, 2026-11-26, and ⑨ よく記録するもの, 2026-11-27)
     };
     const hidden = recCardHidden();
     setChildren($("sumCards"), recCardOrder().filter((k) => !hidden.has(k) && cards[k]).map((k) => cards[k]()).filter(Boolean));
@@ -24920,7 +24917,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 7:34"; // 93cb4188 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 7:47"; // 4b0cce42 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -26770,13 +26767,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     { key: "journal", label: "日記", icon: "journal" }, { key: "meal", label: "食事", icon: "meal" }, { key: "workout", label: "運動", icon: "workout" }, { key: "weight", label: "からだ", icon: "weight" },
     { key: "study", label: "勉強", icon: "study" }, { key: "routine", label: "ルーティーン", icon: "routine" }, { key: "money", label: "家計簿", icon: "money" },
     { key: "first", label: "はじめた日", icon: "flag" }, // (その2 ⑨)
-    { key: "often", label: "よく記録するもの", icon: "heart" }, // (その3 ⑨)
     { key: "pick", label: "ふりかえる日", icon: "calendar" }, // (その5 ⑨)
     { key: "marks", label: "しおりの日", icon: "pin" }, // (その7 ⑦)
     { key: "tags", label: "タグ", icon: "search" }, // (その8 ⑦)
     // (⑤ 節目, ⑥ これまでのいちばん, その9 ⑧ 最近のはじめて and その10 ⑩ 最近見た日: taken out at the user's call, 2026-11-18,
-    // tools/REMOVED.md, ⑦ 書き忘れた日, 2026-11-25, and その3 ⑧ 最近の記録, 2026-11-26; their keys in a saved order or
-    // 出さないカード are passed over)
+    // tools/REMOVED.md, ⑦ 書き忘れた日, 2026-11-25, その3 ⑧ 最近の記録, 2026-11-26, and その3 ⑨ よく記録するもの, 2026-11-27;
+    // their keys in a saved order or 出さないカード are passed over)
   ];
   const recCard = (k) => REC_CARDS.find((c) => c.key === k);
   const recCardPrefs = () => settings.get("recordCards") || {};
@@ -27069,7 +27065,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- 記録 その3 ①〜⑩ (the user's calls, 2026-11-14): in a kind's list, entries picked and deleted at once (①),
   // narrowed by a number (②), the words looked for often there (③) and the days with none (④); on a day's page, when each
   // was recorded (⑤), the same day a month and a year before (⑥) and the day's records onto its 日記 (⑦); the records
-  // written or put right lately (⑧, taken out at the user's call, 2026-11-26) and the ones recorded often (⑨) as cards; and
+  // written or put right lately (⑧, taken out at the user's call, 2026-11-26) and the ones recorded often (⑨, taken out at
+  // the user's call, 2026-11-27) as cards; and
   // a span of days for 表 and 日記の本 (⑩).
   // Still no weeks, months or years in the cards, no charts, nothing typed in but words and numbers to look for (the
   // user's calls before). (var, not const: renderRecList and renderSummary, above, may run before this) ----------
@@ -27257,20 +27254,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑧ 最近の記録 (the records written or put right lately, across the kinds, eight, each with when and whether it was put
   // right, pressed to open): taken out at the user's call (2026-11-26, tools/REMOVED.md); the records stay as they were
 
-  // ⑨ よく記録するもの: 食事's foods and 運動's kinds recorded most (2 times or more, three each), as 勉強's subjects and
-  // 家計簿's 費目 are on their cards; pressed, that kind's list with the word looked for
-  function rec3Often() {
-    const top = (xs, key) => { const m = new Map(); for (const x of xs) { const k = key(x); if (k) m.set(k, (m.get(k) || 0) + 1); } return [...m].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ja")).slice(0, 3); };
-    return [["meal", top(meals.items.filter((m) => m.date <= todayKey), (m) => oneLine(m.text || ""))], ["workout", top(workouts.items.filter((w) => w.date <= todayKey), (w) => w.type || "")]].filter(([, xs]) => xs.length);
-  }
-  function rec3OftenCard() {
-    const groups = rec3Often();
-    if (!groups.length) return null;
-    return el("div", { class: "card sum-card wide rec-extra", "data-card": "often", style: "--sum-c: var(--accent)" },
-      el("h3", { class: "sum-head" }, icon("heart", 18), el("span", {}, "よく記録するもの")),
-      groups.map(([kind, xs]) => el("div", { class: "rec3-often" }, el("p", { class: "rec-sub-head" }, RECORD_LISTS[kind].label),
-        el("div", { class: "rec3-often-row" }, xs.map(([w, n]) => el("button", { type: "button", class: "chip-btn", "aria-label": `${w}、${n} 回。${RECORD_LISTS[kind].label}の一覧で探す`, onclick: () => { openRecList(kind); recQuery = w; renderRecList(); } }, w, el("small", {}, ` ${fmtN(n)} 回`)))))));
-  }
+  // ⑨ よく記録するもの (食事's foods and 運動's kinds recorded most, two times or more, three each, pressed to look for them
+  // in that kind's list): taken out at the user's call (2026-11-27, tools/REMOVED.md); the records stay as they were
 
   // ⑩ a span of days for 表 (CSV) and 日記の本: the rows from that day to that day (ToDo by the day it was done), either
   // end left empty for no limit; counted as it is picked
