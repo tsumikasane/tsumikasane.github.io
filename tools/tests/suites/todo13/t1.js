@@ -104,10 +104,11 @@ async function open(b, when, o = {}) {
   ok((await byText(p, "英単語を覚える")).filter((t) => !t.done).length === 2, "⑦ 元に戻す");
   await p.click("#sheetDone").catch(() => {}); await p.waitForTimeout(600);
 
-  // ---- ⑧ きょうのテーマ
-  ok(await p.isVisible("#td13ThemeText"), "⑧ over the list");
-  await p.fill("#td13ThemeText", "レポートを終わらせる"); await p.press("#td13ThemeText", "Enter"); await p.waitForTimeout(300);
-  ok((await W(p, "set")).theme?.text === "レポートを終わらせる" && (await W(p, "set")).theme.day === "2026-11-11", "⑧ kept for the day", await W(p, "set"));
+  // ---- ⑧ きょうのテーマ: taken out at the user's call (2026-11-26, tools/REMOVED.md). A theme kept from before (td13's
+  // theme) is not shown, and stays as the other settings of td13 change (⑨ below)
+  await W(p, "setting", "td13", { ...(await W(p, "set")), theme: { day: "2026-11-11", text: "レポートを終わらせる" }, updatedAt: Date.now() }); await p.waitForTimeout(400);
+  ok(!(await p.$("#td13Theme")) && !(await p.$("#td13ThemeText")) && !(await p.evaluate(() => document.getElementById("sec-todo").innerText)).includes("きょうのテーマ")
+    && !(await p.evaluate(() => document.getElementById("sec-todo").innerText)).includes("レポートを終わらせる"), "⑧ none over the list, the theme kept not shown");
 
   // ---- ⑨ 長く手つかず → いつかやる
   await W(p, "add", { text: "古いアイデア", createdAt: Date.parse("2026-08-01T09:00:00+09:00") }); await p.waitForTimeout(200);
@@ -117,6 +118,7 @@ async function open(b, when, o = {}) {
   await undo(p); await p.waitForTimeout(1800);
   ok(!(await byText(p, "古いアイデア"))[0].someday, "⑨ 元に戻す: stays for the day");
   await W(p, "setting", "td13", { ...(await W(p, "set")), someDays: 0, updatedAt: Date.now() });
+  ok((await W(p, "set")).theme?.text === "レポートを終わらせる", "⑧ the theme kept from before stays", await W(p, "set"));
 
   // ---- ⑩ 名前を分ける
   ok(JSON.stringify(await W(p, "parts", "牛乳、卵・パン")) === '["牛乳","卵","パン"]' && (await W(p, "parts", "レポートを書く")).length === 0, "⑩ the parts");
@@ -130,7 +132,7 @@ async function open(b, when, o = {}) {
   await undo(p);
   ok((await todo(p, mk.id)).text === "牛乳、卵、パン" && !(await byText(p, "卵")).length, "⑩ 元に戻す: one again");
 
-  ok((await W(p, "guide")).includes("時間をおいて知らせる") && (await W(p, "guide")).includes("きょうのテーマ"), "the guide says them");
+  ok((await W(p, "guide")).includes("時間をおいて知らせる") && !(await W(p, "guide")).includes("きょうのテーマ"), "the guide says them (not きょうのテーマ, taken out)");
   ok(!p.errs.length, "no errors", p.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");

@@ -51,7 +51,7 @@ async function open(b, data) {
   ok(w.pressed.join() === "完了", "完了 pressed", w);
   const at = r.indexOf("✓Vポイント獲得");
   ok(r[0] === "#完了" && at >= 0 && at < r.indexOf("✓資料を印刷") && !r.some((x) => x === "つみかさねアプリ整理" || x.includes("傘")), "完了: the done ones of every list, newest first (a checklist's not)", r);
-  ok(!(await shown(p, "#todoTabs")) && !(await shown(p, "#td13Theme")) && await shown(p, "#todoSearchBox"), "完了: the tabs and the day's theme put away, the search kept");
+  ok(!(await shown(p, "#todoTabs")) && !(await shown(p, "#td13Theme")) && await shown(p, "#todoSearchBox"), "完了: the tabs put away (the day's theme: taken out, 2026-11-26), the search kept");
   // unchecked in 完了: gone from it, said with 元に戻す, back in すべて
   await check(p, "Vポイント獲得"); await p.waitForTimeout(500);
   r = await rows(p);

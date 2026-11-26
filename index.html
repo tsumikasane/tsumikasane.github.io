@@ -3820,8 +3820,8 @@ ul.list.td23-rows > li { justify-content: space-between; gap: 12px; }
 .td23-fab[hidden] { display: none; }
 .td23-fab .icon { width: 28px; height: 28px; }
 body.td23-fab-on #sec-todo { padding-bottom: 72px; }
-/* (ToDo's 完了, from the bar at the foot) those done alone: no tabs, no cards over them, no theme for the day */
-#sec-todo.td-done-part > :is(.card:not(#todoList), .td4-view-bar, #todoTabs, .td13-theme) { display: none !important; }
+/* (ToDo's 完了, from the bar at the foot) those done alone: no tabs, no cards over them */
+#sec-todo.td-done-part > :is(.card:not(#todoList), .td4-view-bar, #todoTabs) { display: none !important; }
 .td-x.td23-move { color: var(--c-workout, var(--accent)); }
 /* ToDo その22 ①〜⑩ (2026-11-15): ① the set's number on the bar; ④ two to choose from; ⑥ the last price; ⑦ the places in
    order; ⑧ a step's day; ⑨ the months */
@@ -4091,17 +4091,10 @@ ul.list.td20-time > li { display: grid; grid-template-columns: minmax(0, 7em) mi
 .td14-rev > li.did .td14-rev-name { color: var(--muted); }
 .td14-rev-go { flex: none; min-height: 40px; }
 .td14-rev + .group-foot { margin-top: 8px; }
-/* ToDo その13 ①〜⑩ (2026-11-14): ③ ひみつ's name; ⑧ the day's theme over the list; ⑥ the lists to put one in; ⑦ the
-   same names, これを残す by each; ④ the size's choices */
+/* ToDo その13 ①〜⑩ (2026-11-14): ③ ひみつ's name; ⑥ the lists to put one in; ⑦ the same names, これを残す by each; ④ the
+   size's choices. (⑧ the day's theme over the list: taken out 2026-11-26, tools/REMOVED.md) */
 .td13-masked { color: var(--muted) !important; font-style: normal; }
 .td13-masked .icon { vertical-align: -2px; margin-inline-end: 4px; }
-.td13-theme { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; padding: 6px 12px; border-radius: 12px; background: var(--surface); }
-.td13-theme[hidden] { display: none; }
-.td13-theme-head { display: inline-flex; align-items: center; gap: 4px; flex: none; color: var(--muted); font-size: var(--t-foot); font-weight: 600; }
-.td13-theme-head .icon { color: var(--c-meal); }
-#td13ThemeText { flex: 1; min-width: 0; min-height: 40px; padding: 0; border: 0; background: transparent; color: var(--fg); font: inherit; font-weight: 600; }
-#td13ThemeText:focus { outline: none; }
-.td13-theme:focus-within { box-shadow: 0 0 0 2px var(--accent-fill); }
 .td13-lists { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .td13-lists .chip-btn { min-height: 44px; }
 .td13-dups > li { align-items: center; gap: 8px; }
@@ -24970,7 +24963,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月26日 12:51"; // 515aa05c (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月26日 13:19"; // 2b1be956 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -49388,11 +49381,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ---------- ToDo その13 ①〜⑩ (the user's calls, 2026-11-14): お知らせ a while from now (①), one ToDo sent as words
   // (②), ひみつ (③), the list's letters bigger or smaller (④), 節目 of ToDos done (⑤), those with no list put in one (⑥),
-  // the same ToDo twice made one (⑦), the day's theme (⑧), long untouched ones to いつかやる by themselves (⑨), and a name
+  // the same ToDo twice made one (⑦), the day's theme (⑧; taken out 2026-11-26, tools/REMOVED.md), long untouched ones to
+  // いつかやる by themselves (⑨), and a name
   // of several split into ToDos (⑩). Function declarations and var, as the page may draw before this runs ----------
   var todoThirteen = false;
   var td13NoListIds = [], td13NoListAt = 0, td13NoListDid = 0, td13SomeT = null, td13MileWas = null;
-  // kept with the account (td13): ⑤ the 節目 celebrated, ⑧ the day's theme, ⑨ after how many days (0: off)
+  // kept with the account (td13): ⑤ the 節目 celebrated, ⑧ the day's theme (kept as it was; nothing shows it since
+  // 2026-11-26), ⑨ after how many days (0: off)
   function td13Set() {
     const v = settings.get("td13") || {};
     return { miles: Array.isArray(v.miles) ? v.miles.filter((n) => Number.isFinite(n)) : [], theme: v.theme && isDay(v.theme.day || "") && typeof v.theme.text === "string" ? v.theme : null,
@@ -49557,27 +49552,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       }))]));
   }
 
-  // ⑧ きょうのテーマ: a line over ToDo's list for the day (with the account), written in place; on another day, empty
-  // again, with yesterday's said in its placeholder
-  function td13ThemeBox() {
-    let box = $("td13Theme");
-    if (box || !$("todoList")) return box;
-    const input = el("input", { type: "text", id: "td13ThemeText", maxlength: 60, enterkeyhint: "done", "aria-label": "きょうのテーマ", onchange: (ev) => {
-      const text = ev.target.value.trim();
-      td13Put({ theme: text ? { day: todayKey, text } : null });
-    }, onkeydown: (ev) => { if (ev.key === "Enter" && !ev.isComposing) ev.target.blur(); } });
-    box = el("div", { class: "td13-theme", id: "td13Theme" }, el("label", { for: "td13ThemeText", class: "td13-theme-head" }, icon("sun", 14), "きょうのテーマ"), input);
-    $("todoList").before(box);
-    return box;
-  }
-  function td13ThemeSync() {
-    const box = td13ThemeBox(), input = $("td13ThemeText");
-    if (!box || !input) return;
-    const th = td13Set().theme, now = th && th.day === todayKey ? th.text : "";
-    if (document.activeElement !== input) input.value = now;
-    input.placeholder = th && th.day === addDays(todayKey, -1) ? `きのうは「${clip(th.text, 16)}」` : "例：レポートを終わらせる";
-    box.hidden = todayTwo && tdFocusOn?.();
-  }
+  // ⑧ きょうのテーマ (a line over ToDo's list for the day, written in place): taken out at the user's call (2026-11-26,
+  // tools/REMOVED.md). The theme kept with the account (td13's theme) stays, read by nothing now
 
   // ⑨ 長く手つかずをいつかやるへ (編集; off at first): those with no 期限, not repeating, waiting or put aside, added that
   // many days ago and more, go under いつかやる by themselves as ToDo's page opens; said with 元に戻す (those taken back
@@ -49651,7 +49627,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     add("期限とお知らせ", [["時間をおいて知らせる", "長押し。30分後・1時間後・今夜・あしたの朝など"]]);
     add("整理する", [["ひみつのToDo", "長押し。一覧では名前を隠します"], ["名前を分ける", "長押し。「牛乳、卵、パン」を3件に"], ["リストなし・同じ名前の整理", "「その他」"],
       ["長く手つかずをいつかやるへ", "「編集」。期限のないToDoを、決めた日数で自動で"], ["文字の大きさ", "「編集」。一覧の文字を大きく・小さく（この端末だけ）"]]);
-    add("きょうの計画", [["きょうのテーマ", "一覧の上。その日のテーマを1行で"]]);
     add("ふりかえる", [["節目のお祝い", "10・50・100件目…の完了で紙ふぶき。「ToDoの記録」に次の節目"]]);
     add("ほかとつなぐ", [["このToDoを送る", "長押し。1件をLINEなどに"]]);
     return g;
@@ -49663,12 +49638,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const keep = todos.items.filter(td13Secret).map((t) => [t, t.text, t.memo, t.steps]);
     try { for (const [t] of keep) { t.text = TD13_SECRET; t.memo = undefined; t.steps = undefined; } return td13PrintBase(); } finally { for (const [t, s, m, st] of keep) { t.text = s; t.memo = m; t.steps = st; } }
   };
-  // after the list is drawn: ③ the secret ones hidden, ④ its size, ⑧ the theme, ⑨ the check
+  // after the list is drawn: ③ the secret ones hidden, ④ its size, ⑨ the check (⑧ the theme: taken out, 2026-11-26)
   const td13RenderBase = renderTodos;
   renderTodos = function () {
     td13RenderBase();
     if (!todoThirteen) return;
-    draw(td13Mask); draw(td13SizeApply); draw(td13ThemeSync);
+    draw(td13Mask); draw(td13SizeApply);
     if (td13Set().someDays) { clearTimeout(td13SomeT); td13SomeT = setTimeout(td13SomeCheck, 1000); }
   };
   document.addEventListener("visibilitychange", () => { if (todoThirteen && document.visibilityState === "visible" && td13Set().someDays) { clearTimeout(td13SomeT); td13SomeT = setTimeout(td13SomeCheck, 1000); } });
@@ -49699,7 +49674,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   td13InitSettings();
   todoThirteen = true;
-  td13SizeApply(); td13ThemeSync();
+  td13SizeApply();
 
   // ---------- ToDo その14 ①〜⑩ (the user's calls, 2026-11-14): a repeat's days done on a month's calendar (①), the steps
   // given 期限 up to the ToDo's (②), lines written indented made steps (③), a list copied (④), a list's memo (⑤), time
