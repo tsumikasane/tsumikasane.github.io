@@ -8691,7 +8691,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         </div>
         <div class="card">
           <div class="card-head row-between"><span id="rtHead">きょうのルーティーン</span><span class="muted small" id="rtCount"></span></div>
-          <!-- ⑧ お休みの日 (the user's call, 2026-11-10): no run of days is broken by it -->
+          <!-- ⑧ お休みの日 (the user's call, 2026-11-10): no run of days is broken by it. Days are taken off from つみかさね's
+               お休みの日 and the gear's お休みの予定; the button here (きょうをお休みにする) was taken out, 2026-11-26, tools/REMOVED.md -->
           <p class="rt-rest-note" id="rtRestNote" hidden>お休みの日です。チェックしなくても、連続は途切れません。</p>
           <ul class="list" id="rtList"></ul>
           <div class="rt-foot" id="rtFoot"></div>
@@ -15308,15 +15309,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     rt6Feel(date, was, n >= t ? "check" : by > 0 ? "tick" : ""); // (その6 ⑩)
   }
   const rtDayName = (d) => (d === todayKey ? "きょう" : d === addDays(todayKey, -1) ? "きのう" : fmtMDW(d));
-  // ⑧ the day taken off, or back on, with 元に戻す
+  // ⑧ a day taken off, or back on: from つみかさね's お休みの日 (setTsumiRest). The page's own きょうをお休みにする (お休みをやめる
+  // with it, under the list) was taken out at the user's call (2026-11-26, tools/REMOVED.md); the days taken off stay お休み
   function setRtRest(date, rest) {
     const { done, at, counts } = rtDayEdit(date);
     putRtDay(date, done, at, counts, rest);
-  }
-  function toggleRtRest(date = viewDate) {
-    const rest = !rtRest(date);
-    setRtRest(date, rest);
-    flash(rest ? `${rtDayName(date)}をお休みにしました。連続は途切れません` : `${rtDayName(date)}のお休みをやめました`, () => setRtRest(date, !rest));
   }
   // ⑨ the last of a day's items done: confetti and a word, with the days in a row it has been so
   function cheerRt(date, was) {
@@ -15440,16 +15437,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("button", { type: "button", class: "icon-btn rt-opts", "aria-label": `「${r.name}」の設定`, "aria-haspopup": "dialog", onclick: (ev) => openRecEdit("rtItem", r.id, ev.detail === 0) }, icon("more", 22)),
       delButton(() => removeWithUndo(routines, r.id), "削除", r.name));
   }
-  // under the list: ⑨ all done (and the days in a row so), or the run of such days still going today; ⑧ the day off or on
+  // under the list: ⑨ all done (and the days in a row so), or the run of such days still going today, and the tools for the
+  // day's still to do (⑧ きょうをお休みにする with them: taken out at the user's call, 2026-11-26, tools/REMOVED.md)
   function renderRtFoot(st, rest) {
     const today = viewDate === todayKey, run = st.items.length ? rtAllRun(viewDate) : 0, left = st.items.length - st.done.length;
     // (その2 ① the time they were all done, ④ the minutes left)
     const allAt = rt2AllAt(st, viewDate), mins = today && !st.all ? rt2LeftWords(st, viewDate) : "";
     const words = st.all ? (allAt ? `${rt2Hm(allAt)}に` : "") + "ぜんぶできました" + (run >= 2 ? `（${run}日連続）` : "")
       : today && run >= 1 && !rest ? `ぜんぶできた日が ${run}日続いています。あと ${left} 項目です${mins ? `（${mins}）` : ""}` : mins ? `のこり ${left} 項目・${mins}` : "";
+    const tools = st.items.length ? rt2FootButtons(st, today).filter(Boolean) : []; // (その2 ⑤ 1つずつ進める, ⑦ のこりをぜんぶチェック, その3 ① 項目をパスする)
     setChildren($("rtFoot"), words ? el("p", { class: "rt-all" + (st.all ? " on" : "") }, words) : null,
-      st.items.length || rest ? el("div", { class: "label-tools" }, rt2FootButtons(st, today), // (その2 ⑤ 1つずつ進める, ⑦ のこりをぜんぶチェック)
-        el("button", { type: "button", class: "link-btn", onclick: () => toggleRtRest() }, rest ? "お休みをやめる" : `${today ? "きょう" : "この日"}をお休みにする`)) : null);
+      tools.length ? el("div", { class: "label-tools" }, tools) : null);
     rt6FootMore(st); // (その6 ⑥ かかった時間)
   }
   // ⑩ the items paused, each with 再開
@@ -24963,7 +24961,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月26日 14:56"; // 61d33800 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月26日 15:24"; // f6a427e5 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }

@@ -56,11 +56,10 @@ const rows = (p) => p.evaluate(() => [...document.querySelectorAll("#rtList > li
   await p.locator("#rtWeek tbody tr").nth(2).locator("td").nth(4).locator("button").click(); await p.waitForTimeout(300);
   let days = await ls(p, "routineDays");
   ok(days.find((d) => d.id === "2026-11-08").done.includes("r3"), "① 11/8 checked from the table");
-  // ⑧ お休み today, and back
-  await p.locator('#rtFoot button:has-text("お休みにする")').click(); await p.waitForTimeout(300);
-  ok(await p.isVisible("#rtRestNote") && (await txt(p, "#rtCount")) === "お休み・1 / 4" && (await ls(p, "routineDays")).find((d) => d.id === today).rest === true, "⑧ きょうをお休みに: " + await txt(p, "#rtCount"));
-  await p.locator('#rtFoot button:has-text("お休みをやめる")').click(); await p.waitForTimeout(300);
-  ok(await p.isHidden("#rtRestNote") && !(await ls(p, "routineDays")).find((d) => d.id === today).rest, "⑧ お休みをやめる");
+  // ⑧ きょうをお休みにする under the list (お休みをやめる with it): taken out at the user's call (2026-11-26, tools/REMOVED.md).
+  // The day's other tools stay (1つずつ進める, のこりをぜんぶチェック, 項目をパスする)
+  const foot = await txt(p, "#rtFoot");
+  ok(!(await p.locator("#rtFoot button", { hasText: "お休み" }).count()) && !foot.includes("お休み") && foot.includes("1つずつ進める") && foot.includes("項目をパスする") && await p.isHidden("#rtRestNote"), "⑧ no きょうをお休みにする under the list (the other tools kept): " + foot);
   // ⑨ all of today's done
   await p.locator('#rtList li[data-rt="r1"] .check').click(); await p.locator('#rtList li[data-rt="r3"] .check').click(); await p.waitForTimeout(200);
   for (let i = 0; i < 5; i++) { await p.locator('#rtList li[data-rt="r2"] .check').click(); await p.waitForTimeout(120); }
@@ -76,6 +75,9 @@ const rows = (p) => p.evaluate(() => [...document.querySelectorAll("#rtList > li
   ok((await txt(p, "#rtCalKey")).includes("ぜんぶできた日 1 日・お休み 1 日"), "② key: " + await txt(p, "#rtCalKey"));
   await p.locator('#rtCal .rtc-d:has(.dn:text-is("9"))').click(); await p.waitForTimeout(400);
   ok((await txt(p, "#rtHead")) === "11月9日（月）のルーティーン", "② a day pressed: " + await txt(p, "#rtHead"));
+  // ⑧ 11/5, taken off before: お休み as it was (said so, no button to call it off here: taken out, 2026-11-26)
+  await p.locator('#rtCal .rtc-d:has(.dn:text-is("5"))').click(); await p.waitForTimeout(400);
+  ok((await txt(p, "#rtHead")) === "11月5日（木）のルーティーン" && await p.isVisible("#rtRestNote") && (await txt(p, "#rtCount")).startsWith("お休み") && !(await p.locator("#rtFoot button", { hasText: "お休み" }).count()), "⑧ 11/5: お休み as it was, no button here", [await txt(p, "#rtCount"), await txt(p, "#rtFoot")]);
   await p.locator("#sec-routine .datenav .chip-btn").click(); await p.waitForTimeout(300);
   // ③ each item's record
   const st = await p.evaluate(() => [...document.querySelectorAll("#rtStats li")].map((li) => li.innerText.replace(/\s+/g, " ").trim()));
@@ -135,6 +137,20 @@ const rows = (p) => p.evaluate(() => [...document.querySelectorAll("#rtList > li
   await d.locator("#rtCalCard").scrollIntoViewIfNeeded();
   await d.screenshot({ path: out + "/rt-dark-cal.png" });
   ok(!d.errs.length, "dark: no page errors: " + d.errs.join(" | "));
+  // ⑧ today taken off now from つみかさね's お休みの日 (the button on this page taken out, 2026-11-26): お休み here as before, and
+  // called off there
+  const q = await phone(b, at("12:00", today));
+  await seed(q, DATA, "tsumi");
+  const tsRest = async (label) => { await q.click("#tsumiSettings"); await q.waitForTimeout(800); await q.locator("#tsumiRestList button", { hasText: label }).click(); await q.waitForTimeout(400); await q.click("#sheetDone"); await q.waitForTimeout(500); };
+  const go = async (h) => { await q.goto(URL0 + "#" + h); await q.reload(); await q.waitForTimeout(800); };
+  await tsRest("きょうをお休みにする");
+  await go("routine");
+  ok(await q.isVisible("#sec-routine") && (await ls(q, "routineDays")).find((x) => x.id === today)?.rest === true && await q.isVisible("#rtRestNote") && (await txt(q, "#rtCount")).startsWith("お休み") && !(await q.locator("#rtFoot button", { hasText: "お休み" }).count()), "⑧ today taken off from つみかさね: お休み here", [await txt(q, "#rtCount"), await txt(q, "#rtFoot")]);
+  await go("tsumi");
+  await tsRest("きょうのお休みをやめる");
+  await go("routine");
+  ok(await q.isVisible("#sec-routine") && !(await ls(q, "routineDays")).find((x) => x.id === today)?.rest && await q.isHidden("#rtRestNote") && (await txt(q, "#rtCount")) === "1 / 4", "⑧ called off from つみかさね: not お休み here", await txt(q, "#rtCount"));
+  ok(!q.errs.length, "つみかさね's お休み: no page errors: " + q.errs.join(" | "));
   await b.close();
   console.log(fails ? `${fails} FAILED` : "ALL OK");
 })();
