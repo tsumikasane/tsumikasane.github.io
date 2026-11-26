@@ -24,7 +24,7 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   ok(!(await p.$("#bt6Feel")) && !(await p.$("#bt6Bulk")), "⑨ ② gone");
   // ① the calendar: 3 days, a day pressed, この日に勤務を入れる
   const cal = await txt(p, "#bt6Cal");
-  ok(cal.includes("11月の勤務カレンダー") && /3 日・15\s時間・15,000\s円/.test(cal) && (await txt(p, '#bt6Cal [data-day="2026-11-02"]')) === "2 5h", "① " + cal);
+  ok(cal.includes("11月の勤務カレンダー") && !/日・\d+\s*時間・/.test(cal) && !cal.includes("カレンダーの月で数えています") && (await txt(p, '#bt6Cal [data-day="2026-11-02"]')) === "2 5h", "① (the month's 3 日・15 時間・15,000 円 under it: taken out at the user's call, 2026-11-27) " + cal);
   ok(await p.evaluate(() => document.querySelector('#bt6Cal [data-day="2026-11-02"]').classList.contains("lv2")), "① tinted by its hours");
   await p.click('#bt6Cal [data-day="2026-11-02"]'); await p.waitForTimeout(300);
   ok((await txt(p, "#bt6Cal .bt6-cal-day")).includes("17:00〜22:00"), "① the day's shifts");

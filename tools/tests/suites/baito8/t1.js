@@ -16,9 +16,9 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ok(/予定より 長く 30\s分（1 回） 働きました/.test(sum), "⑤ " + sum);
   ok(/手取りの見込み 約 [\d,]+\s円（明細の手取りの割合 97%）/.test(sum), "⑧");
   ok(!sum.includes("時給 1,100円になります"), "⑩ not said");
-  // ⑦ 休みの日: 10 days of shifts in November
+  // ⑦ 休みの日 (○月の休み ○ 日・次の休みは …, under 勤務カレンダー): taken out at the user's call (2026-11-27, tools/REMOVED.md)
   const cal = await txt(p, "#bt6Cal");
-  ok(/11月の休み 20\s日・/.test(cal) && cal.includes("次の休みは きょう"), "⑦ " + cal);
+  ok(cal.includes("11月の勤務カレンダー") && !cal.includes("の休み") && !cal.includes("次の休みは") && !(await p.$("#bt6Cal .bt8-off")), "⑦ gone: " + cal);
   // ① バイトの記録 and ②③ 働き方: taken out at the user's call (2026-11-19, tools/REMOVED.md)
   ok(!(await p.$("#bt8Records")) && !(await p.$("#bt8Ways")), "①②③ バイトの記録・働き方: gone");
   // ⑥ 出勤の押し忘れ: gone with 出勤・退勤 (no お知らせ)

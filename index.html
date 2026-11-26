@@ -2316,7 +2316,6 @@ dialog.bt7-photo-view { width: 100vw; max-width: 100vw; height: 100dvh; max-heig
 dialog.bt7-photo-view img { display: block; width: 100%; height: calc(100% - 60px); object-fit: contain; }
 .bt7-photo-close { display: block; margin: 8px auto 0; }
 /* バイト その8 */
-.bt8-off { margin: 4px 0 0; }
 .bt8-swap { display: grid; gap: 6px; justify-items: start; }
 /* バイト その9 */
 .bt9-end { margin-inline-end: auto; }
@@ -2354,11 +2353,6 @@ details.bt9-parts > summary { cursor: pointer; color: var(--accent); min-height:
 .bt11-dots { display: flex; justify-content: center; gap: 2px; height: 6px; }
 .bt11-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--jc); }
 /* バイト その12: ⑤ the words to send, ⑥ the changes, ⑦ 定休日 (③ ふりかえり, ④ what it cost: taken off 2026-11-18; ② the shift just ended went with 出勤・退勤) */
-.bt12-acts { display: grid; gap: 6px; margin-top: 6px; }
-.bt12-acts-row { display: flex; flex-wrap: wrap; gap: 4px 16px; }
-.bt12-msg { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--fill); }
-.bt12-msg select, .bt12-msg input { min-height: 40px; min-width: 0; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background-color: var(--surface); color: var(--fg); font: inherit; }
-.bt12-msg-at { display: inline-flex; align-items: center; gap: 6px; }
 .bt12-changes { display: grid; gap: 2px; }
 .bt12-changes ul { margin: 0; padding: 0; list-style: none; font-size: var(--t-sub); color: var(--muted); }
 .bt12-closed { display: grid; gap: 4px; }
@@ -24905,7 +24899,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 8:07"; // 4bf54541 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 8:55"; // b382f604 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -61950,17 +61944,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       by.map((v, i) => el("div", { class: i + 1 === cm ? "cur" : "" }, el("b", {}, man(v)), el("i", { class: i + 1 > cm ? "later" : "", style: `height:${v ? Math.max(3, Math.round((v / max) * 88)) : 0}px` }), el("small", {}, `${i + 1}月`))));
     const parts = [el("strong", { class: "bt2-head" }, `${y}年の月ごとの給料`), bars];
     if (y === ty) {
+      // (このペース（最近の月 平均 …）なら、年末までに約 …, with what it said of the mark ahead — ○月ごろに目安の … を超えそう,
+      // 目安の … まで、約 … — and 給料の入った月がたまると、年末までの見通しが出ます before there was a pace: taken out at the
+      // user's call, 2026-11-27, tools/REMOVED.md. The mark passed already, and the hours left to it, said as before)
       const wall = num(jobSet().wall), sofar = by.slice(0, cm).reduce((a, b) => a + b, 0), recent = by.slice(Math.max(0, cm - 3), cm).filter((v) => v > 0);
-      const avg = recent.length ? recent.reduce((a, b) => a + b, 0) / recent.length : 0, ahead = by.slice(cm).map((v) => Math.max(v, avg)), proj = sofar + ahead.reduce((a, b) => a + b, 0);
-      if (avg > 0) {
-        let over = 0, cum = sofar;
-        if (wall > 0) for (let i = 0; i < ahead.length; i++) { cum += ahead[i]; if (cum > wall && sofar <= wall) { over = cm + i + 1; break; } }
-        const wage = bt2WageOn(jobs[0], todayKey), left = wall > 0 ? wall - yearPay(y) : 0;
-        parts.push(el("p", { class: "bt2-pace" + (wall > 0 && proj > wall ? " warn" : "") },
-          el("span", { class: "phrase" }, `このペース（最近の月 平均 ${fmtYen(Math.round(avg))}）なら、年末までに約 ${fmtYen(Math.round(proj / 1000) * 1000)}。`),
-          wall > 0 ? el("span", { class: "phrase" }, sofar > wall ? `目安の ${fmtYen(wall)} をもう超えています。` : over ? `${over}月ごろに目安の ${fmtYen(wall)} を超えそうです。` : `目安の ${fmtYen(wall)} まで、約 ${fmtYen(Math.round((wall - proj) / 1000) * 1000)} の余裕があります。`) : null,
-          wall > 0 && left > 0 && wage > 0 ? el("span", { class: "phrase" }, `いま入っているシフトのほかに、あと約 ${fmtN(Math.floor(left / wage))} 時間働けます（時給 ${fmtN(wage)}円で）。`) : null));
-      } else parts.push(el("p", { class: "sub bt2-pace" }, "給料の入った月がたまると、年末までの見通しが出ます。"));
+      if (recent.length && wall > 0) {
+        const wage = bt2WageOn(jobs[0], todayKey), left = wall - yearPay(y);
+        const said = [sofar > wall ? `目安の ${fmtYen(wall)} をもう超えています。` : "", left > 0 && wage > 0 ? `いま入っているシフトのほかに、あと約 ${fmtN(Math.floor(left / wage))} 時間働けます（時給 ${fmtN(wage)}円で）。` : ""].filter(Boolean);
+        if (said.length) parts.push(el("p", { class: "bt2-pace" + (sofar > wall ? " warn" : "") }, said.map((w) => el("span", { class: "phrase" }, w))));
+      }
     }
     box.hidden = false;
     setChildren(box, parts);
@@ -63035,7 +63027,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     renderBt3Next(); renderBt3Aim(); renderBt3Settings();
   }
 
-  // ① 次のバイト: the shift under way or the next, with the time to it, and the two after
+  // ① 次のバイト: the shift under way or the next (the time to it — あと ○ 時間, or ○ まで（残り …） while it goes on — and the two
+  // after it, そのあと：…, taken out at the user's call, 2026-11-27, tools/REMOVED.md)
   function bt3Upcoming() {
     const now = Date.now();
     return shifts.items.filter((x) => isDay(x.date || "") && isHm(x.start || "") && isHm(x.end || "") && x.date >= addDays(todayKey, -1)).map((x) => {
@@ -63043,25 +63036,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       return { x, a, b };
     }).filter((s) => s.b > now).sort((p, q) => p.a - q.a);
   }
-  function bt3Until(ms) {
-    const min = Math.max(0, Math.round(ms / 60000));
-    if (min < 60) return `あと ${min} 分`;
-    if (min < 24 * 60) return `あと ${Math.floor(min / 60)} 時間${min % 60 ? ` ${min % 60} 分` : ""}`;
-    return `あと ${Math.ceil(min / 1440)} 日`;
-  }
   function renderBt3Next() {
     const box = $("bt3Next"), list = jobList().length ? bt3Upcoming() : [];
     box.hidden = !list.length;
     if (box.hidden) { box.replaceChildren(); return; }
-    const [n, ...rest] = list, now = Date.now(), nm = bt3JobName(n.x), word = (s) => `${bt3DayWord(s.x.date) || fmtShort(s.x.date)} ${s.x.start}〜${s.x.end}`;
-    const days = n.x.date > todayKey ? daysBetween(todayKey, n.x.date) : 0;
+    const [n] = list, now = Date.now(), nm = bt3JobName(n.x);
+    const notes = [num(n.x.rest) > 0 ? `休憩 ${num(n.x.rest)} 分` : "", n.x.memo || "", n.x.tentative ? "仮のシフト" : ""].filter(Boolean); // (その6 ⑧ 仮)
     setChildren(box, el("strong", { class: "bt2-head" }, n.a <= now ? "いまはバイトの時間です" : "次のバイト"),
       el("p", { class: "bt3-next-main" }, bt3Ph(`${bt3DayWord(n.x.date) ? bt3DayWord(n.x.date) + " " : ""}${fmtShort(n.x.date)} ${n.x.start}〜${n.x.end}`, nm ? `（${nm}）` : "")),
-      el("p", { class: "sub" }, bt3Ph(n.a <= now ? `${n.x.end} まで（${bt3Until(n.b - now).replace("あと", "残り")}）` : days >= 1 ? `あと ${days} 日` : bt3Until(n.a - now), num(n.x.rest) > 0 ? `・休憩 ${num(n.x.rest)} 分` : "", n.x.memo ? `・${n.x.memo}` : "", n.x.tentative ? "・仮のシフト" : "")), // (その4 ④ メモ, その6 ⑧ 仮)
+      notes.length ? el("p", { class: "sub" }, bt3Ph(...notes.map((w, i) => (i ? "・" + w : w)))) : null,
       bt5NextMore(n), // (その5 ④ 持ち物・電話・地図, ⑤ 家を出る時刻)
-      bt11NextWx(n), // (その11 ② 行き・帰りの天気、家に着く時刻)
-      bt12NextActs(n), // (その12 ⑤ 遅れる・休む連絡)
-      rest.length ? el("ul", {}, rest.slice(0, 2).map((s) => el("li", {}, `そのあと：${word(s)}${bt3JobName(s.x) ? `（${bt3JobName(s.x)}）` : ""}`))) : null);
+      bt11NextWx(n)); // (その11 ② 家に着く時刻; the weather there and back with its 傘, and その12 ⑤ 遅れる・休む連絡, taken out at the user's call, 2026-11-27)
   }
 
   // ③ a shift's rest looked over: past 6 hours worked, 45 minutes; past 8, an hour (as the law asks of the place)
@@ -64200,8 +64185,6 @@ ${parts.join("\n")}
     const box = $("bt6Cal"), ym = viewMonth, n = daysInMonth(ym), ws = weekStart(), lead = (parseYmd(ym + "-01").getDay() - ws + 7) % 7, by = new Map();
     for (const x of shifts.items) if (isDay(x.date || "") && monthOf(x.date) === ym) { if (!by.has(x.date)) by.set(x.date, []); by.get(x.date).push(x); }
     if (bt6CalPick && monthOf(bt6CalPick) !== ym) bt6CalPick = null;
-    let days = 0, mins = 0, pay = 0;
-    for (const list of by.values()) { days++; for (const x of list) { mins += shiftMinutes(x).all; pay += shiftPay(x, jobOf(x.jobId)); } }
     const cells = [...Array.from({ length: 7 }, (_, i) => el("span", { class: "bt6-wd", "aria-hidden": "true" }, WD[(ws + i) % 7])), ...Array.from({ length: lead }, () => el("span", {}))];
     for (let d = 1; d <= n; d++) {
       const day = `${ym}-${pad(d)}`, list = by.get(day) || [], m = sum(list, (x) => shiftMinutes(x).all), lv = !m ? 0 : m <= 240 ? 1 : m <= 420 ? 2 : 3, tent = list.length && list.every((x) => x.tentative);
@@ -64211,8 +64194,9 @@ ${parts.join("\n")}
         el("span", { class: "dn" }, String(d)), m ? el("span", { class: "dh" }, `${Math.round((m / 60) * 10) / 10}h`) : null, bt11CalDots(list))); // (その11 ⑨ 色)
     }
     const parts = [el("strong", { class: "bt2-head" }, `${Number(ym.slice(5))}月の勤務カレンダー`), el("div", { class: "bt6-cal" }, cells),
-      el("p", { class: "sub" }, days ? bt4Ph(`${days} 日・${durText(mins)}・${fmtYen(pay)}`, "（カレンダーの月で数えています）") : "この月の勤務はまだありません。"),
-      bt8OffDays(ym, by)]; // (その8 ⑦ 休みの日)
+      by.size ? null : el("p", { class: "sub" }, "この月の勤務はまだありません。")];
+    // (the month's ○ 日・○ 時間・○ 円（カレンダーの月で数えています） under it, and その8 ⑦ 休みの日 — ○月の休み ○ 日・次の休みは …
+    // — taken out at the user's call, 2026-11-27, tools/REMOVED.md)
     if (bt6CalPick) {
       const list = (by.get(bt6CalPick) || []).sort((a, b) => String(a.start).localeCompare(String(b.start)));
       parts.push(el("div", { class: "bt6-cal-day" }, el("p", { class: "bt6-cal-dayhead" }, fmtMDW(bt6CalPick)),
@@ -65356,12 +65340,11 @@ ${parts.join("\n")}
   jn6Ready = true;
 
   // ---------- バイト その8 ①〜⑩ (the user's calls, 2026-11-14): records (①), the hours of the day worked (②) and the days
-  // of the week (③), シフト希望 by the usual days (④), longer or shorter than planned (⑤), the days off (⑦), 手取り
+  // of the week (③), シフト希望 by the usual days (④), longer or shorter than planned (⑤), the days off (⑦, taken out
+  // 2026-11-27), 手取り
   // from the slips (⑧), asking for someone to take a shift (⑨), and a 時給 to come (⑩); ⑥ 出勤の押し忘れ went with
   // 出勤・退勤 (2026-11-18), and ①②③ and ⑩ were taken off 2026-11-19 (tools/REMOVED.md). Function declarations and var, as the page may draw before this runs ----------
   const bt8Mins = (x) => shiftMinutes(x).all;
-  // every shift's day, for the days off
-  function bt8Days() { return new Set(shifts.items.filter((x) => isDay(x.date || "")).map((x) => x.date)); }
 
   // ⑩ これから時給が変わる日: taken out at the user's call (2026-11-19, tools/REMOVED.md); wageNext stays on the job, not read
 
@@ -65383,23 +65366,8 @@ ${parts.join("\n")}
     return out.length ? el("div", { class: "bt3-notes bt8-notes" }, out) : null;
   }
 
-  // ⑦ 休みの日: the month's days without a shift, and from today the next day off with how many in a row
-  function bt8OffDays(ym, by) {
-    const n = daysInMonth(ym), off = Array.from({ length: n }, (_, i) => `${ym}-${pad(i + 1)}`).filter((d) => !by.has(d)).length;
-    const parts = [`${Number(ym.slice(5))}月の休み ${off} 日`];
-    if (ym === monthOf(todayKey)) {
-      const days = bt8Days();
-      let d = todayKey, k = 0;
-      while (days.has(d) && k < 60) { d = addDays(d, 1); k++; }
-      if (k < 60) {
-        let run = 0;
-        while (!days.has(addDays(d, run)) && run < 14) run++;
-        const w = d === todayKey ? "きょう" : d === addDays(todayKey, 1) ? "あした" : fmtShort(d), more = [...days].some((x) => x > d); // (その9: no shift ahead, said so)
-        parts.push(!more ? `次の休みは ${w}から（この先の勤務はまだ入っていません）` : run >= 2 ? `次の休みは ${w}から ${run >= 14 ? "14日以上" : run + " "}連休` : `次の休みは ${w}`);
-      }
-    }
-    return el("p", { class: "sub bt8-off" }, bt4Ph(...parts.map((x, i) => (i < parts.length - 1 ? x + "・" : x))));
-  }
+  // ⑦ 休みの日 (the month's days without a shift, and from today the next day off with how many in a row, under 勤務カレンダー):
+  // taken out at the user's call (2026-11-27, tools/REMOVED.md)
 
   // ① 記録 (バイトの記録) and ②③ 働き方: taken out at the user's call (2026-11-19, tools/REMOVED.md)
 
@@ -66100,13 +66068,12 @@ ${parts.join("\n")}
   }
   function bt11UmbWord(list) { return list.some((x) => bt11Umbrella(x)) ? "　雨の予報です。傘を持っていきましょう" : ""; }
   function bt11WxText(w) { return `${bt11WxWord(w.code)}${w.temp != null && Number.isFinite(Number(w.temp)) ? ` ${Math.round(Number(w.temp))}℃` : ""}${w.rain >= 30 ? `（雨 ${w.rain}%）` : ""}`; }
+  // ② on 次のバイト: when home is reached, by the job's 通勤 (the weather there and back — 行き ○:○○ 晴れ ○℃・帰り … — and 傘を
+  // 持っていきましょう over it: taken out at the user's call, 2026-11-27, tools/REMOVED.md; the 傘 in その7's お知らせ stays)
   function bt11NextWx(n) {
     const t = bt11Trip(n.x);
-    if (!t) return null;
-    const on = n.a <= Date.now(), wx = [!on && t.wGo ? `行き ${t.go.hm} ${bt11WxText(t.wGo)}` : "", t.wBack ? `帰り ${t.back.hm} ${bt11WxText(t.wBack)}` : ""].filter(Boolean), umb = bt11Umbrella(n.x);
-    if (!wx.length && !umb && !(t.c > 0)) return null;
-    return el("div", { class: "bt11-wx" }, wx.length ? el("p", {}, bt4Ph(...wx.map((w, i) => (i < wx.length - 1 ? w + "・" : w)))) : null,
-      umb ? el("p", { class: "warn" }, "傘を持っていきましょう") : null, t.c > 0 ? el("p", { class: "sub" }, keepUnits(`家に着くのは ${t.home.hm} ごろ`)) : null);
+    if (!t || !(t.c > 0)) return null;
+    return el("div", { class: "bt11-wx" }, el("p", { class: "sub" }, keepUnits(`家に着くのは ${t.home.hm} ごろ`)));
   }
 
   // ③ シフト希望とのちがい (under the month's shifts' head, and シフト希望では × on a row): taken out with them at the user's
@@ -66521,7 +66488,7 @@ ${parts.join("\n")}
 
   // ---------- バイト その12 ①〜⑩ (the user's calls, 2026-11-15): お知らせ on a 締め日 (①), what a shift came to as it ends
   // (②), the ふりかえり's leanings (③), what the job cost (家計簿's #バイト) against its pay (④), words to say one is late or
-  // can't come (⑤), a shift's times as they were before a change (⑥), a job's 定休日 (⑦), a shift's own 交通費 and place
+  // can't come (⑤, taken out 2026-11-27), a shift's times as they were before a change (⑥), a job's 定休日 (⑦), a shift's own 交通費 and place
   // (⑧), 退勤 at the planned end (⑨), and what to ask before starting (⑩); ② and ⑨ went with 出勤・退勤 (2026-11-18). Function declarations and var, as the page may
   // draw before this runs ----------
   function bt12Set() { const v = settings.get("bt12") || {}; return { cutOn: !!v.cutOn, cutAt: isHm(v.cutAt || "") ? v.cutAt : "21:00" }; }
@@ -66558,38 +66525,8 @@ ${parts.join("\n")}
   $("bt12CutOn").addEventListener("change", (ev) => bt12SaveAlarm({ cutOn: ev.target.checked }));
   $("bt12CutAt").addEventListener("change", (ev) => { if (isHm(ev.target.value)) bt12SaveAlarm({ cutAt: ev.target.value }); });
 
-  // ⑤ 遅れる・休む連絡: words for the next shift, sent (LINE…) or copied; the panel kept (and what is typed) while drawn again
-  var bt12Msg = { kind: "", id: "", box: null };
-  function bt12MsgText(x) {
-    const when = `${bt3DayWord(x.date) || fmtShort(x.date)} ${x.start}〜${x.end}`, b = bt12Msg.box;
-    const why = b.querySelector("[data-m='why']").value, at = b.querySelector("[data-m='at']")?.value;
-    if (bt12Msg.kind === "late") {
-      const cause = why === "train" ? "電車が遅れていて、" : why === "sick" ? "体調がすぐれず、" : "";
-      return `おつかれさまです。${when}のシフトですが、${cause}${isHm(at || "") ? `${at.replace(/^0/, "")}ごろの到着になりそうです` : "少し遅れてしまいそうです"}。ご迷惑をおかけして、すみません。`;
-    }
-    const cause = why === "sick" ? "体調が悪く、" : why === "family" ? "家の用事ができてしまい、" : why === "school" ? "学校の用事が入ってしまい、" : "";
-    return `おつかれさまです。${when}のシフトですが、${cause}お休みさせていただけないでしょうか。急な連絡になってしまい、申し訳ありません。`;
-  }
-  function bt12MsgOpen(kind, x) {
-    if (bt12Msg.kind === kind && bt12Msg.id === x.id) { bt12Msg = { kind: "", id: "", box: null }; renderBt3Next(); return; }
-    const late = kind === "late", s = bt11Span(x), at = s ? bt11Hm(s[0] + 15 * 60e3) : null;
-    const why = el("select", { "data-m": "why", "aria-label": late ? "遅れるわけ" : "休むわけ" },
-      (late ? [["train", "電車の遅れ"], ["sick", "体調"], ["", "書かない"]] : [["sick", "体調不良"], ["school", "学校の用事"], ["family", "家の用事"], ["", "書かない"]]).map(([v, t]) => el("option", { value: v }, t)));
-    const box = el("div", { class: "bt12-msg", "data-kind": kind },
-      el("div", { class: "bt3-ask-row" }, why, late ? el("label", { class: "bt12-msg-at" }, el("span", {}, "着くのは"), el("input", { type: "time", "data-m": "at", value: at ? `${pad(Number(at.hm.split(":")[0]))}:${at.hm.split(":")[1]}` : "" })) : null),
-      el("div", { class: "bt3-ask-row" }, el("button", { type: "button", class: "btn sm", "data-m": "send", onclick: () => bt3SendText(bt12MsgText(x), late ? "遅れる連絡" : "休む連絡", "連絡の文をコピーしました。LINEなどに貼り付けられます") }, "文字で送る"),
-        el("span", { class: "sub" }, late ? "お店に電話するのがいちばん確かです。" : "代わりを探すときは、勤務の編集の「代わりのお願い」も使えます。")));
-    bt12Msg = { kind, id: x.id, box };
-    renderBt3Next();
-  }
-  function bt12NextActs(n) {
-    const x = n.x;
-    if (bt12Msg.id && bt12Msg.id !== x.id) bt12Msg = { kind: "", id: "", box: null };
-    const now = Date.now(), late = now < n.a + 3600e3, off = now < n.a;
-    if (!late && !off) return null;
-    const btn = (kind, w) => el("button", { type: "button", class: "link-btn", "data-msg": kind, "aria-expanded": String(bt12Msg.kind === kind), onclick: () => bt12MsgOpen(kind, x) }, w);
-    return el("div", { class: "bt12-acts" }, el("div", { class: "bt12-acts-row" }, late ? btn("late", "遅れる連絡") : null, off ? btn("off", "休む連絡") : null), bt12Msg.kind ? bt12Msg.box : null);
-  }
+  // ⑤ 遅れる・休む連絡 (on 次のバイト: words for it, sent by LINE… or copied): taken out at the user's call (2026-11-27,
+  // tools/REMOVED.md)
 
   // ⑥ 変更の記録: a shift's day and times before each change (the sheet, その11 ⑥), the last 5; said on its row for 2 weeks
   function bt12Changed(x, patch) {

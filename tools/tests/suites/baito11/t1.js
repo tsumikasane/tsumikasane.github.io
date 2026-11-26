@@ -13,9 +13,10 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
   // ② 次のバイト: there and back, 傘, home at 23:30
+  // (the weather there and back, 行き … ・帰り …, and 傘を持っていきましょう on 次のバイト: taken out at the user's call,
+  // 2026-11-27, tools/REMOVED.md; when home is reached stays, and the 傘 in その7's お知らせ, below)
   const wx = await txt(p, "#bt3Next .bt11-wx");
-  ok(wx === "行き 16:30 くもり 12℃・帰り 23:00 雨 8℃（雨 70%） 傘を持っていきましょう 家に着くのは 23:30 ごろ", "② " + wx);
-  ok(await p.evaluate(() => document.querySelector("#bt3Next .bt11-wx p.warn")?.textContent === "傘を持っていきましょう"), "② 傘 in red");
+  ok(wx === "家に着くのは 23:30 ごろ" && !(await p.$("#bt3Next .bt11-wx p.warn")) && !(await txt(p, "#bt3Next")).includes("行き"), "② home at 23:30 alone: " + wx);
   // ① 前の勤務から 8 時間（短め） on a shift's row: went with the month's list at the user's call (2026-11-26,
   // tools/REMOVED.md); said as a shift goes in (t2)
   // ③ シフト希望とのちがい (11月のシフト希望とくらべると…, and シフト希望では × on a row): taken out with the month's list

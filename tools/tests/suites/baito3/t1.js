@@ -12,9 +12,10 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   const p = await phone(b, at("12:00", today));
   await seed(p, { ...DATA, moneyPart: undefined }, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(800);
-  // ① the next shift
+  // ① the next shift (the time to it, あと 1 日, and the ones after it, そのあと：…, taken out at the user's call, 2026-11-27,
+  // tools/REMOVED.md)
   const nx = await txt(p, "#bt3Next");
-  ok(nx.includes("次のバイト") && nx.includes("あした 11/13（金） 17:00〜22:00") && /あと 1\s日/.test(nx) && nx.includes("そのあと：11/20"), "① next: " + nx);
+  ok(nx.includes("次のバイト") && nx.includes("あした 11/13（金） 17:00〜22:00") && !/あと\s*\d/.test(nx) && !nx.includes("そのあと"), "① next: " + nx);
   // ④ this week 11/8〜11/14: 7h + 4.5h = 11.5h of 20; ⑤ the aim
   const aim = await txt(p, "#bt3Aim2");
   ok(aim.includes("今週（11/8〜11/14）は 11.5 時間") && aim.includes("上限 20 時間まで あと 8.5 時間"), "④ week: " + aim);

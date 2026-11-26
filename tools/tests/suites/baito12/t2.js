@@ -17,17 +17,8 @@ const shift = async (p, id) => (await ls(p, "shifts")).find((x) => x.id === id);
   await p.addInitScript(() => { Object.defineProperty(navigator, "share", { value: undefined, configurable: true }); Object.defineProperty(navigator, "canShare", { value: undefined, configurable: true }); window.__copied = ""; Object.defineProperty(navigator, "clipboard", { value: { writeText: async (t) => { window.__copied = t; } }, configurable: true }); });
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
-  // ⑤ 遅れる: the time kept as typed while drawn again; 休む
-  await p.click('#bt3Next [data-msg="late"]'); await p.waitForTimeout(200);
-  ok((await p.inputValue('#bt3Next .bt12-msg [data-m="at"]')) === "17:15" && (await p.inputValue('#bt3Next .bt12-msg [data-m="why"]')) === "train", "⑤ late's panel");
-  await p.fill('#bt3Next .bt12-msg [data-m="at"]', "17:30");
-  await p.click("#monthNav .navbtn >> nth=1"); await p.waitForTimeout(300); await p.click("#monthNav .navbtn >> nth=0"); await p.waitForTimeout(300); // (drawn again: その9 ⑩ 選ぶ taken out 2026-11-19)
-  ok((await p.inputValue('#bt3Next .bt12-msg [data-m="at"]')) === "17:30", "⑤ kept as typed");
-  await p.click('#bt3Next .bt12-msg [data-m="send"]'); await p.waitForTimeout(300);
-  ok((await p.evaluate(() => window.__copied)) === "おつかれさまです。きょう 17:00〜22:00のシフトですが、電車が遅れていて、17:30ごろの到着になりそうです。ご迷惑をおかけして、すみません。", "⑤ late: " + (await p.evaluate(() => window.__copied)));
-  await p.click('#bt3Next [data-msg="off"]'); await p.waitForTimeout(200);
-  await p.click('#bt3Next .bt12-msg [data-m="send"]'); await p.waitForTimeout(300);
-  ok((await p.evaluate(() => window.__copied)) === "おつかれさまです。きょう 17:00〜22:00のシフトですが、体調が悪く、お休みさせていただけないでしょうか。急な連絡になってしまい、申し訳ありません。", "⑤ off: " + (await p.evaluate(() => window.__copied)));
+  // ⑤ 遅れる・休む連絡 (on 次のバイト): taken out at the user's call (2026-11-27, tools/REMOVED.md)
+  ok(!(await p.$('#bt3Next [data-msg]')) && !(await p.$("#bt3Next .bt12-msg")), "⑤ gone");
   // ⑧ the .ics with the shift's own place: taken out with the month's list (カレンダーに入れる（.ics）, 2026-11-26)
   ok(!(await p.$("#bt11Ics")), "⑧ .ics: gone");
   // ⑨② 予定の終わりで退勤 and 退勤のまとめ: gone with 出勤・退勤 (2026-11-19)

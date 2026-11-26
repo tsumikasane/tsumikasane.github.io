@@ -39,6 +39,10 @@ async function open(b, data = DATA) {
     && bl[2].includes("11月分（11/1〜11/30）の見込み") && !bl[2].includes("回目"), "the card: a block a pay", bl);
   ok((await p.$$eval("#bt6Cal .bt6-d", (l) => l.reduce((n, d) => n + Number((d.getAttribute("aria-label").match(/勤務 (\d+) 回/) || [0, 0])[1]), 0))) === 5, "the month's shifts: all of them (in 勤務カレンダー: the month's list was taken out, 2026-11-26)");
   ok((await W(p, "year", 2026)) === 23000 && flat(await p.textContent("#jobYear")).includes("23,000"), "the year: each part by its 給料日 (4,000 + 8,000 + 8,000 + 塾 3,000)", await W(p, "year", 2026));
+  // (このペース（最近の月 平均 …）なら、年末までに約 … under 2026年の月ごとの給料: taken out at the user's call, 2026-11-27,
+  // tools/REMOVED.md; the months' bars stay)
+  const yr2 = await p.evaluate(() => document.getElementById("bt2Year")?.innerText.replace(/\s+/g, " ") || "");
+  ok(yr2.includes("2026年の月ごとの給料") && !yr2.includes("このペース") && !yr2.includes("年末までに") && !yr2.includes("見通し"), "the year's pay by the month, without このペース…年末までに", yr2);
   // the お知らせ: each 給料日 and each 締め日
   const al = await W(p, "alarms", Date.parse("2026-11-20T12:00:00+09:00"));
   const tags = al.map((a) => a.tag).filter((t) => /^bt(3-pay|12-cut):j1:/.test(t)).sort();

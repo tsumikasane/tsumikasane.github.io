@@ -13,7 +13,7 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   await seed(p, DATA, "money");
   await p.evaluate((P) => localStorage.setItem(P + "moneyPart", "job"), P); await p.reload(); await p.waitForTimeout(900);
   // ⑤ 次のバイト: both
-  ok((await txt(p, "#bt3Next .bt12-acts")) === "遅れる連絡 休む連絡", "⑤ " + (await txt(p, "#bt3Next .bt12-acts")));
+  ok(!(await p.$("#bt3Next .bt12-acts")) && !(await txt(p, "#bt3Next")).includes("連絡"), "⑤ 遅れる・休む連絡: taken out at the user's call (2026-11-27, tools/REMOVED.md)");
   ok(!(await p.$("#bt12Feel")) && !(await p.$("#bt12Cost")) && !(await shiftRow(p, "f5")).includes("しんどかった"), "③④ gone; no ふりかえり on a row");
   // ⑥ 変更あり（前は…）, ⑦ ○○の定休日（水曜）の勤務, ⑧ 場所：… on each shift's row: went with the month's list at the user's
   // call (2026-11-26, tools/REMOVED.md); ⑧ its pay with its own 交通費, in 勤務カレンダー's day
