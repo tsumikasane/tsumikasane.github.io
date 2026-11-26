@@ -219,6 +219,26 @@ async function addMeal(p, text = "おにぎり") {
   ok(!p.errs.length, "no error", p.errs);
   await p.close();
 
+  // 種類: every pillar level, its name in one line or more (ルーティーン's in two lifted its pillar before: the user's
+  // call, 2026-11-27). Seven kinds, as on the phone it was seen on
+  p = await phone(b, new Date("2026-11-27T13:52:00+09:00"), { deviceScaleFactor: 1 });
+  const d1 = "2026-11-26", d2 = "2026-11-27", t = (d, h) => Date.parse(`${d}T${String(h).padStart(2, "0")}:00:00+09:00`);
+  await seed(p, { todos: [{ id: "t1", text: "a", done: true, doneAt: t(d1, 9), createdAt: t(d1, 8) }, { id: "t2", text: "b", done: true, doneAt: t(d2, 9), createdAt: t(d2, 8) }],
+    journal: [{ id: d1, date: d1, text: "日記1", createdAt: t(d1, 22) }, { id: d2, date: d2, text: "日記2", createdAt: t(d2, 1) }],
+    routines: [{ id: "r1", name: "ストレッチ", createdAt: t("2026-11-01", 8) }], routineDays: [{ id: d1, date: d1, done: ["r1"], updatedAt: t(d1, 8) }, { id: d2, date: d2, done: ["r1"], updatedAt: t(d2, 8) }],
+    expenses: [{ id: "e1", date: d1, kind: "out", category: "食費", amount: 500, createdAt: t(d1, 12) }, { id: "e2", date: d2, kind: "out", category: "交通費", amount: 169, createdAt: t(d2, 12) }],
+    meals: [{ id: "m1", date: d2, slot: "朝食", text: "パン", kcal: 300, at: "08:00", createdAt: t(d2, 8) }], workouts: [{ id: "w1", date: d2, type: "ランニング", minutes: 30, createdAt: t(d2, 7) }],
+    weights: [{ id: d2, date: d2, kg: 60, createdAt: t(d2, 7) }] }, "tsumi");
+  await p.waitForTimeout(800);
+  await p.click('#tsumiViews button[data-view="kinds"]'); await p.waitForTimeout(500);
+  const lv = await p.evaluate(() => [...document.querySelectorAll("#tsumiCal .ts-pillar")].map((b) => { const k = b.querySelector(".k").getBoundingClientRect();
+    return { k: b.querySelector(".k").textContent, low: Math.round(b.querySelector("svg").getBoundingClientRect().bottom), top: Math.round(k.top), h: Math.round(k.height) }; }));
+  const rtK = lv.find((x) => x.k === "ルーティーン");
+  ok(lv.length === 7 && rtK && rtK.h > Math.min(...lv.map((x) => x.h)) && new Set(lv.map((x) => x.low)).size === 1 && new Set(lv.map((x) => x.top)).size === 1,
+    "種類: the blocks of each on one line, the names under them from one line (ルーティーン's in two)", lv);
+  ok(!p.errs.length, "no error (種類)", p.errs);
+  await p.close();
+
   await b.close();
   console.log(fails ? `${fails} FAILED` : "ALL OK");
 })();

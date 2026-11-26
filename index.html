@@ -5644,11 +5644,19 @@ ul.list > li.btn-row { padding: 0; }
 /* 種類ごとの柱 (the user's call): each kind's blocks in a pillar of its own, side by side */
 .ts-pillars { padding: 0; }
 .ts-pillars-line { margin: 0 0 10px; font-size: var(--t-sub); color: var(--muted); text-align: center; }
-.ts-pillars-row { display: flex; justify-content: center; align-items: flex-end; gap: 8px; }
-.ts-pillar { flex: none; display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; padding: 0; border: 0; background: none; color: var(--fg); font: inherit; cursor: pointer; }
+/* the pillars in two rows shared by all (subgrid): the count and blocks of each on one line at the bottom of the first,
+   the names from the top of the second, so a name in two lines (ルーティーン) lifts no pillar (the user's call, 2026-11-27) */
+.ts-pillars-row { display: grid; grid-auto-flow: column; grid-auto-columns: max-content; grid-template-rows: auto auto; justify-content: center; align-content: end; gap: 4px 8px; }
+.ts-pillar { grid-row: span 2; display: grid; grid-template-rows: subgrid; min-width: 0; padding: 0; border: 0; background: none; color: var(--fg); font: inherit; cursor: pointer; }
+.ts-pillar-top { display: flex; flex-direction: column; align-items: stretch; gap: 4px; align-self: end; }
 .ts-pillar svg { display: block; width: 100%; }
 .ts-pillar .n { font-size: var(--t-foot); text-align: center; font-variant-numeric: tabular-nums; }
-.ts-pillar .k { font-size: 10px; line-height: 1.2; text-align: center; color: var(--muted); word-break: break-all; }
+.ts-pillar .k { align-self: start; font-size: 10px; line-height: 1.2; text-align: center; color: var(--muted); word-break: break-all; }
+@supports not (grid-template-rows: subgrid) {
+  .ts-pillars-row { display: flex; align-items: flex-end; gap: 8px; }
+  .ts-pillar { flex: none; display: flex; flex-direction: column; gap: 4px; }
+  .ts-pillar .k { min-height: 3.6em; }
+}
 .ts-pillars-unit { margin: 8px 0 0; font-size: var(--t-foot); color: var(--muted); text-align: right; }
 /* the mark beside the count while ことばで探す's blocks are lit (お気に入り's heart, taken out at the user's call, 2026-11-18) */
 .tsumi-fav { display: inline-flex; align-items: center; gap: 4px; }
@@ -24912,7 +24920,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 2:03"; // 3175b0ba (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 7:34"; // 93cb4188 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -30244,7 +30252,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           svg.append(svgEl("rect", { x: cx + 0.5, y: cy + 0.5, width: Math.max(0.5, sz - 1), height: Math.max(0.5, sz - 1), rx: Math.min(2, sz * 0.2), fill: tsumiTint(ink, PASTEL_FACE), stroke: tsumiTint(ink, PASTEL_EDGE), "stroke-width": 1 }));
         }
         return el("button", { type: "button", class: "ts-pillar", style: `width: ${colW}px`, "aria-label": `${TSUMI_KINDS[k].label} ${fmtN(c)} こ。この種類だけ色をつけて、階段で見る`,
-          onclick: () => { setTsumiCal(false, false); setTsumiOnly(k); } }, el("span", { class: "n" }, fmtN(c)), svg, el("span", { class: "k" }, TSUMI_KINDS[k].label));
+          onclick: () => { setTsumiCal(false, false); setTsumiOnly(k); } }, el("span", { class: "ts-pillar-top" }, el("span", { class: "n" }, fmtN(c)), svg), el("span", { class: "k" }, TSUMI_KINDS[k].label)); // (the count and blocks apart from the name: the pillars level however the names wrap, the user's call, 2026-11-27)
       })),
       unit > 1 ? el("p", { class: "ts-pillars-unit" }, `1マス ＝ ${fmtN(unit)} こ`) : null));
   }
