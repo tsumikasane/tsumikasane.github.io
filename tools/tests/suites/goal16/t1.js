@@ -53,14 +53,16 @@ const tags = async (p) => W(p, "alarms", await p.evaluate(() => Date.now()));
   // ④ ノルマのお知らせ: taken out (the user's call, 2026-11-20)
   await p.click("#goalSettings"); await p.waitForTimeout(600);
   ok(!(await p.$("#goalQaOn")) && !(await tags(p)).some((a) => a.tag.startsWith("goal-quota:")), "④ (taken out) no switch, no notification");
+  // ⑥ (taken out, 2026-11-26): not in 目標でできること either; its neighbours kept
+  await p.click("#goalHelpOpen"); await p.waitForTimeout(400);
+  const help = await p.evaluate(() => document.getElementById("goalHelpList")?.innerText || "");
+  ok(!help.includes("まだのマスを印刷") && help.includes("1マスずつ片づける") && help.includes("画像で保存・印刷する"), "⑥ not in できること (1マスずつ片づける, 画像で保存・印刷する kept)", help.length);
   await done(p);
 
   await open(p, "TOEIC 800点");
-  // ⑥ まだのマスを印刷
-  await p.evaluate(() => { window.print = () => { const x = document.getElementById("goalPrint"); window.__printed = [x?.className, x?.querySelectorAll("li").length, x?.querySelector("h1")?.textContent, [...(x?.querySelectorAll("h2") || [])].map((h) => h.textContent)]; }; });
-  await p.click("#mPrintTodo"); await p.waitForTimeout(300);
-  const pr = await p.evaluate(() => window.__printed);
-  ok(pr?.[0] === "g16-todo" && pr[1] === 7 && pr[2] === "TOEIC 800点：まだのマス（7）" && JSON.stringify(pr[3]) === '["単語","模試","リスニング","まわりのマス"]', "⑥ the cells still to do, on paper", pr);
+  // ⑥ まだのマスを印刷: taken out at the user's call (2026-11-26, tools/REMOVED.md); その13 ④'s 印刷する（A4） stays
+  const pr = await p.evaluate(() => ({ btn: !!document.getElementById("mPrintTodo") || !!document.getElementById("mPrintTodoCard"), words: document.getElementById("sec-goal").innerText.includes("まだのマスを印刷"), a4: !!document.getElementById("mPrint") }));
+  ok(!pr.btn && !pr.words && pr.a4, "⑥ まだのマスを印刷: gone (印刷する（A4） kept)", pr);
   // ⑦ アイデア: one around the goal, one inside リスニング
   await p.fill("#mIdeaText", "過去問を時間をはかって解く"); await p.press("#mIdeaText", "Enter"); await p.waitForTimeout(400);
   ok((await goal(p, "g1")).ideas?.[0]?.t === "過去問を時間をはかって解く" && (await p.inputValue("#mIdeaText")) === "" && (await p.evaluate(() => document.activeElement?.id)) === "mIdeaText", "⑦ kept, the field ready for the next");

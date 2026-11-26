@@ -137,20 +137,16 @@ const rows = (p) => p.evaluate(() => [...document.querySelectorAll("#rtList > li
   await d.locator("#rtCalCard").scrollIntoViewIfNeeded();
   await d.screenshot({ path: out + "/rt-dark-cal.png" });
   ok(!d.errs.length, "dark: no page errors: " + d.errs.join(" | "));
-  // ⑧ today taken off now from つみかさね's お休みの日 (the button on this page taken out, 2026-11-26): お休み here as before, and
-  // called off there
+  // ⑧ つみかさね's お休みの日 (きょうをお休みにする there, a day picked, the ones to come with やめる): taken out too at the
+  // user's call (2026-11-26, tools/REMOVED.md). Days are taken off from the gear's お休みの予定 (routine3); one taken off
+  // before is お休み as it was (11/5, above)
   const q = await phone(b, at("12:00", today));
   await seed(q, DATA, "tsumi");
-  const tsRest = async (label) => { await q.click("#tsumiSettings"); await q.waitForTimeout(800); await q.locator("#tsumiRestList button", { hasText: label }).click(); await q.waitForTimeout(400); await q.click("#sheetDone"); await q.waitForTimeout(500); };
-  const go = async (h) => { await q.goto(URL0 + "#" + h); await q.reload(); await q.waitForTimeout(800); };
-  await tsRest("きょうをお休みにする");
-  await go("routine");
-  ok(await q.isVisible("#sec-routine") && (await ls(q, "routineDays")).find((x) => x.id === today)?.rest === true && await q.isVisible("#rtRestNote") && (await txt(q, "#rtCount")).startsWith("お休み") && !(await q.locator("#rtFoot button", { hasText: "お休み" }).count()), "⑧ today taken off from つみかさね: お休み here", [await txt(q, "#rtCount"), await txt(q, "#rtFoot")]);
-  await go("tsumi");
-  await tsRest("きょうのお休みをやめる");
-  await go("routine");
-  ok(await q.isVisible("#sec-routine") && !(await ls(q, "routineDays")).find((x) => x.id === today)?.rest && await q.isHidden("#rtRestNote") && (await txt(q, "#rtCount")) === "1 / 4", "⑧ called off from つみかさね: not お休み here", await txt(q, "#rtCount"));
-  ok(!q.errs.length, "つみかさね's お休み: no page errors: " + q.errs.join(" | "));
+  await q.click("#tsumiSettings"); await q.waitForTimeout(800);
+  const ts = await q.evaluate(() => ({ list: !!document.getElementById("tsumiRestList"), words: document.getElementById("tsumiGroup")?.innerText || "" }));
+  ok(!ts.list && ts.words.length > 0 && !/お休みにする|お休みをやめる/.test(ts.words), "⑧ つみかさね's お休みの日: gone", ts.list);
+  await q.click("#sheetDone"); await q.waitForTimeout(500);
+  ok(!q.errs.length, "つみかさね: no page errors: " + q.errs.join(" | "));
   await b.close();
   console.log(fails ? `${fails} FAILED` : "ALL OK");
 })();

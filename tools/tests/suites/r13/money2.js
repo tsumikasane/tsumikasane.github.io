@@ -23,9 +23,10 @@ const DATA = {
   const b = await chromium.launch();
   let p = await phone(b, at("12:00", today));
   await seed(p, DATA, "money");
-  // ⑧ the budget line: the month's, with the days to 給料日
+  // ⑧ the budget line: the month's. 月末まで1日あたり and 給料日（11/25）まで あと 15 日 under it: taken out at the user's call
+  // (2026-11-26, tools/REMOVED.md)
   let bl = await txt(p, "#budgetLine");
-  ok(bl.includes("予算 30,000 円 のうち") && bl.includes("残り 16,800 円") && bl.includes("月末まで1日あたり") && bl.includes("給料日（11/25）まで あと 15 日"), "⑧ monthly, with 給料日: " + bl);
+  ok(bl.includes("予算 30,000 円 のうち") && bl.includes("残り 16,800 円") && !bl.includes("1日あたり") && !bl.includes("給料日") && !bl.includes("まで あと"), "⑧ monthly, no 1日あたり nor 給料日: " + bl);
   // ② and ③: 費目ごとの支出
   const rows = await p.evaluate(() => [...document.querySelectorAll("#catList .cat-row")].map((r) => r.innerText.replace(/\s+/g, " ").trim()));
   ok(rows[0].startsWith("衣服 5,000 円") && rows[0].includes("前月より +5,000 円"), "③ 衣服: " + rows[0]);
@@ -74,9 +75,9 @@ const DATA = {
   await p.locator("#sheetDone").click(); await p.waitForTimeout(700);
   const bud = (await ls(p, "settings")).find((x) => x.id === "budget");
   ok(bud && bud.monthly === 30000 && bud.start === "pay" && JSON.stringify(bud.cats) === JSON.stringify({ "食費": 10000, "日用品": 3000, "交際費": 3000 }), "②⑧ saved: " + JSON.stringify(bud));
-  // ⑧ from 給料日: 10/25 to 11/24
+  // ⑧ from 給料日: 10/25 to 11/24 (its 給料日（11/25）まで あと 15 日・1日あたり 1,120 円: taken out, 2026-11-26)
   bl = await txt(p, "#budgetLine");
-  ok(bl.includes("給料日からの予算 30,000 円 のうち") && bl.includes("残り 16,800 円") && bl.includes("給料日（11/25）まで あと 15 日・1日あたり 1,120 円"), "⑧ from 給料日: " + bl);
+  ok(bl.includes("給料日からの予算 30,000 円 のうち") && bl.includes("残り 16,800 円") && !bl.includes("1日あたり") && !bl.includes("まで あと"), "⑧ from 給料日: " + bl);
   await p.screenshot({ path: out + "/book-393.png", fullPage: true });
   ok(!p.errs.length, "no page errors", p.errs);
   await p.close();

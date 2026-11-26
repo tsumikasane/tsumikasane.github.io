@@ -10,9 +10,11 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   const b = await chromium.launch();
   const p = await phone(b, at("12:00", today));
   await seed(p, DATA, "money");
-  // ⑩ 今週 (from Sunday 11/8): 6,000 + 500 + 3,000 + 700 = 10,200; the aim 30,000 / 30 × 7 = 7,000
-  const wk = await txt(p, "#mo3Week");
-  ok(wk.includes("今週（11/8（日）〜）の支出は 10,200 円") && wk.includes("週の目安 7,000 円 を 3,200 円 超えています"), "⑩ this week: " + wk);
+  // ⑩ 今週の支出 (今週（11/8（日）〜）の支出は 10,200 円・週の目安 7,000 円 を 3,200 円 超えています), and その2 ⑤ 月末の見込み
+  // (このペースなら、月末の支出は 約 ○円…), and ⑧ of the first ten's 月末まで1日あたり, 給料日まで: taken out at the user's call
+  // (2026-11-26, tools/REMOVED.md). The budget's line says the rest as before
+  const book = await txt(p, "#sec-money");
+  ok(!(await p.$("#mo3Week")) && !(await p.$("#mo2Fore")) && !/今週（|週の目安|このペースなら|収まりそう|多くなりそう|1日あたり|給料日（/.test(book) && (await txt(p, "#budgetLine")).includes("予算 30,000 円 を200 円 超えています"), "⑩ 今週の支出, その2 ⑤ 見込み, 1日あたり: gone (the budget's line kept: over by 200)", [await txt(p, "#budgetLine"), book.match(/今週（|週の目安|このペースなら|収まりそう|多くなりそう|1日あたり|給料日（/)?.[0]]);
   // ② a sum
   await p.fill("#mo2QuickText", "ランチ 800+120"); await p.waitForTimeout(200);
   ok((await txt(p, "#mo2QuickSay")).includes("920 円"), "② said as 920: " + (await txt(p, "#mo2QuickSay")));
