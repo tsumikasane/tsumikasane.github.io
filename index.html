@@ -2062,6 +2062,8 @@ ul.wx13-plans { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none
 .wx7-jump::-webkit-scrollbar { display: none; }
 .wx7-jump .chip-btn { flex: none; min-height: 32px; padding: 0 12px; font-size: var(--t-sub); }
 .wx7-target, #wxMoreBox { scroll-margin-top: 64px; }
+/* きょうの記録 and the 3 moved with it to つみかさね's page (2026-11-26): scrolled to from 毎日の記録のお知らせ, clear of the top bar */
+#tsTiles > .tile { scroll-margin-top: calc(44px + env(safe-area-inset-top, 0px) + 8px); }
 .wx7-sum { margin: 0; line-height: 1.5; }
 .wx7-diff { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: var(--fill); font-size: var(--t-sub); line-height: 1.5; }
 .wx7-diff .icon { flex: none; margin-top: 2px; color: var(--accent); }
@@ -9089,6 +9091,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <!-- ① round the turn of the year: the year looked back on -->
           <p class="tsumi-past" id="tsumiYearLine" hidden><button type="button" class="link-btn" id="tsumiYearBtn"></button></p>
         </div>
+        <!-- きょうの記録・今週のまとめ・ことしのまとめ・あの日から, moved here from きょう's tiles (the user's call, 2026-11-26):
+             drawn by tsTilesRender -->
+        <div class="grid ts-tiles" id="tsTiles"></div>
         <!-- (no 画像で保存: taken out, the user's call) -->
         <!-- (つみあげた記録 is in the 設定 its gear opens: the user's call) -->
         <!-- 記録, under the stairs and つみねこ (the user's call, 2026-11-11: 記録's page merged into つみかさね's, the name and
@@ -18179,7 +18184,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (/#weather$/.test(String(url || ""))) { if (sheetEl.open) closeSheet(true); setTab("home"); draw(() => wxOpenPage(false)); return true; } // (天気 その1 ⑩: its page)
     const mp = /#(job|book)$/.exec(String(url || ""))?.[1]; // (バイト その2 ②⑨: バイト; 家計簿 その2 ⑥: 家計簿; drawn so, as setTab draws nothing)
     if (mp) { if (sheetEl.open) closeSheet(true); moneyPart = mp; lsPut(MONEY_PART_KEY, mp); setTab("money"); draw(renderMoney); return true; }
-    if (/#home$/.test(String(url || ""))) { if (sheetEl.open) closeSheet(true); setTab("home"); return true; } // 毎日の記録のお知らせ for two or more: きょう, to record
+    // 毎日の記録のお知らせ for two or more: つみかさね's page at きょうの記録, to record (#home, as those sent before its move said)
+    if (/#(tsumi:recs|home)$/.test(String(url || ""))) { tsTilesGo(); return true; }
     // a page's own (ルーティーン's and 食事's お知らせ): that page, 食事 and the like in ダイエット
     const pg = /#([a-z]+)$/.exec(String(url || ""))?.[1];
     if (pg && (isDietPart(pg) || PAGES.some((x) => x.key === pg))) { if (sheetEl.open) closeSheet(true); if (isDietPart(pg)) { setDietPart(pg); setTab("diet"); } else setTab(pg); return true; }
@@ -21699,7 +21705,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     { key: "tsumi", label: "つみかさね", color: "var(--accent)" },
     { key: "goal", label: "目標", color: "var(--c-goal)" },
   ];
-  const tileIcon = (key) => homeTile(key).icon || PAGES.find((p) => p.key === key).icon;
+  const tileIcon = (key) => (homeTile(key) || tsTile(key)).icon || PAGES.find((p) => p.key === key).icon;
   const EVENING = 20 * 60; // ⑧⑨ from 20:00
   const homeTile = (key) => HOME_TILES.find((t) => t.key === key);
   // which of them show, and in what order, is the user's to choose (the user's call), from the gear by the date. The
@@ -21737,8 +21743,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     ? sub.split("・").map((s, i, all) => el("span", { class: "part" }, keepUnits(s) + (i < all.length - 1 ? "・" : ""))) : keepUnits(sub));
   // a Health-style summary card: the coloured head with its chevron opens the page, and its hit area covers the card.
   // A word in the big place (まだ, 未記録) is a step smaller than a number. A tile without a big one (日記) has none
+  // (a tile of きょう's, or one on つみかさね's page: tsTile)
   function tile(key, big, unit, sub, extra) {
-    const { label, color, open } = homeTile(key), parts = subParts(sub), to = [].concat(open || key);
+    const { label, color, open } = homeTile(key) || tsTile(key), parts = subParts(sub), to = [].concat(open || key);
     const go = typeof open === "function" ? open : () => openFromHome(to[0], to[1] || null);
     return el("div", { class: "card tile", "data-tile": key, style: `--tile-c:${color}` },
       open === false ? el("div", { class: "tile-head plain" }, icon(tileIcon(key), 18), el("span", { class: "lbl" }, label))
@@ -23630,7 +23637,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         const [h, mi] = t.split(":").map(Number), at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
         if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5) continue;
         out.push({ at, title: "記録のお知らせ", body: recRemindBody(miss), tag: (badge && (i > 0 || noBlock) ? "tsumi-remind:" : "rec-remind:") + d,
-          url: miss.length === 1 ? "./#" + REC_PAGES[miss[0]] : "./#home" });
+          url: miss.length === 1 ? "./#" + REC_PAGES[miss[0]] : "./#tsumi:recs" }); // (きょうの記録, on つみかさね's page since 2026-11-26)
       }
     }
     return out;
@@ -24970,7 +24977,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月25日 22:16"; // d5eb8a25 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月26日 11:31"; // 181b7c2e (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -56782,18 +56789,17 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // The themes put in stay in 設定 (h3theme) and are read still (きのうのまとめ, the day's picture, 記録's day); water is
   // からだ's own (その2 ⑦). Function declarations and var, as the page may draw before this part has run ----------
   var homeThree = false;
-  // the tiles (shown at first; hidden or moved as the others are)
+  // the tiles (shown at first; hidden or moved as the others are). ⑩ きょうの記録 and ⑤ 今週のまとめ are on つみかさね's
+  // page now (the user's call, 2026-11-26: TS_TILES, at つみかさねのページのタイル)
   const H3_TILES = [
     { key: "h3now", label: "次にすること", color: "var(--accent)", icon: "next", open: false, wide: true }, // (not ToDo's いまやるなら, its own card till it was taken out, 2026-11-24)
     { key: "h3line", label: "きょうのタイムライン", color: "var(--c-cal)", icon: "list", open: "calendar", wide: true },
-    { key: "h3recs", label: "きょうの記録", color: "var(--accent)", icon: "checklist", open: false, wide: true },
     { key: "h3spend", label: "使えるお金", color: "var(--c-money)", icon: "money", open: "money" }, // (その4: a name that fits half a row)
     { key: "h3time", label: "時間の進み", color: "var(--muted)", icon: "timer", open: false },
     { key: "h3streak", label: "続けている記録", color: "var(--accent)", icon: "stairs", open: false, wide: true },
-    { key: "h3week", label: "今週のまとめ", color: "var(--c-cal)", icon: "cal-week", open: false, wide: true },
   ];
   // (in the settings' list the tiles made with a list keep a whole row, as ふりかえり's do)
-  const H3_FIXED = ["h3now", "h3line", "h3recs", "h3streak", "h3week"];
+  const H3_FIXED = ["h3now", "h3line", "h3streak"];
   // a day's value kept in 設定 (③ きょうのテーマ's, read still; what put it in went with ③, 2026-11-20)
   function h3Kept(id) { const v = settings.get(id); return v && typeof v.days === "object" && v.days ? v : { days: {} }; }
   const h3Rows = (cls, rows) => el("ul", { class: "h3-rows " + cls }, rows);
@@ -56992,12 +56998,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       "aria-label": `${x.name}${x.done ? "（済み）" : "を記録"}`, onclick: (ev) => h3RecGo(x.k, ev.detail === 0) }, x.done ? icon("check", 14) : icon("plus", 14), x.name))), h3RecsSetBtn("毎日記録するものを選ぶ")]);
   }
 
-  // the tiles, with ③ of その2's marks on those done today (every record)
+  // the tiles on きょう (⑩ and ⑤ on つみかさね's page: tsTilesRender)
   function h3Tiles() {
-    const ts = [h3NowTile(), h3LineTile(), h3RecsTile(), h3SpendTile(), h3TimeTile(), h3StreakTile(), h3WeekTile()];
-    const r = h3Recs();
-    if (homeTwo) h2Mark(ts, { h3recs: r.length > 0 && r.every((x) => x.done) });
-    return ts;
+    return [h3NowTile(), h3LineTile(), h3SpendTile(), h3TimeTile(), h3StreakTile()];
   }
 
   // in the gear's sheet, under その2's: その4's settings go after it (its word on the water tile went with ②, 2026-11-20)
@@ -57130,11 +57133,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // anniversaries under the date (⑨), and the year so far (⑩). The folds are in きょう's settings, the days and the links
   // in 設定 (synced). Function declarations and var, as the page may draw before this part has run ----------
   var homeFive = false, h5SinceEdit = false, h5LinkEdit = false;
+  // (④ あの日から and ⑩ ことしのまとめ are on つみかさね's page now: the user's call, 2026-11-26, TS_TILES)
   const H5_TILES = [
     { key: "h5yday", label: "きのうのまとめ", color: "var(--c-journal)", icon: "journal", open: false, wide: true, morning: true },
-    { key: "h5since", label: "あの日から", color: "var(--c-goal)", icon: "flag", open: false, wide: true },
     { key: "h5links", label: "リンク", color: "var(--accent)", icon: "export", open: false, wide: true },
-    { key: "h5year", label: "ことしのまとめ", color: "var(--c-cal)", icon: "cal-year", open: false, wide: true },
   ];
 
   // ① a tile folded: its head and its number only, half a row, with ひらく; from its menu (held down), 「たたむ」
@@ -57166,7 +57168,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   const H5_SETS = [
     ["simple", "シンプル", "天気・ToDo・きょうの予定・次にすること", ["weather", "todo", "calendar", "h3now"]],
     ["plan", "予定とToDo", "予定・ToDo・タイムライン・これから1週間・バイトなど", ["weather", "todo", "calendar", "countdown", "job", "h3now", "h3line", "h4week"]],
-    ["rec", "記録をしっかり", "ダイエット・日記・勉強・ルーティーン・家計簿・きょうの記録など", ["weather", "todo", "calendar", "diet", "move", "journal", "study", "routine", "money", "tsumi", "h3recs", "h3streak", "h4sleep"]],
+    ["rec", "記録をしっかり", "ダイエット・日記・勉強・ルーティーン・家計簿・続けている記録など", ["weather", "todo", "calendar", "diet", "move", "journal", "study", "routine", "money", "tsumi", "h3streak", "h4sleep"]], // (きょうの記録: on つみかさね's page, 2026-11-26)
     ["all", "ぜんぶ", "すべてのタイルを出す", null],
   ];
   const H5_ALWAYS = ["review", "tomorrow", "prep", "missed", "h5yday"];
@@ -57234,9 +57236,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("ul", { class: "h3-rows h5-rows" }, l.map((x) => el("li", {}, el("span", { class: "h3-k" }, x.name), el("span", { class: "h3-s" }, fmtShort(x.date)),
           el("button", { type: "button", class: "wx-del h5-del", "aria-label": `「${x.name}」を消す`, onclick: () => { h5SincePut(l.filter((y) => y.id !== x.id)); flash(`「${x.name}」を消しました`, () => h5SincePut(l)); } }, icon("close", 16))))),
         el("form", { class: "h5-add", autocomplete: "off", novalidate: true, onsubmit: (ev) => { ev.preventDefault(); add(); } }, name, date, el("button", { type: "submit", class: "chip-btn h5-add-go" }, "足す")),
-        el("div", { class: "h3-btns" }, el("button", { type: "button", class: "chip-btn h5-done", onclick: () => { h5SinceEdit = false; renderHome(); } }, "おわる"))));
+        el("div", { class: "h3-btns" }, el("button", { type: "button", class: "chip-btn h5-done", onclick: () => { h5SinceEdit = false; tsTilesRender(); } }, "おわる")))); // (on つみかさね's page: tsTilesRender)
     }
-    const edit = el("button", { type: "button", class: "link-btn h5-edit-btn", onclick: () => { h5SinceEdit = true; renderHome(); $("h5SinceName")?.focus(); } }, l.length ? "編集" : "足す");
+    const edit = el("button", { type: "button", class: "link-btn h5-edit-btn", onclick: () => { h5SinceEdit = true; tsTilesRender(); $("h5SinceName")?.focus(); } }, l.length ? "編集" : "足す");
     if (!l.length) return tile("h5since", null, null, "「禁煙」「つきあって」など、ある日から何日たったかを数えられます", el("div", { class: "h3-btns" }, edit));
     return tile("h5since", null, null, null, [el("ul", { class: "h3-rows h5-rows" }, l.map((x) => {
       const s = h5SinceOf(x);
@@ -57346,7 +57348,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return tile("h5year", null, null, null, el("ul", { class: "h3-rows h5-year" }, rows.map(([k, v, s]) => el("li", {}, el("span", { class: "h3-k" }, k), el("span", { class: "h3-v" }, v), el("span", { class: "h3-s" }, s || "")))));
   }
 
-  function h5Tiles() { return [h5YdayTile(), h5SinceTile(), h5LinksTile(), h5YearTile()]; }
+  function h5Tiles() { return [h5YdayTile(), h5LinksTile()]; } // (④ and ⑩ on つみかさね's page: tsTilesRender)
 
   // ②⑨ in the gear's sheet, under その4's: the sets, and the birthdays on or off
   function h5SetBuild() {
@@ -57427,7 +57429,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function h6Look() { const v = homePrefs().look; return v === "compact" || v === "large" ? v : ""; }
 
   // ④ the figures hidden (money, weight and the like), when the screen is shown to someone: this device, till shown again
-  const H6_HIDE = LS_PREFIX + "h6hide", H6_SECRET = ["money", "job", "h3spend", "diet", "h3week", "h5year", "h5yday", "review"];
+  const H6_HIDE = LS_PREFIX + "h6hide", H6_SECRET = ["money", "job", "h3spend", "diet", "h5yday", "review"]; // (今週のまとめ and ことしのまとめ: on つみかさね's page, 2026-11-26)
   const h6Hidden = () => !!lsJson(H6_HIDE);
   function h6SetHidden(on) { lsJsonPut(H6_HIDE, on ? 1 : null); renderHome(); flash(on ? "お金や体重などの数字をかくしました" : "数字を出しました"); }
 
@@ -57476,14 +57478,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     routine: "きょうのルーティーン。その場でチェック", money: "今月の収支", job: "今月の給料の見込みと、次のシフト",
     tsumi: "積んだブロックの段", goal: "期限のいちばん近い目標と、あと何日",
     h3now: "1時間以内の予定、期限のToDo、ルーティーンの残りから、いまする1つ",
-    h3line: "予定・バイト・時刻のあるToDoを時間の順に、いまの線つき", h3recs: "毎日記録するもの（選んでいないときは、ふだんつけている記録）が、きょう済んだか。まだのものは押して記録",
+    h3line: "予定・バイト・時刻のあるToDoを時間の順に、いまの線つき",
     h3spend: "家計簿の予算の残り。今月あといくら使えるか（給料日からの予算なら、次の給料日まで）", h3time: "ことしが何%過ぎたか（リング）と、あと何日",
-    h3streak: "記録が何日続いているか", h3week: "勉強・運動・ToDo・支出を、先週の同じ曜日までとくらべる",
+    h3streak: "記録が何日続いているか",
     h4week: "7日分の予定・ToDo・バイト・天気。日を押すとカレンダーのその日",
     h4sleep: "夜は「おやすみ」で、からだの睡眠に記録", // (朝の「おはよう」: taken out at the user's call, 2026-11-25)
     h4memo: "買うものや、わすれないこと（ほかの端末にもそろう）",
-    h5since: "「禁煙」「つきあって」など、ある日から何日たったか",
-    h5links: "よく開くサイトをボタンに", h5year: "ことしの記録の合計",
+    h5links: "よく開くサイトをボタンに",
   };
   const H6_WAYS = [
     ["タイルを長押し", "前へ・後ろへ・大きさ・たたむ・出すとき（朝だけ・平日だけ など）・隠す・このタイルについて（パソコンは右クリック）"],
@@ -57661,7 +57662,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (k === "goal") return goals.items.some((g) => hpToday(g.createdAt) || moveDays(g).has(d));
     if (k === "prep") return calTwo && (turnsByDay(d, d).get(d) || []).some((t) => t.day === 0 && !t.e.ten && calChecked(t.e, d).size > 0); // (its 持ち物・準備)
     if (k === "h4sleep") { const x = bd2Day(d), n = bd2Day(addDays(d, 1)); return !!(x && isHm(x.wake || "")) || !!(n && isHm(n.bed || "")); } // (this morning's wake, put in in からだ since おはよう was taken out (2026-11-25), or tonight's おやすみ, the next day's: last night's, on today's, was put in yesterday)
-    if (k === "h4memo" || k === "h5since" || k === "h5links") return hpToday(settings.get(k)?.updatedAt);
+    if (k === "h4memo" || k === "h5links") return hpToday(settings.get(k)?.updatedAt);
     return false;
   }
   function hpPartOf(k, opened = hpOpened()) { return opened.has(k) || hpRecorded(k) ? "done" : "todo"; }
@@ -57676,7 +57677,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function hpHeld(k) {
     const a = document.activeElement;
     const using = (a?.matches?.("input, textarea, select, [contenteditable]") && a.closest?.("#homeTiles > .tile")?.dataset.tile === k)
-      || (k === "h4memo" && !!h4MemoEdit) || (k === "h5since" && !!h5SinceEdit) || (k === "h5links" && !!h5LinkEdit);
+      || (k === "h4memo" && !!h4MemoEdit) || (k === "h5links" && !!h5LinkEdit);
     if (using) hpStay(k);
     const s = hpStays.get(k);
     return !!s && s.part === homePart;
@@ -69598,6 +69599,39 @@ ${parts.join("\n")}
   rt7Build();
   rt7Ready = true;
 
+  // ---------- つみかさねのページのタイル (the user's call, 2026-11-26: 「きょうページの『きょうの記録』『今週のまとめ』
+  // 『今年のまとめ』『あの日から』タイルをつみかさねページの方に移動させてほしい」) ----------
+  // Four of きょう's tiles, on つみかさね's page now, under the stairs, each a whole row as it was on きょう: きょうの記録
+  // (きょう その3 ⑩: the day's records, a check each and 記録する), 今週のまとめ (その3 ⑤), ことしのまとめ (その5 ⑩) and
+  // あの日から (その5 ④, added to and taken from here). Drawn as they were (h3RecsTile and the rest), with the page's
+  // other parts (renderAll); no longer among きょう's tiles, nor in its settings' list, its sets or its guide. What was kept
+  // (あの日から's days, in 設定; the 毎日記録するもの) stays as it was. 毎日の記録のお知らせ for two kinds or more opens here
+  // (#tsumi:recs). Function declarations and var, as the page may draw before this part has run
+  var TS_TILES = [
+    { key: "h3recs", label: "きょうの記録", color: "var(--accent)", icon: "checklist", open: false, wide: true },
+    { key: "h3week", label: "今週のまとめ", color: "var(--c-cal)", icon: "cal-week", open: false, wide: true },
+    { key: "h5year", label: "ことしのまとめ", color: "var(--c-cal)", icon: "cal-year", open: false, wide: true },
+    { key: "h5since", label: "あの日から", color: "var(--c-goal)", icon: "flag", open: false, wide: true },
+  ];
+  function tsTile(key) { return typeof TS_TILES === "undefined" || !TS_TILES ? undefined : TS_TILES.find((t) => t.key === key); }
+  function tsTilesRender() {
+    const box = $("tsTiles");
+    if (!box || typeof TS_TILES === "undefined" || !TS_TILES || !homeThree || !homeFive) return;
+    const made = { h3recs: h3RecsTile, h3week: h3WeekTile, h5year: h5YearTile, h5since: h5SinceTile };
+    const make = (k) => { const t = made[k](); t.classList.add("wide"); return t; };
+    // (a field on one being typed in, あの日から's: that tile left as it is, its words and its caret with it)
+    const a = document.activeElement, typing = a && box.contains(a) && a.matches("input, textarea, select") ? a.closest(".tile") : null;
+    const now = [...box.children];
+    if (now.length !== TS_TILES.length || now.some((c, i) => c.dataset.tile !== TS_TILES[i].key)) { box.replaceChildren(...TS_TILES.map((t) => make(t.key))); return; }
+    for (const c of now) if (c !== typing) c.replaceWith(make(c.dataset.tile));
+  }
+  // 毎日の記録のお知らせ pressed (two kinds or more): つみかさね's page, at きょうの記録
+  function tsTilesGo() {
+    if (sheetEl.open) closeSheet(true);
+    setTab("tsumi");
+    draw(() => { tsTilesRender(); const t = $("tsTiles")?.querySelector('[data-tile="h3recs"]'); if (t) t.scrollIntoView({ block: "start" }); });
+  }
+
   // ---------- 動き (the user's call, 2026-11-25: 「Apple の Human Interface Guidelines を参考に、サイト全体に UI・UX の
   // アニメーションをふんだんに。グラフはインフォグラフィックのように動かして」, asked twice: more of it the second time) ----------
   // Motion as the HIG has it: with a purpose (where a thing comes from, what a press did, how a figure is made up, where a
@@ -70225,7 +70259,7 @@ ${parts.join("\n")}
   // ---------- boot ----------
   function renderAll() {
     tsumiTallied = null; tsumiStale = true; tsumiGen++; rtIdx = null; // つみかさね's tally counted afresh, records read in from another tab too (the user's call: きょう's tile stayed behind)
-    for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderRunLevel, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderRecSettings, renderTrashRow, renderCopyRow, renderSyncRow, renderEmptyHint, renderSummary, renderTsumi, noteTsumiStep, paintChart, renderPushStates]) draw(fn);
+    for (const fn of [renderDateNavs, renderHome, renderTodos, renderJournal, renderMeals, renderWorkouts, renderRunLevel, renderStudy, renderRoutine, renderWeight, renderMoney, renderGoals, renderCalendar, renderLabels, renderTileList, renderBackup, renderRecSettings, renderTrashRow, renderCopyRow, renderSyncRow, renderEmptyHint, renderSummary, tsTilesRender, renderTsumi, noteTsumiStep, paintChart, renderPushStates]) draw(fn); // (tsTilesRender: きょう's 4 tiles on つみかさね's page, 2026-11-26)
     pushSoon(); // the plans' 通知アラーム to the server, should they have changed
     syncTsumiBadge(); // (アイコンのしるし)
     if (tab === "reclist") draw(renderRecList);
@@ -70260,6 +70294,8 @@ ${parts.join("\n")}
     if (linkWx) initial = "home";
     const linkJob = initial === "job" || initial === "book" ? initial : null; // (バイト その2 ②⑨ their お知らせ: バイト; 家計簿 その2 ⑥: 家計簿)
     if (linkJob) initial = "money";
+    const linkRecs = initial === "tsumi:recs"; // (毎日の記録のお知らせ for two kinds or more: つみかさね's page at きょうの記録)
+    if (linkRecs) initial = "tsumi";
     if (isDietPart(initial)) { setDietPart(initial); initial = "diet"; } // 食事's, 運動's and からだ's own pages, from before ダイエット
     // straight there: no slide in from きょう as the app opens (a record's entries open at 記録, which record being unknown)
     draw(() => setTab(["records", "reclist", "recday", "trash", "copies", "sync", "tsumiyear"].includes(initial) ? "tsumi" : PAGES.some((p) => p.key === initial) || initial === "runlevel" ? initial : "home"));
@@ -70273,6 +70309,7 @@ ${parts.join("\n")}
     if (linkTodo) draw(() => openLink("#" + linkTodo));
     if (linkWx) draw(() => openLink("#weather"));
     if (linkJob) draw(() => openLink("#" + linkJob));
+    if (linkRecs) draw(() => openLink("#tsumi:recs"));
     draw(wxShare); // (天気 その1 ⑩ this device's mornings, kept for the other devices, as the app opens)
     draw(focusTick); // the focus timer, carrying on (or over while the app was away)
     draw(() => restoreDraft(!initial || initial === "home"));

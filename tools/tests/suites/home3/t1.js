@@ -16,7 +16,10 @@ const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(
   let p = await phone(b, new Date("2026-11-14T13:30:00+09:00"), { deviceScaleFactor: 1 });
   await seed(p, D.all(), "home"); await p.waitForTimeout(1000);
   const keys = await p.$$eval("#homeTiles > .tile", (l) => l.map((t) => t.dataset.tile));
-  ok(["h3now", "h3line", "h3recs", "h3spend", "h3time", "h3streak", "h3week"].every((k) => keys.includes(k)) && !keys.includes("h3theme") && !keys.includes("h3water"), "the new tiles on きょう (② and ③ taken out)", keys);
+  ok(["h3now", "h3line", "h3spend", "h3time", "h3streak"].every((k) => keys.includes(k)) && !keys.includes("h3theme") && !keys.includes("h3water"), "the new tiles on きょう (② and ③ taken out)", keys)
+  // ⑤ 今週のまとめ and ⑩ きょうの記録: on つみかさね's page (the user's call, 2026-11-26), not on きょう
+  const onTs = await p.$$eval("#tsTiles > .tile", (l) => l.map((t) => t.dataset.tile));
+  ok(!keys.includes("h3recs") && !keys.includes("h3week") && onTs.includes("h3recs") && onTs.includes("h3week"), "⑤⑩ on つみかさね's page, not on きょう", { keys, onTs });;
   // ① time: the year alone, as a ring (きょう・今週・今月 taken out at the user's call, 2026-11-23, tools/REMOVED.md)
   const pr = await H(p, "prog", "2026-11-14T12:00:00+09:00");
   ok(pr.y === 2026 && pr.year === 86 && pr.yearLeft === 47 && Math.abs(pr.f - 317.5 / 365) < 1e-9 && !("day" in pr) && !("week" in pr) && !("month" in pr), "① the year gone and the days left in it (no day, week or month)", pr);
@@ -49,10 +52,12 @@ const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(
   // ⑩ records: 日記 not yet, 体重 done, 勉強 done, 運動 not today, 食事 none kept
   const rc = await H(p, "recs");
   ok(JSON.stringify(rc.map((x) => [x.k, x.done])) === JSON.stringify([["journal", false], ["weight", true], ["workout", false], ["study", true]]), "⑩ the kinds kept and done", rc);
+  await p.click('.menu button[data-tab="tsumi"]'); await p.waitForTimeout(600); // (on つみかさね's page since 2026-11-26)
   ok((await tileTxt(p, "h3recs")).startsWith("きょうの記録2/4"), "⑩ its tile", await tileTxt(p, "h3recs"));
   await p.click('.h3-rec[data-k="workout"]'); await p.waitForTimeout(700);
   ok((await p.textContent("#sheetTitle")) === "運動を記録", "⑩ a kind not done opens its form", await p.textContent("#sheetTitle"));
   await p.click("#sheetCancel"); await p.waitForTimeout(500);
+  await p.click('.menu button[data-tab="home"]'); await p.waitForTimeout(600);
   // ⑨ the greeting was taken out (the user's call, 2026-11-16): none under the date, nor its switch
   ok(!(await p.$("#h3Greet")), "⑨ no greeting (taken out)");
   await p.screenshot({ path: out + "/h3-home.png", fullPage: true });

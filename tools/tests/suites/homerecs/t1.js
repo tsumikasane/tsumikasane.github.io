@@ -1,18 +1,19 @@
-// きょう's きょうの記録 as a checklist of 毎日記録するもの (the user's call, 2026-11-23: as からだ's はじめにやること has them,
+// きょうの記録 as a checklist of 毎日記録するもの (the user's call, 2026-11-23: as からだ's はじめにやること has them,
 // an empty circle till it is in, then a check). Those picked in つみかさね's settings, in their order; with none picked,
-// as before (the kinds kept in the last 14 days, as chips)
+// as before (the kinds kept in the last 14 days, as chips). The tile on つみかさね's page since 2026-11-26 (the user's call:
+// from きょう's)
 const { chromium } = require("playwright");
 const { URL0, P, phone, seed } = require("./lib");
-const { toTile } = require("../homeparts/parts");
 let fails = 0;
 const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undefined && !c ? "  " + JSON.stringify(x) : "")); if (!c) fails++; };
 const day = "2026-11-23", T = Date.parse(`${day}T08:00:00+09:00`);
 const ALL = ["journal", "weight", "meal", "workout", "study", "routine", "money"];
-// (the tile where it is: in 完了 once opened, as its 記録する opens a sheet or a page (きょう まだ・完了, 2026-11-25))
-const rows = async (p) => (await toTile(p, "h3recs"), p.evaluate(() => [...document.querySelectorAll('[data-tile="h3recs"] .h3-checks li')].map((li) => ({
+// (the tile where it is: つみかさね's page, since 2026-11-26)
+const toTs = async (p) => { if (await p.evaluate(() => document.documentElement.dataset.tab !== "tsumi")) { await p.click('.menu button[data-tab="tsumi"]'); await p.waitForTimeout(500); } };
+const rows = async (p) => (await toTs(p), p.evaluate(() => [...document.querySelectorAll('[data-tile="h3recs"] .h3-checks li')].map((li) => ({
   k: li.dataset.k, ok: li.classList.contains("ok"), name: li.querySelector(".h3-check-w")?.firstChild?.textContent,
   note: li.querySelector(".h3-check-note")?.textContent || null, go: !!li.querySelector(".h3-check-go"), mark: !!li.querySelector(".h3-check-mark svg") }))));
-const big = async (p) => (await toTile(p, "h3recs"), p.evaluate(() => document.querySelector('[data-tile="h3recs"] .big')?.textContent.replace(/\s+/g, "") ?? null));
+const big = async (p) => (await toTs(p), p.evaluate(() => document.querySelector('[data-tile="h3recs"] .big')?.textContent.replace(/\s+/g, "") ?? null));
 const put = (p, k, v) => p.evaluate(({ P, k, v }) => localStorage.setItem(P + k, JSON.stringify(v)), { P, k, v });
 const reload = async (p) => { await p.reload(); await p.waitForTimeout(800); };
 (async () => {
@@ -32,10 +33,10 @@ const reload = async (p) => { await p.reload(); await p.waitForTimeout(800); };
   ok((await big(p)) === "2/7" && await p.evaluate(() => document.querySelector('[data-tile="h3recs"] .h3-checks-bar')?.getAttribute("aria-label")) === "7 のうち 2 記録しました", "2 / 7 and the bar", await big(p));
   ok(!(await p.$('[data-tile="h3recs"] .h3-rec')), "not the chips of before");
   // 記録する: 勉強's sheet; 日記 opens its page
-  await toTile(p, "h3recs"); await p.click('.h3-check-go[data-k="study"]'); await p.waitForTimeout(700);
+  await toTs(p); await p.click('.h3-check-go[data-k="study"]'); await p.waitForTimeout(700);
   ok((await p.evaluate(() => document.getElementById("sheetTitle")?.textContent)) === "勉強を記録", "勉強's 記録する: its sheet");
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
-  await toTile(p, "h3recs"); await p.click('.h3-check-go[data-k="journal"]'); await p.waitForTimeout(800);
+  await toTs(p); await p.click('.h3-check-go[data-k="journal"]'); await p.waitForTimeout(800);
   ok(await p.evaluate(() => location.hash) === "#journal", "日記's 記録する: 日記");
   // recorded elsewhere: checked; ルーティーン all done; 家計簿 said to be きょうは使っていない
   await put(p, "journal", [{ id: day, date: day, text: "きょうは晴れ", createdAt: T }]);
@@ -54,7 +55,7 @@ const reload = async (p) => { await p.reload(); await p.waitForTimeout(800); };
   ok(!p.errs.length, "no page errors (1)", p.errs);
 
   // 毎日記録するものを変える: つみかさね's settings at the kinds; one off, gone from the tile
-  await toTile(p, "h3recs"); await p.click('[data-tile="h3recs"] .h3-recs-set'); await p.waitForTimeout(900);
+  await toTs(p); await p.click('[data-tile="h3recs"] .h3-recs-set'); await p.waitForTimeout(900);
   ok(await p.evaluate(() => { const h = document.getElementById("recRemindKindsHead"), r = h?.getBoundingClientRect(); return !!h && r.top > 0 && r.top < 320; }), "毎日記録するものを変える: the settings, at 毎日記録するもの");
   await p.click("label[for=recKind_money]"); await p.waitForTimeout(300);
   await p.click("#sheetDone"); await p.waitForTimeout(600);
@@ -79,20 +80,20 @@ const reload = async (p) => { await p.reload(); await p.waitForTimeout(800); };
   const td = r.find((x) => x.k === "todo");
   ok(r.length === 8 && r[7].k === "todo" && td.name === "きょうやるToDo" && !td.ok && td.go, "set before it came, きょうやる in use: きょうやるToDo at the end, not yet", r.map((x) => x.k));
   ok((await p.evaluate(() => document.querySelector('li[data-k="todo"] .h3-check-w small')?.textContent)) === "6 件中 1 件" && (await p.evaluate(() => document.querySelector('.h3-check-go[data-k="todo"]')?.textContent)) === "開く", "how far, and 開く");
-  await toTile(p, "h3recs"); await p.click('.h3-check-go[data-k="todo"]'); await p.waitForTimeout(900);
+  await toTs(p); await p.click('.h3-check-go[data-k="todo"]'); await p.waitForTimeout(900);
   ok(await p.evaluate(() => location.hash === "#todo" && document.getElementById("sec-todo")?.classList.contains("td-focus")), "開く: ToDo, きょうやるだけ表示");
   await p.evaluate(({ P }) => { const k = P + "todos", l = JSON.parse(localStorage.getItem(k)); l.forEach((t) => { t.done = true; t.doneAt = Date.now(); }); localStorage.setItem(k, JSON.stringify(l)); }, { P });
   await p.goto(URL0 + "#home"); await reload(p);
   ok((await rows(p)).find((x) => x.k === "todo")?.note === "ぜんぶ終えました", "all done: checked, ぜんぶ終えました");
   await p.evaluate(({ P }) => { const k = P + "todos", l = JSON.parse(localStorage.getItem(k)); l.forEach((t) => { t.today = "2026-11-22"; t.done = false; delete t.doneAt; }); localStorage.setItem(k, JSON.stringify(l)); }, { P });
-  await reload(p); await toTile(p, "h3recs"); // (opened by its 開く above: in 完了)
+  await reload(p); await toTs(p);
   ok((await p.evaluate(() => document.querySelector('li[data-k="todo"] .h3-check-w small')?.textContent)) === "まだ選んでいません" && (await p.evaluate(() => document.querySelector('.h3-check-go[data-k="todo"]')?.textContent)) === "選ぶ", "none picked today: 選ぶ");
-  await toTile(p, "h3recs"); await p.click('.h3-check-go[data-k="todo"]'); await p.waitForTimeout(900);
+  await toTs(p); await p.click('.h3-check-go[data-k="todo"]'); await p.waitForTimeout(900);
   ok((await p.evaluate(() => document.getElementById("sheetTitle")?.textContent)) === "きょうやるを選ぶ", "選ぶ: きょうやるを選ぶ");
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   // turned off: kept so
   await p.goto(URL0 + "#home"); await reload(p);
-  await toTile(p, "h3recs"); await p.click('[data-tile="h3recs"] .h3-recs-set'); await p.waitForTimeout(900);
+  await toTs(p); await p.click('[data-tile="h3recs"] .h3-recs-set'); await p.waitForTimeout(900);
   await p.evaluate(() => document.getElementById("recKind_todo").scrollIntoView({ block: "center" })); await p.waitForTimeout(300);
   await p.click("label[for=recKind_todo]"); await p.waitForTimeout(300);
   await p.click("#sheetDone"); await p.waitForTimeout(600);
@@ -112,10 +113,10 @@ const reload = async (p) => { await p.reload(); await p.waitForTimeout(800); };
   ok(JSON.stringify(r.map((x) => x.k)) === '["journal","goal","sleep"]' && !r[1].ok && !r[2].ok, "in use lately: 目標 and 睡眠 put in, not yet", r.map((x) => x.k));
   ok((await p.evaluate(() => document.querySelector('.h3-check-go[data-k="goal"]')?.textContent)) === "開く" && (await p.evaluate(() => document.querySelector('li[data-k="sleep"] .h3-check-w small')?.textContent)) === "起きた時刻がまだです",
     "目標: 開く; 睡眠: 起きた時刻がまだです");
-  await toTile(p, "h3recs"); await p.click('.h3-check-go[data-k="sleep"]'); await p.waitForTimeout(900);
+  await toTs(p); await p.click('.h3-check-go[data-k="sleep"]'); await p.waitForTimeout(900);
   ok(await p.evaluate(() => location.hash === "#diet" && document.activeElement?.id === "bd2Wake"), "睡眠's 記録する: からだ, at 起きた時刻");
   await p.goto(URL0 + "#home"); await reload(p);
-  await toTile(p, "h3recs"); await p.click('.h3-check-go[data-k="goal"]'); await p.waitForTimeout(800);
+  await toTs(p); await p.click('.h3-check-go[data-k="goal"]'); await p.waitForTimeout(800);
   ok(await p.evaluate(() => location.hash) === "#goal", "目標's 開く: 目標");
   await put(p, "goals", G([{ t: "単語", d: true, at: T - 864e5 }, { t: "音読", d: true, at: T + 3600e3 }]));
   await put(p, "bodyDays", [{ id: day, date: day, bed: "23:30", wake: "07:00", createdAt: T - 864e5 }]);

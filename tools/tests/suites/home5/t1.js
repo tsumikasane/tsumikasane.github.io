@@ -23,7 +23,10 @@ async function open(b, when) {
   const b = await chromium.launch();
   let p = await open(b, "2026-11-14T07:30:00+09:00");
   const keys = await shown(p);
-  ok(["h5yday", "h5since", "h5links", "h5year"].every((k) => keys.includes(k)) && !keys.includes("h5mood"), "the new tiles on きょう (きのうのまとめ in the morning; 気分と睡眠 taken out)", keys);
+  ok(["h5yday", "h5links"].every((k) => keys.includes(k)) && !keys.includes("h5mood"), "the new tiles on きょう (きのうのまとめ in the morning; 気分と睡眠 taken out)", keys);
+  // ④ あの日から and ⑩ ことしのまとめ: on つみかさね's page (the user's call, 2026-11-26), not on きょう
+  const onTs = await p.$$eval("#tsTiles > .tile", (l) => l.map((t) => t.dataset.tile));
+  ok(!keys.includes("h5since") && !keys.includes("h5year") && onTs.includes("h5since") && onTs.includes("h5year"), "④⑩ on つみかさね's page, not on きょう", { keys, onTs });
 
   // ⑨ birthdays and anniversaries under the date
   const an = await p.$$eval("#h5Head .h5-anniv", (l) => l.map((x) => x.textContent.replace(/\s+/g, "")));
@@ -46,10 +49,12 @@ async function open(b, when) {
   ok(JSON.stringify(await H(p, "since", { date: "2025-11-14" })) === JSON.stringify({ n: 365, now: "きょうで1年" }), "④ a year today");
   ok(JSON.stringify(await H(p, "since", { date: "2026-10-01" })) === JSON.stringify({ n: 44, next: "あと56日で100日" }), "④ the next round number");
   ok(JSON.stringify(await H(p, "since", { date: "2025-11-20" })) === JSON.stringify({ n: 359, next: "あと6日で1年" }), "④ a year coming before 400 days");
+  await p.click('.menu button[data-tab="tsumi"]'); await p.waitForTimeout(600); // (on つみかさね's page since 2026-11-26)
   await p.click('.tile[data-tile="h5since"] .h5-edit-btn'); await p.waitForTimeout(300);
   await p.fill("#h5SinceName", "禁煙"); await p.fill("#h5SinceDate", "2026-08-06"); await p.click(".h5-add-go"); await p.waitForTimeout(400);
   await p.click(".h5-done"); await p.waitForTimeout(300);
   ok((await H(p, "setting", "h5since"))?.items?.[0]?.name === "禁煙" && (await tileTxt(p, "h5since")).startsWith("あの日から禁煙100日きょうで100日"), "④ added on the tile, said", await tileTxt(p, "h5since"));
+  await p.click('.menu button[data-tab="home"]'); await p.waitForTimeout(600);
 
   // ⑤ links
   ok((await H(p, "url", "example.ac.jp/portal")) === "https://example.ac.jp/portal" && (await H(p, "url", "javascript:alert(1)")) === null && (await H(p, "url", "ふつうの文")) === null, "⑤ https only, put in front when missing");
@@ -79,10 +84,13 @@ async function open(b, when) {
   await p.click("#h5JumpBtn"); await p.waitForTimeout(300);
   const items = await p.$$eval("#h5JumpGroup [data-go]", (l) => l.map((x) => x.dataset.go));
   ok(await p.evaluate(() => document.getElementById("h5Jump").open) && JSON.stringify(items) === JSON.stringify(await shown(p)), "③ the tiles listed (those showing: まだ's " + "since 2026-11-25)", [items.length, (await shown(p)).length]);
-  await p.click('#h5JumpGroup [data-go="h5year"]'); await p.waitForTimeout(300);
-  const lit = await p.$eval('.tile[data-tile="h5year"]', (t) => t.classList.contains("spot"));
+  // (one far down the list, not touched above (リンク, written on, goes to 完了 as it settles): ことしのまとめ, gone to
+  // before, is on つみかさね's page since 2026-11-26)
+  const far = items.filter((k) => !["h5links", "calendar"].includes(k)).pop();
+  await p.click(`#h5JumpGroup [data-go="${far}"]`); await p.waitForTimeout(300);
+  const lit = await p.$eval(`#homeTiles .tile[data-tile="${far}"]`, (t) => t.classList.contains("spot"));
   await p.waitForTimeout(1700);
-  const vis = await p.$eval('.tile[data-tile="h5year"]', (t, lit) => { const r = t.getBoundingClientRect(); return [lit, r.top >= 0 && r.bottom <= innerHeight]; }, lit);
+  const vis = await p.$eval(`#homeTiles .tile[data-tile="${far}"]`, (t, lit) => { const r = t.getBoundingClientRect(); return [lit, r.top >= 0 && r.bottom <= innerHeight]; }, lit);
   ok(!(await p.evaluate(() => document.getElementById("h5Jump").open)) && vis[0] && vis[1], "③ gone to, lit up", vis);
 
   // ② a set, and 元に戻す

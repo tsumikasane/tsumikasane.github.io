@@ -121,7 +121,7 @@ const fmtN = (n) => n.toLocaleString("en-US");
   ok(w1 && w1.kg === 64 && w1.fat === 19 && w1.intake === 2050 && w1.waist === 79.3 && w1.thigh === 55.5 && w1.arm === undefined, "⑤ kept with the day's weight", w1);
   ok(await txt(p, "#sizePick") === "ウエスト 二の腕 太もも", "⑤ 太もも in the plot's picker: " + await txt(p, "#sizePick"));
   // today's in its sheet (きょう's 体重): the sizes there, one changed, one emptied, the rest kept
-  await p.goto(URL0 + "#home"); await p.reload(); await p.waitForTimeout(800);
+  await p.goto(URL0 + "#tsumi"); await p.reload(); await p.waitForTimeout(800); // (きょうの記録: つみかさね's page since 2026-11-26)
   await p.locator('.h3-rec[data-k="weight"]').click(); await p.waitForTimeout(500); // (きょうの記録's 体重: すぐに記録, taken out 2026-11-19, opened it before)
   ok(await p.inputValue("#reSize-waist") === "78.0" && await p.inputValue("#reSize-arm") === "30.5" && await p.inputValue("#reSize-hip") === "", "⑤ its sheet has the sizes");
   await p.fill("#reSize-waist", "77.9"); await p.fill("#reSize-arm", ""); await p.locator("#recSave").click(); await p.waitForTimeout(500);

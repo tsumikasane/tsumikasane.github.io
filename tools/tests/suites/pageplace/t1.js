@@ -50,9 +50,9 @@ const safariTop = (p) => p.evaluate(() => { document.scrollingElement.scrollTop 
   await seed(p, data(), "home");
   ok(await p.evaluate(() => /iPhone/.test(navigator.userAgent)), "an iPhone");
 
-  // ① きょう's 勉強 button, far down the page: the sheet, the page moved to its top under it; 30 分 saved, and as the sheet
-  // goes, the page where it was
-  await p.goto(URL0 + "#home"); await p.reload(); await p.waitForTimeout(1200);
+  // ① きょうの記録's 勉強 button, far down the page (つみかさね's, since 2026-11-26: it was きょう's): the sheet, the page moved
+  // to its top under it; 30 分 saved, and as the sheet goes, the page where it was
+  await p.goto(URL0 + "#tsumi"); await p.reload(); await p.waitForTimeout(1200);
   let y0 = await mid(p, '.h3-rec[data-k="study"]'); await p.waitForTimeout(300);
   let at0 = await onScreen(p, '.h3-rec[data-k="study"]');
   ok(y0 > 300, "① the button down the page", y0);
