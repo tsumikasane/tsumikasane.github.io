@@ -32,10 +32,12 @@ async function open(b, when, more = {}, o = {}) {
   ok((await txt(p, "#wx7Sum")) === flat("きょうは晴れ、最高 15°・最低 7°。服装は薄手の上着。急な強い雨や雷に注意。"), "③ today's summary", await txt(p, "#wx7Sum"));
   // ⑤ the light (the reference: 5:50:02 and 17:00:50 in 東京, to the nearest minute)
   ok((await txt(p, ".wx7-light")) === "明るい時間5:50〜17:01", "⑤ dawn to dusk", await txt(p, ".wx7-light"));
-  // ⑦ what changed since last night
-  ok((await txt(p, "#wx7Diff")) === flat("前に見たとき（きのう 21:00）から、予報が変わりました11/19（木）：晴れ → 雨、降水確率 10% → 80%、最高 14° → 9°、最低 4° → -1°"), "⑦ 11/19 now rain", await txt(p, "#wx7Diff"));
+  // ⑦ what changed since last night (前に見たとき（…）から、予報が変わりました): taken out at the user's call (2026-11-26,
+  // tools/REMOVED.md). With last night's forecast kept (wxSeen: 11/19 sunny then, rain now), nothing said; wxSeen stays as it was
+  const seenAt = () => p.evaluate((P) => JSON.parse(localStorage.getItem(P + "wxSeen") || "null")?.dataAt, P);
+  ok(!(await p.$("#wx7Diff")) && !(await p.$(".wx7-diff")) && !(await p.evaluate(() => document.getElementById("daySheet").innerText)).includes("予報が変わりました"), "⑦ 予報の変化: gone");
   await W(p, "redraw"); await p.waitForTimeout(300);
-  ok(!!(await p.$("#wx7Diff")), "⑦ kept as the page is drawn again");
+  ok(!(await p.$("#wx7Diff")) && (await seenAt()) === Date.parse("2026-11-15T21:00:00+09:00"), "⑦ none as the page is drawn again; wxSeen kept as it was", await seenAt());
   // ① the chips
   const chips = await p.$$eval('#wx7Jump button:not([data-key="simple"])', (l) => l.map((x) => x.textContent)); // (その10 ① puts かんたん表示 first)
   ok(chips[0] === "1時間ごと" && chips.includes("1週間") && chips.includes("雨の日の予定") && chips.at(-1) === "お知らせ・場所", "① the sections' chips", chips);

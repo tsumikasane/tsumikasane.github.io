@@ -2065,10 +2065,6 @@ ul.wx13-plans { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none
 /* きょうの記録 and the 3 moved with it to つみかさね's page (2026-11-26): scrolled to from 毎日の記録のお知らせ, clear of the top bar */
 #tsTiles > .tile { scroll-margin-top: calc(44px + env(safe-area-inset-top, 0px) + 8px); }
 .wx7-sum { margin: 0; line-height: 1.5; }
-.wx7-diff { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: var(--fill); font-size: var(--t-sub); line-height: 1.5; }
-.wx7-diff .icon { flex: none; margin-top: 2px; color: var(--accent); }
-.wx7-diff p { margin: 0; }
-.wx7-diff .sub { color: var(--muted); }
 .wx7-arrow { fill: var(--sat); }
 ul.wx7-rainplans li { display: grid; grid-template-columns: 6.8em minmax(0, 1fr); gap: 8px; align-items: baseline; }
 .wx7-rainplans .wx7-rd { font-weight: 600; }
@@ -24974,7 +24970,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月26日 12:40"; // fc0dfc29 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月26日 12:51"; // 515aa05c (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -53875,7 +53871,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // the week, a day pressed to see it
     const week = Array.from({ length: WX_DAYS }, (_, i) => addDays(todayKey, i)).map((d) => [d, wxDay(d)]).filter(([, x]) => x);
     if (wxSeven) wx7YearGet(place); // (the place's year for 1週間の雨の量 and 先の日の天気; この場所の1年 itself taken out, 2026-11-18)
-    setChildren(body, head, wxSeven ? wx7DiffEl() : null, day, wxTen ? wx10Three(sel) : null, // (天気 その7 ⑦, その10 ②)
+    setChildren(body, head, day, wxTen ? wx10Three(sel) : null, // (天気 その10 ②; その7 ⑦ 予報の変化 taken out at the user's call, 2026-11-26)
       hours ? [el("h3", { class: "group-head" }, sel === todayKey ? "1時間ごと（48時間）" : `1時間ごと（${relLabel(sel) || fmtMDW(sel)}）`), wx2Graph(hs, sel), wxThree ? wx3HourSeg() : null, hours, wxFour ? wx4HourPanel(hs) : null] : null, // (天気 その2 ①, その3 ⑨, その4 ⑤)
       el("h3", { class: "group-head" }, "雨"),
       lines([line("rain", rain || (w.rain >= 30 ? `雨の可能性は低めです（いちばん高いときで ${w.rain}%）` : "雨の心配はなさそうです")), wxThirteen ? wx13Gap(sel) : null, wx2Amount(sel), ...(wxThree ? wx3RainMore(sel) : []), // (天気 その2 ③, その3 ⑥⑦; その10 ⑧ 傘のえらび方 taken out, 2026-11-25)
@@ -55113,7 +55109,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ---------- 天気 その7 ①〜⑩ (the user's calls, 2026-11-15): the page's sections to jump to (①) and those to show (②),
   // the day in a sentence or two (③), the week's plans on its rainy days (④), the light: dawn and dusk (⑤), the wind's way
-  // as arrows (⑥), what changed since the forecast was seen before (⑦), the weather and the runs of the month gone by (⑧),
+  // as arrows (⑥), what changed since the forecast was seen before (⑦; taken out 2026-11-26, tools/REMOVED.md), the
+  // weather and the runs of the month gone by (⑧),
   // the places kept renamed and put in order (⑨), and the place's year, month by month (⑩). The sections are found by
   // their headings once the page is drawn; those hidden kept with the account's settings; the year from Open-Meteo's
   // archive (the 10 years before), kept with the place. Function declarations and var ----------
@@ -55220,38 +55217,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   const wx7DirWords = (x) => { const d = wx2Dir(wx7WindDir(x)); return d ? `、${d}の風` : ""; };
 
-  // ⑦ what changed since the forecast was seen before on this page (a new forecast against the one seen last: a day's
-  // rain or not, its chance 30 points and more, its highest or lowest 3° and more), kept with the place on this device
-  const WX7_SEEN = LS_PREFIX + "wxSeen";
-  function wx7Diff() {
-    const place = wxPlace(), data = lsJson(WX_DATA);
-    if (!place || !data || !data.at) return null;
-    const snap = {};
-    for (let i = 0; i < WX_DAYS; i++) { const d = addDays(todayKey, i), w = wxDay(d); if (w) snap[d] = { hi: w.hi, lo: w.lo, rain: w.rain, word: w.word, wet: w.wet }; }
-    const s = lsJson(WX7_SEEN), same = s && s.lat === place.lat && s.lon === place.lon && s.days;
-    if (same && s.dataAt === data.at) return s.diff || null;
-    let diff = null;
-    if (same) {
-      const list = [];
-      for (const [d, v] of Object.entries(snap)) {
-        const o = s.days[d];
-        if (!o) continue;
-        const ch = [o.wet !== v.wet ? `${o.word} → ${v.word}` : "", Math.abs(v.rain - o.rain) >= 30 ? `降水確率 ${o.rain}% → ${v.rain}%` : "",
-          Math.abs(v.hi - o.hi) >= 3 ? `最高 ${o.hi}° → ${v.hi}°` : "", Math.abs(v.lo - o.lo) >= 3 ? `最低 ${o.lo}° → ${v.lo}°` : ""].filter(Boolean);
-        if (ch.length) list.push({ d, ch });
-      }
-      if (list.length) diff = { since: s.dataAt, list: list.slice(0, 3) };
-    }
-    lsJsonPut(WX7_SEEN, { lat: place.lat, lon: place.lon, dataAt: data.at, days: snap, diff });
-    return diff;
-  }
-  function wx7DiffEl() {
-    const x = wx7Diff();
-    if (!x) return null;
-    const t = new Date(x.since), d = ymd(t);
-    return el("div", { class: "wx7-diff", id: "wx7Diff" }, icon("sync", 16), el("p", {}, `前に見たとき（${wx6Day(d)} ${t.getHours()}:${pad(t.getMinutes())}）から、予報が変わりました`,
-      x.list.map((y) => el("span", { class: "sub" }, el("br"), `${wx6Day(y.d)}：${y.ch.join("、")}`))));
-  }
+  // ⑦ what changed since the forecast was seen before on this page (前に見たとき（…）から、予報が変わりました, a day's
+  // rain or not, its chance, its highest or lowest): taken out at the user's call (2026-11-26, tools/REMOVED.md). What it
+  // kept on this device (wxSeen: the forecast seen last) stays, read by nothing now
 
   // ⑧ the weather and the runs of the month gone by (その4's record of it, and 運動's records): the days dry and wet, run on
   function wx7Runs(place) {
