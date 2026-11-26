@@ -6525,8 +6525,9 @@ textarea.dt18-in { width: 100%; padding: 8px 10px; line-height: 1.5; resize: ver
 .meal-slot-btn .num { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .meal-slot-plus { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--c-meal); color: #fff; }
 .meal-slot-btn.done .meal-slot-plus { background: color-mix(in srgb, var(--c-meal) 16%, var(--surface)); color: var(--c-meal); }
-/* 食事's きょうの記録: under each 区分, its plans for the day (in a dashed frame: the food, 予定 and its kcal; 食べた and 削除),
-   what they come to, and 食べる予定を置く with its form (the user's call, 2026-11-24) */
+/* 食事's きょうの記録: under each 区分, its plans for the day (in a dashed frame: the food, 予定 and its kcal; 食べた and 削除)
+   and what they come to (the user's call, 2026-11-24). Each 区分's own screen (食事の記録画面) has its plans too, with the
+   form that puts one in (the user's call, 2026-11-26; 食べる予定を置く under きょうの記録 taken out, tools/REMOVED.md) */
 .meal-plan-list { list-style: none; margin: 6px 0 0; padding: 0 0 0 12px; display: grid; gap: 6px; }
 .meal-plan-list li { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 4px 4px 4px 14px; border: 1.5px dashed color-mix(in srgb, var(--c-meal) 55%, var(--line)); border-radius: 14px; }
 .meal-plan-body { flex: 1 1 auto; min-width: 0; display: grid; gap: 1px; }
@@ -6536,12 +6537,15 @@ textarea.dt18-in { width: 100%; padding: 8px 10px; line-height: 1.5; resize: ver
 .meal-plan-list .btn.meal-plan-eat { flex: none; white-space: nowrap; }
 .meal-plan-sum { margin: 8px 0 0; }
 .meal-plan-sum.warn { color: var(--warn); }
-.meal-plan-open { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 4px; }
-.meal-plan-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 10px; }
+.mr-plan { display: grid; gap: 6px; }
+.mr-plan[hidden], .meal-plan-form[hidden] { display: none; }
+.mr-plan .meal-plan-list { margin: 0; padding: 0; }
+.mr-plan .meal-plan-list li { background: var(--surface); }
+.meal-plan-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .meal-plan-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.meal-plan-form input, .meal-plan-form select { min-width: 0; min-height: 44px; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); font: inherit; font-size: 16px; }
-.meal-plan-form select { flex: none; }
+.meal-plan-form input { min-width: 0; min-height: 44px; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); font: inherit; font-size: 16px; }
 .meal-plan-form input[type="text"] { flex: 1 1 0; }
+.meal-plan-form input::-webkit-calendar-picker-indicator { display: none !important; } /* (the hints still come as it is typed, as on the search) */
 .meal-plan-form input[type="number"] { flex: 1 1 0; }
 .meal-plan-form .btn { flex: none; }
 .meal-plan-form .sub { margin: 0; }
@@ -6558,7 +6562,7 @@ dialog.meal-rec::backdrop { background: var(--bg); }
 #mealRec #mealForm { order: 1; margin: 0; padding: 0; background: none; box-shadow: none; }
 #mealRecTiles { order: 2; }
 #mealRecNote { order: 3; margin: 0; text-align: center; }
-#mealRecDone { order: 4; }
+#mealRecPlan, #mealRecDone { order: 4; } /* (食べる予定 over what the 区分 has: the page's order) */
 #mealRecHist { order: 5; }
 .mr-body > .mr-tool:not(.mr-on) { display: none !important; }
 .mr-body > .mr-tool.mr-on { margin: 0; }
@@ -10924,6 +10928,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   </form>
     <div class="mr-tiles" id="mealRecTiles"></div>
     <p class="sub muted" id="mealRecNote" hidden></p>
+    <!-- (ダイエット その7 ③) the 区分's 食べる予定: its plans, and for today a food put in as one (the user's call, 2026-11-26) -->
+    <div class="mr-plan" id="mealRecPlan" hidden></div>
     <div class="mr-done" id="mealRecDone"></div>
     <div class="mr-hist" id="mealRecHist"></div>
   </div>
@@ -13175,11 +13181,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // 6 tiles (a photo taken or picked for it, 栄養成分表示 (その18 ②), よく食べる (② ③, その11 ②), いつもの組み合わせ (その4
   // ②) and 手作り料理 (その18 ①, その19 ①)), what the 区分 has already, the 区分's or every food eaten before at a press
   // (looked for by its words), 文でまとめて入れる (その8 ①), and at the bottom the 区分's kcal with 食べなかった (bodyDays
-  // skipMeal, taken back there) or 記録をおえる ----------
+  // skipMeal, taken back there) or 記録をおえる. Over what the 区分 has, its 食べる予定 (ダイエット その7 ③'s plans: the user's
+  // call, 2026-11-26) ----------
   let mealRecPanel = "", mealRecTab = "slot", mealRecQ = "", mealRecFind = false, mealRecMore = false, mealRecStatusHome = null;
   const MEAL_REC_PANELS = { often: ["mealOften", "mealYesterday", "dt11Add"], sets: ["dt4Sets"], recipe: ["dt18Recipe", "dt19Stock"], label: ["dt18Label"], bulk: ["dt8Bulk"] };
   const MEAL_REC_EMPTY = { often: "2回以上食べたものが、ここに出ます。", sets: "同じ組み合わせを何度か食べると、ここに出ます。" };
-  const MEAL_REC_OWN = ["mealForm", "mealRecTiles", "mealRecNote", "mealRecDone", "mealRecHist"];
+  const MEAL_REC_OWN = ["mealForm", "mealRecTiles", "mealRecNote", "mealRecPlan", "mealRecDone", "mealRecHist"];
   function mealRecSlot() { return checkedValue("mealSlot") || SLOTS[0]; }
   function mealSkips(d) { try { const x = bodyTwo ? bd2Day(d) : null; return Array.isArray(x?.skipMeal) ? x.skipMeal.filter((s) => SLOTS.includes(s)) : []; } catch { return []; } }
   function mealSkipSet(d, s, on) { const rest = mealSkips(d).filter((x) => x !== s); bd2PutDay(d, { skipMeal: on ? [...rest, s] : rest.length ? rest : undefined }, on ? `${fmtShort(d)}の${s}を「食べなかった」にしました` : `${s}の「食べなかった」を取り消しました`); }
@@ -13259,6 +13266,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     note.textContent = MEAL_REC_EMPTY[mealRecPanel] || "";
     setChildren($("mealRecDone"), items.length ? [el("div", { class: "mr-sec-head" }, `この${s}に入れたもの`), el("ul", { class: "mr-done-list" }, items.map((m) => el("li", {}, el("span", { class: "mr-done-name" }, m.text),
       typeof m.kcal === "number" ? el("span", { class: "num" }, `${fmtN(m.kcal)} kcal`) : el("span", { class: "sub" }, "kcal なし"), el("button", { type: "button", class: "mr-x", "aria-label": `「${m.text}」を消す`, onclick: () => removeMeal(m) }, icon("close", 18)))))] : null);
+    if (dietSeven) dt7RecPlan(); else $("mealRecPlan").hidden = true; // (ダイエット その7 ③: the 区分's 食べる予定)
     const hist = $("mealRecHist");
     if (!hist.contains(document.activeElement) || !document.activeElement.matches("input")) {
       const find = mealRecFind ? el("input", { type: "search", class: "mr-h-q", placeholder: "履歴を名前で探す", "aria-label": "履歴を名前で探す", value: mealRecQ, enterkeyhint: "search" }) : null;
@@ -13280,16 +13288,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             : el("button", { type: "button", class: "mr-end ghost", onclick: () => { mealSkipSet(d, s, true); mealRecClose(); } }, "食べなかった"));
   }
   // on the page: each 区分 with its kcal and what was eaten (食べなかった said), a press opening its 記録画面; under each,
-  // the day's plans for it, and 食べる予定を置く (ダイエット その7's plans: the user's call, 2026-11-24)
+  // the day's plans for it, and under them what they come to (ダイエット その7's plans: the user's call, 2026-11-24).
+  // 食べる予定を置く taken out at the user's call (2026-11-26, tools/REMOVED.md): a plan is put in on its 区分's 記録画面
   function renderMealSlots() {
     const box = $("mealSlots");
     if (!box) return;
     const d = viewDate, items = meals.items.filter((m) => m.date === d), skip = mealSkips(d), plans = !!dietSeven;
-    if (plans) { // (a plan being typed: drawn again only once the plans or the day's records change)
-      const sig = [d, JSON.stringify(dt7Plans().filter((x) => x.date === d)), items.map((m) => m.id).join(",")].join("|");
-      if (box.dataset.sig === sig && box.contains(document.activeElement) && document.activeElement.matches("input, select") && document.activeElement.closest(".meal-plan-form")) return;
-      box.dataset.sig = sig;
-    }
     setChildren(box, el("div", { class: "card-head" }, d === todayKey ? "きょうの記録" : `${fmtShort(d)}の記録`),
       el("ul", { class: "meal-slot-list" }, SLOTS.map((s) => { const xs = items.filter((m) => m.slot === s).sort((a, b) => num(a.createdAt) - num(b.createdAt)), k = sum(xs, (m) => num(m.kcal));
         return el("li", {}, el("button", { type: "button", class: "meal-slot-btn" + (xs.length ? " done" : ""), "data-slot": s, "aria-label": `${s}を記録する`, onclick: () => mealRecOpen(s) },
@@ -13297,7 +13301,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           el("span", { class: "meal-slot-what" }, xs.length ? xs.map((m) => m.text).slice(0, 3).join("・") + (xs.length > 3 ? ` ほか ${xs.length - 3} 品` : "") : skip.includes(s) ? "食べなかった" : "まだ記録していません"),
           xs.length && xs.some((m) => typeof m.kcal === "number") ? el("span", { class: "num" }, keepUnits(`${fmtN(k)} kcal`)) : el("span"),
           el("span", { class: "meal-slot-plus", "aria-hidden": "true" }, icon("plus", 20))), plans ? dt7SlotPlans(d, s) : null); })),
-      plans ? dt7SlotAdd(d) : null);
+      plans ? dt7SlotSum(d) : null);
   }
   $("mealRecClose").addEventListener("click", mealRecClose);
   $("mealRec").addEventListener("close", () => {
@@ -24970,7 +24974,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月26日 12:07"; // 2c87361b (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月26日 12:26"; // 78fea7c4 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -58807,7 +58811,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   dietSix = true;
 
   // ---------- ダイエット その7 ①〜⑩ (the user's calls, 2026-11-14): 食事 as a month (①), the foods and the next
-  // morning's weight (②), 食事の予定 (③; the card taken off at the user's call (2026-11-24, tools/REMOVED.md), its plans in 食事's きょうの記録) and 食事's photos side by side (④); ウォームアップ (⑤) and プレート (⑥) for the
+  // morning's weight (②), 食事の予定 (③; the card taken off at the user's call (2026-11-24, tools/REMOVED.md), its plans in 食事's きょうの記録 and each 区分's 記録画面) and 食事's photos side by side (④); ウォームアップ (⑤) and プレート (⑥) for the
   // weight typed, the day's 運動 as words to copy (⑦) and 運動のお知らせ (⑧); what the weight lost was made of (⑨) and
   // the reason for the goal (⑩, taken off 2026-11-25). ⑥ プレート taken off 2026-11-22 (the user's call, tools/REMOVED.md). Function declarations and var, as the page may draw before this runs (dietSeven, set at
   // its end) ----------
@@ -58883,7 +58887,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ③ 食事の予定 (settings mealPlans, with the account): a food, its 区分 and kcal for a day; on its day 食べた puts it in (and
   // takes the plan off). The card (today's, tomorrow's and the day after's, put in there) taken off at the user's call (2026-11-24, tools/REMOVED.md); the
-  // plans are put in, eaten and taken off in 食事's きょうの記録 (below). A week after their day they go
+  // plans are put in on each 区分's 記録画面 (2026-11-26), and eaten and taken off there and in 食事's きょうの記録 (below). A
+  // week after their day they go
   function dt7Plans() { const l = settings.get("mealPlans")?.list; return Array.isArray(l) ? l.filter((x) => x && typeof x.id === "string" && isDay(x.date || "") && typeof x.text === "string" && x.text && SLOTS.includes(x.slot)) : []; }
   function dt7PutPlans(list) { return settings.set("mealPlans", { list: list.filter((x) => x.date >= addDays(todayKey, -7)).slice(-60), updatedAt: Date.now() }); }
   function dt7Eat(p) {
@@ -58910,10 +58915,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ③ in 食事's きょうの記録 too (the user's call, 2026-11-24: きょうの記録 holding what is to be eaten, put there beforehand):
   // under each 区分, its plans for the day shown (予定), 食べた putting one in as above and 削除 taking it off; under them,
-  // what the day comes to if all are eaten, and 食べる予定を置く for today (食事's day goes no later; those put in for a day to
-  // come in 食事の予定, before it was taken out, show on their day): a 区分 (the next one to come, else the last one used) and a food, its kcal
-  // guessed as above when none is given
-  var dt7SlotOpen = false, dt7SlotLast = "";
+  // what the day comes to if all are eaten (today's). 食べる予定を置く under them (a 区分, a food and its kcal) taken out at
+  // the user's call (2026-11-26, tools/REMOVED.md): a plan is put in on its 区分's own screen now (below)
   function dt7SlotPlans(d, s) {
     const mine = dt7Plans().filter((x) => x.date === d && x.slot === s);
     return mine.length ? el("ul", { class: "meal-plan-list", "aria-label": `${s}の予定` }, mine.map((x) => el("li", {},
@@ -58922,39 +58925,50 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       x.date <= todayKey ? el("button", { type: "button", class: "btn ghost sm meal-plan-eat", "aria-label": `予定の「${x.text}」を食べたので記録する`, onclick: () => dt7Eat(x) }, "食べた") : null,
       delButton(() => dt7DropPlan(x), "削除", x.text)))) : null;
   }
-  function dt7NextSlot() {
-    const h = new Date().getHours();
-    return h < 10 ? "昼食" : h < 20 ? "夕食" : "間食";
-  }
-  function dt7SlotAdd(d) {
-    if (d !== todayKey) return null;
-    const mine = dt7Plans().filter((x) => x.date === d), goal = kcalGoal();
+  function dt7SlotSum(d) {
+    const mine = d === todayKey ? dt7Plans().filter((x) => x.date === d) : [], goal = kcalGoal();
+    if (!mine.length) return null;
     const eaten = sum(meals.items.filter((m) => m.date === d && typeof m.kcal === "number"), (m) => m.kcal), planned = sum(mine, (x) => (typeof x.kcal === "number" ? x.kcal : 0));
-    const total = mine.length ? el("p", { class: "sub meal-plan-sum" + (eaten + planned > goal ? " warn" : "") }, phrases([`予定をぜんぶ食べると きょうは ${fmtN(eaten + planned)} kcal`,
-      eaten + planned > goal ? `目安を ${fmtN(eaten + planned - goal)} kcal 超えます` : `目安まで あと ${fmtN(goal - eaten - planned)} kcal`])) : null;
-    if (!dt7SlotOpen) return [total, el("button", { type: "button", class: "link-btn meal-plan-open", "aria-expanded": "false", onclick: () => { dt7SlotOpen = true; renderMealSlots(); $("mealPlanText")?.focus(); } }, icon("plus", 18), "食べる予定を置く")];
+    return el("p", { class: "sub meal-plan-sum" + (eaten + planned > goal ? " warn" : "") }, phrases([`予定をぜんぶ食べると きょうは ${fmtN(eaten + planned)} kcal`,
+      eaten + planned > goal ? `目安を ${fmtN(eaten + planned - goal)} kcal 超えます` : `目安まで あと ${fmtN(goal - eaten - planned)} kcal`]));
+  }
+
+  // ③ on each 区分's own screen (食事の記録画面: 朝食・昼食・夕食・間食; the user's call, 2026-11-26): ○○に食べる予定, the
+  // 区分's plans for the day shown (食べた, 削除, as above) and, for today (食事's day goes no later), a food to be eaten put
+  // in as one of the 区分's, its kcal guessed as above when none is given. The form stays put as the screen draws again
+  // (what is typed in it kept), the 区分 it puts in being the screen's at the time
+  function dt7RecPlan() {
+    const box = $("mealRecPlan");
+    if (!box) return;
+    const d = viewDate, s = mealRecSlot(), today = d === todayKey, list = dt7SlotPlans(d, s);
+    box.hidden = !today && !list;
+    if (!box.querySelector(".meal-plan-form")) box.replaceChildren(el("div", { class: "mr-sec-head" }), el("div", { class: "mr-plan-list" }), dt7RecForm());
+    box.querySelector(".mr-sec-head").textContent = `${s}に食べる予定`;
+    setChildren(box.querySelector(".mr-plan-list"), list);
+    box.querySelector(".meal-plan-form").hidden = !today;
+  }
+  function dt7RecForm() {
     const text = el("input", { type: "text", id: "mealPlanText", maxlength: 100, placeholder: "食べる予定のもの", "aria-label": "食べる予定のもの", list: "mealHints", enterkeyhint: "done" });
-    const slot = el("select", { id: "mealPlanSlot", "aria-label": "区分" }, SLOTS.map((x) => el("option", { value: x }, x)));
     const kcal = el("input", { type: "number", id: "mealPlanKcal", min: 0, max: 9999, inputmode: "numeric", placeholder: "kcal", "aria-label": "カロリー（入れなくてもよい）" });
-    slot.value = SLOTS.includes(dt7SlotLast) ? dt7SlotLast : dt7NextSlot();
-    const form = el("form", { class: "meal-plan-form", autocomplete: "off", "aria-label": "食べる予定を置く" },
-      el("div", { class: "meal-plan-row" }, slot, text),
-      el("div", { class: "meal-plan-row" }, kcal, el("button", { class: "btn sm", type: "submit" }, "置く"),
-        el("button", { type: "button", class: "btn ghost sm", onclick: () => { dt7SlotOpen = false; renderMealSlots(); } }, "閉じる")),
+    const form = el("form", { class: "meal-plan-form", autocomplete: "off", "aria-label": "食べる予定を入れる" },
+      el("div", { class: "meal-plan-row" }, text),
+      el("div", { class: "meal-plan-row" }, kcal, el("button", { class: "btn sm", type: "submit" }, "予定に入れる")),
       el("p", { class: "sub" }, "kcal を入れないときは、前に食べたときの分などから入ります。食べたら「食べた」で記録できます。"));
     form.addEventListener("submit", (ev) => {
       ev.preventDefault();
+      const d = viewDate, s = mealRecSlot();
+      if (d !== todayKey) return;
       const t = oneLine(text.value).slice(0, 100), v = kcal.value === "" ? null : Math.round(Number(kcal.value));
       if (!t) { text.focus(); return; }
       if (v !== null && !(v >= 0 && v <= 9999)) { kcal.focus(); return; }
       const list = dt7Plans();
       if (list.length >= 60) { flash("予定は 60 件までです"); return; }
-      const x = { id: uid(), date: d, slot: slot.value, text: t, ...(v !== null ? { kcal: v } : dt7Guess(t)) };
-      dt7SlotLast = x.slot;
+      const x = { id: uid(), date: d, slot: s, text: t, ...(v !== null ? { kcal: v } : dt7Guess(t)) };
+      text.value = ""; kcal.value = "";
       act(() => dt7PutPlans([...list, x]));
-      flash(`きょうの${x.slot}に「${t}」を予定しました`);
+      flash(`きょうの${s}に「${t}」を予定しました`, () => act(() => dt7PutPlans(dt7Plans().filter((y) => y.id !== x.id))));
     });
-    return [total, form];
+    return form;
   }
 
   // ④ 食事の写真 side by side: the 30 days to the day shown, newest first (12, or all at もっと見る); a press shows it large
