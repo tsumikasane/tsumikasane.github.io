@@ -26,7 +26,7 @@ const BLUE = { light: "rgb(22, 98, 222)", dark: "rgb(76, 141, 255)" };
         outBars: all("#trendChart .ch-bar.out", fill), inBars: all("#trendChart .ch-bar.in", fill), legend: bg(document.querySelector("#trendLegend .ch-sw.out")),
         notes: all("#trendNotes .ch-out-t", fg), noteDot: fg([...document.querySelectorAll("#trendNotes .phrase")].find((x) => x.querySelector(".ch-out-t"))),
         table: all("#trendTable td.ch-out-t", fg), tableN: document.querySelectorAll("#trendTable tbody tr").length,
-        bars: all("#moneyStats .cat-bar", bg), barsN: document.querySelectorAll("#mo3Wd .cat-bar, #mo3Tags .cat-bar, #payList .cat-bar, #mo2Year .cat-bar, #mo3Bud .cat-bar").length,
+        bars: all("#moneyStats .cat-bar", bg), barsN: document.querySelectorAll("#mo3Tags .cat-bar, #payList .cat-bar, #mo2Year .cat-bar, #mo3Bud .cat-bar").length, // (曜日ごとの支出: taken out, 2026-11-26)
         over: [...document.querySelectorAll("#mo3Bud .cat-bar")].map((x) => [x.classList.contains("over"), getComputedStyle(x).backgroundImage.includes("repeating-linear-gradient")]),
         calOut: all("#exCal .da.out", fg), calIn: all("#exCal .da.in", fg), calKey: fg(document.querySelector("#exCalKey .out")),
         year: fg(document.querySelector("#mo2Year .ch-out-t")), yearText: document.querySelector("#mo2Year .ch-out-t")?.textContent,
@@ -37,7 +37,7 @@ const BLUE = { light: "rgb(22, 98, 222)", dark: "rgb(76, 141, 255)" };
     ok(c.inBars.length === 1 && c.inBars[0] === BLUE[scheme], `${scheme}: 収入's bars blue as before`, c.inBars);
     ok(c.notes.length === 1 && c.notes[0] === R.text && c.noteDot !== R.text, `${scheme}: the words under it, 支出's red (the ・ after it not)`, [c.notes, c.noteDot]);
     ok(c.table.length === 1 && c.table[0] === R.text && c.tableN > 0, `${scheme}: 数字で見る, 支出's column red`, c.table);
-    ok(c.bars.length === 1 && c.bars[0] === R.bar && c.barsN >= 10, `${scheme}: every bar of 支出 on まとめ red (曜日・タグ・支払い方法・1年・予算)`, [c.bars, c.barsN]);
+    ok(c.bars.length === 1 && c.bars[0] === R.bar && c.barsN >= 10, `${scheme}: every bar of 支出 on まとめ red (タグ・支払い方法・1年・予算)`, [c.bars, c.barsN]);
     ok(c.over.length >= 5 && c.over.every(([o, striped]) => o === striped) && c.over.some(([o]) => o), `${scheme}: 予算を守れた月, a month over striped, the others not`, c.over);
     ok(c.calOut.length === 1 && c.calOut[0] === R.text && c.calKey === R.text && c.calIn.length === 1 && c.calIn[0] !== R.text, `${scheme}: 収入と支出のカレンダー, 支出 red (the days and the sum), 収入 not`, [c.calOut, c.calKey, c.calIn]);
     ok(c.year === R.text && /^\d[\d,]*\s*円$/.test(c.yearText || ""), `${scheme}: 1年のまとめ, its 支出 red`, [c.year, c.yearText]);

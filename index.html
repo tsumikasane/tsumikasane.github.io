@@ -2608,7 +2608,6 @@ a.bt17-app { text-decoration: none; }
 .mo3-box .good { color: var(--accent); }
 .mo3-box .amount.warn { color: var(--warn); }
 .mo3-box .amount.good { color: var(--accent); }
-.mo3-wd.on .cat { font-weight: 600; }
 #mo3SelDel { color: var(--warn); }
 .mo3-box ul.list > li { align-items: flex-start; }
 .mo3-note { padding: 4px var(--space-2) 14px; }
@@ -8835,14 +8834,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <div class="excal-key" id="exCalKey"></div>
             <div class="excal-day" id="exCalDay"></div>
           </div>
-          <!-- (家計簿 その3 ⑦) 大きな支出, ⑥ 曜日ごとの支出, ⑤ タグごとの支出 -->
+          <!-- (家計簿 その3 ⑦) 大きな支出, ⑤ タグごとの支出. (⑥ 曜日ごとの支出, between them: taken out at the user's call,
+               2026-11-26, tools/REMOVED.md) -->
           <div class="card" id="mo3BigCard">
             <div class="card-head">大きな支出</div>
             <div class="mo3-box" id="mo3Big"></div>
-          </div>
-          <div class="card" id="mo3WdCard">
-            <div class="card-head">曜日ごとの支出</div>
-            <div class="mo3-box" id="mo3Wd"></div>
           </div>
           <div class="card" id="mo3TagCard">
             <div class="card-head">タグごとの支出</div>
@@ -24937,7 +24933,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月26日 15:59"; // 2a2d0d3b (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月26日 16:15"; // 9bc0b91d (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -62508,7 +62504,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ---------- 家計簿 その3 ①〜⑩ (the user's calls, 2026-11-14): each 費目 against its usual (①), a sum written in ひとことで
-  // 追加 (②), 明細 in order of amount (③), several 明細 picked at once (④), the tags in メモ (⑤), the days of the week (⑥),
+  // 追加 (②), 明細 in order of amount (③), several 明細 picked at once (④), the tags in メモ (⑤), the days of the week (⑥, taken out 2026-11-26),
   // the month's biggest (⑦), the months the budget held (⑧), a few words on the month (⑨), and this week against the
   // budget (⑩, taken out at the user's call 2026-11-26, tools/REMOVED.md). Function declarations and var, as the page may
   // draw before this runs ----------
@@ -62519,7 +62515,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("mo3Pick").setAttribute("aria-pressed", String(mo3Picking));
     $("mo3Pick").textContent = mo3Picking ? "選ぶのをやめる" : "選ぶ";
     // (⑩ 今週の支出, on 家計簿 under the budget's line: taken out at the user's call, 2026-11-26, tools/REMOVED.md)
-    if (moneyPart === "stats") { draw(renderMo3Note); draw(() => renderMo3Usual(m)); draw(renderMo3Bud); draw(() => renderMo3Big(m)); draw(renderMo3Wd); draw(() => renderMo3Tags(m)); }
+    if (moneyPart === "stats") { draw(renderMo3Note); draw(() => renderMo3Usual(m)); draw(renderMo3Bud); draw(() => renderMo3Big(m)); draw(() => renderMo3Tags(m)); } // (⑥ 曜日ごとの支出: taken out, 2026-11-26)
   }
   var mo3Outs = (e) => e.kind !== "in" && !e.fixed; // (固定費 aside: the same each month)
   function mo3Phr(...ws) { return ws.filter(Boolean).map((w) => (typeof w === "string" ? el("span", { class: "phrase" }, keepUnits(w)) : w)); }
@@ -62650,21 +62646,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("exFind").scrollIntoView({ block: "start", behavior: reduceMotion.matches ? "auto" : "smooth" });
   }
 
-  // ⑥ 曜日ごとの支出: the last 12 weeks to today, each day of the week's average (固定費 aside), the week as the calendar starts it
-  function renderMo3Wd() {
-    const from = addDays(todayKey, -83), by = Array(7).fill(0);
-    let any = false;
-    for (const e of expenses.items) if (mo3Outs(e) && e.date >= from && e.date <= todayKey) { by[parseYmd(e.date).getDay()] += num(e.amount); any = true; }
-    const box = $("mo3Wd");
-    if (!any) { setChildren(box, el("p", {}, "支出を記録すると、何曜日によく使うかが出ます。")); return; }
-    const avg = by.map((v) => v / 12), top = Math.max(1, ...avg), ws = weekStart(), most = avg.indexOf(Math.max(...avg));
-    setChildren(box,
-      el("p", {}, mo3Phr(`いちばん使うのは ${WD[most]}曜日（平均 ${fmtYen(avg[most])}）。`, "この12週間の、曜日ごとの1日の平均です。固定費はのぞいています。")),
-      Array.from({ length: 7 }, (_, i) => (ws + i) % 7).map((d) => el("div", { class: "cat-row mo3-wd" + (d === most ? " on" : "") },
-        el("span", { class: "cat" }, `${WD[d]}曜日`),
-        el("span", { class: "cat-track" }, el("span", { class: "cat-bar", style: avg[d] ? `width:${Math.max(1, (avg[d] / top) * 100)}%` : "width:0;min-width:0" })),
-        el("span", { class: "amount" }, fmtYen(avg[d])))));
-  }
+  // ⑥ 曜日ごとの支出 (the last 12 weeks, each day of the week's average, 「いちばん使うのは ○曜日」): taken out at the user's
+  // call (2026-11-26, tools/REMOVED.md)
 
   // ⑦ 大きな支出: the month shown's five biggest (固定費 aside), each opening to be changed, and their part of the month
   function renderMo3Big(m) {

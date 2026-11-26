@@ -1,4 +1,4 @@
-// 家計簿 その3 ①⑤⑥⑦⑧⑨ in まとめ
+// 家計簿 その3 ①⑤⑦⑧⑨ in まとめ (⑥ 曜日ごとの支出: taken out, 2026-11-26)
 const { chromium } = require("playwright");
 const { P, at, phone, seed } = require("./lib");
 const { DATA, today } = require("./data");
@@ -16,9 +16,10 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   // ⑦ the biggest five, 固定費 aside
   const big = await txt(p, "#mo3Big");
   ok(big.startsWith("1 スーパー") && big.includes("この 5 件で 29,700 円"), "⑦ big ones: " + big);
-  // ⑥ the days of the week
-  const wd = await txt(p, "#mo3Wd");
-  ok(wd.includes("いちばん使うのは") && wd.includes("日曜日") && wd.includes("土曜日"), "⑥ weekdays: " + wd);
+  // ⑥ 曜日ごとの支出 (いちばん使うのは ○曜日, each day of the week's average): taken out at the user's call (2026-11-26,
+  // tools/REMOVED.md); 大きな支出 and タグごとの支出 beside it stay
+  const stats = await txt(p, "#moneyStats");
+  ok(!(await p.$("#mo3Wd")) && !(await p.$("#mo3WdCard")) && !stats.includes("曜日ごとの支出") && !stats.includes("いちばん使うのは") && stats.includes("大きな支出") && stats.includes("タグごとの支出"), "⑥ 曜日ごとの支出: gone (大きな支出, タグごとの支出 kept)");
   // ⑧ the months
   const bud = await txt(p, "#mo3Bud");
   ok(bud.includes("終わった 5 か月のうち、4 か月が予算内でした") && bud.includes("× 28,000 円 超えた") && bud.includes("途中・200 円 超え"), "⑧ budget months: " + bud);
