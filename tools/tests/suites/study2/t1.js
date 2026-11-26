@@ -78,6 +78,10 @@ async function open(b, when) {
   await p.click("#studySettings"); await p.waitForTimeout(800);
   ok(!(await p.$("#st2RevOn")) && !(await p.$("#st2RevAt")), "⑨ 復習's お知らせ: gone");
   ok(!(await p.$("#st2RemOn")) && !(await p.$("#st2RemAt")) && !(await p.$("#st2RemFoot")), "⑨ まだの日's お知らせ: gone");
+  // the words under 科目 (「勉強の記録に付けて色分けできます。↑ ↓ で並べかえられます。…」): taken out at the user's call (2026-11-26, tools/REMOVED.md).
+  // The subjects with their colours, ↑ ↓, しまう and ×, 科目を追加, and 教材's words stay
+  const subs = await p.evaluate(() => { const g = document.getElementById("subjectsGroup"); return { shown: !g.hidden && g.offsetHeight > 0, words: g.innerText, rows: document.querySelectorAll("#subjectList > li").length, shelve: document.querySelectorAll("#subjectList .st-shelve").length, add: !!document.getElementById("subjectAdd")?.offsetHeight }; });
+  ok(subs.shown && !/色分けできます|並べかえられます|「しまう」と|付いていた記録|科目なし」になります/.test(subs.words) && subs.rows > 0 && subs.shelve > 0 && subs.add && subs.words.includes("何％まで進んだかが出ます"), "科目's words: gone (the subjects with しまう, 科目を追加 and 教材's words kept)", subs);
   await p.click("#sheetDone"); await p.waitForTimeout(600);
   await p.screenshot({ path: "study2-cards.png", fullPage: true });
 
