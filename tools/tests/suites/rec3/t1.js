@@ -1,4 +1,4 @@
-// 記録 その3 ①〜⑩
+// 記録 その3 ①〜⑩ (⑧ 最近の記録: taken out at the user's call, 2026-11-26)
 const { chromium } = require("playwright");
 const fs = require("fs");
 const { URL0, P, at, phone, seed } = require("./lib");
@@ -38,12 +38,8 @@ const DATA = {
   const b = await chromium.launch();
   const p = await phone(b, at("21:30", today), { deviceScaleFactor: 1, acceptDownloads: true });
   await seed(p, DATA, "records"); await wait(p, 1200);
-  // ⑧ 最近の記録
-  const recent = await rows(p, '#sumCards [data-card="recent"] .rec-row-btn');
-  ok(recent.length === 8 && recent[0] === "日記 きょうの日記 11月14日（土）の記録・きょう 21:00に書いた" && recent[1].startsWith("勉強 科目なし 60 分 英語 11月14日（土）の記録・きょう 20:30に直した") && recent[2].startsWith("運動 ランニング"), "⑧ the latest first, written or put right", recent);
-  await p.locator('#sumCards [data-card="recent"] .rec-row-btn').first().click(); await wait(p, 800);
-  ok(await p.evaluate(() => document.getElementById("daySheet").open), "⑧ pressed: open to put right");
-  await p.keyboard.press("Escape"); await wait(p, 700);
+  // ⑧ 最近の記録: taken out at the user's call (2026-11-26, tools/REMOVED.md); the records stay
+  ok(!(await p.$('#sumCards [data-card="recent"]')) && !(await txt(p, "#sumCards")).includes("最近の記録") && (await ls(p, "journal")).length > 0, "⑧ 最近の記録: gone (the records kept)");
   // ⑨ よく記録するもの
   ok((await txt(p, '#sumCards [data-card="often"]')) === "よく記録するもの 食事 パン 3 回 ラーメン 3 回 運動 ランニング 2 回", "⑨ the foods and the kinds recorded most", await txt(p, '#sumCards [data-card="often"]'));
   await p.locator('#sumCards [data-card="often"] .chip-btn', { hasText: "ラーメン" }).click(); await wait(p, 800);

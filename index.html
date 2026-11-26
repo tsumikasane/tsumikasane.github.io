@@ -24238,7 +24238,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         rtDays.length ? `${rtDays.length} 日チェック` : "まだチェックしていません", "list", topList(byRoutine, () => "var(--c-routine)", (n) => `${n} 回`), "routine"), "routine"),
       money: () => withStreak(sumCard("var(--c-money)", "money", "家計簿", fmtN(Math.round(out)), "円 支出", `収入 ${fmtYen(inn)}・収支 ${net > 0 ? "+" : ""}${fmtYen(net)}`, "list",
         topList(byCat, () => "var(--c-money)", fmtYen), "money"), "money"),
-      memory: recMemoryCard, first: rec2FirstCard, often: rec3OftenCard, recent: rec3RecentCard, pick: rec5PickCard, marks: rec7MarksCard, tags: rec8TagsCard, // (その5 ⑨, その7 ⑦, その8 ⑦)
+      memory: recMemoryCard, first: rec2FirstCard, often: rec3OftenCard, pick: rec5PickCard, marks: rec7MarksCard, tags: rec8TagsCard, // (その5 ⑨, その7 ⑦, その8 ⑦; その3 ⑧ 最近の記録: taken out, 2026-11-26)
     };
     const hidden = recCardHidden();
     setChildren($("sumCards"), recCardOrder().filter((k) => !hidden.has(k) && cards[k]).map((k) => cards[k]()).filter(Boolean));
@@ -24906,7 +24906,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月26日 17:38"; // 6fe6d135 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月26日 21:04"; // 23159120 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -26756,12 +26756,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     { key: "journal", label: "日記", icon: "journal" }, { key: "meal", label: "食事", icon: "meal" }, { key: "workout", label: "運動", icon: "workout" }, { key: "weight", label: "からだ", icon: "weight" },
     { key: "study", label: "勉強", icon: "study" }, { key: "routine", label: "ルーティーン", icon: "routine" }, { key: "money", label: "家計簿", icon: "money" },
     { key: "first", label: "はじめた日", icon: "flag" }, // (その2 ⑨)
-    { key: "often", label: "よく記録するもの", icon: "heart" }, { key: "recent", label: "最近の記録", icon: "records" }, // (その3 ⑨ ⑧)
+    { key: "often", label: "よく記録するもの", icon: "heart" }, // (その3 ⑨)
     { key: "pick", label: "ふりかえる日", icon: "calendar" }, // (その5 ⑨)
     { key: "marks", label: "しおりの日", icon: "pin" }, // (その7 ⑦)
     { key: "tags", label: "タグ", icon: "search" }, // (その8 ⑦)
     // (⑤ 節目, ⑥ これまでのいちばん, その9 ⑧ 最近のはじめて and その10 ⑩ 最近見た日: taken out at the user's call, 2026-11-18,
-    // tools/REMOVED.md, and ⑦ 書き忘れた日, 2026-11-25; their keys in a saved order or 出さないカード are passed over)
+    // tools/REMOVED.md, ⑦ 書き忘れた日, 2026-11-25, and その3 ⑧ 最近の記録, 2026-11-26; their keys in a saved order or
+    // 出さないカード are passed over)
   ];
   const recCard = (k) => REC_CARDS.find((c) => c.key === k);
   const recCardPrefs = () => settings.get("recordCards") || {};
@@ -27054,7 +27055,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- 記録 その3 ①〜⑩ (the user's calls, 2026-11-14): in a kind's list, entries picked and deleted at once (①),
   // narrowed by a number (②), the words looked for often there (③) and the days with none (④); on a day's page, when each
   // was recorded (⑤), the same day a month and a year before (⑥) and the day's records onto its 日記 (⑦); the records
-  // written or put right lately (⑧) and the ones recorded often (⑨) as cards; and a span of days for 表 and 日記の本 (⑩).
+  // written or put right lately (⑧, taken out at the user's call, 2026-11-26) and the ones recorded often (⑨) as cards; and
+  // a span of days for 表 and 日記の本 (⑩).
   // Still no weeks, months or years in the cards, no charts, nothing typed in but words and numbers to look for (the
   // user's calls before). (var, not const: renderRecList and renderSummary, above, may run before this) ----------
 
@@ -27238,29 +27240,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("rec3DayJn").addEventListener("click", () => rec3ToJournal());
   function rec3DayExtras(d) { if (!REC3_JN) return; rec3DayTimes(d); rec3Ago(d); $("rec3DayJn").closest("p").hidden = !rec3JnText(d); }
 
-  // ⑧ 最近の記録: the records written or put right lately, across the kinds (eight), each with when and whether it was
-  // put right; pressed, open to put right
-  function rec3Recent() {
-    const out = [], put = (kind, x, what) => { const c = num(x.createdAt), u = num(x.updatedAt), t = Math.max(c, u); if (t > TSUMI_T0) out.push({ kind, x, what, t, fixed: u > c + 60000 }); };
-    for (const j of journal.items) if (j.text?.trim()) put("journal", j, clip(oneLine(j.text), 30));
-    for (const m of meals.items) put("meal", m, rec2Line("meal", m).slice(1));
-    for (const w of workouts.items) put("workout", w, rec2Line("workout", w).slice(1));
-    for (const x of study.items) put("study", x, rec2Line("study", x).slice(1));
-    for (const w of weights.items) put("weight", { ...w, date: w.date || w.id }, rec2Line("weight", w).slice(1));
-    for (const e of expenses.items) put("money", e, rec2Line("money", e).slice(1));
-    return out.sort((a, b) => b.t - a.t).slice(0, 8);
-  }
-  function rec3RecentCard() {
-    const xs = rec3Recent();
-    if (!xs.length) return null;
-    return el("div", { class: "card sum-card wide rec-extra", "data-card": "recent", style: "--sum-c: var(--accent)" },
-      el("h3", { class: "sum-head" }, icon("records", 18), el("span", {}, "最近の記録")),
-      el("ul", { class: "rec-rows" }, xs.map((r) => {
-        const at = new Date(r.t), when = `${ymd(at) === todayKey ? "きょう" : fmtShort(ymd(at))} ${ts6Hm(at.getHours() * 60 + at.getMinutes())}に${r.fixed ? "直した" : "書いた"}`;
-        return el("li", {}, el("button", { type: "button", class: "rec-row-btn", "aria-label": `${RECORD_LISTS[r.kind].label}、${r.what}、${when}。開く`, onclick: (ev) => openRecEdit(r.kind, r.x.id, ev.detail === 0) },
-          el("span", { class: "rec-row-main" }, el("span", {}, el("span", { class: "rec3-kind", style: `--kc: var(--c-${r.kind})` }, RECORD_LISTS[r.kind].label), " ", r.what), el("small", {}, `${fmtMDW(r.x.date)}の記録・${when}`)), icon("next", 16)));
-      })));
-  }
+  // ⑧ 最近の記録 (the records written or put right lately, across the kinds, eight, each with when and whether it was put
+  // right, pressed to open): taken out at the user's call (2026-11-26, tools/REMOVED.md); the records stay as they were
 
   // ⑨ よく記録するもの: 食事's foods and 運動's kinds recorded most (2 times or more, three each), as 勉強's subjects and
   // 家計簿's 費目 are on their cards; pressed, that kind's list with the word looked for
