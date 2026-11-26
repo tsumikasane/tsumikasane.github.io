@@ -19,13 +19,13 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) p.errs.push("console: " + m.text().slice(0, 200)); });
   await seed(p, base(), "weight"); await p.waitForTimeout(1200);
 
-  // ① the last weight (11/10), and a press puts it in, or 0.1 off it
+  // ① 前回の体重から入れる (前回 ○ kg（きのう） and −0.2・−0.1・同じ・+0.1・+0.2 under the weight): taken out at the user's call
+  // (2026-11-26, tools/REMOVED.md). With 11/10's weight and none today: nothing of it, nothing put in; the weight is typed
   const last = (await ls(p, "weights")).filter((r) => r.id < "2026-11-11").sort((a, b) => a.id.localeCompare(b.id)).pop();
-  ok((await txt(p, "#bd2Quick")).startsWith(`前回 ${last.kg.toFixed(1)} kg（きのう）`), "① the last one, over the buttons", await txt(p, "#bd2Quick"));
-  await p.locator("#bd2Quick button", { hasText: "−0.1" }).click(); await p.waitForTimeout(200);
-  ok((await p.inputValue("#wtInput")) === (last.kg - 0.1).toFixed(1), "① −0.1 put in", await p.inputValue("#wtInput"));
-  await p.locator("#bd2Quick button", { hasText: "同じ" }).click(); await p.waitForTimeout(200);
-  ok((await p.inputValue("#wtInput")) === last.kg.toFixed(1), "① 同じ");
+  const form = await txt(p, "#wtForm"), btns = await p.$$eval("#wtForm button", (bs) => bs.map((b) => b.textContent.trim()));
+  ok(!!last && !(await p.$("#bd2Quick")) && !(await p.$(".bd2-quick-btns")) && !/前回 [\d.]+ kg/.test(form) && !btns.some((t) => ["−0.2", "−0.1", "同じ", "+0.1", "+0.2"].includes(t)), "① 前回 and its buttons: gone", [form, btns]);
+  ok((await p.inputValue("#wtInput")) === "", "① nothing put in for the day", await p.inputValue("#wtInput"));
+  await p.fill("#wtInput", last.kg.toFixed(1));
 
   // ② あったこと's buttons taken out at the user's call (2026-11-25, tools/REMOVED.md): none under the weight; a day's tags
   // kept as it is written again (11/6's 飲み会); ⑤ nothing crossed today
@@ -33,7 +33,6 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   await p.click("#wtSubmit"); await p.waitForTimeout(700);
   let r = await wt(p, "2026-11-11");
   ok(r?.kg === last.kg && !("tags" in r), "the day's weight in, no tags", r);
-  ok(!(await p.isVisible("#bd2Quick")), "① gone once the day has its own");
   const was6 = await wt(p, "2026-11-06");
   await goDay(p, "2026-11-06"); await p.waitForTimeout(500);
   await p.fill("#wtInput", was6.kg.toFixed(1)); await p.click("#wtSubmit"); await p.waitForTimeout(700);

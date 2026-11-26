@@ -5188,12 +5188,7 @@ li.cal4-cx .text { color: var(--muted); text-decoration: line-through; }
 .dt4-since-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 12px; padding: 8px 0; border-top: .5px solid var(--separator); }
 .dt4-since-row .sub { grid-column: 1 / -1; margin: 2px 0 0; }
 .dt4-since > .sub { margin: 8px 0 0; }
-/* からだ その2 ①〜⑩ (2026-11-11). ① the last weight, and 0.1 either side of it at a press */
-.bd2-quick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: -2px 0 2px; }
-.bd2-quick[hidden] { display: none; }
-.bd2-quick-last { font-size: var(--t-foot); color: var(--muted); font-variant-numeric: tabular-nums; }
-.bd2-quick-btns { display: flex; flex-wrap: wrap; gap: 6px; }
-.bd2-quick-btns .chip-btn { min-width: 44px; padding: 0 10px; background: var(--fill); box-shadow: none; color: var(--fg); font-variant-numeric: tabular-nums; }
+/* からだ その2 ①〜⑩ (2026-11-11). (① the last weight, and 0.1 either side of it at a press: taken out 2026-11-26, tools/REMOVED.md) */
 #bd2Plateau[hidden], #bd2Cal[hidden] { display: none; }
 /* ③ 停滞期 */
 .bd2-plateau { display: grid; gap: 6px; background: color-mix(in srgb, #ff9500 10%, var(--surface)); }
@@ -8377,8 +8372,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <form class="add" id="wtForm" autocomplete="off">
             <label class="flabel" for="wtInput" id="wtFormLabel">きょうの体重</label>
             <div class="ffield"><input type="number" id="wtInput" step="0.1" min="20" max="300" placeholder="65.0" inputmode="decimal" required><span class="unit">kg</span></div>
-            <!-- (からだ その2 ①) the last weight, put in at a press, or 0.1 / 0.2 either side of it -->
-            <p class="full field-note bd2-quick" id="bd2Quick" hidden></p>
             <!-- the day's 体脂肪率 with its weight, when there is one (the user's call) -->
             <label class="flabel" for="wtFat">体脂肪率 <span class="opt">任意</span></label>
             <div class="ffield"><input type="number" id="wtFat" step="0.1" min="1" max="70" inputmode="decimal"><span class="unit">%</span></div>
@@ -24977,7 +24970,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月26日 11:31"; // 181b7c2e (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月26日 12:07"; // 2c87361b (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -45903,26 +45896,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // as ToDo's list is drawn: the line of ①, the cards of ⑥⑤⑧
   function td4Paint() { td4ViewBar(); td4ShopCard(); td4RepCard(); }
   todoFour = true;
-  // ---------- からだ その2 ①〜⑩ (the user's calls, 2026-11-11): the weight put in from the last one (①), what happened
-  // that day, as tags, and what came of them the day after (②; the buttons taken off 2026-11-25, tools/REMOVED.md), 停滞期 (③), the month as a calendar of weights (④), the
+  // ---------- からだ その2 ①〜⑩ (the user's calls, 2026-11-11): the weight put in from the last one (①; taken out
+  // 2026-11-26, tools/REMOVED.md), what happened that day, as tags, and what came of them the day after (②; the buttons taken off 2026-11-25, tools/REMOVED.md), 停滞期 (③), the month as a calendar of weights (④), the
   // 節目 crossed (⑤), サイズの目標 (⑥), 水分 (⑦), 睡眠 (⑧), the week's summary as a notification (⑨) and records from
   // another app put in from CSV (⑩) ----------
   // (what was there calls in here as it draws; before this part has run, as the page opens, these do nothing)
   var bodyTwo = false;
 
-  // ① the last weight before the day showing, and a press puts it in, or 0.1 / 0.2 either side of it; the scale's number
-  // is then a press or two away rather than typed
-  function bd2Last(day = viewDate) { return sortedWeights().filter((r) => r.id < day).pop() || null; }
-  function renderBd2Quick() {
-    const box = $("bd2Quick"), last = bd2Last(), entry = weights.get(viewDate);
-    box.hidden = !last || !!entry;
-    if (box.hidden) { box.replaceChildren(); return; }
-    const base = num(last.kg), put = (v) => { wtInput.value = fmtKg(v); wtInput.dispatchEvent(new Event("input", { bubbles: true })); }; // (not focused: on a phone the keyboard would come up over 記録する)
-    setChildren(box, el("span", { class: "bd2-quick-last" }, `前回 ${fmtKg(base)} kg（${relLabel(last.id) || fmtShort(last.id)}）`),
-      el("span", { class: "bd2-quick-btns", role: "group", "aria-label": "前回の体重から入れる" },
-        [[-0.2, "−0.2"], [-0.1, "−0.1"], [0, "同じ"], [0.1, "+0.1"], [0.2, "+0.2"]].map(([d, w]) =>
-          el("button", { type: "button", class: "chip-btn", "aria-label": d ? `前回より ${w} kg の ${fmtKg(base + d)} kg を入れる` : `前回と同じ ${fmtKg(base)} kg を入れる`, onpointerdown: (ev) => ev.preventDefault(), onclick: () => put(base + d) }, w))));
-  }
+  // ① 前回の体重から入れる (under the weight: 前回 ○ kg（きのう） and −0.2・−0.1・同じ・+0.1・+0.2, putting the last weight
+  // or 0.1 / 0.2 either side of it in): taken out at the user's call (2026-11-26, tools/REMOVED.md); the weight is typed
 
   // ② あったこと: what may have moved the weight that day (外食, 飲み会 …), kept with the day's weight (tags). Its buttons
   // under the weight taken out at the user's call (2026-11-25, tools/REMOVED.md): the tags kept stay with their days (a day
@@ -46153,7 +46135,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   });
 
   // as からだ is drawn
-  function renderBodyTwo() { draw(renderBd2Quick); draw(renderBd2Daily); draw(renderBd2Plateau); draw(renderBd2Cal); }
+  function renderBodyTwo() { draw(renderBd2Daily); draw(renderBd2Plateau); draw(renderBd2Cal); }
   bodyTwo = true;
   // ---------- ToDo その5 ①〜⑩ (the user's calls, 2026-11-11): 重要と急ぎ as four boxes (①, taken off with 重要 at the
   // user's call, 2026-11-23), a 期限 from a class or a plan
