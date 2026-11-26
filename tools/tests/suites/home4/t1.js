@@ -88,12 +88,10 @@ async function open(b, when) {
   ok(!p.errs.length, "no page errors", p.errs);
   await p.close();
 
-  // the evening: おやすみ goes to tomorrow's record; the week's day pressed opens カレンダー there
+  // the evening: no おやすみ (taken out at the user's call, 2026-11-26: the bed is put in in からだ's 睡眠); the week's day
+  // pressed opens カレンダー there
   p = await open(b, "2026-11-14T22:40:00+09:00");
-  await p.click(".h4-bed"); await p.waitForTimeout(400);
-  const bt = (await lsOf(p, "bodyDays")).find((x) => x.id === "2026-11-15");
-  ok(bt && bt.bed === "22:40" && bt.date === "2026-11-15", "⑩ おやすみ: tomorrow's bed", bt);
-  ok((await tileTxt(p, "h4sleep")).includes("おやすみ22:40を記録しました"), "⑩ said on the tile", await tileTxt(p, "h4sleep"));
+  ok(!(await p.$(".h4-bed")) && !(await p.$('.tile[data-tile="h4sleep"] .h3-btns')) && !(await tileTxt(p, "h4sleep")).includes("おやすみ") && !(await lsOf(p, "bodyDays")).some((x) => x.id === "2026-11-15"), "⑩ no おやすみ at night, nothing put in", await tileTxt(p, "h4sleep"));
   ok(!(await p.$(".h4-wake")), "⑩ no おはよう at night (nor in the morning: taken out, 2026-11-25)");
   // (pressed where it is: not under the tile's own head, which opens カレンダー as a whole)
   const top = await p.$eval('.h4-day[data-day="2026-11-17"]', (b) => { b.scrollIntoView({ block: "center" }); const r = b.getBoundingClientRect(); const x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!x && b.contains(x); });
@@ -105,11 +103,11 @@ async function open(b, when) {
   ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "no sideways scroll");
   ok(!p.errs.length, "no page errors (evening)", p.errs);
 
-  // ⑩ nothing of last night: まだ, and おやすみ's words alone (おはよう taken out at the user's call, 2026-11-25)
+  // ⑩ nothing of last night: まだ alone (おはよう taken out at the user's call, 2026-11-25, and おやすみ with its words, 2026-11-26)
   const q = await phone(b, new Date("2026-11-14T13:00:00+09:00"), { deviceScaleFactor: 1 });
   q.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) q.errs.push("console: " + m.text().slice(0, 200)); });
   await seed(q, { ...D.all(), bodyDays: [] }, "home"); await q.waitForTimeout(900);
-  ok((await tileTxt(q, "h4sleep")) === flat("睡眠まだおやすみを押すと、睡眠を記録します") && !(await q.$('.tile[data-tile="h4sleep"] .h3-btns')), "⑩ nothing yet: まだ, おやすみ's words alone", await tileTxt(q, "h4sleep"));
+  ok((await tileTxt(q, "h4sleep")) === "睡眠まだ" && !(await q.$('.tile[data-tile="h4sleep"] .h3-btns')), "⑩ nothing yet: まだ alone", await tileTxt(q, "h4sleep"));
   ok(!q.errs.length, "no page errors (nothing yet)", q.errs);
   await b.close();
   console.log(fails ? `FAIL ${fails}` : "ALL OK");
