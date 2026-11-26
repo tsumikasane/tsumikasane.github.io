@@ -28,7 +28,7 @@ async function open(b, when) {
   const b = await chromium.launch();
   let p = await open(b, "2026-11-14T07:30:00+09:00");
   const keys = await p.$$eval("#homeTiles > .tile", (l) => l.map((t) => t.dataset.tile));
-  ok(["h4week", "h4sleep", "h4memo"].every((k) => keys.includes(k)) && !["h4mood", "h4watch", "h4breath"].some((k) => keys.includes(k)), "the tiles on きょう (気分・時間をはかる・ひと息 taken out)", keys);
+  ok(["h4sleep", "h4memo"].every((k) => keys.includes(k)) && !["h4mood", "h4watch", "h4breath", "h4week"].some((k) => keys.includes(k)), "the tiles on きょう (気分・時間をはかる・ひと息 taken out, and これから1週間, 2026-11-27)", keys);
 
   // ①② すぐに記録 (its line and its buttons) was taken out (the user's call, 2026-11-19): no tile, nothing for it in the gear's sheet
   ok(!keys.includes("quick") && !(await p.$("#h4LineIn")), "①② no すぐに記録 (taken out)", keys);
@@ -62,11 +62,9 @@ async function open(b, when) {
   ok(!(await p.$(".h4-breathe")) && !(await p.$("#h4Breath")), "⑦ no ひと息 (taken out)");
   await p.clock.setFixedTime(new Date("2026-11-14T08:01:01+09:00")); await p.waitForTimeout(500);
 
-  // ⑧ the week ahead
-  const days = await p.$$eval(".h4-day", (l) => l.map((x) => [x.querySelector(".h4-dl").textContent, x.querySelector(".h4-date").textContent, x.querySelector(".h4-n").textContent, x.querySelectorAll(".h4-s")[0].textContent].join("|")));
-  ok(days.length === 7 && days[0] === "きょう|14|1|" && days[1] === "あした|15|1|1" && days[2] === "月|16|−|" && days[3] === "火|17|1|" && days[6] === "金|20|−|", "⑧ seven days: plans, a ToDo tomorrow", days);
-  ok(await p.$eval('.h4-day[data-day="2026-11-16"] .h4-job .icon', () => true).catch(() => false) && (await p.getAttribute('.h4-day[data-day="2026-11-16"]', "aria-label")).includes("バイト"), "⑧ バイト on Monday");
-  ok((await p.getAttribute('.h4-day[data-day="2026-11-15"]', "aria-label")) === "あした、11月15日（日）、予定 1件、ToDo 1件", "⑧ read out", await p.getAttribute('.h4-day[data-day="2026-11-15"]', "aria-label"));
+  // ⑧ これから1週間 (the week ahead): taken out at the user's call (2026-11-27, tools/REMOVED.md); the plans, ToDos and
+  // shifts stay, in カレンダー and ToDo
+  ok(!(await p.$('.tile[data-tile="h4week"]')) && !(await p.$(".h4-day")) && !(await p.evaluate(() => document.getElementById("sec-home").innerText.includes("これから1週間"))), "⑧ これから1週間: gone");
 
   // ⑨ read aloud was taken out (the user's call, 2026-11-16): no button, nor its switch
   ok(!(await p.$("#h4Speak")) && !(await p.evaluate(() => document.getElementById("sec-home").innerText.includes("読み上げる"))), "⑨ no きょうを読み上げる (taken out)");
@@ -88,16 +86,10 @@ async function open(b, when) {
   ok(!p.errs.length, "no page errors", p.errs);
   await p.close();
 
-  // the evening: no おやすみ (taken out at the user's call, 2026-11-26: the bed is put in in からだ's 睡眠); the week's day
-  // pressed opens カレンダー there
+  // the evening: no おやすみ (taken out at the user's call, 2026-11-26: the bed is put in in からだ's 睡眠)
   p = await open(b, "2026-11-14T22:40:00+09:00");
   ok(!(await p.$(".h4-bed")) && !(await p.$('.tile[data-tile="h4sleep"] .h3-btns')) && !(await tileTxt(p, "h4sleep")).includes("おやすみ") && !(await lsOf(p, "bodyDays")).some((x) => x.id === "2026-11-15"), "⑩ no おやすみ at night, nothing put in", await tileTxt(p, "h4sleep"));
   ok(!(await p.$(".h4-wake")), "⑩ no おはよう at night (nor in the morning: taken out, 2026-11-25)");
-  // (pressed where it is: not under the tile's own head, which opens カレンダー as a whole)
-  const top = await p.$eval('.h4-day[data-day="2026-11-17"]', (b) => { b.scrollIntoView({ block: "center" }); const r = b.getBoundingClientRect(); const x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!x && b.contains(x); });
-  ok(top, "⑧ a day's button is on top where it is pressed");
-  await p.click('.h4-day[data-day="2026-11-17"]'); await p.waitForTimeout(700);
-  ok((await H(p, "tab")) === "calendar" && (await H(p, "calDay")) === "2026-11-17", "⑧ a day pressed: カレンダー at it");
   await p.emulateMedia({ colorScheme: "dark" }); await p.goto(process.env.URL0 + "#home"); await p.waitForTimeout(900);
   await p.screenshot({ path: out + "/h4-dark.png", fullPage: true });
   ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "no sideways scroll");
