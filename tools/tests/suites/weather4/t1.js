@@ -58,13 +58,13 @@ const redraw = async (p) => { await W(p, "redraw"); await p.waitForTimeout(200);
   await p.click('.wx4-hb[data-t="2026-11-14T15:00"]'); await p.waitForTimeout(200);
   ok(await p.evaluate(() => document.getElementById("wx4HourBox").hidden), "⑤ pressed again: put away");
 
-  // ⑦ what to wear, fitted
-  ok((await W(p, "shift")) === 2 && (await txt(p, "#wx4FbNote")) === "「暑かった」が多いので、2°ぶん薄着のめやすにしています。もとに戻す", "⑦ two 暑かった: 2° lighter", await txt(p, "#wx4FbNote"));
-  ok((await W(p, "wear", D.DAY)).main.startsWith("薄手の上着"), "⑦ 体感 17° + 2°: 薄手の上着", await W(p, "wear", D.DAY));
-  await p.click('#wx4FbSeg [data-fb="1"]'); await p.waitForTimeout(300);
-  ok((await W(p, "shift")) === 3 && (await W(p, "wear", D.DAY)).main.startsWith("長袖1枚で") && (await p.getAttribute('#wx4FbSeg [data-fb="1"]', "aria-pressed")) === "true", "⑦ today's 暑かった: 3°, 長袖1枚", await W(p, "wear", D.DAY));
-  await p.click("#wx4FbNote .link-btn"); await p.waitForTimeout(300);
-  ok((await W(p, "shift")) === 0 && !(await p.$("#wx4FbNote")) && (await W(p, "wear", D.DAY)).main.startsWith("薄手の上着"), "⑦ もとに戻す", await W(p, "shift"));
+  // ⑦ what to wear, fitted: where 暑かった・ちょうど・寒かった were put in (きょうの服装はどうでしたか, and the note with its もとに
+  // 戻す, under 服装のめやす) taken out with it at the user's call (2026-11-27, tools/REMOVED.md). What was put in is kept and
+  // fits the advice still (きょう's 出かける前, the notifications): two 暑かった, 2° lighter
+  ok(!(await p.$("#wx4FbSeg, #wx4FbNote, .wx4-fb")) && !(await txt(p, "#calPanelBody")).includes("服装のめやす") && !(await txt(p, "#calPanelBody")).includes("きょうの服装はどうでしたか"), "⑦ no question nor note (taken out with 服装のめやす)");
+  ok((await W(p, "shift")) === 2 && (await W(p, "wear", D.DAY)).main.startsWith("薄手の上着"), "⑦ the two 暑かった kept fit the advice still: 体感 17° + 2°, 薄手の上着", await W(p, "wear", D.DAY));
+  const fb = await p.evaluate(() => (JSON.parse(localStorage.getItem("tsumikasane:settings") || "[]").find((x) => x.id === "wxWearFb") || {}).list || null);
+  ok(JSON.stringify(fb) === JSON.stringify([{ d: "2026-11-12", v: 1 }, { d: "2026-11-13", v: 1 }]), "⑦ what was put in kept", fb);
 
   // ② the month gone by
   ok((await txt(p, ".wx4-mcount")) === "晴れ21日・くもり3日・雨6日10/15（木）〜11/13（金）（雨と雪は1mm以上の日）", "② the days by their weather", await txt(p, ".wx4-mcount"));

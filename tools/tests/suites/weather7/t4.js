@@ -45,7 +45,7 @@ async function open(b, when, more = {}) {
   // ① the page in brief
   await p.click('#wx7Jump [data-key="simple"]'); await p.waitForTimeout(400);
   const chips = await p.$$eval("#wx7Jump button", (l) => l.map((x) => x.textContent));
-  ok(JSON.stringify(chips) === JSON.stringify(["ぜんぶ表示", "1時間ごと", "雨", "服装", "1週間", "お知らせ・場所"]) && !(await p.$("#wx6Out")) && !!(await p.$(".wx-hours")), "① かんたん表示: four sections (持ち物 taken out, 2026-11-25)", chips);
+  ok(JSON.stringify(chips) === JSON.stringify(["ぜんぶ表示", "1時間ごと", "雨", "1週間", "お知らせ・場所"]) && !(await p.$("#wx6Out")) && !!(await p.$(".wx-hours")), "① かんたん表示: three sections (服装 taken out with 服装のめやす, 2026-11-27; 持ち物 taken out, 2026-11-25)", chips);
   await p.screenshot({ path: out + "/wx10-simple.png" });
   await p.click('#wx7Jump [data-key="simple"]'); await p.waitForTimeout(400);
   ok(!!(await p.$("#wx6Out")) && (await p.evaluate((P) => localStorage.getItem(P + "wxSimple"), P)) === null, "① ぜんぶ表示 again");

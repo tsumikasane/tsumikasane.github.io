@@ -34,8 +34,8 @@ const pick = async (p, n) => { await p.click(`.wx-days li:nth-child(${n}) button
   // ① the week as words, ⑦ the month's coldest and warmest coming
   ok((await txt(p, "#wx6Story")).startsWith(flat("きょうとあしたは晴れ、11/18（水）はくもり、11/19（木）と11/20（金）は雨、11/21（土）と11/22（日）は晴れの予報です。11/19（木）は気温がぐっと下がり、最高 9°（前の日より −5°）。11/21（土）は気温がぐっと上がり、最高 18°（前の日より +8°）。11/19（木）の朝は、この1か月でいちばんの冷えこみになりそう（最低 -1°）。11/21（土）は、この1か月でいちばんあたたかくなりそう（最高 18°）。")), // (その10 ⑨ and later add their own after)
     "①⑦ the week's story", await txt(p, "#wx6Story"));
-  // ② what to wear by the time of day (today: 昼 and 夜, the morning gone by)
-  ok((await txt(p, "#wx6Times li")) === "昼12〜15時薄手の上着｜夜18〜21時コート", "② 昼 and 夜 (体感 ○° taken out at the user's call (2026-11-24, tools/REMOVED.md))", await txt(p, "#wx6Times li"));
+  // ② what to wear by the time of day: taken out with 服装のめやす at the user's call (2026-11-27, tools/REMOVED.md)
+  ok(!(await p.$("#wx6Times, .wx6-times")) && !(await txt(p, "#calPanelBody")).includes("服装のめやす"), "② 時間帯ごとの服装 gone (with 服装のめやす)");
   // ④ unstable, ⑥ strong wind
   ok((await txt(p, "#wx6Out .wx6-unstable")) === "大気の状態が不安定になりそうです（13時〜17時ごろ）急な強い雨や雷に気をつけて。空が暗くなってきたら、建物の中へ", "④ the air unstable", await txt(p, "#wx6Out .wx6-unstable"));
   ok((await txt(p, "#wx6Out .wx6-wind")) === "風が強い時間：15時〜18時ごろ最大9m/s、突風16m/s。自転車や傘に気をつけて", "⑥ the hours of strong wind", await txt(p, "#wx6Out .wx6-wind"));
@@ -50,7 +50,7 @@ const pick = async (p, n) => { await p.click(`.wx-days li:nth-child(${n}) button
   // ⑤ tomorrow's fog, 11/19's frost
   await pick(p, 2);
   ok((await txt(p, "#wx6Out .wx6-fog")) === "霧で見通しが悪くなりそうです（5時〜8時ごろ）いちばん悪いときで400mほど。車や自転車はライトをつけて、ゆっくり", "⑤ fog at dawn tomorrow", await txt(p, "#wx6Out"));
-  ok((await txt(p, "#wx6Times li")).startsWith("朝7〜9時"), "② another day: from 朝", await txt(p, "#wx6Times li"));
+  ok(!(await p.$("#wx6Times")) && !(await txt(p, "#calPanelBody")).includes("服装のめやす"), "② nor on another day");
   await pick(p, 4);
   ok((await txt(p, "#wx6Out .wx6-frost")) === "霜がおりそうです（朝の最低-1°、晴れて風が弱い）車の窓の霜や、植物に気をつけて", "⑤ 11/19's frost", await txt(p, "#wx6Out"));
   await pick(p, 1);
