@@ -29,7 +29,7 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   await seed(p, base(), "diet");
 
   // ⑨ 血圧のまとめ: taken out at the user's call (2026-11-24, tools/REMOVED.md), as 血圧 can't be put in any more: no card,
-  // nor its もくじ's line; the 10 days' 血圧 kept, and still in the month's page (⑧) below
+  // nor its もくじ's line; the 10 days' 血圧 kept (shown on 記録's day; the month's page, ⑧, taken out too, 2026-11-27)
   // ⑩ からだ first: the badges there are, taken as seen (none said)
   await part(p, "weight");
   const toc9 = await p.evaluate(() => document.getElementById("dt16Toc-weight")?.textContent || "");
@@ -43,16 +43,11 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   ok(!/野菜/.test(r), "⑩ 野菜たっぷり not among them (taken out at the user's call, 2026-11-23, tools/REMOVED.md)", r);
   await p.waitForTimeout(400);
   ok(!(await flashes(p)).some((t) => /バッジ/.test(t)) && ((await setting(p, "dietBadgesSeen"))?.ids || []).length === bs.filter((x) => x.ok).length, "⑩ none said the first time, kept as seen", await flashes(p));
-  // ⑧ the month's report: built for print, the rest hidden in print, gone after
+  // ⑧ 月のレポート (「11月のレポートを印刷・PDFにする」): taken out at the user's call (2026-11-27, tools/REMOVED.md): no link
+  // under からだ's cards, nor its page; nothing printed. The records it read kept as they were
   await p.evaluate(() => { window.__printed = 0; window.print = () => { window.__printed++; }; });
-  await p.click("#dt9PrintRow button"); await p.waitForTimeout(400);
-  r = await p.evaluate(() => document.getElementById("dt9Print")?.textContent || "");
-  ok(/2026年11月のダイエットの記録/.test(r) && /はじめ → おわり67\.8 → 67\.2 kg/.test(r) && /血圧測った日10 日平均133 \/ 82 mmHg/.test(r) && /食事記録した日14 日/.test(r) && /運動運動した日\d+ 日/.test(r) && (await p.evaluate(() => !!document.querySelector("#dt9Print img.dt9-print-chart") && window.__printed === 1)), "⑧ the report", r.slice(0, 300));
-  await p.emulateMedia({ media: "print" });
-  ok(await p.evaluate(() => getComputedStyle(document.getElementById("dt9Print")).display === "block" && document.getElementById("sec-diet").getClientRects().length === 0), "⑧ only it, in print");
-  await p.emulateMedia({ media: "screen" });
-  await p.evaluate(() => window.dispatchEvent(new Event("afterprint"))); await p.waitForTimeout(100);
-  ok(!(await p.$("#dt9Print")), "⑧ gone after");
+  ok(!(await p.$("#dt9PrintRow")) && !(await p.$("#dt9Print")) && !(await p.evaluate(() => document.getElementById("sec-diet").innerText.includes("レポートを印刷"))), "⑧ the month's report gone");
+  ok((await ls(p, "bodyDays")).length === D.bodyDays().length && (await ls(p, "weights")).length === D.weights().length && (await p.evaluate(() => window.__printed)) === 0, "⑧ the records kept, nothing printed");
 
   await part(p, "meal");
   // ① 食べた理由: picked, kept with the 食事, cleared; under its name; changed in 食事を編集
