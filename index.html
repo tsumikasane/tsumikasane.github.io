@@ -1372,7 +1372,8 @@ button.card.stat { width: 100%; border: 0; font: inherit; color: inherit; text-a
 
 /* weight chart */
 .chart-head { padding: 12px 12px 0; }
-#wtRanges button { padding: 0 6px; white-space: nowrap; } /* (five periods since 1週間 came, 2026-11-27: each on one line) */
+#wtRanges button { padding: 0 6px; white-space: nowrap; }
+#journalState { display: inline-block; } /* (日記's 保存済み pops as its first save lands, 2026-11-27) */ /* (five periods since 1週間 came, 2026-11-27: each on one line) */
 .chart .axis-wd { font-size: 12px; } /* (a week's: each day's weekday under its date) */
 /* the names over the plots, once 体脂肪率 has one under 体重's; level with where the plots start */
 .chart-name { margin: 0; padding: 10px 20px 0; font-size: var(--t-foot); line-height: 1.35; font-weight: 600; color: var(--muted); }
@@ -12830,6 +12831,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     journalDirty = false;
     journalState.textContent = "保存中…";
     journalChain = journalChain.then(async () => {
+      let first = false, n0 = 0;
       try {
         if (!text) {
           // emptied, the day's 日記 goes, with 元に戻す, and stays in 最近削除した項目 for 30 days
@@ -12838,10 +12840,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           // a mood from before the scale went stays in the entry (and its backups), unseen
           const was = journal.get(date); // first written when (つみかさね's order); one from before that, at its day's noon
           jn3Keep(date, was); // (その3 ① the 日記 as it was, kept on this device for 変更の履歴)
+          // (記録のボタン, the user's call 2026-11-27: the day's first, a block made, lands at 保存済み)
+          first = !String(was?.text || "").trim(); n0 = first ? rfxTally() : 0;
           await journal.write(date, { ...was, date, text, createdAt: was?.createdAt || (was ? noonOf(date) : Date.now()), updatedAt: Date.now() });
         }
         if (journal.unsaved) throw new Error("not saved"); // the browser didn't take it (full): kept, and tried again later
         if (!journalDirty && date === viewDate) journalState.textContent = text ? "保存済み" : "";
+        if (first && text && !journalDirty && date === viewDate) rfxSpot(journalState, "journal", rfxTally() - n0);
       } catch (e) {
         if (!journal.unsaved) showError(e); // a full browser has said so already
         if (date === viewDate) { journalDirty = true; journalState.textContent = "保存できませんでした"; }
@@ -18428,6 +18433,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setCalDay(day); // the month turns to the plan's day and picks it, so it shows where the plan went
     closeSheet();
     if (!fromTodo) noteHidden(item.labelId);
+    // (記録のボタン, the user's call 2026-11-27: the plan lands on its day, the sheet gone down; from ToDo's page, none)
+    setTimeout(() => rfxSpot(calView === "week" ? document.querySelector(`.tg-col[data-day="${day}"]`) : document.querySelector("#calGrid .cal-day.sel"), "plan"), 320);
   });
 
   // ---------- turning the month: a sideways swipe on the calendar (the user's call), or the ‹ › buttons ----------
@@ -24925,7 +24932,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 19:05"; // 84018399 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 19:16"; // a18af005 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -69791,7 +69798,9 @@ ${parts.join("\n")}
   // With 動き only (moOn: none with Reduce Motion, nor under a test program unless it asks, window.__moForce). A record is
   // known put in by a save made (tsumiGen) just after the press; its blocks by つみかさね's tally. Function declarations and var
   var RFX = { press: null };
-  var RFX_FORMS = { mealForm: "meal", workoutForm: "workout", studyForm: "study", wtForm: "weight", exForm: "money", mo2Quick: "money", recForm: "" };
+  // (todoForm: ToDo's 追加 in its sheet, which stays for the next one, the user's call, 2026-11-27; a 予定 and the day's 日記
+  // land with rfxSpot, below)
+  var RFX_FORMS = { mealForm: "meal", workoutForm: "workout", studyForm: "study", wtForm: "weight", exForm: "money", mo2Quick: "money", recForm: "", todoForm: "todo" };
   var RFX_CHIPS = [["#dt13Quick .meal-pick", "workout"], ["#mealOften .often, #mealYesterday .often, #dt4Sets .often:not(.dt4-set-make)", "meal"], ["#exOften .often", "money"]];
   var RFX_SEL = Object.keys(RFX_FORMS).map((id) => `#${id} [type="submit"], [form="${id}"][type="submit"]`).concat(RFX_CHIPS.map(([q]) => q)).join(", ");
   function rfxOn() { return typeof moOn === "function" && moOn(); }
@@ -69926,6 +69935,22 @@ ${parts.join("\n")}
     const t = tab.getBoundingClientRect(), tag = rfxPut({ host: document.body, pos: "fixed" }, "rfx-plus", { left: t.left + t.width / 2 + "px", top: t.top + "px", color: ink }, `＋${plus}`);
     rfxEnd(tag, moAnim(tag, [{ transform: "translate(-50%, 0) scale(.6)", opacity: 0 }, { transform: "translate(-50%, -16px) scale(1.12)", opacity: 1, offset: .3 }, { transform: "translate(-50%, -34px)", opacity: 0 }], { duration: 950, easing: MO_OUT, fill: "both" }));
     try { if (navigator.vibrate) navigator.vibrate(8); } catch {}
+  }
+  // a record landed with no button of its own to fill in (the user's call, 2026-11-27: 予定 and 日記 too): a 予定 on its day
+  // in the calendar (its sheet gone down), the day's 日記 first kept at its 保存済み. The place pops, a ring of its colour
+  // spreads round it and small blocks burst from it; a block made on つみかさね flies to its tab
+  function rfxSpot(t, kind, plus = 0) {
+    if (!rfxOn() || !t || !t.isConnected || !t.getClientRects().length) return;
+    const r = t.getBoundingClientRect(), dlg = t.closest("dialog");
+    const ink = kind === "plan" ? getComputedStyle(document.documentElement).getPropertyValue("--c-cal").trim() || "#b02fc2" : rfxInk(kind);
+    moAnim(t, [{ transform: "none" }, { transform: "scale(1.14)", offset: .35 }, { transform: "none" }], { duration: 560, easing: MO_BOUNCE });
+    // (a word with no box of its own, as 保存済み: the ring a pill a little round it)
+    const rad = getComputedStyle(t).borderRadius, bare = !rad || rad === "0px", pad = bare ? 5 : 0, at = rfxAt(t, r, dlg);
+    const ring = rfxPut(at, "rfx-ring", { left: at.x - pad + "px", top: at.y - pad / 2 + "px", width: r.width + pad * 2 + "px", height: r.height + pad + "px", borderRadius: bare ? "999px" : rad });
+    rfxEnd(ring, moAnim(ring, [{ boxShadow: `0 0 0 0 ${ink}`, opacity: .7 }, { boxShadow: `0 0 0 14px ${ink}`, opacity: 0 }], { duration: 720, easing: MO_OUT, fill: "both" }));
+    rfxBurst(t, r, ink, dlg);
+    if (plus > 0) rfxBlock(t, r, ink, plus, dlg);
+    try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch {}
   }
   // not put in: the button shakes its head
   function rfxNo(b) {
