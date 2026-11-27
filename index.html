@@ -2341,10 +2341,9 @@ details.bt9-parts > summary { cursor: pointer; color: var(--accent); min-height:
 .bt9-parts li { display: flex; justify-content: space-between; gap: 12px; }
 .bt9-parts .warn { color: var(--warn); }
 .bt9-parts-sum { padding-top: 4px; border-top: .5px solid var(--separator); font-weight: 600; }
-/* バイト その10: ② いっしょ, ⑥ 次の給料日, ③ お知らせ (① the lists before and after a shift and ⑩ 休憩 went with 出勤・退勤, 2026-11-18) */
+/* バイト その10: ② いっしょ, ③ お知らせ (① the lists before and after a shift and ⑩ 休憩 went with 出勤・退勤, 2026-11-18; ⑥ 次の給料日 taken out, 2026-11-27) */
 .bt10-with-card p.bt10-with { margin: 6px 0 4px; } /* (the names, a line: pressed to look them up until 2026-11-18) */
-.bt10-with-card p, .bt10-next p { margin: 0; line-height: 1.5; }
-.bt10-next { display: grid; gap: 2px; }
+.bt10-with-card p { margin: 0; line-height: 1.5; }
 .bt10-items { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .bt10-items li { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; }
 #bt10AlarmsBody p { margin: 0; }
@@ -24896,7 +24895,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 7:35"; // 4408e782 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 7:49"; // 2c0556f6 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -65661,7 +65660,7 @@ ${parts.join("\n")}
   // ---------- バイト その10 ①〜⑩ (the user's calls, 2026-11-14): what to do before and after a shift (①), who worked it
   // too (②), the お知らせ to come (③), what one has learnt there (④), it all in words for 就活 (⑤), the next 給料日 (⑥),
   // pay by the piece (⑦), a contract's end (⑧), things lent (⑨), and a 休憩 timed while at work (⑩); ① and ⑩ went with
-  // 出勤・退勤 (2026-11-18). Function declarations and var, as the page may draw before this runs ----------
+  // 出勤・退勤 (2026-11-18); ⑥ taken off 2026-11-27 (the user's call, tools/REMOVED.md). Function declarations and var, as the page may draw before this runs ----------
   function bt10SaveJob(id, patch) {
     saveJobs();
     act(() => settings.set("jobs", { ...jobSet(), items: jobList().map((x) => (x.id === id ? dropUndef({ ...x, ...patch }) : x)), updatedAt: Date.now() }));
@@ -65714,28 +65713,9 @@ ${parts.join("\n")}
     $("bt10AlarmsHead").textContent = list.length ? `これから届くお知らせ（${list.length}）` : "これから届くお知らせ";
   }
 
-  // ⑥ 次の給料日: the soonest 給料日 from today, of each job, with what comes then (前払い aside)
-  function bt10NextPays() {
-    const out = [];
-    for (const j of bt9Active(jobList())) {
-      let best = null;
-      for (let i = -2; i <= 2; i++) for (const p of payParts(j, addMonths(periodMonthOf(j, todayKey), i))) { // (a month paid twice: each 給料日)
-        if (p.payday && p.payday >= todayKey && (!best || p.payday < best.day)) best = { j, ym: p.ym, day: p.payday, amount: Math.max(0, p.amount - payAdvOf(j, p.key)) };
-      }
-      if (best && best.amount > 0) out.push(best);
-    }
-    return out.sort((a, b) => a.day.localeCompare(b.day));
-  }
-  function renderBt10Next() {
-    const box = $("bt10Next"), list = bt10NextPays();
-    box.hidden = !list.length;
-    if (!list.length) { box.replaceChildren(); return; }
-    const many = jobList().length > 1;
-    setChildren(box, el("strong", { class: "bt2-head" }, "次の給料日"), list.map((x) => {
-      const k = daysBetween(todayKey, x.day);
-      return el("p", { "data-job": x.j.id }, bt4Ph(`${fmtMDW(x.day)}${k === 0 ? "（きょう）" : `（あと ${k} 日）`}`, `${many ? `${x.j.name || "バイト先"}：` : ""}約 ${fmtYen(x.amount)}`, `（${Number(x.ym.slice(5))}月分）`));
-    }));
-  }
+  // ⑥ 次の給料日 (「次の給料日」 under 次のバイト: each job's soonest 給料日, あと ○ 日 and 約 ○円（○月分）): taken out at the
+  // user's call (2026-11-27, tools/REMOVED.md). It kept nothing of its own; the cards after it (次の給料日までのやりくり and
+  // the others) go after 次のバイト as they were
 
   // ⑦ 出来高: a shift's 件数 at its job's price, in its pay
   function bt10Units(x, job) { return num(x && x.units) > 0 && num(job && job.unitPrice) > 0 ? num(x.units) * num(job.unitPrice) : 0; }
@@ -65764,12 +65744,11 @@ ${parts.join("\n")}
   }
   function bt10Push() { const l = bt9Active(jobList()).filter((j) => isDay(j.contractEnd || "") && j.contractAlarm !== false).map((j) => [j.id, j.name || "", j.contractEnd]); return l.length ? [["bt10Contract", l]] : []; }
 
-  // made once into バイト's part: ⑥ under 次のバイト, ② after the year's 1年のまとめ (after 働き方 until it was taken off,
-  // 2026-11-19), ③ after メモ (④⑤ できるようになったこと・就活用のまとめ
+  // made once into バイト's part: ② after the year's 1年のまとめ (after 働き方 until it was taken off, 2026-11-19), ③ after
+  // メモ (⑥ 次の給料日, under 次のバイト, taken off 2026-11-27; ④⑤ できるようになったこと・就活用のまとめ
   // and ⑨ 借りているもの taken off 2026-11-18, the user's call; what they kept, j.skills and j.lent, stays with the job)
   function bt10Build() {
-    if ($("bt10Next")) return;
-    $("bt3Next").after(el("div", { class: "card pad bt10-next", id: "bt10Next", hidden: true }));
+    if ($("bt10With")) return;
     $("bt2Year").after(el("div", { class: "card pad bt10-with-card", id: "bt10With", hidden: true }));
     $("bt6Notes").after(el("details", { class: "card bt3-ask", id: "bt10AlarmsCard", hidden: true, ontoggle: () => { if ($("bt10AlarmsCard").open) renderBt10Alarms(); } },
       el("summary", { id: "bt10AlarmsHead" }, "これから届くお知らせ"), el("div", { class: "bt3-ask-body", id: "bt10AlarmsBody" })));
@@ -65778,8 +65757,8 @@ ${parts.join("\n")}
     bt10Build();
     const has = jobList().length > 0;
     $("bt10AlarmsCard").hidden = !has;
-    if (!has) { $("bt10Next").hidden = $("bt10With").hidden = true; return; }
-    draw(renderBt10Next); draw(renderBt10With);
+    if (!has) { $("bt10With").hidden = true; return; }
+    draw(renderBt10With); // (⑥ 次の給料日: taken out, 2026-11-27)
     if ($("bt10AlarmsCard").open) draw(renderBt10Alarms);
   }
 
@@ -67305,11 +67284,11 @@ ${parts.join("\n")}
     d.showModal();
   }
 
-  // made once into バイト's part: ⑧ after 次の給料日, ⑤ after これから届くお知らせ (働く前のチェック until 2026-11-18), ⑩ before
-  // 勤務カレンダー (after シフト表の写真 until it was taken off 2026-11-18)
+  // made once into バイト's part: ⑧ after 次のバイト (after 次の給料日 until it was taken off, 2026-11-27), ⑤ after これから
+  // 届くお知らせ (働く前のチェック until 2026-11-18), ⑩ before 勤務カレンダー (after シフト表の写真 until it was taken off 2026-11-18)
   function bt14Build() {
     if ($("bt14Left")) return;
-    $("bt10Next").after(el("div", { class: "card pad bt14-left-card", id: "bt14Left", hidden: true }));
+    $("bt3Next").after(el("div", { class: "card pad bt14-left-card", id: "bt14Left", hidden: true }));
     const card = (id, head, body, fn) => el("details", { class: "card bt3-ask", id, hidden: true, ontoggle: () => { if ($(id).open) fn(); } }, el("summary", {}, head), el("div", { class: "bt3-ask-body", id: body }));
     $("bt10AlarmsCard").after(card("bt14People", "バイト先の連絡先", "bt14PeopleBody", renderBt14People));
     const file = el("input", { type: "file", accept: "image/*", id: "bt14SlipFile", hidden: true, onchange: (ev) => { const f = ev.target.files?.[0]; ev.target.value = ""; bt14SlipAdd(f); } });
@@ -67598,12 +67577,13 @@ ${parts.join("\n")}
     });
   }
 
-  // made once into バイト's part: ⑥ after 次の給料日, ④⑤ after the week's shifts in bands, ⑩ under 月の目標 (⑦ 年末調整と
-  // 源泉徴収票 taken off 2026-11-18, ⑧ バイト探し and ③ 連絡のひな形 2026-11-19, the user's calls)
+  // made once into バイト's part: ⑥ after 次のバイト (after 次の給料日 until it was taken off, 2026-11-27), ④⑤ after the week's
+  // shifts in bands, ⑩ under 月の目標 (⑦ 年末調整と源泉徴収票 taken off 2026-11-18, ⑧ バイト探し and ③ 連絡のひな形
+  // 2026-11-19, the user's calls)
   function bt15Build() {
     if ($("bt15Purse")) return;
     const card = (id, cls) => el("div", { class: `card pad ${cls}`, id, hidden: true });
-    $("bt10Next").after(card("bt15Purse", "bt15-purse-card"));
+    $("bt3Next").after(card("bt15Purse", "bt15-purse-card"));
     $("bt6Cal").after(card("bt15Multi", "bt15-multi-card"), card("bt15Study", "bt15-study")); // (after 1週間の勤務 until it was taken off, 2026-11-19)
     $("bt3Aim2").after(card("bt15Reach", "bt15-reach"));
   }
@@ -67629,7 +67609,7 @@ ${parts.join("\n")}
   // ① ページに出すカード: those let go kept by id (with the account) and hidden by a rule of their own, whatever each card's
   // drawing says; chosen under the gear, by group
   var BT16_CARDS = [
-    ["上のほう", [["bt17Anniv", "勤続の記念日"], ["bt3Next", "次のバイト"], ["bt10Next", "次の給料日"], ["bt15Purse", "次の給料日までのやりくり"], ["bt16Tent", "まだ仮のシフト"], ["bt16Pass", "定期券の期限"], ["bt16Asked", "シフト希望を出したか"],
+    ["上のほう", [["bt17Anniv", "勤続の記念日"], ["bt3Next", "次のバイト"], ["bt15Purse", "次の給料日までのやりくり"], ["bt16Tent", "まだ仮のシフト"], ["bt16Pass", "定期券の期限"], ["bt16Asked", "シフト希望を出したか"],
       ["bt3Aim2", "月の目標"], ["bt17Caps", "月の上限・週の日数"], ["bt15Reach", "目標に届く入れ方"], ["bt13Goal", "期間の目標"], ["bt17Raise", "時給アップまで"]]],
     ["勤務を入れる", [["bt14Slips", "給料明細の写真"]]],
     ["勤務を見る", [["bt6Cal", "勤務カレンダー"], ["bt15Multi", "掛け持ちの日"], ["bt15Study", "バイトと勉強の時間"]]],

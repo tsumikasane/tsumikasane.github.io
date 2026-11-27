@@ -16,9 +16,14 @@ const block = (p, name) => p.evaluate((name) => [...document.querySelectorAll("#
   // ① 出勤前・退勤前にやること: gone with 出勤・退勤
   ok(!(await p.$("#bt2Clock")) && !(await p.$(".bt10-checks")), "① gone");
   ok(!(await p.$("#bt10Break")), "⑩ no 休憩 before 出勤");
-  // ⑥ 次の給料日: カフェ's 10月分 on 11/25 (10 時間 × 1,000 + 交通費 2 × 300), 配達's 11月分 on 12/10 (6 時間 × 1,000 + 20 件 × 300)
-  const nx = await txt(p, "#bt10Next");
-  ok(nx === "次の給料日 11月25日（水）（あと 9 日） カフェ：約 10,600 円（10月分） 12月10日（木）（あと 24 日） 配達：約 12,000 円（11月分）", "⑥ " + nx);
+  // ⑥ 次の給料日 (カフェ's 10月分 on 11/25, 配達's 11月分 on 12/10, each 「11月25日（水）（あと 9 日） カフェ：約 10,600 円（10月分）」):
+  // taken out at the user's call (2026-11-27, tools/REMOVED.md): no card, no words of it; the cards that came after it (次の
+  // 給料日までのやりくり, …) right after 次のバイト, in the order they had
+  const job6 = await txt(p, "#moneyJob");
+  const order6 = await p.evaluate(() => { const ids = [...document.getElementById("bt3Next").parentElement.children].map((e) => e.id), i = ids.indexOf("bt3Next"); return ids.slice(i, i + 7); });
+  ok(!(await p.$("#bt10Next")) && !(await p.$(".bt10-next")) && !/次の給料日(?!まで)|（10月分）|（あと 9 日） カフェ/.test(job6) && (await p.isVisible("#bt3Next")) && (await txt(p, "#bt3Next")).startsWith("いまはバイトの時間です")
+    && JSON.stringify(order6) === JSON.stringify(["bt3Next", "bt15Purse", "bt16Tent", "bt16Pass", "bt16Asked", "bt14Left", "jobSum"]),
+    "⑥ 次の給料日 gone; after 次のバイト as before", [job6.match(/次の給料日(?!まで)|（10月分）|（あと 9 日） カフェ/)?.[0], order6]);
   // ② いっしょに入った人: 田中 3, 佐藤 1; on the rows
   ok((await txt(p, "#bt10With")) === "いっしょに入った人（この3か月） 田中 3 回・佐藤 1 回 名前は勤務の編集で入れられます。" && !(await p.$("#bt10With button")), "② (a line: 勤務を探す taken off 2026-11-18) " + (await txt(p, "#bt10With")));
   // (「いっしょ：田中」 on its row: the month's list was taken out at the user's call, 2026-11-26)
