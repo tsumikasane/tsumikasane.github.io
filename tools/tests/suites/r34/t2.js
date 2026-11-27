@@ -29,7 +29,10 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   await seed(e, {}, "weight"); await e.waitForTimeout(900);
   const vis = await e.evaluate(() => ["bd2Plateau", "bd2Cal", "bd2Daily"].map((id) => { const x = document.getElementById(id); return !x.hidden && x.offsetHeight > 0; }));
   ok(JSON.stringify(vis) === "[false,false,true]" && !(await e.$("#bd2Quick")), "nothing yet: only 睡眠 (① 前回の体重から入れる: taken out 2026-11-26)", vis);
-  ok(!(await e.$(".bd2-water-v")) && (await txt(e, ".bd2-sleep-v")) === "—" && (await txt(e, ".bd2-sleep-note")).startsWith("きょうの朝までの夜です。"), "nothing yet: no 水分 (taken out), no sleep",
+  // (睡眠's words before 3 nights, 「きょうの朝までの夜です。3日以上つけると、7日の平均が出ます。」: taken out at the user's call,
+  // 2026-11-27, tools/REMOVED.md; the line hidden till the week's mean shows)
+  ok(!(await e.$(".bd2-water-v")) && (await txt(e, ".bd2-sleep-v")) === "—" && (await txt(e, ".bd2-sleep-note")) === "" && await e.isHidden(".bd2-sleep-note")
+    && !(await txt(e, "#bd2Daily")).includes("朝までの夜です") && !(await txt(e, "#bd2Daily")).includes("7日の平均が出ます"), "nothing yet: no 水分 (taken out), no sleep, no words under it",
     [await txt(e, ".bd2-sleep-v"), await txt(e, ".bd2-sleep-note")]);
   ok(!(await e.$("#bd2Daily .bd2-less")) && !(await e.$("#bd2Tags")), "nothing yet: no −200; no あったこと (taken out)");
   // ⑦ a cup, then back to none: went with 水分 (taken out 2026-11-20); ⑧ below empties a day the same way
@@ -39,7 +42,7 @@ const base = () => ({ weights: D.weights(), bodyDays: D.bodyDays(), settings: D.
   await setTime(e, "#bd2Wake", "00:10");
   ok((await txt(e, ".bd2-sleep-v")) === "—", "⑧ under an hour: not counted", await txt(e, ".bd2-sleep-v"));
   await setTime(e, "#bd2Wake", "07:15");
-  ok((await txt(e, ".bd2-sleep-v")).replace(/\s/g, "") === "7時間45分", "⑧ over midnight: 7時間45分", await txt(e, ".bd2-sleep-v"));
+  ok((await txt(e, ".bd2-sleep-v")).replace(/\s/g, "") === "7時間45分" && await e.isHidden(".bd2-sleep-note"), "⑧ over midnight: 7時間45分 (one night: no words under it)", await txt(e, ".bd2-sleep-v"));
   await setTime(e, "#bd2Bed", ""); await setTime(e, "#bd2Wake", "");
   ok(!(await bday(e, "2026-11-11")), "⑧ both emptied: the day's gone", await bday(e, "2026-11-11"));
   // ⑤ no goal: a first weight crosses nothing
