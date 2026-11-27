@@ -29,7 +29,8 @@ const tileText = (p, key) => p.evaluate((key) => { const t = document.querySelec
   await seed(p, DATA);
   // the order: the new ones beside the ones they go with
   const order = await p.evaluate(() => [...document.querySelectorAll("#homeTiles > .tile")].map((t) => t.dataset.tile).filter((k) => !/^h\d/.test(k)).join(",")); // (きょう その3's and その4's tiles: home3, home4)
-  ok(order === "weather,todo,calendar,countdown,journal,study,routine,diet,move,money,tsumi,job,goal", "order with a saved one: " + order);
+  // (カウントダウン, a half tile, at the calendar's foot since 2026-11-27: the rows packed without it)
+  ok(order === "weather,todo,calendar,journal,study,diet,move,routine,money,job,tsumi,goal", "order with a saved one: " + order);
   // ① 予定
   const ev = await p.evaluate(() => [...document.querySelectorAll('.tile[data-tile="calendar"] li')].map((li) => (li.classList.contains("past") ? "(past) " : "") + li.innerText.replace(/\s+/g, " ").trim()));
   ok(JSON.stringify(ev) === JSON.stringify(["レポート締め切り", "研究室 いま", "面談 あと45分"]), "① the ones to come first, いま and あと45分: " + ev.join(" / "));
@@ -76,7 +77,7 @@ const tileText = (p, key) => p.evaluate((key) => { const t = document.querySelec
   ok(JSON.stringify(ev2) === JSON.stringify(["レポート締め切り", "サークル あと1時間50分", "(past) 09:00 朝ゼミ"]), "① 16:40: " + ev2.join(" / "));
   ok((await tileText(p, "job")).includes("バイト先を決めると"), "② no jobs: how to begin");
   const order2 = await p.evaluate(() => [...document.querySelectorAll("#homeTiles > .tile")].map((t) => t.dataset.tile).filter((k) => !/^h\d/.test(k)).join(",")); // (きょう その3's and その4's tiles: home3, home4)
-  ok(order2 === "weather,todo,calendar,countdown,journal,study,routine,diet,move,money,tsumi,job,goal", "order with none saved: " + order2);
+  ok(order2 === "weather,todo,calendar,journal,study,diet,move,routine,money,job,tsumi,goal", "order with none saved: " + order2);
   await p.screenshot({ path: out + "/home-393-b.png", fullPage: true });
   ok(!p.errs.length, "no page errors", p.errs);
   await p.close();

@@ -91,7 +91,7 @@ async function open(b, when) {
   // was taken out, the same day too)
   await more(p, "h6-guide-btn");
   const dts = await p.$$eval("#h6GuideBody dt[data-about]", (l) => l.map((x) => x.dataset.about));
-  ok(await p.evaluate(() => document.getElementById("h6Guide").open) && dts.length >= 24 && dts.includes("h5links") && !["quick", "h4mood", "h4watch", "h4breath", "h5mood", "h3water", "h3theme", "h3recs", "h3week", "h5since", "h5year", "h4week", "h3streak", "h3now"].some((k) => dts.includes(k)), "⑧ every tile's word", dts.length);
+  ok(await p.evaluate(() => document.getElementById("h6Guide").open) && dts.length >= 23 && dts.includes("h5links") && !["quick", "h4mood", "h4watch", "h4breath", "h5mood", "h3water", "h3theme", "h3recs", "h3week", "h5since", "h5year", "h4week", "h3streak", "h3now", "countdown"].some((k) => dts.includes(k)), "⑧ every tile's word", dts.length);
   await p.keyboard.press("Escape"); await p.waitForTimeout(300);
   await hold(p, "calendar"); await p.waitForTimeout(300);
   await p.locator("#h2TileGroup button", { hasText: "このタイルについて" }).click(); await p.waitForTimeout(500);

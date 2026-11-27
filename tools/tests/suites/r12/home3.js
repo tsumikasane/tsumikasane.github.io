@@ -8,6 +8,11 @@ const ok = (c, m, x) => { console.log((c ? "OK   " : "FAIL ") + m + (x !== undef
 const today = "2026-11-09", tmr = "2026-11-10";
 const tileText = async (p, key) => (await toTile(p, key), p.evaluate((key) => { const t = document.querySelector(`.tile[data-tile="${key}"]`); return t ? t.innerText.replace(/\s+/g, " ").trim() : null; }, key));
 const order = (p) => p.evaluate(() => [...document.querySelectorAll("#homeTiles > .tile")].map((t) => t.dataset.tile).join(","));
+// ⑩ カウントダウン: at the calendar's foot, at 週's right, since the user's call (2026-11-27: きょう's tile moved there): its
+// words (the name, the days left) and its label, drawn with the calendar whatever the page; pressed, the list
+const cdBar = (p) => p.evaluate(() => { const x = document.getElementById("calCd"); return x ? { text: x.textContent, label: x.getAttribute("aria-label") } : null; });
+const cdList = async (p) => { await p.evaluate(() => document.getElementById("calCd").click()); await p.waitForTimeout(500);
+  const l = await p.evaluate(() => [...document.querySelectorAll("#todoMenuGroup .ask-btn")].map((x) => x.textContent)); await p.keyboard.press("Escape"); await p.waitForTimeout(300); return l; };
 const at21 = Date.parse("2026-11-09T21:00:00+09:00");
 const DATA = {
   todos: [
@@ -44,14 +49,15 @@ function forecast() {
   await seed(p, DATA);
   await p.evaluate((P) => localStorage.setItem(P + "wxPlace", JSON.stringify({ lat: 35.68, lon: 139.77, at: Date.now() })), P);
   await p.reload(); await p.waitForTimeout(1000);
-  ok((await order(p)).startsWith("review,tomorrow,weather,calendar,countdown,"), "21:00 (まだ: ToDo, one done today, in 完了): " + await order(p));
+  ok((await order(p)).startsWith("review,tomorrow,weather,calendar,") && !(await order(p)).includes("countdown"), "21:00 (まだ: ToDo, one done today, in 完了; カウントダウン at the calendar's foot): " + await order(p));
   const rv = await tileText(p, "review");
   ok(rv === "きょうのふりかえり 6こ きょう積んだブロック ToDo 1件 完了 勉強 1時間 30分 運動 ラン 4 km・筋トレ 3セット 食事 2回・1,350 kcal 体重 65.2 kg 支出 1,200円 日記を書く"
     || /^きょうのふりかえり 6こ きょう積んだブロック ToDo 1件 完了 勉強 1 時間 30 分 運動 ラン 4 km・筋トレ 3セット 食事 2回・1,350 kcal 体重 65.2 kg 支出 1,200 円 日記を書く( 文字で送る)?$/.test(rv), "⑧ " + rv); // (文字で送る: きょう その2, 2026-11-13; 6こ: 食事 one block a day since 2026-11-25, its 2 meals in one)
   const tm = await tileText(p, "tomorrow");
   ok(tm.includes("予定 09:00 ゼミ、13:00 面談") && tm.includes("ToDo レポート提出、本を返す") && tm.includes("バイト 17:00〜22:00") && tm.includes("運動 ラン 4 km・レッグカール・ラットプルダウン・アームカール") && tm.includes("天気 晴れ 20° / 11°・降水確率 10%"), "⑨ " + tm);
-  const cd = await tileText(p, "countdown");
-  ok(cd === "カウントダウン 12日 「期末試験」まで 面接 あと20日 誕生日 あと22日", "⑩ " + cd);
+  const cd = await cdBar(p), cdl = await cdList(p);
+  ok(cd.text === "期末試験あと12日" && cd.label === "カウントダウン：「期末試験」まであと12日。押すと一覧" && JSON.stringify(cdl) === JSON.stringify(["期末試験　11/21（土）・あと12日", "面接　11/29（日）・あと20日", "誕生日　12/1（火）・あと22日"]),
+    "⑩ at the calendar's foot, the list pressed (終わった試験 not among them)", { cd, cdl });
   await p.screenshot({ path: out + "/evening-393.png", fullPage: true });
   // 日記を書く: 日記 opens
   await p.locator('.tile[data-tile="review"] .rv-act').click(); await p.waitForTimeout(700);
@@ -81,23 +87,23 @@ function forecast() {
   // ⑩ one today; none at all
   p = await phone(b, at("10:00"));
   await seed(p, { events: [{ id: "c1", date: today, time: "18:00", title: "発表会", count: true, createdAt: T0 }] });
-  ok(await tileText(p, "countdown") === "カウントダウン きょう 「発表会」です", "⑩ today: " + await tileText(p, "countdown"));
+  ok((await cdBar(p)).text === "発表会きょう" && (await cdBar(p)).label === "カウントダウン：「発表会」は、きょう。押すと一覧", "⑩ today", await cdBar(p));
   await p.close();
   // (since 2026-11-16, the user's call: with none marked for it, the nearest plan to come in place of the word on how to
   // mark one; with no plan at all, said so)
   p = await phone(b, at("10:00"));
   await seed(p, { events: [{ id: "n1", date: "2026-11-12", time: "13:00", title: "面談", createdAt: T0 }, { id: "n2", date: "2026-11-20", title: "旅行", createdAt: T0 },
     { id: "n0", date: today, time: "08:00", endTime: "09:00", title: "朝会", createdAt: T0 }] });
-  const nx = await tileText(p, "countdown");
-  ok(/^カウントダウン 3 ?日 次の予定「面談」まで$/.test(nx), "⑩ none marked: the nearest plan (today's is over)", nx);
+  const nx = await cdBar(p), nxl = await cdList(p);
+  ok(nx.text === "面談あと3日" && nx.label === "カウントダウン：次の予定「面談」まであと3日。押すと一覧" && JSON.stringify(nxl) === JSON.stringify(["面談　11/12（木）・あと3日"]), "⑩ none marked: the nearest plan (today's is over)", { nx, nxl });
   await p.close();
   p = await phone(b, at("10:00"));
   await seed(p, { events: [{ id: "n3", date: today, time: "15:00", title: "歯医者", createdAt: T0 }] });
-  ok(/^カウントダウン きょう 次の予定「歯医者」（15:00〜）$/.test(await tileText(p, "countdown")), "⑩ none marked: today's still to come", await tileText(p, "countdown"));
+  ok((await cdBar(p)).text === "歯医者きょう" && (await cdBar(p)).label === "カウントダウン：次の予定「歯医者」は、きょう。押すと一覧", "⑩ none marked: today's still to come", await cdBar(p));
   await p.close();
   p = await phone(b, at("10:00"));
   await seed(p, {});
-  ok((await tileText(p, "countdown")) === "カウントダウン これからの予定はありません", "⑩ no plan at all: " + await tileText(p, "countdown"));
+  ok((await cdBar(p)).text === "カウントダウン予定なし" && (await cdBar(p)).label === "カウントダウン：これからの予定はありません。押すと一覧" && (await cdList(p)).length === 0, "⑩ no plan at all", await cdBar(p));
   // the plan forms: カウントダウン on a new plan, then off in its edit form
   await p.goto(URL0 + "#calendar"); await p.reload(); await p.waitForTimeout(700);
   await p.locator("#calAdd").click(); await p.waitForTimeout(500);
@@ -109,7 +115,7 @@ function forecast() {
   let ev = await p.evaluate((P) => JSON.parse(localStorage.getItem(P + "events") || "[]").find((e) => e.title === "模試"), P);
   ok(ev && ev.count === true, "⑩ saved with it: " + JSON.stringify(ev));
   await p.goto(URL0 + "#home"); await p.reload(); await p.waitForTimeout(700);
-  ok((await tileText(p, "countdown")).includes("「模試」"), "⑩ on きょう: " + await tileText(p, "countdown"));
+  ok((await cdBar(p)).text.startsWith("模試") && !(await p.$('.tile[data-tile="countdown"]')), "⑩ at the calendar's foot (not on きょう)", await cdBar(p));
   // edit: off
   await p.goto(URL0 + "#calendar"); await p.reload(); await p.waitForTimeout(700);
   const opened = await p.evaluate((id) => { const b = document.querySelector(`#calGrid .cal-day[data-day="${new Date().toISOString().slice(0, 10)}"]`); return !!b; }, ev.id);

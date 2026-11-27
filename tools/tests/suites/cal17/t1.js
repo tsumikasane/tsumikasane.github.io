@@ -70,11 +70,11 @@ let b;
   ok((await p.evaluate(() => window.__cal17.days())).length === 7 && !(await p.evaluate(() => document.querySelector('.tg-col[data-day="2026-11-22"] .cal17-band'))), "④ none on a Sunday");
   // 日 as 週's 1日 (the user's call, 2026-11-27: 「月・週・日」 at the foot made 「月・週」, 日 in with 7日・5日・3日): 1日 shows
   // the day alone, as 日 did (its date on top), 週 pressed at the foot; 週 pressed again stays; from 月, 週 comes back to it
-  const foot = await p.$$eval("#calViews button", (l) => l.map((x) => x.textContent.trim()));
-  ok(JSON.stringify(foot) === JSON.stringify(["月", "週"]) && !(await p.$('#calViews [data-view="day"]')), "the foot: 月・週 alone", foot);
+  const foot = await p.$$eval("#calViews button", (l) => l.map((x) => x.dataset.view || x.id));
+  ok(JSON.stringify(foot) === JSON.stringify(["month", "week", "calCd"]) && !(await p.$('#calViews [data-view="day"]')), "the foot: 月・週 alone (カウントダウン at 週's right since 2026-11-27)", foot);
   await tap(p, '#calDays [data-days="1"]'); await p.waitForTimeout(500);
   const one = await p.evaluate(() => ({ days: window.__cal17.days(), day: window.__cal17.day(), title: document.getElementById("calMonthName").textContent,
-    foot: [...document.querySelectorAll("#calViews button")].map((b) => b.getAttribute("aria-pressed")).join(), seg: [...document.querySelectorAll("#calDays button")].map((b) => b.getAttribute("aria-pressed")).join(),
+    foot: [...document.querySelectorAll("#calViews button[data-view]")].map((b) => b.getAttribute("aria-pressed")).join(), seg: [...document.querySelectorAll("#calDays button")].map((b) => b.getAttribute("aria-pressed")).join(),
     segShown: !document.getElementById("calDays").hidden, kept: JSON.parse(localStorage.getItem("tsumikasane:calView") || "null") }));
   ok(one.days.length === 1 && one.days[0] === one.day && /^\d{4}年\d{1,2}月\d{1,2}日\(.\)$/.test(one.title) && one.foot === "false,true" && one.seg === "false,false,false,true" && one.segShown && one.kept?.view === "day" && one.kept?.one === true,
     "1日: the day alone, as 日 was (its date on top), 週 pressed at the foot", one);

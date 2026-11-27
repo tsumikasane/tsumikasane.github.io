@@ -47,21 +47,22 @@ async function open(b, when, d = data(), o = {}) {
   await part(p, "todo");
   ok((await allTiles(p)).length === all0.length, "both parts: the same tiles");
 
-  // a tile opened (its page): カウントダウン's head goes to カレンダー; kept with the account; back on きょう, in 完了
-  await p.click('.tile[data-tile="countdown"] .tile-head'); await p.waitForTimeout(700);
-  ok((await p.evaluate(() => document.documentElement.dataset.tab)) === "calendar", "カウントダウン's head: カレンダー");
+  // a tile opened (its page): きょうの予定's head goes to カレンダー (カウントダウン's, till its tile moved to the calendar's
+  // foot, 2026-11-27); kept with the account; back on きょう, in 完了
+  await p.click('.tile[data-tile="calendar"] .tile-head'); await p.waitForTimeout(700);
+  ok((await p.evaluate(() => document.documentElement.dataset.tab)) === "calendar", "きょうの予定's head: カレンダー");
   ok(JSON.stringify(await p.evaluate(() => getComputedStyle(document.getElementById("homeParts")).display)) === '"none"', "the bar: not on カレンダー");
   const hd = await setting(p, "homeDone");
-  ok(hd && hd.day === DAY && JSON.stringify(hd.keys) === '["countdown"]', "opened: kept (設定 homeDone: the day and the tile)", hd);
+  ok(hd && hd.day === DAY && JSON.stringify(hd.keys) === '["calendar"]', "opened: kept (設定 homeDone: the day and the tile)", hd);
   await p.click('.menu button[data-tab="home"]'); await p.waitForTimeout(2600);
-  ok(!(await shown(p)).includes("countdown") && (await toTile(p, "countdown")) === "done", "back on きょう: カウントダウン in 完了");
+  ok(!(await shown(p)).includes("calendar") && (await toTile(p, "calendar")) === "done", "back on きょう: きょうの予定 in 完了");
   await part(p, "todo");
 
   // a sheet opened from a tile: 天気's page
   await p.click('.tile[data-tile="weather"] .tile-head'); await p.waitForTimeout(700);
   ok(await p.evaluate(() => document.getElementById("daySheet").open), "天気's head: its page (a sheet)");
   await p.keyboard.press("Escape"); await p.waitForTimeout(2600);
-  ok(!(await shown(p)).includes("weather") && JSON.stringify((await setting(p, "homeDone")).keys) === '["countdown","weather"]', "天気: in 完了", (await setting(p, "homeDone")).keys);
+  ok(!(await shown(p)).includes("weather") && JSON.stringify((await setting(p, "homeDone")).keys) === '["calendar","weather"]', "天気: in 完了", (await setting(p, "homeDone")).keys);
 
   // a press that opens nothing doesn't count: メモ's やめる; a plain tile looked at does
   await p.click('.tile[data-tile="h4memo"] .h4-memo-write'); await p.waitForTimeout(300);
@@ -108,7 +109,7 @@ async function open(b, when, d = data(), o = {}) {
   ok((await partNow(p)) === "todo" && !(await shown(p)).includes("journal"), "日記 written today: not in まだ (まだ, as the app opens)");
   await part(p, "done");
   const done1 = await shown(p);
-  ok(["countdown", "weather", "h3time", "todo", "h4memo", "journal"].every((k) => done1.includes(k)) && !done1.includes("routine"), "完了: the ones opened and the ones recorded", done1);
+  ok(["calendar", "weather", "h3time", "todo", "h4memo", "journal"].every((k) => done1.includes(k)) && !done1.includes("routine"), "完了: the ones opened and the ones recorded", done1);
   await p.screenshot({ path: out + "/hp-done.png" });
   await part(p, "todo");
   await p.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); await p.waitForTimeout(400);
@@ -130,7 +131,7 @@ async function open(b, when, d = data(), o = {}) {
   await p.context().clock.setFixedTime(new Date("2026-11-26T08:00:00+09:00"));
   await p.reload(); await p.waitForTimeout(900);
   const next = await shown(p);
-  ok(["countdown", "weather", "h3time", "todo", "h4memo", "journal", "routine"].every((k) => next.includes(k)) && (await setting(p, "homeDone")).day === DAY, "the next day: every tile まだ again", next);
+  ok(["calendar", "weather", "h3time", "todo", "h4memo", "journal", "routine"].every((k) => next.includes(k)) && (await setting(p, "homeDone")).day === DAY, "the next day: every tile まだ again", next);
   await part(p, "done");
   ok((await shown(p)).length === 0, "the next day: 完了 empty");
   await p.close();

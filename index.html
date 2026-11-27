@@ -250,6 +250,14 @@ html:is(.td-selecting, .td-focusing) #todoParts { display: none !important; }
 /* ダイエット's: each of からだ・食事・運動 with its symbol beside its name, as the tab bar's pages have theirs */
 #dietParts button, #calViews button { display: flex; align-items: center; justify-content: center; gap: 6px; }
 #dietParts .icon, #calViews .icon { flex: none; width: 20px; height: 20px; }
+/* カウントダウン at 週's right (the user's call, 2026-11-27: きょう's tile moved here): the plan's name small over the days
+   left, after a thin line, as it is no view to pick */
+#calViews .cal-cd { position: relative; padding: 0 10px 0 12px; }
+#calViews .cal-cd::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 1px; background: var(--separator); }
+#calViews .cal-cd .icon { color: var(--c-cal); }
+.cal-cd-w { display: grid; min-width: 0; text-align: start; line-height: 1.15; }
+.cal-cd-w small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 500; color: var(--muted); }
+.cal-cd-w b { white-space: nowrap; font-size: 14px; font-variant-numeric: tabular-nums; }
 html:is([data-tab="goal"], [data-tab="diet"], [data-tab="todo"], [data-tab="home"]) .wrap { padding-bottom: calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + var(--space-1) + var(--pagebar) + var(--space-4)); }
 html:is([data-tab="goal"], [data-tab="diet"], [data-tab="calendar"], [data-tab="todo"], [data-tab="home"]) #status { bottom: calc(var(--tabbar) + max(12px, env(safe-area-inset-bottom, 0px)) + var(--space-1) + var(--pagebar) + 12px); }
 /* (ToDo's) its ＋ (その23) over the bar */
@@ -9069,6 +9077,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     <div class="pagebar" role="group" aria-label="カレンダーの表示の切り替え" id="calViews">
       <button type="button" data-view="month" aria-pressed="true"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-cal-month"/></svg>月</button>
       <button type="button" data-view="week" aria-pressed="false"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-cal-week"/></svg>週</button>
+      <!-- カウントダウン (the user's call, 2026-11-27: きょう's tile moved here, to 週's right): the days to the nearest plan
+           marked for it, or to the nearest plan; pressed, them all (renderCalCd) -->
+      <button type="button" class="cal-cd" id="calCd"></button>
     </div>
     <div class="pagebar" role="group" aria-label="ダイエットの記録の切り替え" id="dietParts">
       <button type="button" data-part="weight" aria-pressed="true"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-weight"/></svg>からだ</button>
@@ -10209,7 +10220,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="ffield"><button type="button" class="pick-btn" id="planAlarmBtn" aria-labelledby="planAlarmLabel planAlarmText"><span id="planAlarmText" class="none">なし</span><svg class="icon" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-next"/></svg></button><input type="hidden" id="planAlarms"></div>
         <span class="flabel" id="planLabelLabel">ラベル</span>
         <div class="ffield" id="planLabels"></div>
-        <!-- カウントダウン (the user's call, 2026-11-09): きょう says how many days are left to it -->
+        <!-- カウントダウン (the user's call, 2026-11-09): how many days are left to it, at the calendar's foot (at 週's right;
+             きょう's tile till the user's call, 2026-11-27) -->
         <label class="flabel" for="planCount">カウントダウン</label>
         <div class="ffield"><input type="checkbox" id="planCount" class="switch" role="switch"></div>
         <input type="text" id="planPlace" class="full" placeholder="場所" aria-label="場所" maxlength="200">
@@ -18356,7 +18368,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (url) x.url = url;
     const alarms = formAlarms(f);
     if (alarms.length) x.alarms = alarms;
-    if ($(f + "Count").checked) x.count = true; // きょう's カウントダウン
+    if ($(f + "Count").checked) x.count = true; // カウントダウン (at the calendar's foot, since 2026-11-27)
     Object.assign(x, calFormExtras(f, date, time)); // (カレンダー その2 ②④⑨)
     Object.assign(x, cal3FormExtras(f, date, x)); // (カレンダー その3 ①②③)
     return x;
@@ -20680,7 +20692,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // which is pressed at the foot, 週's days, the card showing, and what ‹ › say
   function syncCalView() {
-    for (const b of $("calViews").children) b.setAttribute("aria-pressed", String(b.dataset.view === (calView === "day" ? "week" : calView)));
+    for (const b of $("calViews").querySelectorAll("button[data-view]")) b.setAttribute("aria-pressed", String(b.dataset.view === (calView === "day" ? "week" : calView))); // (not カウントダウン beside them)
     for (const b of $("calDays").children) b.setAttribute("aria-pressed", String(calView === "day" ? b.dataset.days === "1" : Number(b.dataset.days) === weekDays));
     $("calDays").hidden = calView === "month";
     document.querySelector("#sec-calendar .cal").hidden = calView !== "month";
@@ -20857,6 +20869,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   function renderCalendar() {
     syncCalView();
+    renderCalCd(); // (カウントダウン at the foot)
     draw(renderCalShow); draw(renderCalMorning); draw(renderCalTwo); draw(renderCalThree); draw(renderCalFour); draw(renderCalFive); draw(renderCalSix); draw(renderCalSeven); draw(renderCalEight); draw(renderCalNine); draw(renderCalTen); draw(renderCalTwelve); draw(renderCalThirteen); draw(renderCalFourteen); draw(renderCalSixteen); draw(renderCalSeventeen); draw(renderCalEighteen); draw(renderCalJob); // (バイトを家計簿へ: the gear and the plans made shifts; その18 ①②⑥ and the gear; その17 ②③⑩ and the gear; その16 ④ 地図でつなぐ; その14 ⑨⑩ and the gear; その13 ①②⑤ the day's sheet, ①②⑨ the gear; その12 ②⑨ the gear; その10 ③⑤⑦; その9 ②⑤⑥⑦⑧⑩; その8 ①④⑤⑩; その7 ①③④⑥ the gear and the forms; その6 ①⑤⑧; その4 ④⑩, その5 ③ the day's sheet; その5 ⑥ ① ⑧; ⑤⑥⑦⑨ the settings; その2 ②③⑧ and the plan open; その3 ⑥⑦)
     const title = calTitle();
     if ($("calMonthName").textContent !== title) $("calMonthName").textContent = title; // a live region: only a change is read out
@@ -21591,7 +21604,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     { key: "weather", label: "天気", color: "var(--sat)", icon: "sun", open: (ev) => wxOpenPage(ev?.detail === 0), wide: true }, // (天気 その1 ①: its page)
     { key: "todo", label: "ToDo", color: "var(--c-todo)" },
     { key: "calendar", label: "きょうの予定", color: "var(--c-cal)" },
-    { key: "countdown", label: "カウントダウン", color: "var(--c-cal)", icon: "timer", open: "calendar" },
+    // (countdown, カウントダウン: at the calendar's foot, at 週's right, since the user's call, 2026-11-27: renderCalCd)
     { key: "journal", label: "日記", color: "var(--c-journal)" },
     { key: "study", label: "勉強", color: "var(--c-study)" },
     // 食事's, 運動's and からだ's tiles in one (the user's call), the three side by side
@@ -21799,6 +21812,31 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   $("wxHere").addEventListener("click", wxAsk);
   $("wxForget").addEventListener("click", () => { lsJsonPut(WX_PLACE, null); lsJsonPut(WX_DATA, null); wxError = ""; syncWxSettings(); renderHome(); flash("天気の場所を消しました"); });
+  // カウントダウン at the calendar's foot, at 週's right (the user's call, 2026-11-27: きょう's tile moved there): the plans
+  // marked for it as 予定を探す lists them (カレンダー その10 ④: each by its next turn, 中止 left out, the nearest first),
+  // else the nearest plan, else none; the name small over the days left; pressed, them all, each opening its day
+  function calCdNow() {
+    const cds = calTen ? cal10Countdowns() : [];
+    return { cds, near: cds.length ? null : homeNearestPlan(planNow(turnsByDay(todayKey, todayKey).get(todayKey) || [])) };
+  }
+  const calCdLeft = (d) => { const n = daysBetween(todayKey, d); return n > 0 ? `あと${n}日` : "きょう"; };
+  function renderCalCd() {
+    const b = $("calCd");
+    if (!b) return;
+    const { cds, near } = calCdNow(), x = cds[0], d = x ? x.d : near ? near.d : null, name = x ? oneLine(x.e.title) : near ? oneLine(near.t.e.title) : "カウントダウン";
+    const left = d ? calCdLeft(d) : "予定なし", sig = name + "|" + left;
+    b.setAttribute("aria-label", "カウントダウン：" + (d ? `${x ? "" : "次の予定"}「${name}」${left === "きょう" ? "は、きょう" : `まで${left}`}` : "これからの予定はありません") + "。押すと一覧");
+    if (b.dataset.sig === sig) return;
+    b.dataset.sig = sig;
+    setChildren(b, icon("timer", 20), el("span", { class: "cal-cd-w", "aria-hidden": "true" }, el("small", {}, name), el("b", {}, left)));
+  }
+  function calCdList() {
+    const { cds, near } = calCdNow(), row = (d, name) => [`${name}　${fmtShort(d)}・${calCdLeft(d)}`, () => openDay(d)];
+    const how = "予定の「カウントダウン」をオンにすると、ここに出ます。";
+    tdAsk("カウントダウン", cds.length ? cds.map((x) => row(x.d, oneLine(x.e.title)))
+      : [el("p", { class: "ask-msg" }, near ? `カウントダウンにした予定はありません。いちばん近い予定です。${how}` : `これからの予定はありません。${how}`), near ? row(near.d, oneLine(near.t.e.title)) : null]);
+  }
+  $("calCd").addEventListener("click", calCdList);
   // カウントダウン with no plan marked for it (the user's call, 2026-11-16: the nearest plan in place of the word on how to mark
   // one): today's still to come or going on, else the first day ahead with any, a year at most
   function homeNearestPlan(evNow) {
@@ -21887,9 +21925,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       num(mT.km) > 0 || mT.moves?.length ? ["運動", [num(mT.km) > 0 ? `ラン ${mT.km} km` : null, ...(mT.moves || []).map(([, name]) => name)].filter(Boolean)] : null,
       wxT ? ["天気", [`${wxT.word} ${wxT.hi}° / ${wxT.lo}°`, `降水確率 ${wxT.rain}%`]] : null,
     ]);
-    // ⑩ カウントダウン (the user's call): the plans marked for it, each by its next turn within a year, nearest first
-    const cdTo = addDays(todayKey, 366), cds = events.items.filter((e) => e.count).map((e) => ({ e, d: turnStarts(e, todayKey, cdTo).find((d) => d >= todayKey) })).filter((x) => x.d).sort((a, b) => a.d.localeCompare(b.d) || num(a.e.createdAt) - num(b.e.createdAt));
-    const cdDays = (d) => daysBetween(todayKey, d), cd0 = cds[0], nx = cd0 ? null : homeNearestPlan(evNow);
+    // (⑩ カウントダウン: at the calendar's foot since the user's call, 2026-11-27: renderCalCd)
     // (きょう その2 ③) the tiles whose day is done: 日記 written, ルーティーン all done, nothing left to do by today in ToDo
     // with some done today, きょうの運動's menu all done, ダイエット's three, the plans all over, and some 勉強
     const doneOf = { journal: !!j?.text, routine: rts.length > 0 && !rtLeft.length, todo: dueToday + overdue === 0 && todoDone > 0, move: mvRows.length > 0 && mvRows.every((r) => r.done),
@@ -21905,11 +21941,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         nextShift ? el("li", {}, `${nextShift.date === todayKey ? "きょう" : fmtShort(nextShift.date)} ${nextShift.start}〜${nextShift.end}`) : null,
         wallLeft !== null ? el("li", { class: wallLeft < 0 ? "warn" : null }, wallLeft >= 0 ? `1年の目安まで あと ${fmtYen(wallLeft)}` : `1年の目安を ${fmtYen(-wallLeft)} こえています`) : null) : null)
         : tile("job", "まだ", null, "バイト先を決めると、給料の見込みが出ます"),
-      !cd0 ? (nx ? tile("countdown", nx.d === todayKey ? "きょう" : String(cdDays(nx.d)), nx.d === todayKey ? null : "日",
-          nx.d === todayKey ? `次の予定「${oneLine(nx.t.e.title)}」${turnTime(nx.t) ? `（${turnTime(nx.t)}〜）` : ""}` : `次の予定「${oneLine(nx.t.e.title)}」まで`)
-        : tile("countdown", null, null, "これからの予定はありません"))
-        : tile("countdown", cdDays(cd0.d) === 0 ? "きょう" : String(cdDays(cd0.d)), cdDays(cd0.d) === 0 ? null : "日", cdDays(cd0.d) === 0 ? `「${cd0.e.title}」です` : `「${cd0.e.title}」まで`,
-          cds.length > 1 ? el("ul", {}, cds.slice(1, 3).map((x) => el("li", {}, `${x.e.title} ${cdDays(x.d) === 0 ? "きょう" : `あと${cdDays(x.d)}日`}`))) : null),
       // its big number what is to do by today, as ToDo's tab counts (the user's call: it counted next year's too), the rest
       // under it; the lines kept short enough for half a row
       tile("todo", String(dueToday + overdue), "件 きょうまで",
@@ -24876,7 +24907,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 11:25"; // bff24aa4 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 12:19"; // 6256891a (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -36290,7 +36321,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("cal12CountAt").disabled = !r.on;
     for (const b of $("cal12CountDays").querySelectorAll("button")) { b.setAttribute("aria-pressed", String(r.days.includes(Number(b.dataset.n)))); b.disabled = !r.on; }
     const words = r.days.map((n) => CAL12_COUNT.find(([x]) => x === n)[1]).join("・");
-    $("cal12CountFoot").textContent = `カウントダウンにした予定（きょうのページに「あと何日」が出る予定）を、${words || "選んだ日"}の${r.at}に通知で届けます。` + (r.on && pushState() !== "on" ? "通知を受け取るには、この端末で通知をオンにしてください。" : "");
+    $("cal12CountFoot").textContent = `カウントダウンにした予定（カレンダーの下の「月・週」の右に「あと何日」が出る予定）を、${words || "選んだ日"}の${r.at}に通知で届けます。` + (r.on && pushState() !== "on" ? "通知を受け取るには、この端末で通知をオンにしてください。" : "");
   }
   calTwelve = true;
 
@@ -37936,6 +37967,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       ["月の表示", "日を押すと、その日の予定・記録が開きます。左右にスワイプで前後の月。"],
       ["週の表示", "時間の流れで見ます。予定を長押しで動かす、下の端で長さを変える、空いているところを押して予定を入れる。"],
       ["7日・5日・3日・1日", "週の表示の日数。1日は、その日だけを出します。週の日付を押しても1日になります。"],
+      ["カウントダウン", "下の「月・週」の右に、カウントダウンにした予定まであと何日かが出ます（ないときは、いちばん近い予定まで）。押すと一覧。"],
       ["月のメモ", "日のリストの「〇月のメモ」から。月の表示の上に出ます。"],
       ["日のメモ・スタンプ", "その日のひとことや、日のスタンプを月の表示に出せます。"],
       ["時限の帯・月のマスの時刻", "設定で、週・日に時間割の時限を、月のマスに開始時刻を出せます。"],
@@ -56890,7 +56922,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ② the tiles to show, as a set: one press, 元に戻す. Those that come only when they have something to say stay
   const H5_SETS = [
     ["simple", "シンプル", "天気・ToDo・きょうの予定", ["weather", "todo", "calendar"]], // (h3now, 次にすること: taken out, 2026-11-27)
-    ["plan", "予定とToDo", "予定・ToDo・タイムライン・バイトなど", ["weather", "todo", "calendar", "countdown", "job", "h3line"]], // (h4week, これから1週間, and h3now, 次にすること: taken out, 2026-11-27)
+    ["plan", "予定とToDo", "予定・ToDo・タイムライン・バイトなど", ["weather", "todo", "calendar", "job", "h3line"]], // (countdown: at the calendar's foot, 2026-11-27) // (h4week, これから1週間, and h3now, 次にすること: taken out, 2026-11-27)
     ["rec", "記録をしっかり", "ダイエット・日記・勉強・ルーティーン・家計簿・睡眠など", ["weather", "todo", "calendar", "diet", "move", "journal", "study", "routine", "money", "tsumi", "h4sleep"]], // (きょうの記録: on つみかさね's page, 2026-11-26, and 続けている記録, 2026-11-27)
     ["all", "ぜんぶ", "すべてのタイルを出す", null],
   ];
@@ -57195,7 +57227,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     weather: "いる場所の天気といまの気温。押すと、1時間ごとの予報や雨・1週間の天気のページ", // (服装のめやす: taken out, 2026-11-27)
     todo: "きょうまでのToDoの数と、上から3つ。その場で完了にできる",
     calendar: "きょうの予定と、次の予定まであと何分",
-    countdown: "予定で「カウントダウン」をオンにしたものまで、あと何日（ないときは、いちばん近い予定まで）",
     journal: "きょうの日記を書いたかどうか", study: "きょうの勉強の時間",
     diet: "からだ（体重）・食事・運動の、きょうの記録", move: "きょうの運動のメニュー。押して記録",
     routine: "きょうのルーティーン。その場でチェック", money: "今月の収支", job: "今月の給料の見込みと、次のシフト",
@@ -57377,7 +57408,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (k === "money") return mo2ZeroDays().has(d) || expenses.items.some((x) => x.date === d && !x.fixed); // (a 固定費 put in by itself not one)
     if (k === "todo") return todos.items.some((t) => t.done && doneDay(t) === d);
     if (k === "calendar") return events.items.some((e) => hpToday(e.createdAt));
-    if (k === "countdown") return events.items.some((e) => e.count && hpToday(e.createdAt));
     if (k === "job") return shifts.items.some((x) => hpToday(x.createdAt));
     if (k === "goal") return goals.items.some((g) => hpToday(g.createdAt) || moveDays(g).has(d));
     if (k === "prep") return calTwo && (turnsByDay(d, d).get(d) || []).some((t) => t.day === 0 && !t.e.ten && calChecked(t.e, d).size > 0); // (its 持ち物・準備)
