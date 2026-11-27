@@ -127,7 +127,9 @@ const DATA = {
   const sv = (await ls(p, "settings")).find((s) => s.id === "savings");
   ok(sv && sv.items.length === 1 && sv.items[0].name === "旅行" && sv.items[0].target === 300000 && sv.items[0].since === "2026-09" && sv.items[0].base === 10000 && sv.items[0].until === "2027-03", "⑨ kept: " + JSON.stringify(sv?.items));
   let goal = await txt(p, "#saveList");
-  ok(goal.startsWith("旅行 130,200 円 / 300,000 円") && goal.includes("43%・2026年9月から・2027年3月までに、毎月 33,960 円 ずつ・このペースなら 2027年2月ごろ"), "⑨ まとめ: " + goal);
+  // (the line under it — 43%・2026年9月から・2027年3月までに、毎月 33,960 円 ずつ・このペースなら 2027年2月ごろ — taken off at the
+  // user's call, 2026-11-27, tools/REMOVED.md)
+  ok(goal === "旅行 130,200 円 / 300,000 円" && !goal.includes("ずつ") && !goal.includes("このペース"), "⑨ まとめ: " + goal);
   ok(await p.evaluate(() => document.querySelector("#saveList .bar-track i").style.width) === "43%", "⑨ the bar at 43%");
   await p.locator("#saveCard").scrollIntoViewIfNeeded();
   await p.screenshot({ path: out + "/m3-save.png" });
@@ -136,7 +138,7 @@ const DATA = {
   await p.fill(`#svTarget-${fid}`, "100000"); await p.waitForTimeout(800);
   await p.locator("#sheetDone").click(); await p.waitForTimeout(800);
   goal = await txt(p, "#saveList");
-  ok(goal.includes("100%・2026年9月から・達成しました") && await p.locator("#saveList .bar-track i.done").count() === 1, "⑨ 達成: " + goal);
+  ok(goal === "旅行 130,200 円 / 100,000 円" && await p.locator("#saveList .bar-track i.done").count() === 1, "⑨ 達成: " + goal);
   // ⑨ deleted, and back
   await p.locator("#moneySettings").click(); await p.waitForTimeout(600);
   await p.locator(`[data-save="${fid}"] .link-btn.danger`).click(); await p.waitForTimeout(400);

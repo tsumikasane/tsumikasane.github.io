@@ -50,7 +50,8 @@ async function stats(b, data) {
   const sv = (await ls(p, "settings")).find((s) => s.id === "savings");
   ok(sv?.items.length === 1 && sv.items[0].target === 1000000 && sv.items[0].until === "2027-12", "the goal kept", sv);
   const goal = await txt(p, "#saveList");
-  ok(/^旅行 67,000 円 \/ 1,000,000 円 6%・2026年11月から・2027年12月までに、毎月 [\d,]+ 円 ずつ$/.test(goal), "まとめ: how the goal stands, as before", goal);
+  // (the line under it — ○%・○年○月から・… ずつ — taken off at the user's call the same day, after the seven)
+  ok(goal === "旅行 67,000 円 / 1,000,000 円" && await p.evaluate(() => document.querySelector("#saveList .bar-track i").style.width) === "6%", "まとめ: the goal's name, amount and bar alone", goal);
   all = await txt(p, "#moneyStats");
   ok(gone(all).length === 0, "none of the words in まとめ, with a goal", gone(all));
   ok(!p.errs.length, "no errors", p.errs);
@@ -60,7 +61,7 @@ async function stats(b, data) {
   const MORE = [...NOV, X("s1", "2026-09-10", "食費", 20000), X("s2", "2026-09-12", "交際費", 6000, "#旅行 宿"), X("o1", "2026-10-10", "食費", 22000), X("o2", "2026-10-15", "交通費", 8000, "#旅行 新幹線"),
     X("a7", "2026-11-22", "食費", 2000, "#推し活 グッズ")];
   p = await stats(b, { expenses: MORE, settings: SET });
-  ok(await p.isVisible("#mo3UsualCard") && (await txt(p, "#mo3Usual")).includes("前の 2 か月の平均") && await p.isVisible("#mo3TagCard") && (await txt(p, "#mo3Tags")).includes("#推し活"), "2 months before and tags: both cards back", { u: await txt(p, "#mo3Usual"), t: await txt(p, "#mo3Tags") });
+  ok(await p.isVisible("#mo3UsualCard") && (await p.locator("#mo3Usual li").count()) >= 1 && !(await txt(p, "#mo3Usual")).includes("前の 2 か月の平均") && await p.isVisible("#mo3TagCard") && (await txt(p, "#mo3Tags")).includes("#推し活"), "2 months before and tags: both cards back", { u: await txt(p, "#mo3Usual"), t: await txt(p, "#mo3Tags") });
   all = await txt(p, "#moneyStats");
   ok(gone(all).length === 0, "none of the words, the cards back", gone(all));
   await p.click("#monthNav .navbtn"); await p.waitForTimeout(500); // 10月: only 9月 before it

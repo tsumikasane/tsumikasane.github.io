@@ -57,9 +57,10 @@ const N = new Intl.NumberFormat("ja-JP");
   // tools/REMOVED.md); the 8 more of that day's call after ランジ (膝つき腕立て of them gone): 合掌プレス in 秒, the rest
   // in 回; kept as the others are (筋トレ, 1 セット), and said in the row's order
   const qs = await p.$$eval("#dt13Quick .dt13-quick-row button", (l) => l.map((x) => x.getAttribute("aria-label")));
-  ok(JSON.stringify(qs) === JSON.stringify(["スクワット 20回", "腕立て伏せ 10回", "かかと上げ 30回", "クランチ 20回", "ランジ 20回", "合掌プレス 30秒", "バックエクステンション 15回",
+  // (かかと上げ 30回 taken off after them the same day, カーフレイズ being the same move)
+  ok(JSON.stringify(qs) === JSON.stringify(["スクワット 20回", "腕立て伏せ 10回", "クランチ 20回", "ランジ 20回", "合掌プレス 30秒", "バックエクステンション 15回",
     "ナロー腕立て 10回", "レッグレイズ 15回", "カーフレイズ 30回", "ヒップリフト 20回", "フロントレイズ 15回"].map((x) => x + "を記録する")), "⑥ the moves, the 4 taken off not among them", qs);
-  ok(!/プランク|膝つき腕立て|階段|もも上げ/.test(await txt(p, "#dt13Quick")), "⑥ the 4 taken off: nowhere in the card", await txt(p, "#dt13Quick"));
+  ok(!/プランク|膝つき腕立て|階段|もも上げ|かかと上げ/.test(await txt(p, "#dt13Quick")), "⑥ the 4 taken off: nowhere in the card", await txt(p, "#dt13Quick"));
   await p.click('#dt13Quick button[aria-label="合掌プレス 30秒を記録する"]'); await p.waitForTimeout(300);
   await p.click('#dt13Quick button[aria-label="バックエクステンション 15回を記録する"]'); await p.waitForTimeout(300);
   const ws2 = (await ls(p, "workouts")).filter((w) => w.date === DAY);

@@ -62,7 +62,8 @@ const redraw = async (p) => { await W(p, "redraw"); await p.waitForTimeout(200);
   // 戻す, under 服装のめやす) taken out with it at the user's call (2026-11-27, tools/REMOVED.md). What was put in is kept and
   // fits the advice still (きょう's 出かける前, the notifications): two 暑かった, 2° lighter
   ok(!(await p.$("#wx4FbSeg, #wx4FbNote, .wx4-fb")) && !(await txt(p, "#calPanelBody")).includes("服装のめやす") && !(await txt(p, "#calPanelBody")).includes("きょうの服装はどうでしたか"), "⑦ no question nor note (taken out with 服装のめやす)");
-  ok((await W(p, "shift")) === 2 && (await W(p, "wear", D.DAY)).main.startsWith("薄手の上着"), "⑦ the two 暑かった kept fit the advice still: 体感 17° + 2°, 薄手の上着", await W(p, "wear", D.DAY));
+  // (the answers kept no longer fit the advice: リセット at the user's call, 2026-11-27; kept all the same)
+  ok((await W(p, "shift")) === 0 && (await W(p, "wear", D.DAY)).main.startsWith("薄手の上着"), "⑦ the two 暑かった kept fit the advice no more: 体感 17° as it is, 薄手の上着", await W(p, "wear", D.DAY));
   const fb = await p.evaluate(() => (JSON.parse(localStorage.getItem("tsumikasane:settings") || "[]").find((x) => x.id === "wxWearFb") || {}).list || null);
   ok(JSON.stringify(fb) === JSON.stringify([{ d: "2026-11-12", v: 1 }, { d: "2026-11-13", v: 1 }]), "⑦ what was put in kept", fb);
 

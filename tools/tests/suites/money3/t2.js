@@ -12,7 +12,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   await p.click('#moneyParts button[data-part="stats"]'); await p.waitForTimeout(400);
   // ① 食費: 21,200 against 10,000 × 12/30 = 4,000
   const u = await txt(p, "#mo3Usual");
-  ok(u.includes("前の 6 か月の平均") && /食費 11月 21,200 円・ふだん 4,000 円 \+17,200 円/.test(u), "① 食費 above its usual: " + u);
+  // (its lead 「前の ○ か月の平均を『ふだん』として…」: taken off at the user's call, 2026-11-27)
+  ok(!u.includes("前の 6 か月の平均") && !u.includes("固定費はのぞいています") && /食費 11月 21,200 円・ふだん 4,000 円 \+17,200 円/.test(u), "① 食費 above its usual: " + u);
   // ⑦ the biggest five, 固定費 aside
   const big = await txt(p, "#mo3Big");
   // (under them 「この ○ 件で ○ 円、○月の支出の ○% です。」: taken off at the user's call, 2026-11-27, tools/REMOVED.md)
