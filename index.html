@@ -1233,13 +1233,8 @@ ul.list.jn-back > li, ul.list.jn-tag-list > li { flex-direction: column; align-i
 .jn3-cell img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .jn3-cell span { position: absolute; left: 4px; bottom: 3px; padding: 0 4px; border-radius: 6px; background: rgba(0, 0, 0, .55); color: #ffffff; font-size: 11px; line-height: 16px; font-variant-numeric: tabular-nums; }
 .jn3-cell.on { box-shadow: inset 0 0 0 3px var(--c-journal); }
-.jn3-year { padding: 0 0 8px; }
-.jn3-stats { padding: 0 var(--space-2); grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.jn3-stat { background: var(--fill); box-shadow: none; text-align: start; border: 0; font: inherit; color: inherit; }
-button.jn3-stat { cursor: pointer; }
-.jn3-months .st-day-area { height: 90px; }
-.jn3-bar { background: var(--c-journal); }
-.jn3-year-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px var(--space-2) 6px; }
+/* (⑥ 日記の1年's, .jn3-year, .jn3-stat(s), .jn3-months, .jn3-bar, .jn3-year-tags: taken out at the user's call, 2026-11-27,
+   tools/REMOVED.md) */
 .jn3-hour .bar-track i { background: var(--c-journal); }
 .jn3-date-link { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .jn3-out { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -8282,11 +8277,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="jn-tag-all jn2-words" id="jn2Words"></div>
           <ul class="list jn-tag-list" id="jn2WordList" hidden></ul>
         </div>
-        <!-- (日記 その3 ⑥ 日記の1年) -->
-        <div class="card" id="jn3YearCard" hidden>
-          <div class="card-head row-between"><span>日記の1年</span><span class="rt-cal-nav" id="jn3YearNav"></span></div>
-          <div class="jn3-year" id="jn3Year"></div>
-        </div>
+        <!-- (日記 その3 ⑥ 日記の1年, the year's 書いた日・字数・いちばん長い日・お気に入り・写真, a bar a month and its most used
+             tags: taken out at the user's call, 2026-11-27, tools/REMOVED.md. The 日記 themselves stay) -->
         <!-- (日記 その3 ⑦ 書く時間帯) -->
         <div class="card" id="jn3HourCard" hidden>
           <div class="card-head row-between"><span>書く時間帯</span><span class="muted small">この90日</span></div>
@@ -24919,7 +24911,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 5:42"; // 04b29b44 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 6:00"; // fb8e4890 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -63070,7 +63062,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       } catch {}
       for (const l of map.values()) l.sort((a, b) => num(a.createdAt) - num(b.createdAt));
       jn2Photos = map;
-      // drawn again once read: under the field and 月の日記を読む (その2), and 写真と絵 and 日記の1年's count (その3) and
+      // drawn again once read: under the field and 月の日記を読む (その2), and 写真と絵 (その3; 日記の1年's count with it till
+      // that was taken out, 2026-11-27) and
       // 写真カレンダー (その6) too. A part drawn while they were being read had none to show, and so stayed hidden until the
       // page was drawn again, a day moved to (the user's 「直して」, 2026-11-20)
       if (map.size) { draw(renderJn2); draw(renderJn3); draw(renderJn6); }
@@ -63892,48 +63885,8 @@ ${parts.join("\n")}
   }
   for (const b of document.querySelectorAll("[data-jn3-out]")) b.addEventListener("click", () => jn3Book(b.dataset.jn3Out).catch(() => flash("書き出せませんでした")));
 
-  // ⑥ 日記の1年: the year's days written (and what share of its days so far), letters, the longest day, ★ and photos, a bar
-  // a month (pressed, that month in 月の日記を読む) and its most used tags (pressed, their days in タグ). ‹ › moves the year
-  var jn3YearAt = null, jn3YearFor = null;
-  function renderJn3Year(days) {
-    const card = $("jn3YearCard");
-    card.hidden = !days.size;
-    if (!days.size) return;
-    const first = [...days.keys()].sort()[0].slice(0, 4), cur = todayKey.slice(0, 4);
-    if (jn3YearFor !== viewDate.slice(0, 4)) { jn3YearFor = viewDate.slice(0, 4); jn3YearAt = jn3YearFor; }
-    const y = jn3YearAt < first ? first : jn3YearAt > cur ? cur : jn3YearAt;
-    const ds = [...days.keys()].filter((d) => d.slice(0, 4) === y).sort(), photos = jn2Photos ? [...jn2Photos.entries()].filter(([d]) => d.slice(0, 4) === y).reduce((n, [, l]) => n + l.length, 0) : 0;
-    if (jn3Same("year", [y, first, ds.map((d) => [d, jnLen(days.get(d)), !!jn2Entry(d)?.fav, jnTagsOf(days.get(d))]), photos, todayKey])) return;
-    const step = (by) => { jn3YearAt = String(Number(y) + by); jn3Sigs.delete("year"); renderJn3Year(jnDays()); };
-    setChildren($("jn3YearNav"),
-      el("button", { type: "button", class: "icon-btn", "aria-label": "前の年", disabled: y <= first, onclick: () => step(-1) }, icon("prev", 20)),
-      el("span", { class: "rt-cal-mo" }, `${y}年`),
-      el("button", { type: "button", class: "icon-btn", "aria-label": "次の年", disabled: y >= cur, onclick: () => step(1) }, icon("next", 20)));
-    if (!ds.length) { setChildren($("jn3Year"), el("p", { class: "jn2-read-sum" }, `${y}年の日記はありません。`)); return; }
-    const sofar = y === cur ? daysBetween(`${y}-01-01`, todayKey) + 1 : daysBetween(`${y}-01-01`, `${y}-12-31`) + 1;
-    const letters = sum(ds, (d) => jnLen(days.get(d))), longest = ds.reduce((a, d) => (jnLen(days.get(d)) > jnLen(days.get(a)) ? d : a), ds[0]);
-    const favs = ds.filter((d) => jn2Entry(d)?.fav).length, months = Array.from({ length: 12 }, (_, i) => `${y}-${pad(i + 1)}`), per = months.map((m) => ds.filter((d) => monthOf(d) === m).length);
-    const tagN = new Map();
-    for (const d of ds) for (const g of jnTagsOf(days.get(d))) tagN.set(g, (tagN.get(g) || 0) + 1);
-    const tags = [...tagN].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 5), top = Math.max(1, ...per);
-    const stat = (k, v, sub, onclick) => el(onclick ? "button" : "div", { class: "card stat jn3-stat", ...(onclick ? { type: "button", onclick } : {}) }, el("span", { class: "k" }, k), el("span", { class: "v" }, keepUnits(v)), sub ? el("span", { class: "d" }, keepUnits(sub)) : null);
-    setChildren($("jn3Year"),
-      el("div", { class: "stats jn3-stats" },
-        stat("書いた日", `${ds.length} 日`, `${sofar} 日のうち ${(ds.length / sofar) * 100 < 1 ? "1%未満" : `${Math.round((ds.length / sofar) * 100)}%`}`),
-        stat("字数", `${fmtN(letters)} 字`, `1日あたり ${fmtN(Math.round(letters / ds.length))} 字`),
-        stat("いちばん長い日", fmtMD(longest), `${fmtN(jnLen(days.get(longest)))} 字`, () => jnGo(longest)),
-        stat("お気に入り・写真", `★ ${favs}`, `写真と絵 ${photos} 枚`)),
-      el("div", { class: "st-week st2-weeks jn3-months", role: "group", "aria-label": "月ごとの書いた日" }, months.map((m, i) => {
-        const n = per[i], h = n ? Math.max(4, Math.round((n / top) * 90)) : 0, future = m > monthOf(todayKey);
-        return el("button", { type: "button", class: "st-day" + (m === monthOf(viewDate) ? " on" : ""), disabled: future || !n, "aria-label": `${Number(m.slice(5))}月 ${n ? `${n} 日書いた` : "日記なし"}`,
-          onclick: () => { jn2ReadMonth = m; jn2ReadFor = monthOf(viewDate); jn2ReadOpen = true; jn2Sigs.delete("read"); draw(() => renderJn2Read(jnDays())); $("jn2ReadCard").scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" }); } },
-          el("span", { class: "st-day-v", "aria-hidden": "true" }, n ? String(n) : ""),
-          el("span", { class: "st-day-area jn3-month-area", "aria-hidden": "true" }, h ? el("span", { class: "st-bar jn3-bar", style: `height:${h}px` }) : null),
-          el("span", { class: "st-day-dn", "aria-hidden": "true" }, String(i + 1)));
-      })),
-      tags.length ? el("div", { class: "jn3-year-tags" }, el("span", { class: "muted small" }, "よく使ったタグ"), tags.map(([g, c]) => el("button", { type: "button", class: "jn-tag",
-        onclick: () => { jnTagSel = g; renderJnTagCard(); $("jnTagCard").scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" }); } }, "#" + g, el("small", {}, String(c))))) : null);
-  }
+  // (⑥ 日記の1年, the year's days written, letters, the longest day, ★ and photos, a bar a month and its most used tags, ‹ ›
+  // moving the year: taken out at the user's call, 2026-11-27, tools/REMOVED.md)
 
   // ⑦ 書く時間帯: when the 日記 of the last 90 days were begun (their day, from 4:00 to 4:00 the next), in 朝 昼 夕方 夜 深夜,
   // and the hour most begun in; and under the field, when the day's was begun and last put right
@@ -64045,7 +63998,7 @@ ${parts.join("\n")}
   function renderJn3() {
     if (!jn3Ready) return;
     const days = jnDays();
-    draw(jn3TidyHist); draw(renderJn3Hist); draw(renderJn3Times); draw(() => renderJn3Refs(days)); draw(renderJn3Album); draw(() => renderJn3Year(days)); draw(() => renderJn3Hours(days));
+    draw(jn3TidyHist); draw(renderJn3Hist); draw(renderJn3Times); draw(() => renderJn3Refs(days)); draw(renderJn3Album); draw(() => renderJn3Hours(days)); // (⑥ 日記の1年: taken out, 2026-11-27)
     $("jn3Send").hidden = !jn2HasText();
   }
   jn3Ready = true;

@@ -50,13 +50,13 @@ async function open(b, when) {
   const hrs = await p.evaluate(() => [...document.querySelectorAll("#jn3HourList .st-row-top")].map((x) => x.innerText.replace(/\s+/g, "")));
   ok(hrs.join() === "朝5〜11時1日,昼11〜15時―,夕方15〜19時―,夜19〜23時4日,深夜23〜5時2日", "⑦ each part", hrs);
 
-  // ⑥ 日記の1年
-  const yr = await txt(p, "#jn3Year");
-  ok(yr.includes("書いた日7日") && yr.includes("いちばん長い日11/5") && yr.includes("#休み2"), "⑥ the year", yr);
-  await p.locator("#jn3Year .jn3-months button", { hasText: /^\s*1\s*10\s*$/ }).click(); await p.waitForTimeout(400);
-  ok((await txt(p, "#jn2ReadNav")).includes("2026年10月") && (await p.locator("#jn2Read .jn2-day").count()) === 1, "⑥ a month pressed: read in 月の日記を読む", await txt(p, "#jn2ReadNav"));
-  await p.click("#jn3YearNav [aria-label=前の年]"); await p.waitForTimeout(200);
-  ok((await txt(p, "#jn3Year")).includes("書いた日1日365日のうち1%未満"), "⑥ ‹: 2025", await txt(p, "#jn3Year"));
+  // ⑥ 日記の1年: taken out at the user's call (2026-11-27, tools/REMOVED.md): no card, its words nowhere on the page. 月の
+  // 日記を読む kept: 10月 read there by its ‹ (as a month's bar of 日記の1年 once took it there)
+  const page = await txt(p, "#sec-journal");
+  ok(!(await p.$("#jn3YearCard")) && !(await p.$("#jn3Year")) && !page.includes("日記の1年") && !page.includes("いちばん長い日") && !page.includes("日のうち"), "⑥ no 日記の1年", page.slice(0, 200));
+  await p.click("#jn2ReadNav [aria-label=前の月]"); await p.waitForTimeout(300);
+  await p.locator("#jn2Read .jn2-read-btn").click(); await p.waitForTimeout(400);
+  ok((await txt(p, "#jn2ReadNav")).includes("2026年10月") && (await p.locator("#jn2Read .jn2-day").count()) === 1, "⑥ (月の日記を読む kept: 10月 read there)", await txt(p, "#jn2ReadNav"));
   ok(!(await txt(p, "#jn2Words")).includes("日記"), "(よく書いた言葉: not 日記 itself)", await txt(p, "#jn2Words"));
 
   // ⑩ the dates as links, and the 日記 that name the day
