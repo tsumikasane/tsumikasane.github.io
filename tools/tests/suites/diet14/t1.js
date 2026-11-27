@@ -44,9 +44,11 @@ const goDay = (p, d) => p.evaluate((d) => { const i = [...document.querySelector
   ok((await setting(p, "stepGoal"))?.steps === 9000 && /目標を 10,000 歩に上げてみませんか/.test(await txt(p, "#dt14Steps")), "⑦ made the goal, the next asked", await txt(p, "#dt14Steps"));
   await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
   ok((await setting(p, "stepGoal"))?.steps === 8000, "⑦ taken back");
-  // ④ 練習のペースの目安: 25:00 for 5 km
-  r = await txt(p, "#dt14Paces");
-  ok(/5km 換算 25:00 ゆっくり走 6:15〜6:45\/km/.test(r) && /変化走の「速め」 4:54〜5:09\/km/.test(r) && /ペース走 5:18〜5:30\/km/.test(r) && /この4週のラン 12 回のうち 12 回が、ゆっくり走より速めです/.test(r), "④ the paces", r);
+  // ④ 練習のペースの目安: taken out at the user's call (2026-11-27, tools/REMOVED.md): no card on 運動's page, nor its
+  // もくじ's line; the 5 km pace it was made from kept (25:00 for 5 km), as その17 ⑥ ランの強さの配分 reads it
+  const woText = await p.evaluate(() => document.getElementById("part-workout")?.innerText || ""), toc4 = await p.evaluate(() => document.getElementById("dt16Toc-workout")?.textContent || "");
+  ok(!(await p.$("#dt14Paces, .dt14-paces")) && !/練習のペースの目安|5km 換算|ペース走/.test(woText) && toc4.length > 0 && !/練習のペース/.test(toc4), "④ gone (nor in もくじ)", toc4);
+  ok((await W(p, "paces"))?.t5 === 1500, "④ the 5 km pace kept for ランの強さの配分", await W(p, "paces"));
   // ⑤ 体力チェック: taken out at the user's call (2026-11-19, tools/REMOVED.md); settings fitTests stays
   ok(!(await p.$("#dt14Fit")), "⑤ gone");
   // ⑧ 見通しの変化: slower these 4 weeks, so later each week
