@@ -93,25 +93,34 @@ const avg7 = (d) => { const xs = ws.filter((w) => w.id <= d && w.id >= D.addDays
   await p.click('#dt19Setup button:has-text("とじる")'); await p.waitForTimeout(400);
   ok((await setting(p, "dietSetup"))?.closed === true && !(await p.isVisible("#dt19Setup")), "⑧ closed");
 
-  // ⑨ よく見るカードを上に: 食事カレンダー (meal; 主食・主菜・副菜, お酒・カフェイン and 食事の予定 before they were taken out, 2026-11-23 and 11-24) put up under the day's records, kept after a reload, taken back
+  // ⑨ よく見るカードを上に. (食事's もくじ, where 上に was pressed for 食事's cards, taken out at the user's call, 2026-11-27,
+  // tools/REMOVED.md: a 食事's card put up before (dietPin) back in its own place, the setting as it was.) 運動 と 睡眠
+  // (運動's) put up under the day's records, kept after a reload, taken back
+  await p.evaluate((P) => { const s = JSON.parse(localStorage.getItem(P + "settings") || "[]"); s.push({ id: "dietPin", list: [{ id: "dt7MealCal", name: "食事カレンダー", part: "meal" }], updatedAt: 1 }); localStorage.setItem(P + "settings", JSON.stringify(s)); }, P);
   await part(p, "meal");
-  const before = await p.evaluate(() => [...document.getElementById("part-meal").children].findIndex((e) => e.id === "dt7MealCal"));
-  await p.click("#dt16Toc-meal summary"); await p.waitForTimeout(200);
-  await p.click('#dt16Toc-meal button[aria-label="「食事カレンダー」を上に出す"]'); await p.waitForTimeout(400);
-  const after = () => p.evaluate(() => document.getElementById("mealTotal").nextElementSibling?.id);
-  ok((await after()) === "dt7MealCal" && (await W(p, "pinned")).map((x) => x.id).join() === "dt7MealCal" && await p.evaluate(() => document.getElementById("dt7MealCal").classList.contains("dt19-pinned")), "⑨ put up", await after());
-  await part(p, "meal");
-  ok((await after()) === "dt7MealCal", "⑨ kept after a reload");
-  await p.click("#dt16Toc-meal summary"); await p.waitForTimeout(200);
-  await p.click('#dt16Toc-meal button[aria-label="「食事カレンダー」を元の場所に戻す"]'); await p.waitForTimeout(400);
-  const now = await p.evaluate(() => [...document.getElementById("part-meal").children].findIndex((e) => e.id === "dt7MealCal"));
-  ok((await after()) !== "dt7MealCal" && now === before && !(await W(p, "pinned")).length && !(await p.evaluate(() => document.getElementById("dt7MealCal").classList.contains("dt19-pinned"))), "⑨ taken back where it was", [before, now]);
-  // ⑩ カードを名前で探す: 睡眠 from 食事's もくじ, 運動と睡眠 gone to
+  ok(!(await p.$("#dt16Toc-meal")) && (await p.evaluate(() => document.getElementById("mealTotal").nextElementSibling?.id)) !== "dt7MealCal" && !(await p.evaluate(() => document.getElementById("dt7MealCal").classList.contains("dt19-pinned"))) && (await W(p, "pinned")).some((x) => x.id === "dt7MealCal"),
+    "⑨ no もくじ on 食事: 食事カレンダー put up before, in its own place (dietPin kept)");
+  await p.evaluate((P) => { const s = JSON.parse(localStorage.getItem(P + "settings") || "[]").filter((x) => x.id !== "dietPin"); localStorage.setItem(P + "settings", JSON.stringify(s)); }, P);
+  await part(p, "workout");
+  const before = await p.evaluate(() => [...document.getElementById("part-workout").children].findIndex((e) => e.id === "dt19Nights"));
+  await p.click("#dt16Toc-workout summary"); await p.waitForTimeout(200);
+  await p.click('#dt16Toc-workout li:has(.dt16-toc-go[data-id="dt19Nights"]) .dt19-pin'); await p.waitForTimeout(400);
+  const after = () => p.evaluate(() => document.getElementById("workoutTotal").nextElementSibling?.id);
+  ok((await after()) === "dt19Nights" && (await W(p, "pinned")).map((x) => x.id).join() === "dt19Nights" && await p.evaluate(() => document.getElementById("dt19Nights").classList.contains("dt19-pinned")), "⑨ put up", await after());
+  await part(p, "workout");
+  ok((await after()) === "dt19Nights", "⑨ kept after a reload");
+  await p.click("#dt16Toc-workout summary"); await p.waitForTimeout(200);
+  await p.click('#dt16Toc-workout li:has(.dt16-toc-go[data-id="dt19Nights"]) .dt19-pin'); await p.waitForTimeout(400);
+  const now = await p.evaluate(() => [...document.getElementById("part-workout").children].findIndex((e) => e.id === "dt19Nights"));
+  ok((await after()) !== "dt19Nights" && now === before && !(await W(p, "pinned")).length && !(await p.evaluate(() => document.getElementById("dt19Nights").classList.contains("dt19-pinned"))), "⑨ taken back where it was", [before, now]);
+  // ⑩ カードを名前で探す: 睡眠 from からだ's もくじ, 運動と睡眠 gone to
   const found = await W(p, "find", "睡眠");
   ok(found.some((x) => x.id === "dt19Nights" && x.part === "workout") && found.every((x) => x.name.includes("睡眠")), "⑩ found in every part", found);
-  await p.fill("#dt16Toc-meal .dt19-find-in", "睡眠"); await p.waitForTimeout(200);
-  ok((await p.locator("#dt16Toc-meal .dt19-find-go").count()) === found.length, "⑩ listed", await txt(p, "#dt16Toc-meal .dt19-find-list"));
-  await p.click('#dt16Toc-meal .dt19-find-go[data-id="dt19Nights"]');
+  await part(p, "weight");
+  await p.click("#dt16Toc-weight summary"); await p.waitForTimeout(200);
+  await p.fill("#dt16Toc-weight .dt19-find-in", "睡眠"); await p.waitForTimeout(200);
+  ok((await p.locator("#dt16Toc-weight .dt19-find-go").count()) === found.length, "⑩ listed", await txt(p, "#dt16Toc-weight .dt19-find-list"));
+  await p.click('#dt16Toc-weight .dt19-find-go[data-id="dt19Nights"]');
   let top = 9999;
   for (let i = 0; i < 30 && !(top >= 0 && top < 852); i++) { await p.waitForTimeout(200); top = await p.evaluate(() => document.getElementById("dt19Nights").getBoundingClientRect().top); }
   ok(await p.evaluate(() => !document.getElementById("part-workout").hidden) && top >= 0 && top < 852, "⑩ gone to it", top);

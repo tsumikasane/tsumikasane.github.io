@@ -29,29 +29,39 @@ const off = (p, id) => p.evaluate((id) => document.getElementById(id)?.classList
   // ② 間食をよく食べる時間: 午後 6, 夜 3, 昼 1
   r = await txt(p, "#dt16Snack");
   ok(/この30日 10 回 朝 0 昼 1 午後 6 夕方 0 夜 3 深夜 0 いちばん多いのは午後です。/.test(r), "② the hours", r);
-  // ⑨ もくじ: open, a card gone to
-  await p.click("#dt16Toc-meal summary"); await p.waitForTimeout(200);
-  r = await txt(p, "#dt16Toc-meal summary");
-  const shownMeal = await p.evaluate(() => [...document.getElementById("part-meal").children].filter((e) => e.id && e.matches(".card, details") && !e.hidden && !e.classList.contains("dt16-off") && !["mealForm", "mealSlots", "mealList", "mealGoalCard", "dt16Toc-meal"].includes(e.id)).length);
-  ok(r === `もくじ（${shownMeal}）` && (await p.locator("#dt16Toc-meal .dt16-toc-go").count()) === shownMeal, "⑨ every card shown listed", [r, shownMeal]);
-  const lastId = await p.getAttribute("#dt16Toc-meal .dt16-toc-go >> nth=-1", "data-id");
-  await p.click("#dt16Toc-meal .dt16-toc-go >> nth=-1");
+  // ⑨ 食事's もくじ: taken out at the user's call (2026-11-27, tools/REMOVED.md): none on 食事, its words nowhere; a 食事's
+  // card kept hidden before (dietHide) shown, the setting as it was. からだ's and 運動's もくじ kept (⑨ ⑩ through 運動's)
+  const mealWords = await txt(p, "#part-meal");
+  ok(!(await p.$("#dt16Toc-meal")) && !mealWords.includes("もくじ") && !mealWords.includes("名前を押すと、そのカードへ行きます"), "⑨ no もくじ on 食事", mealWords.slice(0, 120));
+  await p.evaluate((P) => { const s = JSON.parse(localStorage.getItem(P + "settings") || "[]"); s.push({ id: "dietHide", list: [{ id: "dt16Snack", name: "間食をよく食べる時間" }], updatedAt: 1 }); localStorage.setItem(P + "settings", JSON.stringify(s)); }, P);
+  await part(p, "meal");
+  ok(!(await off(p, "dt16Snack")) && await p.isVisible("#dt16Snack") && ((await setting(p, "dietHide"))?.list || []).some((x) => x.id === "dt16Snack"), "⑩ 食事's card hidden before: shown, dietHide kept");
+  await p.evaluate((P) => { const s = JSON.parse(localStorage.getItem(P + "settings") || "[]").filter((x) => x.id !== "dietHide"); localStorage.setItem(P + "settings", JSON.stringify(s)); }, P);
+  // ⑨ もくじ (運動's): open, a card gone to
+  await part(p, "workout");
+  await p.click("#dt16Toc-workout summary"); await p.waitForTimeout(200);
+  r = await txt(p, "#dt16Toc-workout summary");
+  const shownWo = await p.evaluate(() => [...document.getElementById("part-workout").children].filter((e) => e.id && e.matches(".card, details") && !e.hidden && !e.classList.contains("dt16-off") && !["workoutForm", "workoutList", "dt16Toc-workout"].includes(e.id)).length);
+  ok(r === `もくじ（${shownWo}）` && (await p.locator("#dt16Toc-workout .dt16-toc-go").count()) === shownWo, "⑨ every card shown listed (運動)", [r, shownWo]);
+  const lastId = await p.getAttribute("#dt16Toc-workout .dt16-toc-go >> nth=-1", "data-id");
+  await p.click("#dt16Toc-workout .dt16-toc-go >> nth=-1");
   let top = 9999;
   for (let i = 0; i < 30 && !(top >= 0 && top < 852); i++) { await p.waitForTimeout(200); top = await p.evaluate((id) => document.getElementById(id).getBoundingClientRect().top, lastId); }
   ok(top >= 0 && top < 852, "⑨ gone to (the card in sight)", [lastId, top]);
-  // ⑩ かくす: 間食をよく食べる時間 hidden, taken back, hidden again and shown
+  // ⑩ かくす (運動's): 1年の距離 hidden, taken back, hidden again and shown
   await p.evaluate(() => window.scrollTo(0, 0));
-  await p.click('#dt16Toc-meal button[aria-label="「間食をよく食べる時間」をかくす"]'); await p.waitForTimeout(400);
-  ok(await off(p, "dt16Snack") && !(await p.isVisible("#dt16Snack")) && ((await setting(p, "dietHide"))?.list || []).some((x) => x.id === "dt16Snack" && x.name === "間食をよく食べる時間"), "⑩ hidden");
-  ok(/かくしたカード 1/.test(await txt(p, "#dt16Toc-meal summary")) && /かくしたカード 間食をよく食べる時間 出す/.test(await txt(p, "#dt16Toc-meal")), "⑩ listed as hidden", await txt(p, "#dt16Toc-meal"));
+  const ynm = await p.evaluate(() => document.querySelector('#dt16Toc-workout .dt16-toc-go[data-id="dt16Year"]')?.textContent);
+  await p.click(`#dt16Toc-workout button[aria-label="「${ynm}」をかくす"]`); await p.waitForTimeout(400);
+  ok(!!ynm && await off(p, "dt16Year") && !(await p.isVisible("#dt16Year")) && ((await setting(p, "dietHide"))?.list || []).some((x) => x.id === "dt16Year" && x.name === ynm), "⑩ hidden", ynm);
+  ok(/かくしたカード 1/.test(await txt(p, "#dt16Toc-workout summary")) && (await txt(p, "#dt16Toc-workout")).includes(`かくしたカード ${ynm} 出す`), "⑩ listed as hidden", await txt(p, "#dt16Toc-workout"));
   await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
-  ok(!(await off(p, "dt16Snack")) && await p.isVisible("#dt16Snack"), "⑩ taken back");
-  await p.click('#dt16Toc-meal button[aria-label="「間食をよく食べる時間」をかくす"]'); await p.waitForTimeout(400);
-  await part(p, "meal");
-  ok(await off(p, "dt16Snack"), "⑩ still hidden after a reload");
-  await p.click("#dt16Toc-meal summary"); await p.waitForTimeout(200);
-  await p.click('#dt16Toc-meal button[aria-label="「間食をよく食べる時間」を出す"]'); await p.waitForTimeout(400);
-  ok(!(await off(p, "dt16Snack")) && !(((await setting(p, "dietHide"))?.list || []).length), "⑩ shown again");
+  ok(!(await off(p, "dt16Year")) && await p.isVisible("#dt16Year"), "⑩ taken back");
+  await p.click(`#dt16Toc-workout button[aria-label="「${ynm}」をかくす"]`); await p.waitForTimeout(400);
+  await part(p, "workout");
+  ok(await off(p, "dt16Year"), "⑩ still hidden after a reload");
+  await p.click("#dt16Toc-workout summary"); await p.waitForTimeout(200);
+  await p.click(`#dt16Toc-workout button[aria-label="「${ynm}」を出す"]`); await p.waitForTimeout(400);
+  ok(!(await off(p, "dt16Year")) && !(((await setting(p, "dietHide"))?.list || []).length), "⑩ shown again");
 
   // ④ 1年の距離の目標: none, then 500 km
   await part(p, "workout");
