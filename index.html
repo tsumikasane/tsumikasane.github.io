@@ -2508,7 +2508,7 @@ a.bt17-app { text-decoration: none; }
 .ex2 .ex2-more span { font-size: 11.5px; letter-spacing: -.02em; } /* (編集・追加 › in a tile 4 a row) */
 .ex2 .mo2-split { padding-top: 4px; }
 .ex2 .mo2-split:empty { display: none; }
-.ex2-method select { width: 100%; min-height: 40px; padding: 0 12px; border: 0; border-radius: 8px; background-color: var(--ex-tint); color: var(--fg); font: inherit; font-size: 17px; }
+/* (.ex2-method, the form's 支払い: taken out at the user's call, 2026-11-27, tools/REMOVED.md) */
 .ex2-go { margin-top: 10px; min-height: 48px; border: 0; border-radius: 999px; background: var(--ex-acc); color: #fff; font: inherit; font-size: 18px; font-weight: 700; letter-spacing: .04em; box-shadow: 0 2px 6px rgba(0, 0, 0, .12); cursor: pointer; }
 .ex2-go:active { transform: translateY(1px); filter: brightness(.95); }
 /* 家計簿 shorter (the user's call, 2026-11-19): 収入・支出・収支 side by side; the 明細's days and rows, 費目ごと closer */
@@ -8724,11 +8724,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           </div>
           <!-- (家計簿 その2 ②) a receipt over more than one 費目: the others' parts here, the rest of 金額 for the 費目 above -->
           <div class="mo2-split" id="mo2Split"></div>
-          <!-- ⑩ how it was paid (the user's call, 2026-11-10), 支出 only; the last one picked comes again -->
-          <div class="ex2-row" id="exMethodRow">
-            <label class="ex2-label" for="exMethod" id="exMethodLabel">支払い</label>
-            <div class="ex2-method" id="exMethodField"><select id="exMethod"><option value="">指定なし</option><option value="cash">現金</option><option value="card">カード</option><option value="qr">QR決済</option></select></div>
-          </div>
+          <!-- (⑩ 支払い, how it was paid picked here (指定なし・現金・カード・QR決済 and the user's own), the last one picked coming
+               again: taken out at the user's call, 2026-11-27, tools/REMOVED.md. A 支出 put in here has no way of paying; the
+               edit sheet's 支払い, the records' and 設定の支払い方法 stay) -->
           <button class="ex2-go" type="submit" id="exGo">支出を入力する</button>
         </form>
         <!-- (家計簿 その2 ①) ひとことで追加: メモ and amount in a line, put in as it is; what it reads as under it -->
@@ -13331,7 +13329,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     });
     if ("ResizeObserver" in window) { let last = 0; new ResizeObserver(() => { const w = $("mealWeekWrap").clientWidth; if (!w) { last = 0; return; } if (w !== last) { last = w; renderMealWeek(); } }).observe($("mealWeekWrap")); }
   }
-  // ⑨ a meal with its price is in 家計簿 too, as 食費 (its 支払い the one last picked there); deleted, both go, with 元に戻す
+  // ⑨ a meal with its price is in 家計簿 too, as 食費; deleted, both go, with 元に戻す. (Its 支払い, the one last picked in
+  // 家計簿's form: none since that 支払い was taken out, 2026-11-27, tools/REMOVED.md)
   function mealExpense(m, price) {
     return { date: m.date, kind: "out", category: "食費", amount: price, memo: m.text, ...(lastMethod() ? { method: lastMethod() } : {}), meal: m.id, createdAt: Date.now() };
   }
@@ -16394,7 +16393,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const w = exKind() === "in" ? "収入" : "支出";
     $("exAmountLabel").textContent = w;
     $("exGo").textContent = `${w}を入力する`;
-    $("exMethodRow").hidden = w === "収入";
     ex2Tiles();
   }
   $("exDatePrev").addEventListener("click", () => ex2Step(-1));
@@ -16409,7 +16407,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren(exCat, cats.map((c) => el("option", { value: c }, c)));
     if (!cats.includes(exCatPick[kind])) exCatPick[kind] = cats[0];
     exCat.value = exCatPick[kind];
-    $("exMethodLabel").hidden = $("exMethodField").hidden = kind === "in";
     ex2Sync(); // (入力: the tiles, and 支出 or 収入 said)
   }
   exCat.addEventListener("change", () => { exCatPick[exKind()] = exCat.value; });
@@ -16426,7 +16423,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     // a month's pay put in as it was filled in (給料を収入に入れる): marked as that month's, so バイト says it is in
     if (exFromPay && item.kind === "in" && item.amount === exFromPay.amount) item.pay = exFromPay.key;
     exFromPay = null;
-    if (item.kind === "out" && $("exMethod").value) item.method = $("exMethod").value; // ⑩
+    // (⑩ the way of paying picked in the form: taken out at the user's call, 2026-11-27, tools/REMOVED.md)
     if (!mo2Put(item)) return; // (家計簿 その2 ② 分けて入れる, ④ 声かけ)
     $("exAmount").value = ""; $("exMemo").value = "";
     if (monthOf(date) !== viewMonth) { viewMonth = monthOf(date); renderMoney(); }
@@ -16492,7 +16489,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     mo2Speak(added, `「${x.memo} ${fmtYen(x.amount)}」を${date === todayKey ? "" : fmtMD(date) + "に"}追加しました`, mo2TakeBack(added)); // (家計簿 その2 ④ 声かけ)
   }
   // メモ's words of before as suggestions; one of them typed in full (or picked) with the amount still empty fills the
-  // amount, 費目 and way of paying of the last time
+  // amount and 費目 of the last time (its way of paying, with the form's 支払い: taken out, 2026-11-27, tools/REMOVED.md)
   function renderMemoHints() {
     const seen = new Set(), words = [];
     for (const e of [...expenses.items].sort((a, b) => b.date.localeCompare(a.date))) {
@@ -16509,7 +16506,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!last) return;
     $("exAmount").value = last.amount;
     if ([...exCat.options].some((o) => o.value === last.category)) { exCat.value = last.category; exCatPick[kind] = last.category; }
-    if (kind === "out" && last.method) $("exMethod").value = last.method;
   });
   // ⑥ 明細 narrowed to a 費目 pressed in 費目ごとの支出 (this month), or to words looked for (every month)
   let moneyCat = null, moneyQuery = "";
@@ -16517,13 +16513,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   $("moneySettings").addEventListener("click", (ev) => openSettings(ev.detail === 0, moneyPart === "job" ? "job" : "money"));
   const monthlyBudget = () => num((settings.get("budget") || {}).monthly);
 
-  // ⑩ how a 支出 was paid (the user's call, 2026-11-10); the form's last one kept on this device
+  // ⑩ how a 支出 was paid (the user's call, 2026-11-10). (The form's 支払い, its last one kept on this device and given to
+  // the 支出 put in from other pages (食事の値段, ToDo, 予定, 目標, 買い物) and to きょう's 家計簿に記録: taken out at the user's
+  // call, 2026-11-27, tools/REMOVED.md. With nothing picked any more, lastMethod is none: those 支出 go in with no way of
+  // paying, as one put in here does. What the device kept, localStorage "exMethod", is left as it was, not read)
   const PAY_METHODS = [["cash", "現金"], ["card", "カード"], ["qr", "QR決済"]];
   const payName = (m) => (PAY_METHODS.find(([k]) => k === m) || [])[1] || "";
-  const EX_METHOD_KEY = LS_PREFIX + "exMethod";
-  const lastMethod = () => { try { const v = localStorage.getItem(EX_METHOD_KEY) || ""; return PAY_METHODS.some(([k]) => k === v) ? v : ""; } catch { return ""; } };
-  $("exMethod").value = lastMethod();
-  $("exMethod").addEventListener("change", () => { try { localStorage.setItem(EX_METHOD_KEY, $("exMethod").value); } catch {} });
+  const lastMethod = () => "";
 
   // ④ 費目の設定: 支出's or 収入's (catEditKind), each with ↑ ↓ and its switch (on the menu or not); one added goes at the end,
   // and one of the user's own that no record has can be deleted. Each change saved at once
@@ -24943,7 +24939,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 20:33"; // 06aba353 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 20:49"; // 1e76c5d9 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -61994,14 +61990,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function mo2PayMenu(cur) { return mo2Pays().filter((x) => !x.off || x.id === cur).map((x) => [x.id, x.name]); }
   function mo2IsCard(id) { return mo2Pays().some((x) => x.id === id && x.card); }
   function mo2CardSum(by) { let s = 0; for (const [k, v] of by) if (k && mo2IsCard(k)) s += v; return s; }
-  function mo2SyncPay() {
+  function mo2SyncPay() { // (and the form's 支払い's menu with them: taken out, 2026-11-27, tools/REMOVED.md)
     PAY_METHODS.splice(0, PAY_METHODS.length, ...mo2Pays().map((x) => [x.id, x.name]));
-    const sel = $("exMethod");
-    if (document.activeElement === sel) return;
-    const want = sel.dataset.mo2 ? sel.value : lastMethod(); // (the first time, the one kept on this device)
-    setChildren(sel, el("option", { value: "" }, "指定なし"), mo2PayMenu(want).map(([k, n]) => el("option", { value: k }, n)));
-    sel.value = PAY_METHODS.some(([k]) => k === want) ? want : "";
-    sel.dataset.mo2 = "1";
   }
   function mo2SavePays(list) {
     act(() => settings.set("payMethods", { items: list.map((x) => dropUndef({ id: x.id, name: x.name, card: x.card ? true : undefined, off: x.off ? true : undefined })), updatedAt: Date.now() }));
@@ -62151,7 +62141,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const memo = words.join(" ").slice(0, 1000), prev = memo ? mo2Prev(memo, kind) : null;
     const outs = exCats("out"), category = cat || (prev ? expenseCat(prev) : "") || mo2Guess(memo, kind) || (outs.includes("雑費") ? "雑費" : outs[0]);
     if (kind === "in") method = "";
-    else if (!method) method = prev && prev.method && PAY_METHODS.some(([k]) => k === prev.method) ? prev.method : $("exMethod").value || "";
+    else if (!method) method = prev && prev.method && PAY_METHODS.some(([k]) => k === prev.method) ? prev.method : ""; // (else the form's 支払い: taken out, 2026-11-27)
     return { kind, amount, memo, category, method, date };
   }
   function mo2Words(p) { return `${mo2DayWord(p.date)}・${p.kind === "in" ? "収入" : "支出"} ${fmtYen(p.amount)}・${p.category}${p.method ? "・" + payName(p.method) : ""}${p.memo ? `「${p.memo}」` : ""}`; }

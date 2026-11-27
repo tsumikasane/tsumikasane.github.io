@@ -46,8 +46,9 @@ const DATA = {
   const hints = await p.evaluate(() => [...document.querySelectorAll("#exMemoHints option")].map((o) => o.value));
   ok(hints.includes("シャツ") && hints.includes("定期") && hints[0] === "シャツ", "⑤ メモ's suggestions, newest first: " + hints.slice(0, 4).join(","));
   await p.fill("#exMemo", "飲み会"); await p.locator("#exMemo").dispatchEvent("change"); await p.waitForTimeout(200);
-  const f = await p.evaluate(() => ({ amount: exAmount.value, cat: exCat.value, method: exMethod.value }));
-  ok(f.amount === "4000" && f.cat === "交際費" && f.method === "card", "⑤ 飲み会 fills the last time's: " + JSON.stringify(f));
+  // (its way of paying with them: the form's 支払い taken out, 2026-11-27, tools/REMOVED.md)
+  const f = await p.evaluate(() => ({ amount: exAmount.value, cat: exCat.value, method: document.getElementById("exMethod") }));
+  ok(f.amount === "4000" && f.cat === "交際費" && f.method === null, "⑤ 飲み会 fills the last time's amount and 費目: " + JSON.stringify(f));
   await p.fill("#exMemo", ""); await p.fill("#exAmount", "");
   // ⑥ a 費目 pressed: its 明細 alone
   await p.locator('#catList .cat-row:has-text("食費")').click(); await p.waitForTimeout(400);

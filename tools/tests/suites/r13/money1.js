@@ -14,25 +14,24 @@ const opts = (p, sel) => p.evaluate((sel) => [...document.querySelector(sel).opt
     { id: "x1", date: "2026-11-02", kind: "out", category: "食費", amount: 800, createdAt: T0 },
     { id: "x2", date: "2026-11-03", kind: "out", category: "交通費", amount: 400, method: "qr", createdAt: T0 },
   ] }, "money");
-  // ⑩ the form: 支払い for 支出, not for 収入
-  ok(await p.isVisible("#exMethod") && JSON.stringify(await opts(p, "#exMethod")) === JSON.stringify(["", "cash", "card", "qr"]), "⑩ 支払い in the form");
-  await p.locator('input[name="exKind"][value="in"]').check({ force: true }); await p.waitForTimeout(200);
-  ok(!(await p.isVisible("#exMethod")), "⑩ not for 収入");
-  await p.locator('input[name="exKind"][value="out"]').check({ force: true }); await p.waitForTimeout(200);
-  await p.selectOption("#exMethod", "card"); await p.fill("#exAmount", "3000"); await p.selectOption("#exCat", "衣服"); await p.fill("#exMemo", "シャツ");
+  // ⑩ the form's 支払い: taken out at the user's call (2026-11-27, tools/REMOVED.md): a 支出 put in there has none, and the
+  // edit sheet's 支払い (kept) gives it one
+  ok(!(await p.locator("#exMethod, #exMethodRow").count()) && !(await p.evaluate(() => document.getElementById("exForm").innerText.includes("支払い"))), "⑩ no 支払い in the form");
+  await p.fill("#exAmount", "3000"); await p.selectOption("#exCat", "衣服"); await p.fill("#exMemo", "シャツ");
   await p.locator('#exForm button[type="submit"]').click(); await p.waitForTimeout(500);
   let ex = (await ls(p, "expenses")).find((e) => e.memo === "シャツ");
-  ok(ex && ex.method === "card" && ex.amount === 3000, "⑩ recorded with カード: " + JSON.stringify(ex));
-  ok(await p.evaluate(() => document.getElementById("exMethod").value) === "card", "⑩ the next one starts at カード (the last picked)");
-  const row = await p.evaluate(() => [...document.querySelectorAll("#exList li")].find((li) => li.textContent.includes("シャツ"))?.innerText.replace(/\s+/g, " "));
-  ok(row && row.includes("カード"), "⑩ 明細 says カード: " + row);
-  // its edit sheet: 支払い there, gone for 収入
+  ok(ex && !ex.method && ex.amount === 3000, "⑩ recorded with no way of paying: " + JSON.stringify(ex));
+  // its edit sheet: 支払い there (指定なし), gone for 収入; カード picked there
   await p.evaluate(() => [...document.querySelectorAll("#exList li")].find((li) => li.textContent.includes("シャツ")).querySelector("[data-edit], .row-link, button")?.click()); await p.waitForTimeout(500);
-  ok(await p.evaluate(() => document.getElementById("reMethod")?.value) === "card", "⑩ the edit sheet has カード");
+  ok(await p.evaluate(() => document.getElementById("reMethod")?.value) === "", "⑩ the edit sheet has 支払い (指定なし)");
   await p.locator('#recForm input[name="reKind"][value="in"]').check({ force: true }); await p.waitForTimeout(200);
   ok(await p.evaluate(() => document.getElementById("reMethod").closest(".form-rows").hidden), "⑩ hidden when changed to 収入");
-  await p.locator("#sheetCancel").click(); await p.waitForTimeout(300);
-  await p.evaluate(() => document.getElementById("discardYes")?.offsetParent && document.getElementById("discardYes").click()); await p.waitForTimeout(400);
+  await p.locator('#recForm input[name="reKind"][value="out"]').check({ force: true }); await p.waitForTimeout(200);
+  await p.selectOption("#reMethod", "card"); await p.click("#recSave"); await p.waitForTimeout(500);
+  ex = (await ls(p, "expenses")).find((e) => e.memo === "シャツ");
+  ok(ex && ex.method === "card" && ex.category === "衣服" && ex.amount === 3000, "⑩ カード picked in the edit sheet: " + JSON.stringify(ex));
+  const row = await p.evaluate(() => [...document.querySelectorAll("#exList li")].find((li) => li.textContent.includes("シャツ"))?.innerText.replace(/\s+/g, " "));
+  ok(row && row.includes("カード"), "⑩ 明細 says カード: " + row);
   // ④ 費目の設定
   await p.locator("#moneySettings").click(); await p.waitForTimeout(500);
   // the notes under 予算, 費目ごとの予算, 費目, 毎月の固定費 and 貯金の目標: taken out at the user's call (2026-11-25, tools/REMOVED.md)
