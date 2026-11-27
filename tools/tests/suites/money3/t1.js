@@ -12,9 +12,11 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   await seed(p, DATA, "money");
   // ⑩ 今週の支出 (今週（11/8（日）〜）の支出は 10,200 円・週の目安 7,000 円 を 3,200 円 超えています), and その2 ⑤ 月末の見込み
   // (このペースなら、月末の支出は 約 ○円…), and ⑧ of the first ten's 月末まで1日あたり, 給料日まで: taken out at the user's call
-  // (2026-11-26, tools/REMOVED.md). The budget's line says the rest as before
+  // (2026-11-26, tools/REMOVED.md). The budget's words (予算 30,000 円 を 200 円 超えています): taken out too (2026-11-27); its bar
+  // stays, full and red
   const book = await txt(p, "#sec-money");
-  ok(!(await p.$("#mo3Week")) && !(await p.$("#mo2Fore")) && !/今週（|週の目安|このペースなら|収まりそう|多くなりそう|1日あたり|給料日（/.test(book) && (await txt(p, "#budgetLine")).includes("予算 30,000 円 を200 円 超えています"), "⑩ 今週の支出, その2 ⑤ 見込み, 1日あたり: gone (the budget's line kept: over by 200)", [await txt(p, "#budgetLine"), book.match(/今週（|週の目安|このペースなら|収まりそう|多くなりそう|1日あたり|給料日（/)?.[0]]);
+  const over = await p.evaluate(() => { const i = document.querySelector("#budgetLine .bar-track i"); return { words: document.getElementById("budgetLine").innerText.trim(), w: i?.style.width ?? null, over: !!i?.classList.contains("over") }; });
+  ok(!(await p.$("#mo3Week")) && !(await p.$("#mo2Fore")) && !/今週（|週の目安|このペースなら|収まりそう|多くなりそう|1日あたり|給料日（|超えています/.test(book) && over.words === "" && over.w === "100%" && over.over, "⑩ 今週の支出, その2 ⑤ 見込み, 1日あたり, the budget's words: gone (its bar kept: full, red)", [over, book.match(/今週（|週の目安|このペースなら|収まりそう|多くなりそう|1日あたり|給料日（|超えています/)?.[0]]);
   // ② a sum
   await p.fill("#mo2QuickText", "ランチ 800+120"); await p.waitForTimeout(200);
   ok((await txt(p, "#mo2QuickSay")).includes("920 円"), "② said as 920: " + (await txt(p, "#mo2QuickSay")));

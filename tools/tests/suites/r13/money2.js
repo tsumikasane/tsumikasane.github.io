@@ -11,6 +11,7 @@ const X = (id, date, category, amount, memo, method, kind = "out") => ({ id, dat
 const DATA = {
   expenses: [
     X("a1", "2026-10-03", "食費", 600, "コンビニ昼", "qr"), X("a2", "2026-10-12", "食費", 1200, "スーパー"), X("a3", "2026-10-20", "交通費", 2000, "定期"),
+    X("a4", "2026-10-26", "交通費", 1500, "バス"), // (after 給料日 10/25: in the budget from 給料日, not in 11月's)
     X("b1", "2026-11-02", "食費", 600, "コンビニ昼", "qr"), X("b2", "2026-11-05", "食費", 600, "コンビニ昼", "qr"), X("b3", "2026-11-07", "食費", 3000, "外食"),
     X("b4", "2026-11-08", "交際費", 4000, "飲み会", "card"), X("b5", "2026-11-09", "衣服", 5000, "シャツ", "card"), X("c1", "2026-11-01", "給与", 80000, "バイト代", null, "in"),
   ],
@@ -23,10 +24,15 @@ const DATA = {
   const b = await chromium.launch();
   let p = await phone(b, at("12:00", today));
   await seed(p, DATA, "money");
-  // ⑧ the budget line: the month's. 月末まで1日あたり and 給料日（11/25）まで あと 15 日 under it: taken out at the user's call
-  // (2026-11-26, tools/REMOVED.md)
-  let bl = await txt(p, "#budgetLine");
-  ok(bl.includes("予算 30,000 円 のうち") && bl.includes("残り 16,800 円") && !bl.includes("1日あたり") && !bl.includes("給料日") && !bl.includes("まで あと"), "⑧ monthly, no 1日あたり nor 給料日: " + bl);
+  // ⑧ the budget line: the month's bar. Its words (予算 30,000 円 のうち 残り 16,800 円（44% 使用）): taken out at the user's call
+  // (2026-11-27, tools/REMOVED.md), as 月末まで1日あたり and 給料日（11/25）まで あと 15 日 under it were (2026-11-26). The card
+  // (収入・支出・収支) stays
+  const bar = (p) => p.evaluate(() => { const l = document.getElementById("budgetLine"), i = l?.querySelector(".bar-track i");
+    return { words: l?.innerText.trim(), w: i?.style.width ?? null, over: !!i?.classList.contains("over"), card: l?.closest(".mo-sum-card")?.innerText.replace(/\s+/g, " ").trim() }; });
+  const said = /予算 [\d,]+ 円 のうち|残り [\d,]+ 円（|% 使用|円 超えています|給料日からの予算/; // (費目ごとの 予算 ○円 を ○円 超過 stays)
+  let bl = await bar(p);
+  ok(bl.words === "" && bl.w === "44%" && !bl.over && !said.test(await txt(p, "#sec-money")), "⑧ monthly: the bar (44%), no words", bl);
+  ok(/^収入 80,000 円 1 件 支出 13,200 円 5 件 収支 \+66,800 円 黒字$/.test(bl.card), "⑧ the card kept: 収入・支出・収支", bl.card);
   // ② and ③: 費目ごとの支出
   const rows = await p.evaluate(() => [...document.querySelectorAll("#catList .cat-row")].map((r) => r.innerText.replace(/\s+/g, " ").trim()));
   ok(rows[0].startsWith("衣服 5,000 円") && rows[0].includes("前月より +5,000 円"), "③ 衣服: " + rows[0]);
@@ -76,16 +82,18 @@ const DATA = {
   await p.locator("#sheetDone").click(); await p.waitForTimeout(700);
   const bud = (await ls(p, "settings")).find((x) => x.id === "budget");
   ok(bud && bud.monthly === 30000 && bud.start === "pay" && JSON.stringify(bud.cats) === JSON.stringify({ "食費": 10000, "日用品": 3000, "交際費": 3000 }), "②⑧ saved: " + JSON.stringify(bud));
-  // ⑧ from 給料日: 10/25 to 11/24 (its 給料日（11/25）まで あと 15 日・1日あたり 1,120 円: taken out, 2026-11-26)
-  bl = await txt(p, "#budgetLine");
-  ok(bl.includes("給料日からの予算 30,000 円 のうち") && bl.includes("残り 16,800 円") && !bl.includes("1日あたり") && !bl.includes("まで あと"), "⑧ from 給料日: " + bl);
+  // ⑧ from 給料日: 10/25 to 11/24, the 10/26 バス in (its words, 給料日からの予算 30,000 円 のうち 残り 15,300 円: taken out,
+  // 2026-11-27; 給料日（11/25）まで あと 15 日・1日あたり: 2026-11-26)
+  bl = await bar(p);
+  ok(bl.words === "" && bl.w === "49%" && !bl.over && !said.test(await txt(p, "#sec-money")), "⑧ from 給料日: the bar (49%), no words", bl);
   await p.screenshot({ path: out + "/book-393.png", fullPage: true });
   ok(!p.errs.length, "no page errors", p.errs);
   await p.close();
   // no job: 給料日から can't be picked, and the line says nothing of it
   p = await phone(b, at("12:00", today));
   await seed(p, { expenses: DATA.expenses, settings: [{ id: "budget", monthly: 30000, updatedAt: T0 }] }, "money");
-  ok(!(await txt(p, "#budgetLine")).includes("給料日"), "⑧ no job: no 給料日 words");
+  bl = await bar(p);
+  ok(bl.words === "" && bl.w === "44%" && !bl.over, "⑧ no job: the month's bar, no words", bl);
   await p.locator("#moneySettings").click(); await p.waitForTimeout(500);
   ok(await p.evaluate(() => document.querySelector('#budgetStart option[value="pay"]').disabled), "⑧ no job: 給料日から can't be picked");
   ok(!p.errs.length, "no page errors", p.errs);

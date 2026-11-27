@@ -2546,9 +2546,8 @@ a.bt17-app { text-decoration: none; }
 .mo2-pay-card input { flex: none; width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
 #mo2PayList li.mo2-pay .del { grid-column: 3; justify-self: end; }
 #mo2PayAdd .btn { flex: none; white-space: nowrap; }  /* (追加 kept on one line beside the long label) */
-/* ⑥ きょうは使っていない, under the budget's line (⑤ 月末の見込み: taken out, 2026-11-26) */
-.mo2-zero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 12px; margin-top: calc(-1 * var(--space-1)); }
-.mo2-zero .link-btn { min-height: 40px; }
+/* (⑥ きょうは使っていない, under the budget's line: taken out at the user's call, 2026-11-27, tools/REMOVED.md. ⑤ 月末の見込み:
+   taken out, 2026-11-26) */
 /* ⑦ ムダづかいチェック: one 支出 asked about, then the month's */
 .mo2-feel { display: grid; gap: 12px; padding: 4px var(--space-2) 14px; }
 .mo2-feel p { margin: 0; }
@@ -8722,9 +8721,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="card pad mo-sum-card">
           <div class="money-sum" id="moneySum"></div>
           <div class="budget-line" id="budgetLine"></div>
-          <!-- (家計簿 その2 ⑥) a day with nothing spent said so. (その2 ⑤ 月末の見込み and その3 ⑩ 今週の支出, here before:
-               taken out at the user's call, 2026-11-26, tools/REMOVED.md) -->
-          <div class="mo2-zero" id="mo2Zero" hidden></div>
+          <!-- (家計簿 その2 ⑥, a day with nothing spent said so: 「きょうはまだ記録がありません。」 and its 「きょうは使っていない」,
+               taken out at the user's call, 2026-11-27, tools/REMOVED.md. その2 ⑤ 月末の見込み and その3 ⑩ 今週の支出, here
+               before: taken out, 2026-11-26) -->
         </div>
         <div class="card" id="catCard">
           <div class="card-head">費目ごとの支出</div>
@@ -16950,17 +16949,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (document.activeElement !== $("budgetStart")) $("budgetStart").value = bset.start === "pay" ? "pay" : "";
     const bl = $("budgetLine");
     bl.replaceChildren();
-    const ph = (...ws) => el("span", { class: "phrase" }, ws.map((w) => el("span", { class: "phrase" }, keepUnits(w))));
     const toPay = isCur && pd.next ? daysBetween(todayKey, pd.next) : 0;
     if (budget > 0) {
       const byPay = !!(toPay && bset.start === "pay"), from = byPay ? pd.last || `${viewMonth}-01` : null;
       const spent = byPay ? sum(expenses.items.filter((e) => e.kind !== "in" && e.date >= from && e.date < pd.next), (e) => num(e.amount)) : m.out;
       const remaining = budget - spent, pct = Math.min(100, Math.round((spent / budget) * 100));
-      const said = remaining >= 0 ? ph(`${byPay ? "給料日からの" : ""}予算 ${fmtYen(budget)} のうち`, `残り ${fmtYen(remaining)}（${pct}% 使用）`) : ph(`${byPay ? "給料日からの" : ""}予算 ${fmtYen(budget)} を`, `${fmtYen(-remaining)} 超えています`);
-      bl.append(
-        el("div", { class: "bar-track" }, el("i", { class: remaining < 0 ? "over" : "", style: `width:${pct}%` })),
-        el("span", { class: "sub" + (remaining < 0 ? " warn" : "") }, el("span", { class: "due-line" }, el("span", { class: "due-parts" }, said)))
-      );
+      // (the words under the bar, 「予算 ○円 のうち 残り ○円（○% 使用）」, over it 「予算 ○円 を ○円 超えています」, and from 給料日
+      // 「給料日からの予算 …」: taken out at the user's call, 2026-11-27, tools/REMOVED.md. The bar stays, red when over)
+      bl.append(el("div", { class: "bar-track" }, el("i", { class: remaining < 0 ? "over" : "", style: `width:${pct}%` })));
     } else bl.append(el("button", { type: "button", class: "link-btn", onclick: (ev) => openSettings(ev.detail === 0, "money", budgetInput) }, "月の予算を決める"));
     renderOften(); renderMemoHints();
     // 費目ごとの支出 (expenses only): each with its change from the month before (③), its own budget's rest (②) and, pressed,
@@ -24905,7 +24901,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 7:09"; // b01ecc31 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 7:27"; // 85b011ec (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -61860,7 +61856,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // drawn with 家計簿 (renderMoney), before its own cards: the ways of paying first, as the rest of it reads them
   function renderMo2(m) {
     mo2SyncPay();
-    if (moneyPart === "book") { draw(mo2QuickSay); draw(mo2SplitSync); draw(renderMo2Zero); } // (⑤ 月末の見込み: taken out, 2026-11-26)
+    if (moneyPart === "book") { draw(mo2QuickSay); draw(mo2SplitSync); } // (⑤ 月末の見込み: taken out, 2026-11-26; ⑥ きょうは使っていない: 2026-11-27)
     if (moneyPart === "stats") { draw(() => renderMo2Feel(m)); draw(renderMo2Year); } // (⑨ ほしいもの taken off 2026-11-18, the user's call)
   }
   function mo2DayWord(d) { return d === todayKey ? "きょう" : d === addDays(todayKey, -1) ? "きのう" : fmtDay(d); }
@@ -62160,20 +62156,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ⑥ つけ忘れのお知らせ (settings moRemind): in つみかさね's 毎日の記録のお知らせ since 2026-11-23 (the user's call; what it
   // kept stays). What it read is that one's: a day with a record (固定費 aside) or said to be one with nothing spent
-  // (きょうは使っていない, kept 2 months), offered on 家計簿 while that one is on with 家計簿 among its kinds
+  // (きょうは使っていない, kept 2 months). (Its offer on 家計簿, 「きょうはまだ記録がありません。」 and 「きょうは使っていない」
+  // under the budget's line while 家計簿 was among its kinds: taken out at the user's call, 2026-11-27, tools/REMOVED.md. The
+  // days said so before (settings moZero) are kept and still count)
   function mo2ZeroDays() { const v = settings.get("moZero"); return new Set(v && Array.isArray(v.days) ? v.days.filter((d) => isDay(d)) : []); }
-  function mo2HasToday() { return mo2ZeroDays().has(todayKey) || expenses.items.some((e) => e.date === todayKey && !e.fixed); }
-  function renderMo2Zero() {
-    const box = $("mo2Zero"), show = recRemindOn("money") && viewMonth === monthOf(todayKey) && !mo2HasToday();
-    box.hidden = !show;
-    if (!show) { box.replaceChildren(); return; }
-    setChildren(box, el("span", { class: "sub" }, "きょうはまだ記録がありません。"), el("button", { type: "button", class: "link-btn", onclick: mo2ZeroToday }, "きょうは使っていない"));
-  }
-  function mo2ZeroToday() {
-    const was = settings.get("moZero"), days = [...mo2ZeroDays()].filter((d) => d >= addDays(todayKey, -62) && d !== todayKey);
-    act(() => settings.set("moZero", { days: [...days, todayKey].sort(), updatedAt: Date.now() }));
-    flash("きょうは使っていない日にしました。今夜のお知らせは届きません", () => act(() => (was ? settings.set("moZero", { ...was, updatedAt: Date.now() }) : settings.remove("moZero"))));
-  }
 
   // ⑦ ムダづかいチェック (the user's call): a 支出 marked よかった or ムダだった, in its edit sheet or here one at a time (the
   // last 30 days', newest first; とばす leaves it for later); the month's of each, its ムダ the biggest first

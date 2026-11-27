@@ -138,14 +138,14 @@ const OLD = [
   ok(!a.some((x) => x.tag.endsWith(tomorrow)) && a.some((x) => x.tag.endsWith(day(2))), "none on an お休みの日 (tomorrow), the day after as before");
   ok(!p.errs.length, "no page errors (3)", p.errs);
 
-  // ---- 4 家計簿's きょうは使っていない: offered while 家計簿 is picked and today has none ----
+  // ---- 4 家計簿's きょうは使っていない (「きょうはまだ記録がありません。」 and its button under the budget's line, while 家計簿 was
+  // picked and today had none): taken out at the user's call (2026-11-27, tools/REMOVED.md). Not there; the お知らせ tonight as
+  // before; a day said so before still counts (3) ----
   await seed(p, { settings: [{ id: "recRemind", on: true, kinds: ["money"], times: ["21:00"], updatedAt: 1 }] }, "money");
-  ok(((await txt(p, "#mo2Zero")) || "").includes("きょうは使っていない") && await p.isVisible("#mo2Zero"), "家計簿 picked, nothing today: offered", await txt(p, "#mo2Zero"));
-  await p.click("#mo2Zero button"); await p.waitForTimeout(400);
-  ok(await p.isHidden("#mo2Zero") && JSON.stringify((await setting(p, "moZero"))?.days) === `["${today}"]` && !(await alarms(p)).some((x) => x.tag.endsWith(today)), "pressed: kept, gone, no お知らせ tonight");
-  await put(p, "settings", [{ id: "recRemind", on: true, kinds: ["journal"], times: ["21:00"], updatedAt: 1 }]);
-  await reload(p);
-  ok(await p.isHidden("#mo2Zero"), "家計簿 not picked: not offered");
+  const book = await txt(p, "#sec-money");
+  ok(!(await p.$("#mo2Zero")) && !/きょうはまだ記録がありません|きょうは使っていない/.test(book), "家計簿 picked, nothing today: nothing offered (taken out)", book.slice(0, 160));
+  a = await alarms(p);
+  ok(a.some((x) => x.tag.endsWith(today) && x.body === "きょうは家計簿の記録がまだです") && !(await setting(p, "moZero")), "the お知らせ tonight as before (家計簿 still to do)", a.map((x) => [x.tag, x.body]));
 
   // ---- 5 the four pages: none of their own お知らせ ----
   await seed(p, { settings: OLD.concat([{ id: "moRemind", on: true, at: "21:00", updatedAt: 1 }]) }, "diet");
