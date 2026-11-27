@@ -26,6 +26,7 @@ async function addMeal(p, text = "おにぎり") {
   const b = await chromium.launch();
   // ---------- a year and more of records (2,231 blocks), 2026-11-10 23:50 (after the day's last, the ルーティーン at 23:30) ----------
   const D = make(); D.settings.push(REWARDS, { id: "tsumiNeko", head: "santa", scarf: false, updatedAt: 1 }); // (着せかえ's, picked before it was taken out)
+  D.settings.push({ id: "tsumiDaySum", on: true, at: "23:59", updatedAt: 1 }); // (1日のまとめのお知らせ's, on before it was taken out)
   let p = await phone(b, at("23:50", "2026-11-10"), { deviceScaleFactor: 1 });
   await seed(p, D, "tsumi"); await p.waitForTimeout(1800);
   const n0 = await p.evaluate(() => window.__ts.shown().length);
@@ -82,6 +83,14 @@ async function addMeal(p, text = "おにぎり") {
   const wk = await p.evaluate(() => window.__ts.alarms(Date.now()).filter((a) => a.tag.startsWith("tsumi-week:")));
   const cnt = await p.evaluate(() => { const s = window.__ts.shown(); const c = (a, b) => s.filter((x) => x.day >= a && x.day <= b).length; return [c("2026-11-05", "2026-11-11"), c("2026-10-29", "2026-11-04")]; });
   ok(wk.length >= 5 && wk[0].tag === "tsumi-week:2026-11-11" && new Date(wk[0].at + 9 * 3600e3).getUTCHours() === 21 && wk[0].body === `この1週間で ${cnt[0]} こ積みました（前の週${cnt[0] === cnt[1] ? "と同じ" : `より ${cnt[0] > cnt[1] ? "+" : "−"}${Math.abs(cnt[0] - cnt[1])}`}）` && wk[1].tag === "tsumi-week:2026-11-18" && wk[1].body === "この1週間は、まだ積んでいません。1こから始めよう" && wk[0].url === "./#tsumi", "⑩ each Wednesday 21:00, the 7 days' count against the 7 before (a week to come: none yet, till some go on)", [wk[0], wk[1]?.body, cnt]);
+  // 1日のまとめのお知らせ: taken out at the user's call (2026-11-27, tools/REMOVED.md): not in the gear (its お知らせ, 時刻 and
+  // words), none sent though it was on before (at 23:59, today with blocks), its setting kept as it was; 週のまとめ (above),
+  // 月のまとめ and 毎日の記録のお知らせ kept
+  const gearWords = await p.evaluate(() => document.getElementById("daySheet").innerText);
+  ok(!/1日のまとめのお知らせ|その日に積んだ数と種類を通知で/.test(gearWords) && !(await p.$("#tsumiDayOn")) && !(await p.$("#tsumiDayAt"))
+    && gearWords.includes("週のまとめのお知らせ") && gearWords.includes("月のまとめのお知らせ") && gearWords.includes("毎日記録するもの") && !!(await p.$("#tsumiMonthSumOn")), "1日のまとめのお知らせ: not in the gear (週のまとめ, 月のまとめ, 毎日の記録 kept)", gearWords.length);
+  const daySum = await p.evaluate(() => window.__ts.alarms(Date.now()).filter((a) => a.tag.startsWith("tsumi-day:")));
+  ok(!daySum.length && (await setting(p, "tsumiDaySum"))?.on === true && (await setting(p, "tsumiDaySum"))?.at === "23:59", "1日のまとめのお知らせ: none sent though on before, its setting kept", daySum);
   const sig1 = await p.evaluate(() => window.__ts.sig());
   await closeSheet(p);
   // ③ ＋ → 食事: it drops in, ⑥ the ごほうび reached, said with 紙ふぶき
