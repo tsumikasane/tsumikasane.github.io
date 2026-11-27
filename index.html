@@ -16784,14 +16784,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         a || b ? el("span", { class: "dv", "aria-hidden": "true" }, b ? el("span", { class: "da in" }, "+" + yen(b)) : null, a ? el("span", { class: "da out" }, yen(a)) : null) : null));
     }
     setChildren($("exCal"), cells);
-    // under the month: its totals in the days' colours (the key too), and the days nothing went out on, up to today
+    // under the month: its totals in the days' colours. (Under them 「＋がついているのは収入、ついていないのは支出です。」
+    // and the days nothing went out on up to today, 「使わなかった日は ○ 日。」: taken off at the user's call, 2026-11-27,
+    // tools/REMOVED.md)
     const upTo = ym < monthOf(todayKey) ? n : ym === monthOf(todayKey) ? parseYmd(todayKey).getDate() : 0;
-    const none = Array.from({ length: upTo }, (_, i) => `${ym}-${pad(i + 1)}`).filter((d) => !outBy.get(d)).length, net = m.inn - m.out;
-    setChildren($("exCalKey"), m.items.length ? [el("p", { class: "excal-sum" },
+    const net = m.inn - m.out;
+    setChildren($("exCalKey"), m.items.length ? el("p", { class: "excal-sum" },
         el("span", { class: "phrase" }, el("span", { class: "in" }, keepUnits(`収入 +${fmtYen(m.inn)}`)), "・"),
         el("span", { class: "phrase" }, el("span", { class: "out" }, keepUnits(`支出 ${fmtYen(m.out)}`)), "・"),
-        el("span", { class: "phrase" }, keepUnits(`収支 ${net > 0 ? "+" : ""}${fmtYen(net)}`))),
-      el("p", { class: "sub" }, el("span", { class: "phrase" }, "＋がついているのは収入、ついていないのは支出です。"), upTo ? el("span", { class: "phrase" }, keepUnits(`使わなかった日は ${none} 日。`)) : null)]
+        el("span", { class: "phrase" }, keepUnits(`収支 ${net > 0 ? "+" : ""}${fmtYen(net)}`)))
       : el("p", { class: "sub" }, upTo ? `${fmtMonth(ym)}の記録はまだありません。` : "日付を押すと、その日の明細が出ます。"));
     // the day pressed: its entries (収入 and 固定費 too), each opening to be changed, and 追加 on that day
     const box = $("exCalDay");
@@ -16850,7 +16851,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("div", { class: "save-top" }, el("span", { class: "save-name" }, g.name || "貯金"), el("span", { class: "amount" }, el("span", { class: saved < 0 ? "warn" : "" }, fmtYen(saved)), t > 0 ? el("small", {}, ` / ${fmtYen(t)}`) : null)),
         t > 0 ? el("div", { class: "bar-track", role: "img", "aria-label": `${pct}%` }, el("i", { class: done ? "done" : "", style: `width:${pct}%` })) : null,
         el("span", { class: "sub" }, [t > 0 ? `${pct}%` : null, `${fmtMonth(savedOf(g).since)}から`, ...saveWords(g)].filter(Boolean).map((w, i, a) => el("span", { class: "phrase" }, keepUnits(w + (i < a.length - 1 ? "・" : ""))))));
-    }) : el("li", { class: "empty" }, el("span", {}, "「旅行 10万円」のような目標を決めると、毎月の黒字でどこまで貯まったかが出ます。"), " ",
+    }) : el("li", { class: "empty" }, // (its words 「「旅行 10万円」のような目標を決めると、…」 taken off at the user's call, 2026-11-27)
       el("button", { type: "button", class: "link-btn", onclick: (ev) => openSettings(ev.detail === 0, "money", $("saveAdd")) }, "貯金の目標を決める")));
   }
   // its settings: a form each, as 固定費's are, saved a moment after a change and as the sheet closes
@@ -16864,10 +16865,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (isYm(have) && !list.includes(have)) { list.push(have); list.sort(); }
     return list;
   }
-  function saveNote(g) {
-    const t = num(g.target), { saved } = savedOf(g);
-    return t > 0 ? `いま ${fmtYen(saved)}（${Math.max(0, Math.floor((saved / t) * 100))}%）。` + saveWords(g).join("・") : "金額を入れると、まとめに進み具合が出ます。";
-  }
+  // (with an amount, its words 「いま ○ 円（○%）。」 and how it stands, 「2027年12月までに、毎月 ○ 円 ずつ」 and the like:
+  // taken off at the user's call, 2026-11-27, tools/REMOVED.md; the まとめ's card says how it stands)
+  function saveNote(g) { return num(g.target) > 0 ? "" : "金額を入れると、まとめに進み具合が出ます。"; }
+  function saveNoteIn(box, g) { const w = box.querySelector(".save-when"), say = saveNote(g); setChildren(w, say); w.hidden = !say; }
   function renderSaveForms() {
     setChildren($("saveForms"), saveGoals().map((g) => {
       const id = (k) => `sv${k}-${g.id}`;
@@ -16881,7 +16882,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           recRow("始める月", since),
           recRow("はじめの額", el("input", { type: "number", id: id("Base"), "data-f": "base", value: num(g.base) > 0 ? g.base : "", min: 0, max: 999999999, step: 1, inputmode: "numeric", placeholder: "0" }), { unit: "円", opt: true }),
           recRow("期限", until, { opt: true })),
-        el("p", { class: "group-foot save-when" }, saveNote(g)),
+        el("p", { class: "group-foot save-when", hidden: !saveNote(g) }, saveNote(g)),
         el("div", { class: "label-tools" }, el("button", { type: "button", class: "link-btn danger", onclick: () => dropSaveGoal(g.id) }, `「${g.name || "この目標"}」を削除`)));
     }));
   }
@@ -16912,12 +16913,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   });
   $("saveForms").addEventListener("input", (ev) => {
     const box = ev.target.closest(".fixed-edit"), g = box && saveGoals().find((x) => x.id === box.dataset.save);
-    if (g) setChildren(box.querySelector(".save-when"), saveNote(saveFromForm(box, g)));
+    if (g) saveNoteIn(box, saveFromForm(box, g));
     clearTimeout(saveTimer); saveTimer = setTimeout(saveSavings, 600);
   });
   $("saveForms").addEventListener("change", (ev) => {
     const box = ev.target.closest(".fixed-edit"), g = box && saveGoals().find((x) => x.id === box.dataset.save);
-    if (g) setChildren(box.querySelector(".save-when"), saveNote(saveFromForm(box, g)));
+    if (g) saveNoteIn(box, saveFromForm(box, g));
     clearTimeout(saveTimer); saveTimer = setTimeout(saveSavings, 300);
   });
 
@@ -24936,7 +24937,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 13:17"; // 4ab9b647 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 13:27"; // ab8bcf4e (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -62350,7 +62351,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderMo3Usual(m) {
     const box = $("mo3Usual"), months = [];
     for (let i = 1; i <= 6; i++) { const ym = addMonths(viewMonth, -i); if (expenses.items.some((e) => monthOf(e.date) === ym)) months.push(ym); }
-    if (months.length < 2) { setChildren(box, el("p", {}, "2か月以上記録すると、費目ごとに「ふだん」とくらべられます。")); return; }
+    // (fewer than 2 months: its words 「2か月以上記録すると、費目ごとに『ふだん』とくらべられます。」 taken off at the user's
+    // call, 2026-11-27, tools/REMOVED.md; nothing left to show, the card stays away till then)
+    const card = box.closest(".card");
+    if (months.length < 2) { box.replaceChildren(); if (card) card.hidden = true; return; }
+    if (card) card.hidden = false;
     const set = new Set(months), usual = new Map(), now = new Map();
     for (const e of expenses.items) if (mo3Outs(e) && set.has(monthOf(e.date))) { const c = expenseCat(e) || "未分類"; usual.set(c, (usual.get(c) || 0) + num(e.amount)); }
     for (const e of m.outs) if (mo3Outs(e)) { const c = expenseCat(e) || "未分類"; now.set(c, (now.get(c) || 0) + num(e.amount)); }
@@ -62454,7 +62459,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       }
     }
     const box = $("mo3Tags");
-    if (!all.size) { setChildren(box, el("p", {}, mo3Phr("メモに「#旅行」「#推し活」のように書くと、", "タグごとに合計が出ます。"))); return; }
+    // (no tag yet: its words 「メモに『#旅行』『#推し活』のように書くと、タグごとに合計が出ます。」 taken off at the user's
+    // call, 2026-11-27, tools/REMOVED.md; nothing left to show, the card stays away till a tag is written)
+    const card = box.closest(".card");
+    if (!all.size) { box.replaceChildren(); if (card) card.hidden = true; return; }
+    if (card) card.hidden = false;
     const rows = [...mon.entries()].sort((a, b) => b[1].a - a[1].a), top = Math.max(1, ...rows.map(([, x]) => x.a));
     setChildren(box,
       rows.length ? rows.map(([t, x]) => el("button", { type: "button", class: "cat-row mo3-tag", title: `#${t}の明細を出す`, onclick: () => mo3FindTag(t) },
@@ -62478,13 +62487,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderMo3Big(m) {
     const list = m.outs.filter(mo3Outs).sort((a, b) => num(b.amount) - num(a.amount) || a.date.localeCompare(b.date)).slice(0, 5), box = $("mo3Big");
     if (!list.length) { setChildren(box, el("p", {}, `${fmtMonth(viewMonth)}の支出はまだありません。`)); return; }
-    const s = sum(list, (e) => e.amount);
+    // (under them 「この ○ 件で ○ 円、○月の支出の ○% です。」: taken off at the user's call, 2026-11-27, tools/REMOVED.md)
     setChildren(box,
       el("ul", { class: "list" }, list.map((e, i) => el("li", {},
         el("span", { class: "chip", style: "--chip-c: var(--c-money)" }, String(i + 1)),
         el("span", { class: "body" }, editLink("money", e.id, e.memo || expenseCat(e), `${e.memo || expenseCat(e)} ${fmtYen(e.amount)}`), el("span", { class: "sub" }, `${fmtShort(e.date)}・${expenseCat(e)}`)),
-        el("span", { class: "amount" }, fmtYen(e.amount))))),
-      m.out ? el("p", {}, mo3Phr(`この ${list.length} 件で ${fmtYen(s)}、`, `${fmtMonth(viewMonth)}の支出の ${Math.round((s / m.out) * 100)}% です。`)) : null);
+        el("span", { class: "amount" }, fmtYen(e.amount))))));
   }
 
   // ⑧ 予算を守れた月: the 6 months to the one shown, each against the month's budget as it is now (from the 1st)
@@ -62505,7 +62513,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!rows.length) { setChildren(box, el("p", {}, "記録のある月が出ます。")); return; }
     const done = rows.filter((r) => !r.now), kept = done.filter((r) => r.out <= budget).length, top = Math.max(budget, ...rows.map((r) => r.out));
     setChildren(box,
-      el("p", {}, mo3Phr(done.length ? `終わった ${done.length} か月のうち、${kept} か月が予算内でした。` : "", `月の予算 ${fmtYen(budget)} でくらべています。`)),
+      // (「月の予算 ○ 円 でくらべています。」 taken off at the user's call, 2026-11-27, tools/REMOVED.md)
+      done.length ? el("p", {}, mo3Phr(`終わった ${done.length} か月のうち、${kept} か月が予算内でした。`)) : null,
       rows.map((r) => { const left = budget - r.out; return el("div", { class: "cat-row mo3-bud-row" },
         el("span", { class: "cat" }, `${Number(r.ym.slice(5))}月`),
         el("span", { class: "cat-track" }, el("span", { class: "cat-bar" + (left < 0 ? " over" : ""), style: `width:${Math.max(1, (r.out / top) * 100)}%` })),

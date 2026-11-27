@@ -86,8 +86,10 @@ const DATA = {
   ok(lv["01"] === "+80,000|50,000" && lv["02"] === "|400" && lv["03"] === "|600" && lv["04"] === "|" && lv["05"] === "|1,500" && lv["07"] === "|3,000" && lv["08"] === "|4,300" && lv["10"] === "|", "⑦ the days: " + JSON.stringify(lv));
   const pads = await p.locator("#exCal .excal-pad").count(), wds = await p.evaluate(() => [...document.querySelectorAll("#exCal .excal-wd")].map((w) => w.textContent).join(""));
   ok(pads === 0 && wds === "日月火水木金土", "⑦ 2026-11-01 is a Sunday, the week from 日: " + pads + " " + wds);
+  // (under the totals 「＋がついているのは収入、ついていないのは支出です。使わなかった日は ○ 日。」: taken off at the user's
+  // call, 2026-11-27, tools/REMOVED.md)
   const key = await txt(p, "#exCalKey");
-  ok(key === "収入 +80,000 円・支出 64,800 円・収支 +15,200 円 ＋がついているのは収入、ついていないのは支出です。使わなかった日は 3 日。", "⑦ key: " + key);
+  ok(key === "収入 +80,000 円・支出 64,800 円・収支 +15,200 円", "⑦ key: the totals alone: " + key);
   ok(await p.getAttribute('#exCal [data-day="2026-11-10"]', "class").then((c) => c.includes("today")) && (await p.getAttribute('#exCal [data-day="2026-11-11"]', "class")).includes("future"), "⑦ today ringed, tomorrow bare");
   ok((await p.getAttribute('#exCal [data-day="2026-11-08"]', "aria-label")) === "11月8日（日） 支出 4,300 円", "⑦ a day's name for VoiceOver: " + await p.getAttribute('#exCal [data-day="2026-11-08"]', "aria-label"));
   // ⑦ a day pressed: its 明細 under it
@@ -106,19 +108,21 @@ const DATA = {
   ok(f.part === "book" && f.date === "2026-11-04" && f.focus === "exAmount", "⑦ この日に追加: " + JSON.stringify(f));
   // ⑨ 貯金の目標: none yet
   await p.locator('#moneyParts button[data-part="stats"]').click(); await p.waitForTimeout(300);
-  ok((await txt(p, "#saveList")).includes("貯金の目標を決める"), "⑨ none yet: " + await txt(p, "#saveList"));
+  // (its words 「「旅行 10万円」のような目標を決めると、…」: taken off at the user's call, 2026-11-27)
+  ok((await txt(p, "#saveList")) === "貯金の目標を決める", "⑨ none yet: the button alone: " + await txt(p, "#saveList"));
   await p.locator("#saveList .link-btn").click(); await p.waitForTimeout(600);
   ok(await p.isVisible("#saveAdd"), "⑨ the button opens the settings at 貯金の目標");
   await p.locator("#saveAdd").click(); await p.waitForTimeout(300);
   const fid = await p.evaluate(() => document.querySelector("#saveForms [data-save]").dataset.save);
   ok(await p.evaluate(() => document.activeElement.id.startsWith("svName-")), "⑨ a new one, its name to type");
+  ok((await txt(p, `[data-save="${fid}"] .save-when`)) === "金額を入れると、まとめに進み具合が出ます。", "⑨ no amount yet: its note as before", await txt(p, `[data-save="${fid}"] .save-when`));
   await p.fill(`#svName-${fid}`, "旅行"); await p.fill(`#svTarget-${fid}`, "300000"); await p.selectOption(`#svSince-${fid}`, "2026-09"); await p.fill(`#svBase-${fid}`, "10000");
   await p.waitForTimeout(800);
-  let note = await txt(p, `[data-save="${fid}"] .save-when`);
-  ok(note === "いま 130,200 円（43%）。このペースなら 2027年2月ごろ", "⑨ its note: " + note);
+  // (with an amount, its note 「いま ○ 円（○%）。」 and how it stands: taken off at the user's call, 2026-11-27,
+  // tools/REMOVED.md; the まとめ's card says how it stands, below)
+  ok(await p.isHidden(`[data-save="${fid}"] .save-when`) && !(await txt(p, `[data-save="${fid}"]`)).includes("いま "), "⑨ its note: gone", await txt(p, `[data-save="${fid}"]`));
   await p.selectOption(`#svUntil-${fid}`, "2027-03"); await p.waitForTimeout(500);
-  note = await txt(p, `[data-save="${fid}"] .save-when`);
-  ok(note.includes("2027年3月までに、毎月 33,960 円 ずつ"), "⑨ with 期限: " + note);
+  ok(await p.isHidden(`[data-save="${fid}"] .save-when`) && !(await txt(p, `[data-save="${fid}"]`)).includes("ずつ"), "⑨ with 期限: still none", await txt(p, `[data-save="${fid}"]`));
   await p.locator("#sheetDone").click(); await p.waitForTimeout(800);
   const sv = (await ls(p, "settings")).find((s) => s.id === "savings");
   ok(sv && sv.items.length === 1 && sv.items[0].name === "旅行" && sv.items[0].target === 300000 && sv.items[0].since === "2026-09" && sv.items[0].base === 10000 && sv.items[0].until === "2027-03", "⑨ kept: " + JSON.stringify(sv?.items));

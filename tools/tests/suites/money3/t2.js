@@ -15,14 +15,16 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ok(u.includes("前の 6 か月の平均") && /食費 11月 21,200 円・ふだん 4,000 円 \+17,200 円/.test(u), "① 食費 above its usual: " + u);
   // ⑦ the biggest five, 固定費 aside
   const big = await txt(p, "#mo3Big");
-  ok(big.startsWith("1 スーパー") && big.includes("この 5 件で 29,700 円"), "⑦ big ones: " + big);
+  // (under them 「この ○ 件で ○ 円、○月の支出の ○% です。」: taken off at the user's call, 2026-11-27, tools/REMOVED.md)
+  ok(big.startsWith("1 スーパー") && (await p.locator("#mo3Big li").count()) === 5 && !big.includes("件で") && !big.includes("の支出の"), "⑦ big ones, the five alone: " + big);
   // ⑥ 曜日ごとの支出 (いちばん使うのは ○曜日, each day of the week's average): taken out at the user's call (2026-11-26,
   // tools/REMOVED.md); 大きな支出 and タグごとの支出 beside it stay
   const stats = await txt(p, "#moneyStats");
   ok(!(await p.$("#mo3Wd")) && !(await p.$("#mo3WdCard")) && !stats.includes("曜日ごとの支出") && !stats.includes("いちばん使うのは") && stats.includes("大きな支出") && stats.includes("タグごとの支出"), "⑥ 曜日ごとの支出: gone (大きな支出, タグごとの支出 kept)");
   // ⑧ the months
   const bud = await txt(p, "#mo3Bud");
-  ok(bud.includes("終わった 5 か月のうち、4 か月が予算内でした") && bud.includes("× 28,000 円 超えた") && bud.includes("途中・200 円 超え"), "⑧ budget months: " + bud);
+  // (「月の予算 ○ 円 でくらべています。」: taken off at the user's call, 2026-11-27, tools/REMOVED.md)
+  ok(bud.includes("終わった 5 か月のうち、4 か月が予算内でした") && !bud.includes("でくらべています") && bud.includes("× 28,000 円 超えた") && bud.includes("途中・200 円 超え"), "⑧ budget months: " + bud);
   // ⑤ tags: this month's #旅行 and #推し活, every month's #旅行 48,000
   const tg = await txt(p, "#mo3Tags");
   ok(tg.includes("#旅行") && tg.includes("すべての月で 48,000 円") && tg.includes("#推し活"), "⑤ tags: " + tg);
