@@ -79,11 +79,10 @@ const sumDays = (from, to) => [...per].filter(([d]) => d >= from && d <= to).red
   ok((res === "正解！ よくおぼえていましたね" || /^ざんねん。正解は「.+」でした$/.test(res)) && (await p.locator("#ts7Quiz .ts7-choice.right").count()) === 1 && score.all === 1 && (await txt(p, "#ts7Quiz .sub")) === `これまで 1 問のうち ${score.right} 問正解`, "8 picked: right or not, the score", { res, score });
   await p.locator("#ts7Quiz .link-btn", { hasText: "次の問題" }).click(); await wait(p);
   ok((await p.locator("#ts7Quiz .ts7-choice:not([disabled])").count()) === 3 && !(await p.locator("#ts7Quiz .ts7-said").count()), "8 the next");
-  // 7 よく積んでいることば
-  const words = await p.evaluate(() => [...document.querySelectorAll("#ts7Words .chip-btn")].map((x) => x.textContent));
-  ok(words.join(",") === "パン 30,ラーメン 30,ランニング 20", "7 the words, numbers and 朝食 left out", words);
-  await p.locator("#ts7Words .chip-btn", { hasText: "ラーメン" }).click(); await wait(p, 500);
-  ok(await p.inputValue("#tsumiFind") === "ラーメン" && await p.isVisible("#tsumiFound"), "7 pressed: looked for");
+  // 7 よく積んでいることば: taken out at the user's call (2026-11-27, tools/REMOVED.md); ことばで探す above it stays
+  ok(!(await p.$("#ts7Words")) && !(await p.$("#ts7WordsHead")) && !(await p.$("#ts7WordsFoot")) && !(await txt(p, "#tsumiGroup")).includes("よく積んでいることば") && !(await txt(p, "#tsumiGroup")).includes("この90日のブロックに出てくることば"), "7 no よく積んでいることば");
+  await p.fill("#tsumiFind", "ラーメン"); await wait(p, 500);
+  ok(await p.isVisible("#tsumiFound") && (await txt(p, "#tsumiFound")).includes("ラーメン"), "7 ことばで探す: as before", await txt(p, "#tsumiFound"));
   // 9 ひとことのタグ: taken out with ブロックにひとこと (the user's call, 2026-11-18, tools/REMOVED.md)
   ok(!(await p.$("#ts7Tags")) && !(await p.$("#ts7TagList")) && !(await txt(p, "#tsumiGroup")).includes("ひとことのタグ"), "9 no ひとことのタグ");
   // 5 目標のおすすめ: under きょう・今月・ことし's goals, taken out with them at the user's call (2026-11-21, tools/REMOVED.md)

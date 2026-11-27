@@ -9440,10 +9440,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <p class="group-foot" id="tsumiFindSaid" aria-live="polite" hidden></p>
         <p class="rec-page" id="tsumiFindAllRow" hidden><button type="button" class="link-btn" id="tsumiFindAll"></button></p>
         <ul class="list card tsumi-found" id="tsumiFound" hidden></ul>
-        <!-- その7 7 よく積んでいることば (the user's call, 2026-11-14): pressed, looked for above -->
-        <h3 class="group-head" id="ts7WordsHead" hidden>よく積んでいることば</h3>
-        <div class="card ts7-chips" id="ts7Words" hidden></div>
-        <p class="group-foot" id="ts7WordsFoot" hidden>この90日のブロックに出てくることばです（数字と、朝食・昼食などの区分はのぞきます）。押すと、そのことばで探します。</p>
+        <!-- (その7 7 よく積んでいることば, the words of the last 90 days' blocks pressed to be looked for above: taken out at
+             the user's call, 2026-11-27, tools/REMOVED.md) -->
         <h3 class="group-head" id="tsumiKindsHead">つみあげた記録</h3>
         <ul class="list card" id="tsumiKinds"></ul>
         <!-- ① each year's own page (the user's call, 2026-11-10) -->
@@ -24937,7 +24935,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 13:27"; // ab8bcf4e (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 18:32"; // 3ef669d6 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -31321,7 +31319,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   function renderTsumiFoot6() { renderTs6Last(); }
 
   // ---------- つみかさね その7 (the user's calls, 2026-11-14): 1 新記録のお祝い, 2 今週の皆勤, 3 連続のピンチ, 4 この時間に
-  // よく積む記録, 5 目標のおすすめ (taken out with the goals, 2026-11-21), 6 今週のふりかえり, 7 よく積んでいることば, 8 思い出クイズ, 10 きょうのつみかさねを
+  // よく積む記録, 5 目標のおすすめ (taken out with the goals, 2026-11-21), 6 今週のふりかえり, 7 よく積んでいることば (taken out,
+  // 2026-11-27), 8 思い出クイズ, 10 きょうのつみかさねを
   // 日記に書き足す (9 ひとことのタグ: taken out with ブロックにひとこと, the user's call, 2026-11-18). (var, not const: the gear
   // and the card's foot, above, may be drawn before this runs) ----------
   var ts7PerDay = () => { const m = new Map(); for (const b of tsumiList()) m.set(b.day, (m.get(b.day) || 0) + 1); return m; };
@@ -31457,29 +31456,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       r.kinds.map((x) => el("li", { class: "ts6-row" }, el("span", { class: "dot blk", style: `--k: ${tsumiInk(x.k)}` }), el("span", { class: "ts6-name" }, ts7Label(x.k), el("small", {}, diff(x.n, x.was))), el("span", { class: "ts6-val" }, `${fmtN(x.n)} こ`))));
   }
 
-  // 7 よく積んでいることば: the words of the last 90 days' blocks (what was eaten, the 運動's and 勉強's names, ToDos…), each
-  // counted once a block, numbers and units and 朝食・昼食… left out; pressed, looked for (ことばで探す)
-  var TS7_STOP = new Set(["kcal", "km", "kg", "cm", "分", "時間", "件", "回", "円", "こ", "科目なし", "消した項目", "食事", "支出", "収入"]);
-  function ts7Words() {
-    const from = addDays(todayKey, -90), count = new Map(), stop = new Set([...TS7_STOP, ...SLOTS]);
-    for (const b of tsumiList()) {
-      if (b.day < from || !b.text) continue;
-      const seen = new Set();
-      for (const raw of b.text.split(/[・、。,，\s：:「」『』（）()［］[\]/／|｜！!？?〜~…]+/)) {
-        const w = raw.trim();
-        if ([...w].length < 2 || stop.has(w) || /^[+\-−]?[\d.,]+\s*(kcal|km|kg|cm|g|ml|%|％|分|時間|件|回|円|こ|日)?$/.test(w) || seen.has(w)) continue;
-        seen.add(w); count.set(w, (count.get(w) || 0) + 1);
-      }
-    }
-    return [...count].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ja")).slice(0, 15);
-  }
-  function renderTs7Words() {
-    const xs = ts7Words();
-    $("ts7WordsHead").hidden = $("ts7Words").hidden = $("ts7WordsFoot").hidden = !xs.length;
-    setChildren($("ts7Words"), xs.map(([w, n]) => el("button", { type: "button", class: "chip-btn", "aria-label": `${w}、${n} 回。ことばで探す`, onclick: () => {
-      $("tsumiFind").value = w; renderTsumiFind(); tsSheetTo("tsumiFindHead", true);
-    } }, w, el("small", {}, ` ${fmtN(n)}`))));
-  }
+  // (7 よく積んでいることば, the words of the last 90 days' blocks with how many, numbers and 朝食・昼食… left out, pressed
+  // looked for with ことばで探す: taken out at the user's call, 2026-11-27, tools/REMOVED.md. ことばで探す stays)
 
   // 8 思い出クイズ: a block of a week ago or before, with its words: what was it? Three to pick from (the others of the
   // same kind where there are enough); 正解 or not, the block on the stairs a press away, and the next. The score, this
@@ -31541,7 +31519,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   $("ts7Jn").addEventListener("click", () => ts7ToJournal());
 
-  function renderTsumiGear7() { renderTs7All(); renderTs7Rev(); renderTs7Quiz(); renderTs7Words(); }
+  function renderTsumiGear7() { renderTs7All(); renderTs7Rev(); renderTs7Quiz(); }
   function renderTsumiFoot7() { renderTs7Record(); renderTs7WeekLine(); renderTs7Pinch(); renderTs7Hour(); }
   // once a day, as つみかさね is drawn (tsDailyChecks): 1 a 新記録, 2 a week kept all through
   function tsDailyChecks7(said, mark) {
