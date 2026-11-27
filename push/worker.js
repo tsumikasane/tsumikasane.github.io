@@ -9,6 +9,15 @@
 //                         subscription and/or all its alarms, in place of the ones before; → { ok, sub, alarms, gone? }
 //   POST   /d/{id}/test   { in?: seconds }: a notification to try it, now or that many seconds on (up to 60)
 //   DELETE /d/{id}        the device forgotten (notifications turned off there)
+//   POST   /s/{key}       a day's 歩数 from the iPhone's ショートカット (the user's call, 2026-11-27: ヘルスケアの歩数を自動で):
+//                         { steps, date? } as JSON, as a form, or ?steps=…&date=…; steps a number or words with one
+//                         ("8,421 歩"), or a list of them added up; date YYYY-MM-DD, today by Japan's clock if none
+//                         → { ok, date, steps }
+//   GET    /s/{key}       { days: { "YYYY-MM-DD": { steps, at } } }, the last 40 days', for the app to put in
+//   DELETE /s/{key}       all of them forgotten (連携をやめる, 退会)
+//
+// {key} is a random one the app made for its person (22 to 64 of A–Z a–z 0–9 _ -), kept in their synced settings: who
+// knows it may send or read that person's 歩数, so it is kept like a password, as {id} is
 //
 // {id} is a random one the device made for itself (22 to 64 of A–Z a–z 0–9 _ -): who knows it may change what is sent to
 // that device, so it is kept like a password, only in the device and in its owner's own synced records.
@@ -230,6 +239,59 @@ export class Keys extends DurableObject {
   }
 }
 
+// ---------- 歩数 (from the iPhone's ショートカット: ヘルスケアの歩数を自動で, the user's call, 2026-11-27) ----------
+const MAX_STEPS = 200000, STEP_DAYS = 40;
+// what a ショートカット sends as the steps: a number, words with one ("8421", "8,421 歩"), or a list of them (a day's
+// samples, added up); none, or one past 200,000, isn't taken
+function stepsOf(v) {
+  if (Array.isArray(v)) {
+    let s = 0, any = false;
+    for (const x of v.slice(0, 1000)) { const n = stepsOf(x); if (n !== null) { s += n; any = true; } }
+    return any ? s : null;
+  }
+  if (typeof v === "number") return Number.isFinite(v) && v >= 0 ? Math.round(v) : null;
+  if (typeof v === "string") { const m = v.replace(/[,，]/g, "").match(/\d+(?:\.\d+)?/); return m ? Math.round(Number(m[0])) : null; }
+  return null;
+}
+const jstDay = (t = Date.now()) => new Date(t + 9 * 3600e3).toISOString().slice(0, 10);
+// its day: as sent (2026-11-27, 2026/11/27 or 2026.11.27), else today by Japan's clock; a day of the last month, or tomorrow
+// (a phone a little ahead)
+function stepsDay(v) {
+  const t = text(typeof v === "number" ? String(v) : v, 40).trim();
+  if (!t) return jstDay();
+  const m = t.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+  const d = m ? `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}` : "";
+  if (!d || Number.isNaN(Date.parse(d + "T00:00:00Z")) || d > jstDay(Date.now() + DAY) || d < jstDay(Date.now() - 31 * DAY)) throw new Error("bad date");
+  return d;
+}
+// the body as JSON, as a form, or the number alone; with what the address says when the body hasn't it
+async function stepsBody(req, url) {
+  let b = {};
+  const type = req.headers.get("Content-Type") || "";
+  if (/form/i.test(type)) { const f = await req.formData(); b = { steps: f.get("steps"), date: f.get("date") }; }
+  else {
+    const body = await req.text();
+    if (body.length > 20000) throw new Error("too large");
+    if (body.trim()) { try { b = JSON.parse(body); } catch { b = { steps: body }; } }
+    if (typeof b !== "object" || b === null || Array.isArray(b)) b = { steps: b };
+  }
+  const steps = stepsOf(b.steps ?? url.searchParams.get("steps"));
+  if (steps === null || steps > MAX_STEPS) throw new Error("bad steps");
+  return { date: stepsDay(b.date ?? url.searchParams.get("date")), steps };
+}
+// a person's 歩数 by the day, the last 40 days'
+export class Steps extends DurableObject {
+  async put(date, steps) {
+    const days = (await this.ctx.storage.get("days")) || {}, kept = {};
+    days[date] = { steps, at: Date.now() };
+    for (const d of Object.keys(days).sort().slice(-STEP_DAYS)) kept[d] = days[d];
+    await this.ctx.storage.put("days", kept);
+    return { ok: true, date, steps };
+  }
+  async list() { return { days: (await this.ctx.storage.get("days")) || {} }; }
+  async forget() { await this.ctx.storage.deleteAll(); return { ok: true }; }
+}
+
 // ---------- requests ----------
 function cors(req) {
   const origin = req.headers.get("Origin") || "";
@@ -256,6 +318,14 @@ export default {
         if (m[2] && req.method === "POST") return json(await device.test(await readJson(req)), head);
         if (!m[2] && req.method === "PUT") return json(await device.update(await readJson(req)), head);
         if (!m[2] && req.method === "DELETE") return json(await device.forget(), head);
+        return json({ error: "method" }, head, 405);
+      }
+      const s = url.pathname.match(/^\/s\/([\w-]{22,64})$/);
+      if (s) {
+        const box = env.STEPS.get(env.STEPS.idFromName(s[1]));
+        if (req.method === "POST") { const { date, steps } = await stepsBody(req, url); return json(await box.put(date, steps), head); }
+        if (req.method === "GET") return json(await box.list(), head);
+        if (req.method === "DELETE") return json(await box.forget(), head);
         return json({ error: "method" }, head, 405);
       }
       if (url.pathname === "/") return new Response("つみかさねの通知サーバーです。\n", { headers: { "Content-Type": "text/plain; charset=utf-8", ...head } });

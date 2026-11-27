@@ -1387,7 +1387,13 @@ button.card.stat { width: 100%; border: 0; font: inherit; color: inherit; text-a
 /* weight chart */
 .chart-head { padding: 12px 12px 0; }
 #wtRanges button { padding: 0 6px; white-space: nowrap; }
-#journalState { display: inline-block; } /* (日記's 保存済み pops as its first save lands, 2026-11-27) */ /* (five periods since 1週間 came, 2026-11-27: each on one line) */
+#journalState { display: inline-block; } /* (日記's 保存済み pops as its first save lands, 2026-11-27) */
+/* ヘルスケアの歩数 (2026-11-27): the URL to paste with コピー beside it, and the steps of the ショートカット */
+.step-link .flabel { display: block; margin: 0; }
+.step-link-url { display: flex; gap: 8px; align-items: center; }
+.step-link-url input { flex: 1 1 auto; min-width: 0; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--fill); color: var(--fg); font: inherit; font-size: var(--t-foot); }
+.step-link-how { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 6px; font-size: var(--t-sub); line-height: 1.45; }
+.step-link-last { margin: 0; font-weight: 600; } /* (five periods since 1週間 came, 2026-11-27: each on one line) */
 .chart .axis-wd { font-size: 12px; } /* (a week's: each day's weekday under its date) */
 /* the names over the plots, once 体脂肪率 has one under 体重's; level with where the plots start */
 .chart-name { margin: 0; padding: 10px 20px 0; font-size: var(--t-foot); line-height: 1.35; font-weight: 600; color: var(--muted); }
@@ -9763,6 +9769,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="ffield"><select id="dt4StepGoal"></select></div>
         </form>
         <p class="group-foot"><span class="phrase">運動のページで、</span><span class="phrase">その日の歩数を入れられます。</span></p>
+        <!-- ヘルスケアの歩数 (the user's call, 2026-11-27): the iPhone's ショートカット sends the day's 歩数 to the notification
+             server, and the app takes them in (stepLink, renderStepLink) -->
+        <h3 class="group-head">ヘルスケアから自動で入れる（iPhone）</h3>
+        <div class="card pad step-link" id="stepLink"></div>
+        <p class="group-foot" id="stepLinkFoot"></p>
         <!-- (ダイエット その5 ⑤) the days a week of 運動 -->
         <h3 class="group-head">週の目標</h3>
         <form class="add" id="dt5WoDaysForm" autocomplete="off" onsubmit="return false">
@@ -22442,6 +22453,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       add("routine:" + x.id, "routine", x.date, routineFirst(x), () => `${ids.length} / ${open.of} 項目：` + ids.sort((a, b) => (rtRank.get(a) ?? 1e9) - (rtRank.get(b) ?? 1e9))
         .map((id) => routines.get(id)?.name || names["routine:" + id] || "消した項目").join("・"), open);
     }
+    // a day's 歩数 (the user's call, 2026-11-27: つみかさねにも), a block of 運動's from when it first came in (its day's noon
+    // for one from before that was kept), opening 運動 on that day
+    for (const x of bodyDays.items) { const st = num(x && x.steps), day = x && (x.date || x.id); if (st > 0 && isDay(day || "")) add("steps:" + day, "workout", day, realTime(x.stepsAt), () => `歩数 ${fmtN(st)} 歩`, { kind: "workout", day, page: true, n: 1 }); }
     for (const w of sortedWeights()) add("weight:" + w.id, "weight", w.id, realTime(w.createdAt), () => `${fmtKg(w.kg)} kg` + (num(w.fat) > 0 ? `・体脂肪率 ${fmtFat(w.fat)}%` : "") + (typeof w.intake === "number" ? `・摂取 ${fmtN(w.intake)} kcal` : ""), { kind: "weight", id: w.id });
     // 収入 with +, 支出 with −, as きょう's 収支 has them (the user's call: the two read alike)
     // (a day of more, its 収支 first)
@@ -24930,7 +24944,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 19:27"; // 47de0596 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 19:51"; // 96c886ab (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -25626,6 +25640,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!pw) { showLeaveError("パスワードを入れてください。"); return; }
     const wipe = $("syncLeaveWipe").checked;
     const ids = [...new Set([...settings.items.filter((x) => typeof x.id === "string" && x.id.startsWith("push:")).map((x) => x.id.slice(5)), pushLocal().id].filter(Boolean))];
+    const stepKey = stepLink()?.key; // (ヘルスケアの歩数 at the server, forgotten with them)
     const was = syncState.email;
     $("syncLeaveGo").disabled = true;
     syncHold = true;
@@ -25641,7 +25656,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }
     $("syncLeave").hidden = true; $("syncLeaveGo").disabled = false; $("syncLeavePassword").value = "";
     const soon = (p) => Promise.race([p, new Promise((ok) => setTimeout(ok, 4000))]);
-    await Promise.all(ids.map((id) => soon(pushCall("DELETE", "/d/" + id).catch(() => {}))));
+    await Promise.all([...ids.map((id) => soon(pushCall("DELETE", "/d/" + id).catch(() => {}))), stepKey ? soon(pushCall("DELETE", "/s/" + stepKey).catch(() => {})) : null]);
     syncHold = false;
     if (wipe) { await syncWipe(null); return; } // (its notifications forgotten at the server already)
     syncFresh(); delete syncState.owner; delete syncState.ownerDirty; saveSyncState();
@@ -58109,9 +58124,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const f = el("input", { type: "number", id: "dt4StepIn", min: 0, max: 100000, step: 1, inputmode: "numeric", value: num(x?.steps) > 0 ? String(num(x.steps)) : "", "aria-label": `${relLabel(d) || fmtShort(d)}の歩数` });
       f.addEventListener("change", () => {
         const y = bd2Day(d), raw = f.value, v = Math.round(Number(raw));
-        if (raw === "") { if (num(y?.steps)) bd2PutDay(d, { steps: undefined }); return; }
+        // (typed by hand: no stepsBy, so ヘルスケア's don't write over it; stepsAt, when it first came in, the block's time)
+        if (raw === "") { if (num(y?.steps)) bd2PutDay(d, { steps: undefined, stepsBy: undefined, stepsAt: undefined }); return; }
         if (!(v >= 0 && v <= 100000)) { box.querySelector(".dt4-step-note").textContent = "歩数は 0〜100,000 の範囲で入力してください"; return; }
-        if (v !== num(y?.steps)) bd2PutDay(d, { steps: v || undefined });
+        if (v !== num(y?.steps) || y?.stepsBy) bd2PutDay(d, v ? { steps: v, stepsBy: undefined, stepsAt: y?.stepsAt || Date.now() } : { steps: undefined, stepsBy: undefined, stepsAt: undefined });
       });
       setChildren(box, el("div", { class: "row-between" }, el("span", { class: "bd2-sec-head" }, "歩数"), el("span", { class: "dt4-step-v" })),
         el("span", { class: "bar-track dt4-step-bar", role: "img" }, el("i")),
@@ -58119,6 +58135,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         el("p", { class: "sub dt4-step-note" }),
         el("div", { class: "bd3-week dt4-step-week" }));
     }
+    stepPull(); // (ヘルスケアの歩数, a minute at least between)
     const v = num(x?.steps), pct = Math.min(100, Math.round((v / goal) * 100)), bar = box.querySelector(".dt4-step-bar");
     setChildren(box.querySelector(".dt4-step-v"), el("strong", {}, fmtN(v)), ` / ${fmtN(goal)} 歩`);
     bar.setAttribute("aria-label", `目標の ${pct}%`);
@@ -58131,11 +58148,102 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("small", { "aria-hidden": "true" }, WD[parseYmd(dd).getDay()]), el("b", { "aria-hidden": "true" }, s ? fmtN(s) : "—"), el("span", { class: "sr-only" }, `${fmtMDW(dd)} ${s ? fmtN(s) + "歩" : "記録なし"}`)); }));
   }
   function renderDt4WoSettings() {
+    renderStepLink(); // (ヘルスケアの歩数)
     const sel = $("dt4StepGoal");
     if (!sel.options.length) setChildren(sel, DT4_STEP_GOALS.map((v) => el("option", { value: v }, `${fmtN(v)} 歩`)));
     if (document.activeElement !== sel) sel.value = String(dt4StepGoal());
   }
   $("dt4StepGoal").addEventListener("change", (ev) => act(() => settings.set("stepGoal", { steps: Number(ev.target.value), updatedAt: Date.now() })));
+
+  // ---------- 歩数の連携 (the user's call, 2026-11-27: ヘルスケアの歩数を、iPhone のショートカットから自動で) ----------
+  // The iPhone's ショートカット (an automation run on opening an app used often: ヘルスケア can't be read while the phone is
+  // locked) sends the day's 歩数 to the notification server (push/worker.js, POST /s/{key}); the app takes them in (GET
+  // /s/{key}) as it opens, comes back, or shows 運動 (a minute at least between), into each day's 歩数 (bodyDays steps,
+  // stepsBy "health"), a day typed by hand left as it is. The key, a random one, is kept in the synced settings
+  // (stepLink), so each device signed in takes them in; 連携をやめる (and 退会) forgets them at the server. Function
+  // declarations and var, as the page may draw before this runs
+  var STEP_LAST = LS_PREFIX + "stepLinkLast", stepPulled = 0, stepBusy = false;
+  function stepLink() { const v = settings.get("stepLink"); return v && v.on && /^[\w-]{22,64}$/.test(v.key || "") ? v : null; }
+  function stepUrl(l = stepLink()) { return l && PUSH_SERVER ? `${PUSH_SERVER}/s/${l.key}` : ""; }
+  function stepNewKey() { const b = crypto.getRandomValues(new Uint8Array(24)); return btoa(String.fromCharCode(...b)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function stepLast() { try { const v = JSON.parse(localStorage.getItem(STEP_LAST) || "null"); return v && isDay(v.d || "") ? v : null; } catch { return null; } }
+  // the days come: each into its day's 歩数 (the last month's, to today), unless typed by hand there; how many changed
+  function stepTake(days) {
+    const from = addDays(todayKey, -31);
+    let last = stepLast(), n = 0;
+    for (const [d, v] of Object.entries(days && typeof days === "object" ? days : {})) {
+      const st = Math.round(Number(v && v.steps)), at = Number(v && v.at) || 0;
+      if (!isDay(d) || d < from || d > todayKey || !(st >= 0 && st <= 200000)) continue;
+      if (!last || at > last.at) last = { d, s: st, at };
+      const x = bd2Day(d), had = num(x && x.steps);
+      if (had > 0 && x.stepsBy !== "health") continue; // (typed by hand: kept)
+      if (had === st) continue;
+      bd2PutDay(d, st > 0 ? { steps: st, stepsBy: "health", stepsAt: (x && x.stepsAt) || Date.now() } : { steps: undefined, stepsBy: undefined, stepsAt: undefined });
+      n++;
+    }
+    if (last) { try { localStorage.setItem(STEP_LAST, JSON.stringify(last)); } catch {} }
+    return n;
+  }
+  // taken in from the server; -1 when it couldn't be reached
+  async function stepPull(force = false) {
+    const l = stepLink();
+    if (!l || !PUSH_SERVER || stepBusy || (!force && Date.now() - stepPulled < 60e3)) return null;
+    stepBusy = true; stepPulled = Date.now();
+    try { const r = await pushCall("GET", "/s/" + l.key), n = stepTake(r && r.days); draw(renderStepLink); return n; }
+    catch { return -1; }
+    finally { stepBusy = false; }
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") stepPull(); });
+  setTimeout(() => stepPull(), 2500); // (as the app opens)
+  function stepOn() {
+    if (!stepLink()) act(() => settings.set("stepLink", { on: true, key: stepNewKey(), since: Date.now(), updatedAt: Date.now() }));
+    renderStepLink();
+  }
+  function stepOff() {
+    const l = stepLink();
+    if (!l) return;
+    if (PUSH_SERVER) pushCall("DELETE", "/s/" + l.key).catch(() => {});
+    act(() => settings.remove("stepLink"));
+    try { localStorage.removeItem(STEP_LAST); } catch {}
+    flash("ヘルスケアの歩数の連携をやめました。入っている歩数はそのままです");
+    renderStepLink();
+  }
+  var STEP_HOW = [
+    "「ショートカット」アプリの「オートメーション」で「＋」を押し、「App」を選びます。よく使うアプリ（LINE など）を選び、「開いている」にチェック、「すぐに実行」にして「次へ」",
+    "「新規空白オートメーション」で、アクション「ヘルスケアサンプルを検索」を足し、種類を「歩数」、開始日を「今日」にします（「グループ化」があれば「日」に）",
+    "アクション「URLの内容を取得」を足し、URL に上の URL を貼ります。「方法」を「POST」、「本文を要求」を「JSON」にして、フィールドを足します：キーは「steps」、種類は「数字」、値は「ヘルスケアサンプル」",
+    "はじめて動いたとき、ヘルスケアの読み取りを聞かれたら「許可」。それからは、そのアプリを開くたびに、きょうの歩数が送られます（iPhone がロック中だとヘルスケアを読めないので、アプリを開いたときに動かします）",
+  ];
+  function renderStepLink() {
+    const box = $("stepLink"), foot = $("stepLinkFoot");
+    if (!box) return;
+    const l = stepLink();
+    if (!l || !PUSH_SERVER) {
+      setChildren(box, el("p", { class: "sub" }, "iPhone の「ショートカット」アプリから、ヘルスケアの歩数を、その日の歩数に自動で入れます。"),
+        PUSH_SERVER ? el("div", {}, el("button", { type: "button", class: "btn sm", id: "stepLinkOn", onclick: stepOn }, "連携をはじめる")) : null);
+      foot.textContent = "";
+      return;
+    }
+    const url = stepUrl(l), last = stepLast(), when = (t) => { const x = new Date(t); return `${x.getHours()}:${pad(x.getMinutes())}`; };
+    if (box.dataset.key === l.key && box.contains(document.activeElement) && document.activeElement.id === "stepLinkUrl") return; // (being selected)
+    box.dataset.key = l.key;
+    setChildren(box,
+      el("p", { class: "step-link-last", id: "stepLinkLast" }, last ? `最後に届いたのは ${relLabel(last.d) || fmtShort(last.d)}の ${fmtN(last.s)} 歩（${when(last.at)}）` : "まだ届いていません。下のとおりにショートカットを作ってください。"),
+      el("label", { class: "flabel", for: "stepLinkUrl" }, "ショートカットに貼る URL"),
+      el("div", { class: "step-link-url" }, el("input", { type: "text", id: "stepLinkUrl", readonly: true, value: url, onfocus: (ev) => ev.target.select() }),
+        el("button", { type: "button", class: "btn sm", id: "stepLinkCopy", onclick: async () => {
+          try { await navigator.clipboard.writeText(url); flash("URL をコピーしました。ショートカットに貼ってください"); }
+          catch { $("stepLinkUrl").focus(); $("stepLinkUrl").select(); flash("URL を選びました。コピーしてください"); }
+        } }, "コピー")),
+      el("ol", { class: "step-link-how" }, STEP_HOW.map((w) => el("li", {}, w))),
+      el("div", { class: "label-tools" },
+        el("button", { type: "button", class: "link-btn", id: "stepLinkPull", onclick: async () => {
+          const n = await stepPull(true);
+          flash(n === -1 ? "受け取れませんでした。インターネットにつないで、もう一度押してください" : n ? `${n} 日分の歩数を入れました` : "新しい歩数はありませんでした");
+        } }, "いま受け取る"),
+        el("button", { type: "button", class: "link-btn danger", id: "stepLinkOff", onclick: () => stepOff() }, "連携をやめる")));
+    foot.textContent = "手で入れた日の歩数は上書きしません（自動にしたい日は、その日の歩数を空にしてください）。歩数（日付と数）は、つみかさねの通知サーバーを通ります。この URL は、パスワードのように人に見せないでください。";
+  }
 
   // ⑨ はじめてから: from the day the diet began (settings dietStart; the first weight's day till one is set), how many days,
   // what has changed since (体重, 体脂肪率, ウエスト: the first record from that day against the latest), the days of 運動
