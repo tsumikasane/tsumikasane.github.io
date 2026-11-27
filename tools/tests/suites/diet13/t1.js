@@ -47,27 +47,37 @@ const N = new Intl.NumberFormat("ja-JP");
   // ⑦ 曜日のくせ: runs on 火・木; 歩数 least on 日
   r = await txt(p, "#dt13Wd");
   ok(/日 0\/8 3,000 歩 月 0\/8 8,000 歩 火 8\/8 8,000 歩 水 0\/8 8,000 歩 木 8\/8 8,000 歩 金 5\/8 8,000 歩 土 0\/8 6,000 歩/.test(r) && /運動しやすいのは火・木曜・少ないのは日・月・水・土曜・歩数がいちばん少ないのは日曜（平均 3,000 歩）/.test(r), "⑦ the weekdays", r);
-  // ⑥ すきま運動: スクワット twice, one taken back; プランク (秒) and 階段 (その他, 分)
+  // ⑥ すきま運動: スクワット twice, one taken back
   await p.click('#dt13Quick button[aria-label="スクワット 20回を記録する"]'); await p.waitForTimeout(300);
   await p.click('#dt13Quick button[aria-label="スクワット 20回を記録する"]'); await p.waitForTimeout(300);
   ok(/きょうのすきま運動：スクワット 40回/.test(await txt(p, "#dt13Quick")), "⑥ counted", await txt(p, "#dt13Quick"));
   await p.click(".toast-undo >> visible=true"); await p.waitForTimeout(400);
   ok((await ls(p, "workouts")).filter((w) => w.date === DAY && w.exercise === "スクワット" && w.reps === 20 && w.sets === 1).length === 1, "⑥ one taken back");
-  await p.click('#dt13Quick button[aria-label="プランク 30秒を記録する"]'); await p.waitForTimeout(300);
-  await p.click('#dt13Quick button[aria-label="階段 3分を記録する"]'); await p.waitForTimeout(300);
-  const ws = (await ls(p, "workouts")).filter((w) => w.date === DAY);
-  ok(ws.some((w) => w.exercise === "プランク" && w.per === "sec" && w.reps === 30) && ws.some((w) => w.type === "その他" && w.minutes === 3 && w.note === "階段"), "⑥ 秒 and 分 kept so", ws);
-  ok(/きょうのすきま運動：スクワット 20回・プランク 30秒・階段 3分/.test(await txt(p, "#dt13Quick")), "⑥ said", await txt(p, "#dt13Quick"));
-  // ⑥ the 8 more (the user's call, 2026-11-27) after ランジ, before 階段 and もも上げ: 合掌プレス in 秒, the rest in 回;
-  // kept as the others are (筋トレ, 1 セット), and said in the row's order
+  // ⑥ the moves: プランク 30秒, 膝つき腕立て 15回, 階段 3分 and もも上げ 1分 taken off at the user's call (2026-11-27,
+  // tools/REMOVED.md); the 8 more of that day's call after ランジ (膝つき腕立て of them gone): 合掌プレス in 秒, the rest
+  // in 回; kept as the others are (筋トレ, 1 セット), and said in the row's order
   const qs = await p.$$eval("#dt13Quick .dt13-quick-row button", (l) => l.map((x) => x.getAttribute("aria-label")));
-  ok(JSON.stringify(qs) === JSON.stringify(["スクワット 20回", "腕立て伏せ 10回", "プランク 30秒", "かかと上げ 30回", "クランチ 20回", "ランジ 20回", "膝つき腕立て 15回", "合掌プレス 30秒", "バックエクステンション 15回",
-    "ナロー腕立て 10回", "レッグレイズ 15回", "カーフレイズ 30回", "ヒップリフト 20回", "フロントレイズ 15回", "階段 3分", "もも上げ 1分"].map((x) => x + "を記録する")), "⑥ the moves, the 8 more among them", qs);
+  ok(JSON.stringify(qs) === JSON.stringify(["スクワット 20回", "腕立て伏せ 10回", "かかと上げ 30回", "クランチ 20回", "ランジ 20回", "合掌プレス 30秒", "バックエクステンション 15回",
+    "ナロー腕立て 10回", "レッグレイズ 15回", "カーフレイズ 30回", "ヒップリフト 20回", "フロントレイズ 15回"].map((x) => x + "を記録する")), "⑥ the moves, the 4 taken off not among them", qs);
+  ok(!/プランク|膝つき腕立て|階段|もも上げ/.test(await txt(p, "#dt13Quick")), "⑥ the 4 taken off: nowhere in the card", await txt(p, "#dt13Quick"));
   await p.click('#dt13Quick button[aria-label="合掌プレス 30秒を記録する"]'); await p.waitForTimeout(300);
   await p.click('#dt13Quick button[aria-label="バックエクステンション 15回を記録する"]'); await p.waitForTimeout(300);
   const ws2 = (await ls(p, "workouts")).filter((w) => w.date === DAY);
   ok(ws2.some((w) => w.type === "筋トレ" && w.exercise === "合掌プレス" && w.per === "sec" && w.reps === 30 && w.sets === 1) && ws2.some((w) => w.type === "筋トレ" && w.exercise === "バックエクステンション" && !w.per && w.reps === 15 && w.sets === 1), "⑥ the new ones kept as the others", ws2);
-  ok(/きょうのすきま運動：スクワット 20回・プランク 30秒・合掌プレス 30秒・バックエクステンション 15回・階段 3分/.test(await txt(p, "#dt13Quick")), "⑥ the new ones said, in the row's order", await txt(p, "#dt13Quick"));
+  ok(/きょうのすきま運動：スクワット 20回・合掌プレス 30秒・バックエクステンション 15回/.test(await txt(p, "#dt13Quick")), "⑥ the new ones said, in the row's order", await txt(p, "#dt13Quick"));
+  // ⑥ records the 4 put in before they were taken off (プランク 30秒 as 筋トレ in 秒, 階段 3分 as その他): kept, and in the
+  // day's list as any 運動; the すきま運動 line as it was (the moves of the row only)
+  await p.evaluate(({ P, DAY }) => {
+    const k = P + "workouts", xs = JSON.parse(localStorage.getItem(k) || "[]"), t = Date.now();
+    xs.push({ id: "old-plank", date: DAY, type: "筋トレ", exercise: "プランク", reps: 30, sets: 1, per: "sec", createdAt: t, updatedAt: t },
+      { id: "old-stairs", date: DAY, type: "その他", minutes: 3, note: "階段", createdAt: t + 1, updatedAt: t + 1 });
+    localStorage.setItem(k, JSON.stringify(xs));
+  }, { P, DAY });
+  await part(p, "workout");
+  const ws3 = await ls(p, "workouts");
+  r = await txt(p, "#workoutList");
+  ok(ws3.some((w) => w.id === "old-plank") && ws3.some((w) => w.id === "old-stairs") && /プランク/.test(r) && /階段/.test(r), "⑥ the records of the 4 kept, in the day's list", r);
+  ok(/きょうのすきま運動：スクワット 20回・合掌プレス 30秒・バックエクステンション 15回 *$/.test(await txt(p, "#dt13Quick")), "⑥ the line: the row's moves only", await txt(p, "#dt13Quick"));
 
   // ⑧ もし1日 ○ kcal なら taken out at the user's call (2026-11-25, tools/REMOVED.md): no card; the 目安 as it was
   await part(p, "weight");

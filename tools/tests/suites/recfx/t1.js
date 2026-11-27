@@ -77,7 +77,7 @@ const wide = (p) => p.evaluate(() => document.documentElement.scrollWidth <= inn
   ok(count(f, "rfx-box rfx-done") === 1 && count(f, "rfx-fly") === 1 && (await ls(p, "workouts")).length === 1, "すきま運動: filled, a block to つみかさね, the move kept", f);
   await p.waitForTimeout(2400);
   // (a second the same day: a block more for つみかさね too)
-  await tap(p, '#dt13Quick button[aria-label="プランク 30秒を記録する"]'); await p.waitForTimeout(200);
+  await tap(p, '#dt13Quick button[aria-label="合掌プレス 30秒を記録する"]'); await p.waitForTimeout(200);
   ok((await fx(p)).includes("rfx-box rfx-done"), "another chip: filled again");
   await p.waitForTimeout(2400);
   ok((await fx(p)).length === 0 && !p.errs.length, "gone, no errors", p.errs);
