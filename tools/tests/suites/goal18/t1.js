@@ -111,25 +111,29 @@ const guard = async (p) => (await W(p, "alarms", await p.evaluate(() => Date.now
   al = await guard(p);
   ok(al.length === 0, "④ (taken out) none, moved on today or not", al);
 
-  // ⑨ 目標の棚卸し: one by one
-  const live = await p.locator("#goalTanaStart").textContent();
-  await p.click("#goalTanaStart"); await p.waitForTimeout(400);
-  const names = [];
-  const cur = async () => { const n = await txt(p, "#goalTana .one-name"); names.push(n); return n; };
-  ok(live === "目標の棚卸し（進行中 4）" && (await txt(p, "#goalTana .one-head strong")) === "目標の棚卸し（1 / 4）" && (await cur()) === "TOEIC 800点" && /^\d+%・のこり \d+マス/.test(await txt(p, "#goalTana .g18-tana-facts")), "⑨ the first, and how it stands", await txt(p, "#goalTana"));
-  await p.click("#goalTanaKeep"); await p.waitForTimeout(300);
-  const n2 = await cur();
-  await p.click("#goalTanaExt"); await p.waitForTimeout(200); await p.click('#goalTana [data-ext="30"]'); await p.waitForTimeout(400);
-  const g8 = await goal(p, "g8");
-  ok(n2 === "朝ランを習慣に" && g8.deadline === "2026-12-15" && g8.extends?.length === 1 && (await status(p)).includes("期限を 12/15（火） にしました"), "⑨ past its 期限: a month on, from today", [n2, g8.deadline, await status(p)]);
-  const n3 = await cur();
-  await p.click("#goalTanaPause"); await p.waitForTimeout(400);
-  const n4 = await cur();
-  await p.click("#goalTanaQuit"); await p.waitForTimeout(400);
-  ok(n3 === "部屋を片づける" && (await goal(p, "g3")).pausedAt > 0 && n4 === "社会人になるまでに" && (await goal(p, "g2")).quit?.at > 0, "⑨ 保留, やめる", names);
-  ok((await txt(p, "#goalTana")) === "目標の棚卸し おわる ぜんぶ見ました 続ける 1・期限を延ばした 1・保留 1・やめた 1", "⑨ at the end, what was decided", await txt(p, "#goalTana"));
-  await p.click("#goalTana .one-head .link-btn"); await p.waitForTimeout(300);
-  ok(!(await shown(p, "goalTana")) && (await txt(p, "#goalTanaStart")) === "目標の棚卸し（進行中 2）", "⑨ おわる");
+  // ⑨ 目標の棚卸し: taken out at the user's call (2026-11-27, tools/REMOVED.md): no 「目標の棚卸し（進行中 ○）」 over the
+  // list, no card, not in 目標でできること; the row's 集中モード (and シンプル表示) kept, at the row's start as before
+  const row = await txt(p, "#goalG18Row");
+  ok(!(await p.locator("#goalTanaStart, #goalTana").count()) && !(await p.evaluate(() => document.getElementById("sec-goal").innerText.includes("棚卸し"))), "⑨ no 目標の棚卸し on the page", row);
+  // (シンプル表示 right after 集中モード on its line, or at the start of the next when the two don't fit; on a wide screen
+  // both on one line, side by side at the start)
+  const lay = () => p.evaluate(() => {
+    const row = document.getElementById("goalG18Row"), r = row.getBoundingClientRect(), f = document.getElementById("goalFocusBtn")?.getBoundingClientRect(), s = document.getElementById("goalSimpleBtn")?.getBoundingClientRect();
+    const same = f && s ? Math.abs(s.top - f.top) < 4 : null;
+    return { row: !row.hidden, focus: f ? Math.round(f.left - r.left) : null, same, simple: s ? Math.round(same ? s.left - f.right : s.left - r.left) : null };
+  });
+  const okLay = (x) => x.row && x.focus === 0 && (x.simple === null || (x.same ? x.simple >= 0 && x.simple <= 12 : x.simple === 0));
+  const l1 = await lay();
+  ok(row.includes("集中モード") && okLay(l1), "⑨ the row's 集中モード kept, at its start (シンプル表示 next to it)", [row, l1]);
+  await p.setViewportSize({ width: 760, height: 852 }); await p.waitForTimeout(300);
+  const l2 = await lay();
+  ok(okLay(l2) && (l2.simple === null || l2.same), "⑨ on a wide screen: side by side at the start", l2);
+  await p.setViewportSize({ width: 393, height: 852 }); await p.waitForTimeout(300);
+  await p.click("#goalSettings"); await p.waitForTimeout(600);
+  await p.click("#goalHelpOpen"); await p.waitForTimeout(400);
+  const help = await p.evaluate(() => document.getElementById("goalHelpList")?.innerText || "");
+  ok(!help.includes("目標の棚卸し") && help.includes("集中モード") && help.includes("まとめて選ぶ") && help.includes("期限を延ばす・期限の変更") && help.includes("しばらく進めていない目標"), "⑨ not in できること (集中モード, まとめて選ぶ, 期限を延ばす, しばらく進めていない目標 kept)", help.length);
+  await done(p);
 
   ok(!p.errs.length, "no errors", p.errs);
   console.log(fails ? `FAIL ${fails}` : "ALL OK");
