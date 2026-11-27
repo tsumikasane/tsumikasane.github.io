@@ -112,8 +112,9 @@ async function open(b, hm = "07:30") {
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
 
   // ⑧ the year
-  const yr = await p.evaluate(() => ({ n: document.querySelectorAll("#rt3YearWrap .rt3-y").length, now: document.querySelectorAll("#rt3YearWrap .rt3-y.now").length, days: document.querySelectorAll("#rt3YearWrap .rt3-y[data-d]").length, sum: document.querySelector("#rt3YearSum").textContent, label: document.querySelector("#rt3YearWrap .rt3-year").getAttribute("aria-label") }));
-  ok(yr.n === 371 && yr.now === 1 && /^ぜんぶできた日 \d+ 日・チェックした日 \d+ 日$/.test(yr.sum.replace(/ /g, " ")) && yr.label.startsWith("この1年で"), "⑧ 53 weeks of squares", yr);
+  // (as twelve small months: the user's call, 2026-11-27; the 53 weeks a week a column, scrolled across, before)
+  const yr = await p.evaluate(() => ({ n: document.querySelectorAll("#rt3YearWrap .yr12-c").length, mons: document.querySelectorAll("#rt3YearWrap .yr12-mon").length, now: document.querySelectorAll("#rt3YearWrap .yr12-c.today").length, days: document.querySelectorAll("#rt3YearWrap .yr12-c[data-d]").length, sum: document.querySelector("#rt3YearSum").textContent, label: document.querySelector("#rt3YearWrap .yr12").getAttribute("aria-label"), wide: (() => { const w = document.getElementById("rt3YearWrap"); return w.scrollWidth <= w.clientWidth + 1; })() }));
+  ok(yr.mons >= 1 && yr.mons <= 12 && yr.n >= 28 && yr.n <= 366 && yr.now === 1 && yr.days > 0 && yr.wide && /^ぜんぶできた日 \d+ 日・チェックした日 \d+ 日$/.test(yr.sum.replace(/ /g, " ")) && yr.label.startsWith("この1年で"), "⑧ small months from the first one begun (twelve at most), nothing to scroll", yr);
   await p.evaluate(() => document.querySelector('#rt3YearWrap [data-d="2026-11-10"]').click()); await p.waitForTimeout(400);
   ok((await p.evaluate(() => document.querySelector(".datenav input[type=date]")?.value)) === "2026-11-10", "⑧ pressed: that day");
   await p.goto(p.url().split("#")[0] + "#routine"); await p.reload(); await p.waitForTimeout(800);

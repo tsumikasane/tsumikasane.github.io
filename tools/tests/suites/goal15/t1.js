@@ -30,8 +30,9 @@ const menuOf = (p, k) => p.evaluate((k) => document.querySelector(`.m-cell[data-
   ok((await txt(p, "#goalHabit")).startsWith("習慣になるまで（66日） 1 マス 単語帳2周 TOEIC 800点 4 / 66日") && (await p.$$eval("#goalHabit .g15-dots i.on", (x) => x.length)) === 3, "⑧ the counted cell on its way to a habit", await txt(p, "#goalHabit"));
   // ③ この1年の進めた日
   const yh = await txt(p, "#goalYear365 .goal-head");
-  const sq = await p.$$eval("#goalYear365 .y3-sq", (xs) => [xs.length, xs.filter((x) => !x.classList.contains("out")).length, xs.filter((x) => x.classList.contains("today")).length, xs[xs.length - 1].title]);
-  ok(/^この1年の進めた日 \d+日・\d+マス$/.test(yh || "") && sq[1] === 365 && sq[2] === 1 && sq[3].startsWith("11/15："), "③ the year's days, as grass", [yh, sq]);
+  // (as twelve small months, 12月 to 11月: the user's call, 2026-11-27; a week a column for 53 weeks before)
+  const sq = await p.$$eval("#goalYear365 .yr12-c", (xs) => { const on = xs.filter((x) => !x.classList.contains("none")); return [xs.length, on.length, xs.filter((x) => x.classList.contains("today")).length, on[on.length - 1].title, document.querySelectorAll("#goalYear365 .yr12-mon").length, document.querySelector("#goalYear365 .yr12-mon-head").textContent]; });
+  ok(/^この1年の進めた日 \d+日・\d+マス$/.test(yh || "") && sq[4] === 12 && sq[5] === "2025年12月" && sq[0] === 365 && sq[1] === 350 && sq[2] === 1 && sq[3].startsWith("11/15："), "③ the year's days, as twelve small months", [yh, sq]);
 
   // ⑨ 30日前とくらべる・週末 (TOEIC), ⑦ 週のノルマのおすすめ
   await open(p, "TOEIC 800点");
