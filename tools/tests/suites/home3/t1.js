@@ -16,10 +16,11 @@ const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(
   let p = await phone(b, new Date("2026-11-14T13:30:00+09:00"), { deviceScaleFactor: 1 });
   await seed(p, D.all(), "home"); await p.waitForTimeout(1000);
   const keys = await p.$$eval("#homeTiles > .tile", (l) => l.map((t) => t.dataset.tile));
-  ok(["h3now", "h3line", "h3spend", "h3time", "h3streak"].every((k) => keys.includes(k)) && !keys.includes("h3theme") && !keys.includes("h3water"), "the new tiles on きょう (② and ③ taken out)", keys)
-  // ⑤ 今週のまとめ and ⑩ きょうの記録: on つみかさね's page (the user's call, 2026-11-26), not on きょう
+  ok(["h3now", "h3line", "h3spend", "h3time"].every((k) => keys.includes(k)) && !keys.includes("h3theme") && !keys.includes("h3water"), "the new tiles on きょう (② and ③ taken out)", keys)
+  // ⑤ 今週のまとめ and ⑩ きょうの記録 (the user's call, 2026-11-26), and ④ 続けている記録 (2026-11-27): on つみかさね's page,
+  // the last under the others, not on きょう
   const onTs = await p.$$eval("#tsTiles > .tile", (l) => l.map((t) => t.dataset.tile));
-  ok(!keys.includes("h3recs") && !keys.includes("h3week") && onTs.includes("h3recs") && onTs.includes("h3week"), "⑤⑩ on つみかさね's page, not on きょう", { keys, onTs });;
+  ok(!keys.includes("h3recs") && !keys.includes("h3week") && !keys.includes("h3streak") && onTs.includes("h3recs") && onTs.includes("h3week") && onTs[onTs.length - 1] === "h3streak", "⑤⑩④ on つみかさね's page, not on きょう", { keys, onTs });;
   // ① time: the year alone, as a ring (きょう・今週・今月 taken out at the user's call, 2026-11-23, tools/REMOVED.md)
   const pr = await H(p, "prog", "2026-11-14T12:00:00+09:00");
   ok(pr.y === 2026 && pr.year === 86 && pr.yearLeft === 47 && Math.abs(pr.f - 317.5 / 365) < 1e-9 && !("day" in pr) && !("week" in pr) && !("month" in pr), "① the year gone and the days left in it (no day, week or month)", pr);
@@ -34,7 +35,8 @@ const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(
   // ④ streaks
   const st = await H(p, "streaks");
   ok(st.length === 2 && st[0].k === "journal" && st[0].n === 4 && !st[0].today && st[1].k === "weight" && st[1].n === 3 && st[1].today, "④ 日記 4 (today not yet), 体重 3", st);
-  ok((await tileTxt(p, "h3streak")).includes("日記4日きょう記録すると5日"), "④ its tile", await tileTxt(p, "h3streak"));
+  const stT = await p.evaluate(() => document.querySelector('#tsTiles .tile[data-tile="h3streak"]')?.textContent.replace(/[\s  ]+/g, "") ?? null);
+  ok(stT && stT.startsWith("続けている記録") && stT.includes("日記4日きょう記録すると5日"), "④ its tile, on つみかさね's page", stT);
   // ⑤ week (Sunday first, as the app starts): 11/08〜11/14 against 11/01〜11/07
   const wk = await H(p, "week");
   ok(wk.days === 7 && wk.now.study === 90 && wk.was.study === 45 && wk.now.move === 2 && wk.was.move === 1 && wk.now.spend === 800 && wk.was.spend === 20000 && wk.now.done === 1, "⑤ this week and last", wk);
