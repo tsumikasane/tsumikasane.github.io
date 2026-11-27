@@ -15769,7 +15769,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // a Health-style trend chart: 体重's, and 体脂肪率's once one has been recorded (the user's call), each a plot of its own in
   // the card under the one period control. say(v) is a value with its unit, fmt(v) the number alone; target() draws a line
   // across (目標体重 on 体重's, 目標体脂肪率 on 体脂肪率's)
-  function trendChart({ svg, wrap, tip, name, say, fmt, val, target = () => 0, H = 240, avg = false, band = () => null, more = null }) {
+  function trendChart({ svg, wrap, tip, name, say, fmt, val, target = () => 0, H = 240, avg = false, band = () => null, more = null, endLabel = true }) {
     const c = { pts: [], hover: -1, overlay: null, avg: null, drew: { avg: false, band: false } };
     const nm = () => (typeof name === "function" ? name() : name);
     c.render = () => {
@@ -15866,9 +15866,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       }
       for (const p of pts) svg.append(svgEl("circle", { class: "dot", cx: p.x, cy: p.y, r: 4 }));
       const last = pts[pts.length - 1];
-      // the latest value just above its point, so it never sits on the line
+      // the latest value just above its point, so it never sits on the line (none on 体重's and 体脂肪率's: taken out at the
+      // user's call, 2026-11-27, tools/REMOVED.md; endLabel false)
       const nearEnd = last.x > W - padR - 24, above = last.y - 12 > padT;
-      svg.append(svgEl("text", { class: "endlabel", x: nearEnd ? last.x + 4 : last.x, y: above ? last.y - 12 : last.y + 20, "text-anchor": nearEnd ? "end" : "middle" }, fmt(last.v)));
+      if (endLabel) svg.append(svgEl("text", { class: "endlabel", x: nearEnd ? last.x + 4 : last.x, y: above ? last.y - 12 : last.y + 20, "text-anchor": nearEnd ? "end" : "middle" }, fmt(last.v)));
       // hover overlay
       const cross = svgEl("line", { class: "cross", x1: 0, x2: 0, y1: padT, y2: padT + ph, visibility: "hidden" });
       const focusDot = svgEl("circle", { class: "dot", r: 6, visibility: "hidden" });
@@ -15915,9 +15916,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   const wtCharts = [
     trendChart({ svg: $("wtChart"), wrap: $("wtChartWrap"), tip: $("wtTip"), name: "体重", say: (v) => `${fmtKg(v)} kg`, fmt: fmtKg, val: (r) => num(r.kg), target: wtTarget,
-      avg: true, band: () => bmiBand(), more: (p, c) => (c.avg ? `7日平均 ${fmtKg(c.avg.get(p.date))} kg` : "") }),
+      avg: true, band: () => bmiBand(), more: (p, c) => (c.avg ? `7日平均 ${fmtKg(c.avg.get(p.date))} kg` : ""), endLabel: false }), // (its latest value over the plot: taken out, 2026-11-27)
     trendChart({ svg: $("fatChart"), wrap: $("fatChartWrap"), tip: $("fatTip"), name: "体脂肪率", say: (v) => `${fmtFat(v)}%`, fmt: fmtFat, val: (r) => num(r.fat), target: fatTarget, H: 200,
-      avg: true, more: (p, c) => { const w = weights.get(p.date); return [c.avg ? `7日平均 ${fmtFat(c.avg.get(p.date))}%` : "", w && num(w.kg) > 0 ? `脂肪 ${fmtKg(fatKg(w))} kg` : ""].filter(Boolean).join("・"); } }),
+      avg: true, more: (p, c) => { const w = weights.get(p.date); return [c.avg ? `7日平均 ${fmtFat(c.avg.get(p.date))}%` : "", w && num(w.kg) > 0 ? `脂肪 ${fmtKg(fatKg(w))} kg` : ""].filter(Boolean).join("・"); }, endLabel: false }), // (its latest value: taken out, 2026-11-27)
   ];
   // 体脂肪率's plot shows once one has been recorded, the names over the plots then telling them apart
   function renderWeightChart() {
@@ -24905,7 +24906,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 6:38"; // a8a7b345 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 6:47"; // 2a78f737 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
