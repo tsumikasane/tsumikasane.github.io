@@ -120,8 +120,8 @@ const closeSheet = async (p) => { await p.keyboard.press("Escape"); await p.wait
   ok((await p.evaluate(() => [...document.querySelectorAll("#tgHead .wxs")].map((x) => x.textContent))).join(" ") === "", "⑤ 週: no weather under the days (taken out)", await p.evaluate(() => [...document.querySelectorAll("#tgHead .wxs")].map((x) => x.textContent)));
   ok(await p.locator("#tgBody .tg-free").count() === 0, "⑥ 週: no free bands (taken out, 2026-11-18)");
   await p.screenshot({ path: __dirname + "/shots/c-week.png" });
-  // 日
-  await p.locator('#calViews [data-view="day"]').click(); await p.waitForTimeout(500);
+  // 日 (週's 1日 since the user's call, 2026-11-27)
+  await p.locator('#calDays [data-days="1"]').click(); await p.waitForTimeout(500);
   ok(!(await txt(p, "#tgWx")), "⑤ 日: no weather for the day (taken out)", await txt(p, "#tgWx"));
   ok(await p.locator("#tgBody .tg-free").count() === 0, "⑥ 日: no free bands (taken out, 2026-11-18)");
   // ④ 授業 held and moved down 3 hours

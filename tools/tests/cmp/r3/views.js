@@ -33,7 +33,7 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
     ]));
   }, pre);
   await p.goto(base + '#calendar'); await p.reload(); await p.waitForTimeout(900);
-  const st = () => p.evaluate(() => ({ title: calMonthName.textContent, view: [...calViews.children].find((b) => b.getAttribute('aria-pressed') === 'true')?.dataset.view, days: [...tgHead.querySelectorAll('.tg-day')].map((x) => x.textContent), month: !document.querySelector('#sec-calendar .cal').hidden, tg: !calTime.hidden, seg: !!document.getElementById('calDays') && !calDays.hidden, prev: calPrev.getAttribute('aria-label') }));
+  const st = () => p.evaluate(() => ({ title: calMonthName.textContent, view: ((v) => (v === 'week' && document.querySelector('#calDays [data-days="1"]')?.getAttribute('aria-pressed') === 'true' ? 'day' : v))([...calViews.children].find((b) => b.getAttribute('aria-pressed') === 'true')?.dataset.view), // (日: 週's 1日 since 2026-11-27) days: [...tgHead.querySelectorAll('.tg-day')].map((x) => x.textContent), month: !document.querySelector('#sec-calendar .cal').hidden, tg: !calTime.hidden, seg: !!document.getElementById('calDays') && !calDays.hidden, prev: calPrev.getAttribute('aria-label') }));
   let s = await st();
   ok(s.view === 'month' && s.month && !s.tg && !s.seg && s.prev === '前の月', 'at first: 月', s);
   // 週: the week of the day picked (today), Sunday first
@@ -104,7 +104,7 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   await p.tap('#sheetCancel'); await p.waitForTimeout(600);
   ok((await st()).days[0] === '9(月)', 'and the days stay (a run from before them)', (await st()).days);
   // an empty hour pressed: a new plan from that hour, for an hour, on that day
-  await p.tap('#calViews button[data-view="day"]'); await p.waitForTimeout(400);
+  await p.tap((await p.$('#calDays button[data-days="1"]')) ? '#calDays button[data-days="1"]' : '#calViews button[data-view="day"]'); await p.waitForTimeout(400); // (日: 週's 1日 since 2026-11-27)
   const body = await p.evaluate(() => tgBody.offsetHeight);
   const c2 = await p.locator('#tgBody .tg-col').boundingBox();
   await p.mouse.click(c2.x + 100, c2.y + body * 15.5 / 24); await p.waitForTimeout(600);

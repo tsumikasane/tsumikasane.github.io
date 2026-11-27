@@ -42,8 +42,10 @@ const ok = (c, m, x) => { if (!c) fails++; console.log((c ? 'ok   ' : 'FAIL ') +
   await p.tap('#calMonthBtn'); await p.waitForTimeout(600);
   await p.tap('#mpToday'); await p.waitForTimeout(600);
   ok((await title()) === t0, '今月に戻る: this month', await title());
-  // in 日: 完了 goes to the month's 1st
-  await p.tap('#calViews button[data-view="day"]'); await p.waitForTimeout(400);
+  // in 日 (週's 1日 since 2026-11-27, 月・週 at the foot): 完了 goes to the month's 1st
+  if (await p.$('#calViews button[data-view="day"]')) await p.tap('#calViews button[data-view="day"]');
+  else { await p.tap('#calViews button[data-view="week"]'); await p.waitForTimeout(300); await p.tap('#calDays button[data-days="1"]'); }
+  await p.waitForTimeout(400);
   await p.tap('#calMonthBtn'); await p.waitForTimeout(600);
   await p.evaluate(() => { mpWheels.querySelectorAll('.wheel-col')[1].scrollTop += 40; }); await p.waitForTimeout(500);
   await p.tap('#sheetDone'); await p.waitForTimeout(600);

@@ -7786,11 +7786,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
             <button type="button" class="icon-btn" id="calAdd" aria-label="予定を追加" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg></button>
           </div>
           <!-- 週: how many days it shows (the user's call, after a calendar app they showed; taken out, then wanted back): the
-               week, or five or three from the day picked -->
+               week, or five or three from the day picked, or the day alone (1日: 日, moved here from the foot at the user's
+               call, 2026-11-27) -->
           <div class="seg cal-days" role="group" aria-label="週の表示の日数" id="calDays" hidden>
             <button type="button" data-days="7" aria-pressed="true">7日</button>
             <button type="button" data-days="5" aria-pressed="false">5日</button>
             <button type="button" data-days="3" aria-pressed="false">3日</button>
+            <button type="button" data-days="1" aria-pressed="false">1日</button>
           </div>
         </div>
         <div class="card cal">
@@ -9062,11 +9064,11 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       <button type="button" data-part="done" aria-pressed="false">完了</button>
     </div>
     <!-- ダイエット's: which of からだ・食事・運動 shows (the user's call: the three in a row at the foot, as the tab bar has) -->
-    <!-- the calendar's 月・週・日 (the user's call: as a calendar app they showed, at the foot) -->
+    <!-- the calendar's 月・週 (the user's call: as a calendar app they showed, at the foot; 日 is 週's 1日 since the user's
+         call, 2026-11-27) -->
     <div class="pagebar" role="group" aria-label="カレンダーの表示の切り替え" id="calViews">
       <button type="button" data-view="month" aria-pressed="true"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-cal-month"/></svg>月</button>
       <button type="button" data-view="week" aria-pressed="false"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-cal-week"/></svg>週</button>
-      <button type="button" data-view="day" aria-pressed="false"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-cal-day"/></svg>日</button>
     </div>
     <div class="pagebar" role="group" aria-label="ダイエットの記録の切り替え" id="dietParts">
       <button type="button" data-part="weight" aria-pressed="true"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-weight"/></svg>からだ</button>
@@ -20649,11 +20651,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- 月・週・日 ----------
   // 月・週・日 (the user's call, after a calendar app they showed): which the calendar shows, and how many days 週 has (7, 5
   // or 3: the user's call, taken out and then wanted back), kept on this device. 5日 and 3日 start from the day picked, and
-  // stay put while it moves within them (viewFirst)
+  // stay put while it moves within them (viewFirst). 日 is picked as 週's 1日 (the user's call, 2026-11-27: 月・週 at the
+  // foot, 日 in with 7日・5日・3日), as it was drawn before; weekOne keeps whether 週 was last at it, so 週 comes back to it
   const CAL_VIEW_KEY = LS_PREFIX + "calView";
-  let calView = "month", weekDays = 7, viewFirst = null;
-  try { const v = JSON.parse(localStorage.getItem(CAL_VIEW_KEY) || "null"); if (["month", "week", "day"].includes(v?.view)) calView = v.view; /* (a 年 kept, the view taken out 2026-11-24: 月) */ if ([7, 5, 3].includes(v?.days)) weekDays = v.days; } catch {}
-  const saveCalView = () => { try { localStorage.setItem(CAL_VIEW_KEY, JSON.stringify({ view: calView, days: weekDays })); } catch {} };
+  let calView = "month", weekDays = 7, viewFirst = null, weekOne = false;
+  try { const v = JSON.parse(localStorage.getItem(CAL_VIEW_KEY) || "null"); if (["month", "week", "day"].includes(v?.view)) calView = v.view; /* (a 年 kept, the view taken out 2026-11-24: 月) */ if ([7, 5, 3].includes(v?.days)) weekDays = v.days; weekOne = v?.one === true || calView === "day"; } catch {}
+  const saveCalView = () => { try { localStorage.setItem(CAL_VIEW_KEY, JSON.stringify({ view: calView, days: weekDays, one: weekOne })); } catch {} };
   // the days 週 or 日 shows: 日 the day picked; 7日 its week, from the week's first day as the month has them; 5日 and 3日
   // from the day picked, staying put while it moves within them (a plan pressed in them opens on its day, the days left as
   // they were)
@@ -20677,9 +20680,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // which is pressed at the foot, 週's days, the card showing, and what ‹ › say
   function syncCalView() {
-    for (const b of $("calViews").children) b.setAttribute("aria-pressed", String(b.dataset.view === calView));
-    for (const b of $("calDays").children) b.setAttribute("aria-pressed", String(Number(b.dataset.days) === weekDays));
-    $("calDays").hidden = calView !== "week";
+    for (const b of $("calViews").children) b.setAttribute("aria-pressed", String(b.dataset.view === (calView === "day" ? "week" : calView)));
+    for (const b of $("calDays").children) b.setAttribute("aria-pressed", String(calView === "day" ? b.dataset.days === "1" : Number(b.dataset.days) === weekDays));
+    $("calDays").hidden = calView === "month";
     document.querySelector("#sec-calendar .cal").hidden = calView !== "month";
     $("calTime").hidden = calView === "month";
     const unit = calView === "month" ? "月" : calView === "day" ? "日" : weekDays === 7 ? "週" : weekDays + "日";
@@ -20691,15 +20694,25 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (calView === "month" && v !== "month" && !day) calDay = planDay();
     if (day) calDay = day;
     calView = v; calMonth = monthOf(calDay);
+    if (v === "day") weekOne = true; else if (v === "week") weekOne = false;
     saveCalView();
     renderCalendar();
   }
-  $("calViews").addEventListener("click", (ev) => { const b = ev.target.closest("button[data-view]"); if (b && b.dataset.view !== calView) setCalView(b.dataset.view); });
+  // (週 pressed: as it was left, 1日 or 7日・5日・3日; nothing while it shows)
+  $("calViews").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button[data-view]");
+    if (!b) return;
+    const v = b.dataset.view === "week" && (calView === "day" || weekOne) ? "day" : b.dataset.view;
+    if (v !== calView) setCalView(v);
+  });
   $("calDays").addEventListener("click", (ev) => {
     const b = ev.target.closest("button[data-days]");
-    if (!b || Number(b.dataset.days) === weekDays) return;
-    weekDays = Number(b.dataset.days); viewFirst = null;
-    saveCalView(); renderCalendar();
+    if (!b) return;
+    const n = Number(b.dataset.days);
+    if (n === 1) { if (calView !== "day") setCalView("day"); return; } // (1日: 日 as it was)
+    if (calView === "week" && n === weekDays) return;
+    weekDays = n; viewFirst = null;
+    if (calView !== "week") setCalView("week"); else { saveCalView(); renderCalendar(); }
   });
   const nowMinutes = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
   // plans at the same time side by side: each takes the first column free at its start, and the ones overlapping one
@@ -20728,7 +20741,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     setChildren($("tgHead"), el("span", { class: "tg-gut" }, cal13GutWeek(days)), days.map((d) => {
       const dt = parseYmd(d), wd = dt.getDay(), hol = calHolName(d); // (その7 ①)
       return el("button", { type: "button", class: "tg-day" + (wd === 0 ? " sun" : wd === 6 ? " sat" : "") + (hol ? " hol" : "") + (d === todayKey ? " today" : "") + (d === calDay ? " sel" : ""),
-        "aria-current": d === todayKey ? "date" : null, "aria-label": `${fmtMDW(d)}${hol ? "、" + hol : ""}、日で表示`, onclick: () => setCalView("day", d) },
+        "aria-current": d === todayKey ? "date" : null, "aria-label": `${fmtMDW(d)}${hol ? "、" + hol : ""}、1日で表示`, onclick: () => setCalView("day", d) },
         el("span", { class: "n" }, dt.getDate()), el("span", { class: "wd" }, `(${WD[wd]})`));
     }));
     // 終日: runs first (the earliest and longest first), then holidays, the day's plans without a time, ToDo's deadlines and
@@ -24863,7 +24876,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 11:05"; // 6be966f2 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 11:25"; // bff24aa4 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -35103,8 +35116,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ⑦ キーボード (a computer's). The calendar's page, nothing open over it and no field in use: N 新しい予定, / 探す, ← → 前・
-  // 次, T きょう, M W D 月・週・日 (Y 年 taken out with it, 2026-11-24), ? the list
-  const CAL8_KEYS = [["N", "新しい予定"], ["/", "予定を探す"], ["← →", "前・次（月・週・日）"], ["T", "きょうへ"], ["M・W・D", "月・週・日の表示"], ["?", "この一覧"]];
+  // 次, T きょう, M W D 月・週・1日 (Y 年 taken out with it, 2026-11-24; 日 as 週's 1日, 2026-11-27), ? the list
+  const CAL8_KEYS = [["N", "新しい予定"], ["/", "予定を探す"], ["← →", "前・次（月・週・1日）"], ["T", "きょうへ"], ["M・W・D", "月・週・1日の表示"], ["?", "この一覧"]];
   document.addEventListener("keydown", (ev) => {
     if (!calEight || tab !== "calendar" || ev.defaultPrevented || ev.isComposing || ev.keyCode === 229 || ev.ctrlKey || ev.metaKey || ev.altKey) return;
     if (document.querySelector("dialog[open]")) return;
@@ -37919,10 +37932,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ⑥ カレンダーでできること (the gear, at its end): the calendar's features by where they are, looked for by words
   const CAL18_HELP = [
-    ["月・週・日", [
+    ["月・週", [ // (月・週・日 till 日 went into 週 as 1日, 2026-11-27)
       ["月の表示", "日を押すと、その日の予定・記録が開きます。左右にスワイプで前後の月。"],
-      ["週・日の表示", "時間の流れで見ます。予定を長押しで動かす、下の端で長さを変える、空いているところを押して予定を入れる。"],
-      ["7日・5日・3日", "週の表示の日数。"],
+      ["週の表示", "時間の流れで見ます。予定を長押しで動かす、下の端で長さを変える、空いているところを押して予定を入れる。"],
+      ["7日・5日・3日・1日", "週の表示の日数。1日は、その日だけを出します。週の日付を押しても1日になります。"],
       ["月のメモ", "日のリストの「〇月のメモ」から。月の表示の上に出ます。"],
       ["日のメモ・スタンプ", "その日のひとことや、日のスタンプを月の表示に出せます。"],
       ["時限の帯・月のマスの時刻", "設定で、週・日に時間割の時限を、月のマスに開始時刻を出せます。"],
@@ -38348,7 +38361,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     openSettings(false, "study");
     setTimeout(() => { const row = $("stExamRows")?.querySelector(`[data-id="${CSS.escape(id)}"]`); if (row) row.scrollIntoView({ block: "center", behavior: "auto" }); }, 80);
   }
-  CAL18_HELP.find(([place]) => place === "月・週・日・年")?.[1].push(["勉強の試験", "勉強の設定で決めた試験が、その日に科目の色で出ます。日のリストで押すと、勉強の設定の試験が開きます。"]);
+  CAL18_HELP.find(([place]) => place === "月・週")?.[1].push(["勉強の試験", "勉強の設定で決めた試験が、その日に科目の色で出ます。日のリストで押すと、勉強の設定の試験が開きます。"]);
 
   // ---------- 目標: 使わないマスを×で埋める (the user's call, 2026-11-11: a chart can't always be filled in whole; its empty
   // squares crossed out so it reads as finished). An empty cell crossed is { t: "", x: true }: still empty to all that

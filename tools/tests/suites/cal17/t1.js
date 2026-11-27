@@ -59,7 +59,7 @@ let b;
   // ③ 平日 (the week's Monday to Friday): taken out at the user's call (2026-11-24, tools/REMOVED.md): no button beside 7日・5日・3日;
   // ④ 時限の帯 (週) in the 7 days' view
   await p.click('#calViews [data-view="week"]'); await p.waitForTimeout(600);
-  ok(!(await p.$('#calDays [data-days="wd"]')) && (await p.$$eval("#calDays button", (l) => l.map((x) => x.textContent).join("・"))) === "7日・5日・3日", "③ 平日: gone", await p.$$eval("#calDays button", (l) => l.map((x) => x.textContent).join("・")));
+  ok(!(await p.$('#calDays [data-days="wd"]')) && (await p.$$eval("#calDays button", (l) => l.map((x) => x.textContent).join("・"))) === "7日・5日・3日・1日", "③ 平日: gone (1日 beside them since 2026-11-27)", await p.$$eval("#calDays button", (l) => l.map((x) => x.textContent).join("・")));
   ok((await p.evaluate(() => window.__cal17.days())).includes("2026-11-16"), "the week has 11/16", await p.evaluate(() => window.__cal17.days()));
   const bands = await p.evaluate(() => [...document.querySelectorAll('.tg-col[data-day="2026-11-16"] .cal17-band')].map((x) => x.textContent + "@" + x.style.top));
   ok(bands.length === 6 && bands[0] === "1限@37.5%", "④ the 6 periods behind", bands);
@@ -68,6 +68,23 @@ let b;
   ok(five.length === 5 && five[0] === (await p.evaluate(() => window.__cal17.day())) && (await p.getAttribute('#calDays [data-days="5"]', "aria-pressed")) === "true", "5日: five from the day", five);
   await tap(p, '#calDays [data-days="7"]'); await p.waitForTimeout(500);
   ok((await p.evaluate(() => window.__cal17.days())).length === 7 && !(await p.evaluate(() => document.querySelector('.tg-col[data-day="2026-11-22"] .cal17-band'))), "④ none on a Sunday");
+  // 日 as 週's 1日 (the user's call, 2026-11-27: 「月・週・日」 at the foot made 「月・週」, 日 in with 7日・5日・3日): 1日 shows
+  // the day alone, as 日 did (its date on top), 週 pressed at the foot; 週 pressed again stays; from 月, 週 comes back to it
+  const foot = await p.$$eval("#calViews button", (l) => l.map((x) => x.textContent.trim()));
+  ok(JSON.stringify(foot) === JSON.stringify(["月", "週"]) && !(await p.$('#calViews [data-view="day"]')), "the foot: 月・週 alone", foot);
+  await tap(p, '#calDays [data-days="1"]'); await p.waitForTimeout(500);
+  const one = await p.evaluate(() => ({ days: window.__cal17.days(), day: window.__cal17.day(), title: document.getElementById("calMonthName").textContent,
+    foot: [...document.querySelectorAll("#calViews button")].map((b) => b.getAttribute("aria-pressed")).join(), seg: [...document.querySelectorAll("#calDays button")].map((b) => b.getAttribute("aria-pressed")).join(),
+    segShown: !document.getElementById("calDays").hidden, kept: JSON.parse(localStorage.getItem("tsumikasane:calView") || "null") }));
+  ok(one.days.length === 1 && one.days[0] === one.day && /^\d{4}年\d{1,2}月\d{1,2}日\(.\)$/.test(one.title) && one.foot === "false,true" && one.seg === "false,false,false,true" && one.segShown && one.kept?.view === "day" && one.kept?.one === true,
+    "1日: the day alone, as 日 was (its date on top), 週 pressed at the foot", one);
+  await p.click('#calViews [data-view="week"]'); await p.waitForTimeout(400);
+  ok((await p.evaluate(() => window.__cal17.days())).length === 1, "週 pressed in 1日: stays");
+  await p.click('#calViews [data-view="month"]'); await p.waitForTimeout(400);
+  await p.click('#calViews [data-view="week"]'); await p.waitForTimeout(500);
+  ok((await p.evaluate(() => window.__cal17.days())).length === 1 && (await p.getAttribute('#calDays [data-days="1"]', "aria-pressed")) === "true", "週 from 月: back to 1日");
+  await tap(p, '#calDays [data-days="7"]'); await p.waitForTimeout(500);
+  ok((await p.evaluate(() => window.__cal17.days())).length === 7 && (await p.getAttribute('#calDays [data-days="7"]', "aria-pressed")) === "true", "7日: the week again");
   await p.click('#calViews [data-view="month"]'); await p.waitForTimeout(500);
 
   // ⑦ this week printed
