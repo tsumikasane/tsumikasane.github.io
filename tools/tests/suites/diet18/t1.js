@@ -93,15 +93,12 @@ const mmss = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 
   await part(p, "workout");
   const toc5 = await p.evaluate(() => document.getElementById("dt16Toc-workout")?.textContent || "");
   ok(!(await p.$("#dt18Metro")) && !(await p.$(".dt18-m-go")) && !/メトロノーム/.test(toc5) && toc5.length > 0 && (await setting(p, "cadence"))?.bpm === 180, "⑤ メトロノーム gone, the 歩数 kept", toc5);
-  // ⑥ ジムの会費の元: 8,000 円, 6 days (1,333 円), October 8 (1,000 円), 2 more for 1,000; then every day of 運動 (9)
-  let g = await W(p, "gym");
-  r = await txt(p, "#dt18Gym");
-  ok(g.now === 6 && g.was === 8 && g.cur === 1333 && g.more === 2 && /^ジムの会費の元 1回 1,333 円 月の会費 円 数える日 筋トレの日 運動した日 今月（11\/16まで） 6 日 1回 1,333 円 10月 8 日 1回 1,000 円 あと 2 日行くと、1回 1,000 円 以下になります。$/.test(r), "⑥ the fee a visit", [g, r]);
-  await p.selectOption("#dt18Gym select", "all"); await p.waitForTimeout(400);
-  g = await W(p, "gym");
-  ok((await setting(p, "gymFee"))?.count === "all" && (await setting(p, "gymFee"))?.yen === 8000 && g.now === 9 && g.cur === 889, "⑥ every day of 運動", g);
-  await p.fill("#dt18Gym input", "10000"); await p.press("#dt18Gym input", "Tab"); await p.waitForTimeout(400);
-  ok((await setting(p, "gymFee"))?.yen === 10000 && (await W(p, "gym")).cur === 1111, "⑥ the fee changed");
+  // ⑥ ジムの会費の元 (月の会費, 数える日 筋トレの日・運動した日, 今月 and 先月's days and the fee a visit, 「会費を入れると、
+  // 行った日数から1回あたりの金額がわかります。」): taken out at the user's call (2026-11-27, tools/REMOVED.md): no card, nor its
+  // もくじ's line, anywhere on 運動; the fee put in before (settings gymFee: 8,000 円) kept
+  const wo6 = await txt(p, "#part-workout");
+  ok(!(await p.$("#dt18Gym")) && !(await p.$(".dt18-gym-set")) && !/ジムの会費|月の会費|数える日|1回あたりの金額|日行くと、1回/.test(wo6) && !/ジムの会費/.test(toc5) && wo6.length > 0
+    && JSON.stringify(await setting(p, "gymFee")) === JSON.stringify(D.settings().find((x) => x.id === "gymFee")), "⑥ ジムの会費の元 gone, the fee kept", [wo6.match(/ジムの会費|月の会費|数える日|1回あたりの金額|日行くと、1回/)?.[0], toc5, await setting(p, "gymFee")]);
   // ⑦ 同じコースのラン: 川沿い (best 27:30, last 28:20) and 公園 (the last the best)
   const cs = await W(p, "courses");
   r = await txt(p, "#dt18Course");
