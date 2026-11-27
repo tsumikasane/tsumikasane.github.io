@@ -42,26 +42,24 @@ async function open(b, when) {
   await p.click('#h2TileGroup [data-when="pm"]'); await p.waitForTimeout(500);
   ok((await H(p, "prefs")).when?.weather === "pm" && !(await shown(p)).includes("weather"), "① 夜だけ: kept, not shown at 10:00");
   ok(flat(await p.textContent("#status")).includes("「天気」を夜だけ出します（いまは出ません）"), "① said", await p.textContent("#status"));
-  // ⑧ the guide and ② the settings: the tiles with a when, いつも出す
+  // ⑧ the guide and ② the settings. (① 出すときを決めたタイル, the tiles with a when and いつも出す on each, and ③ タイルの表示,
+  // ふつう・コンパクト・大きい文字, with their words: taken out at the user's call, 2026-11-27, tools/REMOVED.md; よく使う順
+  // and the tiles' list, its note of when, kept)
   await p.click("#homeSettings"); await p.waitForTimeout(700);
-  ok(flat(await p.textContent('#h6WhenList [data-k="weather"]')).startsWith("天気夜だけ（18時〜4時）・いまは出ていません"), "① listed in the gear's sheet", await p.textContent("#h6WhenList"));
+  const gear = flat(await p.evaluate(() => document.getElementById("daySheet").innerText));
+  ok(!gear.includes("出すときを決めたタイル") && !gear.includes("朝だけ・夜だけ・平日だけなどにできます") && !(await p.$("#h6WhenList")), "① no 出すときを決めたタイル in the gear's sheet", gear.slice(0, 160));
+  ok(!(await p.$("#h6Look")) && !gear.includes("タイルの表示") && !gear.includes("コンパクト") && !gear.includes("大きい文字") && gear.includes("よく使う順") && !!(await p.$("#h6SortUse")), "③ no タイルの表示 (よく使う順 kept)");
   ok(flat(await p.textContent('#tileList li[data-key="weather"]')).includes("夜だけ"), "① its note in the tiles' list");
-  // ③ the look
-  await p.click('#h6Look [data-look="compact"]'); await p.waitForTimeout(300);
-  ok((await H(p, "prefs")).look === "compact" && (await p.getAttribute('#h6Look [data-look="compact"]', "aria-pressed")) === "true", "③ コンパクト kept");
-  await p.click('#h6WhenList [data-k="weather"] button'); await p.waitForTimeout(400);
-  ok(!(await H(p, "prefs")).when?.weather, "① いつも出す again");
   await closeSheet(p);
-  ok((await shown(p)).includes("weather") && await p.$eval("#homeTiles", (g) => g.classList.contains("h6-compact")), "① back, ③ compact on the tiles");
+  const ws = await p.evaluate(() => { const v = JSON.parse(localStorage.getItem("tsumikasane:settings") || "[]"); return v.find((x) => x.id === "home")?.when || {}; });
+  ok(ws.weather === "pm", "① its when kept with the account", ws);
+  // ③ a look picked before (コンパクト, kept with the account) read by nothing: the tiles as they are. (天気 back to いつも, as
+  // its 長押し menu does once it shows in the evening)
+  await p.evaluate(() => { const k = "tsumikasane:settings", v = JSON.parse(localStorage.getItem(k) || "[]"), h = v.find((x) => x.id === "home"); if (h) { h.look = "compact"; delete h.when.weather; localStorage.setItem(k, JSON.stringify(v)); } });
+  await p.reload(); await p.waitForTimeout(1000);
+  ok(!(await p.$eval("#homeTiles", (g) => g.classList.contains("h6-compact") || g.classList.contains("h6-large"))) && (await H(p, "prefs")).look === "compact" && (await shown(p)).includes("weather"), "③ コンパクト picked before: kept, the tiles as they are (① 天気 back)");
   const ar = await p.$eval('.tile[data-tile="journal"]', (t) => [getComputedStyle(t).aspectRatio, Math.round(t.getBoundingClientRect().height), Math.round(t.getBoundingClientRect().width)]);
-  ok(ar[0] === "auto" && ar[1] < ar[2], "③ half tiles no longer square", ar);
-  // large
-  await p.click("#homeSettings"); await p.waitForTimeout(600);
-  await p.click('#h6Look [data-look="large"]'); await p.waitForTimeout(300);
-  await closeSheet(p);
-  const fs = await p.$eval('.tile[data-tile="journal"] .tile-head', (h) => parseFloat(getComputedStyle(h).fontSize));
-  ok(await p.$eval("#homeTiles", (g) => g.classList.contains("h6-large")) && fs >= 16, "③ 大きい文字", fs);
-  await p.click("#homeSettings"); await p.waitForTimeout(600); await p.click('#h6Look [data-look="normal"]'); await p.waitForTimeout(300); await closeSheet(p);
+  ok(ar[0] !== "auto", "③ half tiles square as ever", ar);
 
   // ④ the figures hidden, and shown
   await more(p, "h6-hide-btn");
