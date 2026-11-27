@@ -87,10 +87,11 @@ async function open(b, when) {
 
   // ⑧ what the page can do, and a tile's own (25 tiles: 33 before 水分 and きょうのテーマ were taken out, 2026-11-20, 31
   // before きょうの記録・今週のまとめ・ことしのまとめ・あの日から went to つみかさね's page, 2026-11-26, 27 before これから1週間
-  // was taken out, 2026-11-27, and 26 before 続けている記録 went to つみかさね's page, the same day)
+  // was taken out, 2026-11-27, 26 before 続けている記録 went to つみかさね's page, the same day, and 25 before 次にすること
+  // was taken out, the same day too)
   await more(p, "h6-guide-btn");
   const dts = await p.$$eval("#h6GuideBody dt[data-about]", (l) => l.map((x) => x.dataset.about));
-  ok(await p.evaluate(() => document.getElementById("h6Guide").open) && dts.length >= 25 && dts.includes("h5links") && !["quick", "h4mood", "h4watch", "h4breath", "h5mood", "h3water", "h3theme", "h3recs", "h3week", "h5since", "h5year", "h4week", "h3streak"].some((k) => dts.includes(k)), "⑧ every tile's word", dts.length);
+  ok(await p.evaluate(() => document.getElementById("h6Guide").open) && dts.length >= 24 && dts.includes("h5links") && !["quick", "h4mood", "h4watch", "h4breath", "h5mood", "h3water", "h3theme", "h3recs", "h3week", "h5since", "h5year", "h4week", "h3streak", "h3now"].some((k) => dts.includes(k)), "⑧ every tile's word", dts.length);
   await p.keyboard.press("Escape"); await p.waitForTimeout(300);
   await hold(p, "calendar"); await p.waitForTimeout(300);
   await p.locator("#h2TileGroup button", { hasText: "このタイルについて" }).click(); await p.waitForTimeout(500);

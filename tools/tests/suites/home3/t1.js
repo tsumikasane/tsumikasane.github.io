@@ -16,7 +16,7 @@ const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(
   let p = await phone(b, new Date("2026-11-14T13:30:00+09:00"), { deviceScaleFactor: 1 });
   await seed(p, D.all(), "home"); await p.waitForTimeout(1000);
   const keys = await p.$$eval("#homeTiles > .tile", (l) => l.map((t) => t.dataset.tile));
-  ok(["h3now", "h3line", "h3spend", "h3time"].every((k) => keys.includes(k)) && !keys.includes("h3theme") && !keys.includes("h3water"), "the new tiles on きょう (② and ③ taken out)", keys)
+  ok(["h3line", "h3spend", "h3time"].every((k) => keys.includes(k)) && !keys.includes("h3theme") && !keys.includes("h3water") && !keys.includes("h3now"), "the new tiles on きょう (②, ③ and ⑧ taken out)", keys)
   // ⑤ 今週のまとめ and ⑩ きょうの記録 (the user's call, 2026-11-26), and ④ 続けている記録 (2026-11-27): on つみかさね's page,
   // the last under the others, not on きょう
   const onTs = await p.$$eval("#tsTiles > .tile", (l) => l.map((t) => t.dataset.tile));
@@ -49,8 +49,12 @@ const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(
   const sp = await H(p, "spend");
   ok(sp.budget === 60000 && sp.spent === 20800 && sp.left === 39200 && sp.next === null, "⑦ the month's rest", sp);
   ok((await tileTxt(p, "h3spend")).startsWith("使えるお金39,200円今月あと使える"), "⑦ its tile", await tileTxt(p, "h3spend"));
-  // ⑧ now: the late ToDo first
-  ok((await tileTxt(p, "h3now")).includes("請求書を送る期限が過ぎています"), "⑧ the late ToDo", await tileTxt(p, "h3now"));
+  // ⑧ 次にすること: taken out at the user's call (2026-11-27, tools/REMOVED.md): no tile, nor its button, with a ToDo late
+  // (請求書を送る) that it showed first; the ToDo itself on ToDo's tile still
+  ok(!(await p.$('.tile[data-tile="h3now"]')) && !(await p.$(".h3-nowbtn")) && !(await p.textContent("#homeTiles")).includes("次にすること"), "⑧ gone (taken out)");
+  await p.click('#homeParts [data-part="done"]'); await p.waitForTimeout(600); // (ToDo's tile in 完了: one done today)
+  ok((await tileTxt(p, "todo")).includes("期限切れ1請求書を送る"), "⑧ the late ToDo on ToDo's tile still", await tileTxt(p, "todo"));
+  await p.click('#homeParts [data-part="todo"]'); await p.waitForTimeout(600);
   // ⑩ records: 日記 not yet, 体重 done, 勉強 done, 運動 not today, 食事 none kept
   const rc = await H(p, "recs");
   ok(JSON.stringify(rc.map((x) => [x.k, x.done])) === JSON.stringify([["journal", false], ["weight", true], ["workout", false], ["study", true]]), "⑩ the kinds kept and done", rc);
@@ -77,7 +81,7 @@ const lsOf = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(
   p = await phone(b, new Date("2026-11-14T07:00:00+09:00"), { deviceScaleFactor: 1 });
   await seed(p, { journal: D.all().journal, bodyDays: [{ id: D.DAY, date: D.DAY, water: 600, createdAt: D.T(D.DAY, 7) }], settings: [{ id: "bd2Water", goal: 1500 }] }, "home"); await p.waitForTimeout(800);
   ok(!(await p.$('.tile[data-tile="h3water"]')) && !(await p.$('.tile[data-tile="h3theme"]')), "②③ not back, with からだ's water and its aim put in before");
-  ok((await tileTxt(p, "h3now")).startsWith("次にすることひと休み"), "⑧ nothing to do", await tileTxt(p, "h3now"));
+  ok(!(await p.$('.tile[data-tile="h3now"]')) && !(await p.textContent("#homeTiles")).includes("ひと休み"), "⑧ not back with nothing to do (no ひと休み)");
   ok((await tileTxt(p, "h3line")).includes("なし") && (await tileTxt(p, "h3spend")).includes("まだ"), "⑥⑦ none");
   await p.emulateMedia({ colorScheme: "dark" }); await p.waitForTimeout(200);
   await p.screenshot({ path: out + "/h3-dark.png", fullPage: true });

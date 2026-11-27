@@ -104,7 +104,7 @@ async function open(b, when) {
   ok((await H(p, "prefs")).noAnniv === true, "⑨ off in the gear's sheet");
   await p.click("#sheetCancel").catch(() => {}); await p.keyboard.press("Escape"); await p.waitForTimeout(600);
   const simple = await shown(p);
-  ok(JSON.stringify(simple.filter((k) => !["review", "tomorrow", "prep", "missed"].includes(k)).sort()) === JSON.stringify(["calendar", "h3now", "h5yday", "todo", "weather"]), "② シンプル: those alone", simple);
+  ok(JSON.stringify(simple.filter((k) => !["review", "tomorrow", "prep", "missed"].includes(k)).sort()) === JSON.stringify(["calendar", "h5yday", "todo", "weather"]), "② シンプル: those alone (次にすること taken out, 2026-11-27)", simple);
   ok(!(await p.$("#h5Head .h5-anniv")), "⑨ none when off");
   await p.click("#homeSettings"); await p.waitForTimeout(700);
   await p.click('#h5Set [data-set="all"]'); await p.waitForTimeout(400);

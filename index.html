@@ -1889,10 +1889,6 @@ ul.wx-days > li { padding: 0; }
 .h3-line li.past { opacity: .5; }
 .h3-line li.h3-nowline { color: var(--warn); font-weight: 600; border-top: 1.5px solid var(--warn); padding-top: 2px; }
 .h3-line li.h3-nowline .h3-t { color: var(--warn); }
-.h3-nowbtn { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; width: 100%; margin-top: 4px; padding: 10px 12px; border: 0; border-radius: 12px; background: var(--fill); color: inherit; font: inherit; text-align: start; cursor: pointer; }
-.h3-nowbtn strong { font-size: var(--t-headline, 17px); overflow-wrap: anywhere; }
-.h3-nowbtn span { grid-column: 1; font-size: var(--t-sub); color: var(--muted); }
-.h3-nowbtn .icon { grid-column: 2; grid-row: 1 / span 2; color: var(--muted); }
 .h3-recs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .h3-rec { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 12px; border: 1px solid var(--separator); border-radius: 18px; background: transparent; color: inherit; font: inherit; font-size: var(--t-sub); cursor: pointer; }
 .h3-rec.done { border-color: transparent; background: var(--fill); color: var(--muted); }
@@ -1900,7 +1896,7 @@ ul.wx-days > li { padding: 0; }
 .h3-rec:not(.done) .icon { color: var(--tile-c); }
 /* きょう その4 */
 /* (what can be pressed on a tile, over its head's whole-tile button: その3's and その4's) */
-.tile .h3-btns, .tile .h3-recs, .tile .h3-nowbtn, .tile .h4-memo-form { position: relative; z-index: 1; }
+.tile .h3-btns, .tile .h3-recs, .tile .h4-memo-form { position: relative; z-index: 1; }
 /* ⑩ きょうの記録 as a checklist of 毎日記録するもの (the user's call, 2026-11-23): as からだ's はじめにやること, an empty circle
    till it is in, then a check; 記録する till then */
 .tile .h3-checks-bar { flex: none; display: block; height: 6px; margin-top: 6px; }
@@ -21972,7 +21968,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         !nearest ? (goals.items.length ? "新しい目標を立ててみましょう。" : "目標を立ててみましょう。")
           : `「${nearest.title}」` + (left > 0 ? "の期限まで" : left === 0 ? "の期限です" : ""), goalThree ? goalTileNext() : null), // (目標 その3 ⑥ 次の一歩)
       // and つみねこ in its corner, asleep till something goes on today (the user's call: on this tile too)
-      ...(homeThree ? h3Tiles() : []), // (きょう その3 ①〜⑧⑩)
+      ...(homeThree ? h3Tiles() : []), // (きょう その3 ①⑥⑦)
       ...(homeFour ? h4Tiles() : []), // (きょう その4 ③④⑥⑦⑧⑩)
       ...(homeFive ? h5Tiles() : []), // (きょう その5 ④⑤⑥⑦⑩)
       tile("tsumi", tz.n ? String(tk) : "まだ", tz.n ? "段" : null, tz.n ? null : "記録すると、ブロックが積みあがります", tz.n ? nekoSvg(tz.today ? "awake" : "asleep", 0.74, nekoLook(tz.n)) : null),
@@ -24899,7 +24895,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 9:25"; // 2e1aa973 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 9:41"; // 17831032 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -56588,21 +56584,21 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- きょう その3 ①〜⑩ (the user's calls, 2026-11-14): new tiles on きょう: the year gone by (①; the day, week
   // and month beside it were taken out at the user's call, 2026-11-23), glasses of water (②), the day's theme set in the morning and looked back on (③), the records kept up day after
   // day (④), this week against last (⑤), the day's hours in one line (⑥), what can be spent today by the budget (⑦), the
-  // one thing to do now (⑧), and the records of today done and not (⑩). (⑨, a word of greeting under the date, was
+  // one thing to do now (⑧; taken out at the user's call, 2026-11-27), and the records of today done and not (⑩). (⑨, a word of greeting under the date, was
   // taken out: the user's call, 2026-11-16; ② 水分 and ③ きょうのテーマ were taken out: the user's call, 2026-11-20.)
   // The themes put in stay in 設定 (h3theme) and are read still (きのうのまとめ, the day's picture, 記録's day); water is
   // からだ's own (その2 ⑦). Function declarations and var, as the page may draw before this part has run ----------
   var homeThree = false;
   // the tiles (shown at first; hidden or moved as the others are). ⑩ きょうの記録 and ⑤ 今週のまとめ are on つみかさね's
-  // page now (the user's call, 2026-11-26: TS_TILES, at つみかさねのページのタイル), and ④ 続けている記録 (2026-11-27)
+  // page now (the user's call, 2026-11-26: TS_TILES, at つみかさねのページのタイル), and ④ 続けている記録 (2026-11-27).
+  // ⑧ 次にすること was taken out at the user's call (2026-11-27, tools/REMOVED.md): its key left in the saved order is passed over
   const H3_TILES = [
-    { key: "h3now", label: "次にすること", color: "var(--accent)", icon: "next", open: false, wide: true }, // (not ToDo's いまやるなら, its own card till it was taken out, 2026-11-24)
     { key: "h3line", label: "きょうのタイムライン", color: "var(--c-cal)", icon: "list", open: "calendar", wide: true },
     { key: "h3spend", label: "使えるお金", color: "var(--c-money)", icon: "money", open: "money" }, // (その4: a name that fits half a row)
     { key: "h3time", label: "時間の進み", color: "var(--muted)", icon: "timer", open: false },
   ];
   // (in the settings' list the tiles made with a list keep a whole row, as ふりかえり's do)
-  const H3_FIXED = ["h3now", "h3line"];
+  const H3_FIXED = ["h3line"];
   // a day's value kept in 設定 (③ きょうのテーマ's, read still; what put it in went with ③, 2026-11-20)
   function h3Kept(id) { const v = settings.get(id); return v && typeof v.days === "object" && v.days ? v : { days: {} }; }
   const h3Rows = (cls, rows) => el("ul", { class: "h3-rows " + cls }, rows);
@@ -56728,24 +56724,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return tile("h3spend", s.left < 0 ? "−" + fmtN(-s.left) : fmtN(s.left), "円", s.left < 0 ? `${s.next ? "給料日までの" : "今月の"}予算をこえています` : `${when}あと使える`);
   }
 
-  // ⑧ the one thing to do now: a plan going on or within the hour, else a ToDo late or due today (its time, then the
-  // order of ToDo's list), else what of ルーティーン is left, else nothing
-  function h3Now() {
-    const now = nowMinutes();
-    const ev = planNow(turnsByDay(todayKey, todayKey).get(todayKey) || [], now).find((x) => x.now || (x.left != null && x.left <= 60));
-    if (ev && ev.t.day === 0 && ev.t.e.time) return { what: oneLine(ev.t.e.title), why: ev.now ? "予定の時間です" : `予定まで ${leftWords(ev.left)}`, go: () => openFromHome("calendar") };
-    const late = todos.items.filter((t) => !t.done && !tdLater(t) && !tdWaiting(t) && t.due && t.due <= todayKey)
-      .sort((a, b) => (b.due < todayKey) - (a.due < todayKey) || (isHm(a.time || "") ? minOf(a.time) : 1440) - (isHm(b.time || "") ? minOf(b.time) : 1440) || todoOrder(todoPlaced(a), todoPlaced(b)));
-    if (late[0]) { const t = late[0]; return { what: oneLine(t.text), why: t.due < todayKey ? `期限が過ぎています（${fmtShort(t.due)}）` : isHm(t.time || "") ? `きょう ${t.time} まで` : "きょうまでのToDo", go: () => openFromHome("todo"), todo: t.id }; }
-    const rts = rtItemsOn(todayKey), dn = routineDone(todayKey), r = rts.find((x) => !dn.has(x.id));
-    if (r) return { what: oneLine(r.name || r.text || r.title || "ルーティーン"), why: `ルーティーンの残り ${rts.filter((x) => !dn.has(x.id)).length} こ`, go: () => openFromHome("routine") };
-    return null;
-  }
-  function h3NowTile() {
-    const n = h3Now();
-    if (!n) return tile("h3now", "ひと休み", null, "いま急いですることは、ありません");
-    return tile("h3now", null, null, null, el("button", { type: "button", class: "h3-nowbtn", onclick: n.go }, el("strong", {}, n.what), el("span", {}, n.why), icon("next", 16)));
-  }
+  // ⑧ 次にすること (the one thing to do now: a plan going on or within the hour, else a ToDo late or due today, else what
+  // of ルーティーン is left, else ひと休み): taken out at the user's call (2026-11-27, tools/REMOVED.md). It read the records only
 
   // ⑩ the records of today: those picked as 毎日記録するもの (つみかさね's 毎日の記録のお知らせ: the user's call, 2026-11-23),
   // each in as its お知らせ counts it, in a list as からだ's はじめにやること has (an empty circle till it is in, then a
@@ -56801,9 +56781,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       "aria-label": `${x.name}${x.done ? "（済み）" : "を記録"}`, onclick: (ev) => h3RecGo(x.k, ev.detail === 0) }, x.done ? icon("check", 14) : icon("plus", 14), x.name))), h3RecsSetBtn("毎日記録するものを選ぶ")]);
   }
 
-  // the tiles on きょう (⑩, ⑤ and ④ on つみかさね's page: tsTilesRender)
+  // the tiles on きょう (⑩, ⑤ and ④ on つみかさね's page: tsTilesRender; ⑧ taken out)
   function h3Tiles() {
-    return [h3NowTile(), h3LineTile(), h3SpendTile(), h3TimeTile()];
+    return [h3LineTile(), h3SpendTile(), h3TimeTile()];
   }
 
   // in the gear's sheet, under その2's: その4's settings go after it (its word on the water tile went with ②, 2026-11-20)
@@ -56952,8 +56932,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
 
   // ② the tiles to show, as a set: one press, 元に戻す. Those that come only when they have something to say stay
   const H5_SETS = [
-    ["simple", "シンプル", "天気・ToDo・きょうの予定・次にすること", ["weather", "todo", "calendar", "h3now"]],
-    ["plan", "予定とToDo", "予定・ToDo・タイムライン・バイトなど", ["weather", "todo", "calendar", "countdown", "job", "h3now", "h3line"]], // (h4week, これから1週間: taken out, 2026-11-27)
+    ["simple", "シンプル", "天気・ToDo・きょうの予定", ["weather", "todo", "calendar"]], // (h3now, 次にすること: taken out, 2026-11-27)
+    ["plan", "予定とToDo", "予定・ToDo・タイムライン・バイトなど", ["weather", "todo", "calendar", "countdown", "job", "h3line"]], // (h4week, これから1週間, and h3now, 次にすること: taken out, 2026-11-27)
     ["rec", "記録をしっかり", "ダイエット・日記・勉強・ルーティーン・家計簿・睡眠など", ["weather", "todo", "calendar", "diet", "move", "journal", "study", "routine", "money", "tsumi", "h4sleep"]], // (きょうの記録: on つみかさね's page, 2026-11-26, and 続けている記録, 2026-11-27)
     ["all", "ぜんぶ", "すべてのタイルを出す", null],
   ];
@@ -57263,7 +57243,6 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     diet: "からだ（体重）・食事・運動の、きょうの記録", move: "きょうの運動のメニュー。押して記録",
     routine: "きょうのルーティーン。その場でチェック", money: "今月の収支", job: "今月の給料の見込みと、次のシフト",
     tsumi: "積んだブロックの段", goal: "期限のいちばん近い目標と、あと何日",
-    h3now: "1時間以内の予定、期限のToDo、ルーティーンの残りから、いまする1つ",
     h3line: "予定・バイト・時刻のあるToDoを時間の順に、いまの線つき",
     h3spend: "家計簿の予算の残り。今月あといくら使えるか（給料日からの予算なら、次の給料日まで）", h3time: "ことしが何%過ぎたか（リング）と、あと何日",
     h4sleep: "ゆうべ寝た時間（からだの睡眠の記録から）", // (朝の「おはよう」, 2026-11-25, and 夜の「おやすみ」, 2026-11-26: taken out at the user's calls)

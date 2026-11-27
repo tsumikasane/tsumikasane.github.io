@@ -63,7 +63,7 @@ async function open(b, when, d = data(), o = {}) {
   await p.keyboard.press("Escape"); await p.waitForTimeout(2600);
   ok(!(await shown(p)).includes("weather") && JSON.stringify((await setting(p, "homeDone")).keys) === '["countdown","weather"]', "天気: in 完了", (await setting(p, "homeDone")).keys);
 
-  // a press that opens nothing doesn't count: 次にすること's… (none here); メモ's やめる; a plain tile looked at does
+  // a press that opens nothing doesn't count: メモ's やめる; a plain tile looked at does
   await p.click('.tile[data-tile="h4memo"] .h4-memo-write'); await p.waitForTimeout(300);
   await p.locator('.tile[data-tile="h4memo"] .link-btn', { hasText: "やめる" }).click(); await p.waitForTimeout(2600);
   ok((await shown(p)).includes("h4memo") && !(await setting(p, "homeDone")).keys.includes("h4memo"), "メモ: 書く then やめる, still まだ");
