@@ -21703,8 +21703,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   // ---------- 天気（きょう） ----------
   // ⑦ (the user's call): the day's weather where the phone is, from Open-Meteo (free, no key): its place asked for once
-  // (the browser's location, to about 1 km) and kept on this device alone, the forecast kept for an hour. Rain likely
-  // with a run still to do today, it says the run can be エアロバイク 30分, as the menu's メモ has it for a day it hurts
+  // (the browser's location, to about 1 km) and kept on this device alone, the forecast kept for an hour. (Under it, the
+  // hour today's rain was due (いま雨の予報です, ○時ごろから雨の予報です) and, with a run still to do, 「ランはエアロバイク30分に
+  // 替えても」: taken out at the user's call, 2026-11-27, tools/REMOVED.md)
   const WX_PLACE = LS_PREFIX + "wxPlace", WX_DATA = LS_PREFIX + "wxData", WX_DAYS = 7, WX_V = 6; // (7 days: 天気's 1週間の天気予報, the user's call 2026-11-12)
   const lsJson = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
   const lsJsonPut = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch {} };
@@ -21772,14 +21773,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (wxFive) wx5Remember(); // (天気 その5 ⑩ tomorrow's forecast, kept for its day)
     // (きょう その2 ⑧) from the evening's hour tomorrow's weather first, and the temperature now
     const tmr = homeTwo ? h2WxTomorrow() : null, w = tmr ? wxDay(tmr) : w0, now = homeTwo ? h2WxNow() : null;
-    const m = woDays()[parseYmd(todayKey).getDay()], runLeft = !tmr && num(m.km) > 0 && !woTally(todayKey).ran;
-    const h = new Date().getHours();
     return tile("weather", tmr ? `あしたは${w.word}` : w.word, null, null, [
       el("div", { class: "wx-row" }, el("span", { class: "wx-icon " + w.icon, "aria-hidden": "true" }, icon(w.icon, 28)),
         el("span", { class: "wx-temp" }, `${w.hi}° / ${w.lo}°`), el("span", { class: "wx-rain" }, `降水確率 ${w.rain}%`), now && !tmr ? h2WxNowEl(now) : null),
-      tmr ? (w.wet ? el("p", { class: "wx-note" }, wxRainWords(tmr) || (w.icon === "snow" ? "雪の予報です" : "雨の予報です")) : null)
-        : w.rainAt !== null ? el("p", { class: "wx-note" }, w.rainAt <= h ? "いま雨の予報です" : `${w.rainAt}時ごろから雨の予報です`) : null,
-      w.wet && runLeft ? el("p", { class: "wx-note" }, "ランはエアロバイク30分に替えても") : null,
+      // (tomorrow's rain, in the evening, kept; today's 「いま雨の予報です」「○時ごろから雨の予報です」 and 「ランはエアロバイク30分に
+      // 替えても」: taken out at the user's call, 2026-11-27, tools/REMOVED.md)
+      tmr && w.wet ? el("p", { class: "wx-note" }, wxRainWords(tmr) || (w.icon === "snow" ? "雪の予報です" : "雨の予報です")) : null,
       wxFour && !tmr ? wx4TileNote() : null, // (天気 その4 ③ 行きと帰り)
       now && tmr ? el("p", { class: "wx-note" }, h2WxNowEl(now)) : null,
       wxWeek(), // 1週間の天気予報
@@ -24906,7 +24905,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 6:47"; // 2a78f737 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 6:59"; // 1f22ff9f (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
