@@ -6788,6 +6788,18 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   html.mo .check.mo-rip::before { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 2px var(--mo-rip); pointer-events: none; animation: m-rip .6s var(--m-out) forwards; }
 }
 @keyframes m-drop { from { opacity: 0; transform: translateY(-6px); } }
+/* ---------- 記録のボタン (the user's call, 2026-11-27: 「記録を確定するボタンのエフェクトについて、UI UX animation を
+   ふんだんに」): laid over a button that puts a record in and gone a moment after, never in the way; what moves, the
+   script's (at 記録のボタン) ---------- */
+.rfx { pointer-events: none; z-index: 2147483000; margin: 0; }
+.rfx-box { overflow: hidden; isolation: isolate; }
+.rfx-rip { position: absolute; border-radius: 50%; }
+.rfx-fill { position: absolute; inset: 0; background: var(--rfx-c); }
+.rfx-check { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; overflow: visible; }
+.rfx-check path { fill: none; stroke: #ffffff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.rfx-bit { border-radius: 2px; }
+.rfx-fly { width: 14px; height: 14px; border-radius: 3px; box-shadow: 0 2px 6px rgba(0, 0, 0, .18), inset 0 0 0 1px rgba(255, 255, 255, .35); }
+.rfx-plus { font-family: var(--font-round, inherit); font-size: 14px; font-weight: 800; line-height: 1; white-space: nowrap; text-shadow: 0 1px 0 var(--bg, #ffffff); }
 @keyframes m-rip { from { opacity: .7; transform: scale(.9); } to { opacity: 0; transform: scale(2.2); } }
 /* 目標 その6 ①〜⑩ (2026-11-14) */
 .six-list { display: grid; margin: 0; padding: 0; list-style: none; }
@@ -24907,7 +24919,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 12:19"; // 6256891a (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 12:48"; // 2d0891d9 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -69689,7 +69701,7 @@ ${parts.join("\n")}
         if (a && a.nodeType === 3) { const f = tg.closest(MO_FIG); if (f) roots.add(f); } // (a figure's words written anew)
       }
       for (const n of m.addedNodes) {
-        if (n.nodeType !== 1 || n.classList.contains("mo-ghost")) continue;
+        if (n.nodeType !== 1 || n.classList.contains("mo-ghost") || n.classList.contains("rfx")) continue; // (記録のボタン's too)
         let r = n;
         if (n.ownerSVGElement) { r = n.ownerSVGElement; while (r.ownerSVGElement) r = r.ownerSVGElement; }
         roots.add(r);
@@ -69740,6 +69752,166 @@ ${parts.join("\n")}
   moClass();
   if (reduceMotion.addEventListener) reduceMotion.addEventListener("change", () => { moClass(); if (reduceMotion.matches) { moFlush(); MO.flip = null; } });
   addEventListener("beforeprint", moFlush);
+
+  // ---------- 記録のボタン (the user's call, 2026-11-27: 「記録を確定するボタンのエフェクトについて、UI UX animation を
+  // ふんだんに」, asked twice) ----------
+  // The buttons that put a record in — 食事's 追加 (its screen's) and its よく食べる・きのうと同じ・いつもの, 運動's, 勉強's and
+  // からだ's 追加・記録する, 家計簿's 支出を入力する, ひとことで追加 and よく使う, a record's sheet's 保存, すきま運動's — answer each
+  // press and tell what came of it, as 動き's HIG would have it (with a purpose, quick and springy, never in the way):
+  //  - pressed: a ripple spreads from the finger over the button
+  //  - a record put in: the button pops, its kind's colour (つみかさね's, as the user picked it) fills it from where it was
+  //    pressed and a tick draws itself over it, a ring of that colour spreads round it, a burst of small blocks of that
+  //    colour flies up and falls away; and when it
+  //    made a block on つみかさね, one block flies off along an arc to つみかさね's tab, which bounces with ＋1 (in a sheet,
+  //    where the tab bar is under it, ＋1 rises from the button); a light buzz where the phone has one
+  //  - nothing put in (a field still wanting, a form's button): the button shakes its head, with a double buzz
+  // Laid over the button, in the sheet it is in (the page's own elements untouched but for the button's pop and shake, so
+  // a button drawn again meanwhile cuts nothing short), gone a moment after, never under a finger (pointer-events none).
+  // With 動き only (moOn: none with Reduce Motion, nor under a test program unless it asks, window.__moForce). A record is
+  // known put in by a save made (tsumiGen) just after the press; its blocks by つみかさね's tally. Function declarations and var
+  var RFX = { press: null };
+  var RFX_FORMS = { mealForm: "meal", workoutForm: "workout", studyForm: "study", wtForm: "weight", exForm: "money", mo2Quick: "money", recForm: "" };
+  var RFX_CHIPS = [["#dt13Quick .meal-pick", "workout"], ["#mealOften .often, #mealYesterday .often, #dt4Sets .often:not(.dt4-set-make)", "meal"], ["#exOften .often", "money"]];
+  var RFX_SEL = Object.keys(RFX_FORMS).map((id) => `#${id} [type="submit"], [form="${id}"][type="submit"]`).concat(RFX_CHIPS.map(([q]) => q)).join(", ");
+  function rfxOn() { return typeof moOn === "function" && moOn(); }
+  function rfxKindOf(b) {
+    for (const [q, k] of RFX_CHIPS) if (b.matches(q)) return k;
+    const f = b.form || b.closest("form"), k = f ? RFX_FORMS[f.id] : undefined;
+    return k || (f && f.id === "recForm" && recEdit && recEdit.kind) || "meal";
+  }
+  function rfxInk(kind) { try { return tsumiInk(kind) || "var(--accent)"; } catch { return "var(--accent)"; } }
+  function rfxSolid(b) { const c = getComputedStyle(b).backgroundColor; return !!c && c !== "transparent" && !/rgba\([^)]*,\s*0\)$/.test(c); }
+  function rfxTally() { try { return tsumiBlocks(false, "tally").n; } catch { return 0; } }
+  // where to draw over a button: in the open sheet it is in (its top layer), else over the page; its box there
+  function rfxAt(b, r, dlg = null) {
+    const d = dlg || (b && b.closest("dialog")), host = d && d.open ? d : document.body;
+    if (host === document.body) return { host, x: r.left, y: r.top, pos: "fixed" };
+    const h = host.getBoundingClientRect();
+    return { host, x: r.left - h.left - host.clientLeft + host.scrollLeft, y: r.top - h.top - host.clientTop + host.scrollTop, pos: "absolute" };
+  }
+  function rfxPut(at, cls, css, text) {
+    const n = el("span", { class: "rfx " + cls, "aria-hidden": "true" }, text);
+    Object.assign(n.style, { position: at.pos }, css);
+    at.host.append(n);
+    return n;
+  }
+  function rfxEnd(n, a, ms) { const gone = () => n.remove(); if (a) a.finished.then(gone, gone); else setTimeout(gone, ms || 0); }
+  // the button's shape, laid over it
+  function rfxBox(b, r, cls, dlg = null) {
+    const at = rfxAt(b, r, dlg);
+    return rfxPut(at, "rfx-box " + cls, { left: at.x + "px", top: at.y + "px", width: r.width + "px", height: r.height + "px", borderRadius: getComputedStyle(b).borderRadius || "12px" });
+  }
+  // the button as it is now: moved, or drawn again under its id (食事's 追加), else none
+  function rfxLive(b) {
+    if (b.isConnected && b.getClientRects().length) return b;
+    const n = b.id ? document.getElementById(b.id) : null;
+    return n && n.getClientRects().length ? n : null;
+  }
+  // pressed: a ripple from the finger
+  addEventListener("pointerdown", (ev) => {
+    const b = ev.isPrimary && ev.button === 0 && ev.target.closest && ev.target.closest(RFX_SEL);
+    if (!b || b.disabled) return;
+    RFX.press = { b, x: ev.clientX, y: ev.clientY, t: performance.now() };
+    if (!rfxOn()) return;
+    const r = b.getBoundingClientRect(), px = ev.clientX - r.left, py = ev.clientY - r.top, R = Math.hypot(Math.max(px, r.width - px), Math.max(py, r.height - py)), solid = rfxSolid(b);
+    const box = rfxBox(b, r, "rfx-press"), dot = el("span", { class: "rfx-rip" });
+    Object.assign(dot.style, { left: px - R + "px", top: py - R + "px", width: 2 * R + "px", height: 2 * R + "px", background: solid ? "rgba(255, 255, 255, .4)" : rfxInk(rfxKindOf(b)) });
+    box.append(dot);
+    rfxEnd(box, moAnim(dot, [{ transform: "scale(0)", opacity: solid ? 1 : .24 }, { transform: "scale(1)", opacity: 0 }], { duration: 600, easing: MO_OUT }));
+  }, true);
+  // a record put in, or not, by the button pressed: told a moment after its form's own handler (a chip's: none for not)
+  function rfxWatch(b, kind, chip = false) {
+    if (!b || !rfxOn()) return;
+    const r = b.getBoundingClientRect(), gen = tsumiGen, n0 = rfxTally(), asks = document.querySelectorAll("dialog[open]").length, dlg = b.closest("dialog");
+    const pr = RFX.press && RFX.press.b === b && performance.now() - RFX.press.t < 5000 ? RFX.press : null;
+    setTimeout(() => {
+      if (tsumiGen !== gen) rfxYes(b, r, kind, rfxTally() - n0, pr ? (pr.x - r.left) / r.width : .5, pr ? (pr.y - r.top) / r.height : .5, dlg);
+      else if (!chip && document.querySelectorAll("dialog[open]").length <= asks) rfxNo(b); // (a question asked instead: none)
+    }, 40);
+  }
+  for (const id of Object.keys(RFX_FORMS)) {
+    const f = $(id), btnOf = () => f.querySelector('[type="submit"]') || document.querySelector(`[form="${id}"][type="submit"]`);
+    if (!f) continue;
+    f.addEventListener("submit", (ev) => { const b = ev.submitter || btnOf(); if (b) rfxWatch(b, rfxKindOf(b)); }, true);
+    // a field the browser won't let go (required, out of its range): no submit comes, so its press shakes (once, and only
+    // just after a press of this form's button: not for a check made otherwise)
+    f.addEventListener("invalid", () => {
+      const pr = RFX.press, now = performance.now();
+      if (!rfxOn() || !pr || now - pr.t > 1500 || (pr.b.form !== f && pr.b.closest("form") !== f) || now - (RFX.no || 0) < 600) return;
+      RFX.no = now;
+      rfxNo(pr.b);
+    }, true);
+  }
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest && ev.target.closest(RFX_CHIPS.map(([q]) => q).join(", "));
+    if (b) rfxWatch(b, rfxKindOf(b), true);
+  }, true);
+  // put in: the pop, the fill and the tick, the burst, the block to つみかさね
+  // (over the button where it is now, the page moved by the record or not; its press at the same place in it)
+  function rfxYes(b0, r0, kind, plus, fx, fy, dlg) {
+    const live = rfxLive(b0), b = live || b0, r = live ? live.getBoundingClientRect() : r0, px = fx * r.width, py = fy * r.height, ink = rfxInk(kind), R = Math.hypot(Math.max(px, r.width - px), Math.max(py, r.height - py));
+    if (live) moAnim(b, [{ transform: "scale(.94)" }, { transform: "scale(1.07)", offset: .42 }, { transform: "none" }], { duration: 600, easing: MO_OUT });
+    if (live) dlg = b.closest("dialog") || dlg;
+    const box = rfxBox(b, r, "rfx-done", dlg), fill = el("span", { class: "rfx-fill" }), svg = svgEl("svg", { class: "rfx-check", viewBox: "0 0 24 24" }), tick = svgEl("path", { d: "M5 12.5l4.5 4.5L19 7.5", pathLength: "1" });
+    box.style.setProperty("--rfx-c", ink);
+    svg.append(tick); box.append(fill, svg);
+    moAnim(fill, [{ clipPath: `circle(0px at ${px}px ${py}px)` }, { clipPath: `circle(${R + 2}px at ${px}px ${py}px)` }], { duration: 400, easing: MO_OUT, fill: "both" });
+    moAnim(svg, [{ transform: "scale(.4) rotate(-12deg)" }, { transform: "none" }], { duration: 560, delay: 140, easing: MO_BOUNCE, fill: "both" });
+    moAnim(tick, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 360, delay: 170, easing: MO_DRAW, fill: "both" });
+    rfxEnd(box, moAnim(box, [{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.96)" }], { duration: 280, delay: 980, easing: "ease-in", fill: "both" }), 1300);
+    // a ring of its colour spreading round the button (seen whatever the button's own colour)
+    const at = rfxAt(b, r, dlg), ring = rfxPut(at, "rfx-ring", { left: at.x + "px", top: at.y + "px", width: r.width + "px", height: r.height + "px", borderRadius: getComputedStyle(b).borderRadius || "12px" });
+    rfxEnd(ring, moAnim(ring, [{ boxShadow: `0 0 0 0 ${ink}`, opacity: .6 }, { boxShadow: `0 0 0 16px ${ink}`, opacity: 0 }], { duration: 720, delay: 110, easing: MO_OUT, fill: "both" }));
+    rfxBurst(b, r, ink, dlg);
+    if (plus > 0) rfxBlock(b, r, ink, plus, dlg);
+    try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch {}
+  }
+  // small blocks of its colour, flying up and falling away
+  function rfxBurst(b, r, ink, dlg) {
+    const at = rfxAt(b, r, dlg), cx = at.x + r.width / 2, cy = at.y + r.height / 2, light = `color-mix(in srgb, ${ink} 45%, #ffffff)`;
+    for (let i = 0; i < 14; i++) {
+      const size = 5 + Math.random() * 5, ang = ((-90 + (i / 13 - .5) * 160 + (Math.random() - .5) * 14) * Math.PI) / 180, dist = 34 + Math.random() * 48;
+      const dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist, fall = 22 + Math.random() * 26, rot = (Math.random() * 2 - 1) * 340;
+      const bit = rfxPut(at, "rfx-bit", { left: cx - size / 2 + "px", top: cy - size / 2 + "px", width: size + "px", height: size + "px", background: i % 3 ? ink : light });
+      rfxEnd(bit, moAnim(bit, [
+        { transform: "translate(0, 0) rotate(0deg) scale(.3)", opacity: 1 },
+        { transform: `translate(${dx * .72}px, ${dy * .72}px) rotate(${rot * .55}deg) scale(1)`, opacity: 1, offset: .42 },
+        { transform: `translate(${dx}px, ${dy + fall}px) rotate(${rot}deg) scale(.6)`, opacity: 0 }],
+        { duration: 720 + Math.random() * 300, delay: 110 + Math.random() * 70, easing: "cubic-bezier(.2, .7, .4, 1)", fill: "both" }));
+    }
+  }
+  // a block made on つみかさね: one flies to its tab (on the page), which bounces with ＋1; in a sheet, ＋1 rises from the button
+  function rfxBlock(b, r, ink, plus, dlg) {
+    const tab = document.querySelector('.menu button[data-tab="tsumi"]'), d = dlg || b.closest("dialog"), mark = tab && (tab.querySelector(".mi") || tab);
+    if (!mark || (d && d.open) || !mark.getClientRects().length) {
+      const at = rfxAt(b, r, d), tag = rfxPut(at, "rfx-plus", { left: at.x + r.width / 2 + "px", top: at.y - 6 + "px", color: ink }, `つみかさね ＋${plus}`);
+      rfxEnd(tag, moAnim(tag, [{ transform: "translate(-50%, 8px) scale(.6)", opacity: 0 }, { transform: "translate(-50%, -8px) scale(1.08)", opacity: 1, offset: .3 }, { transform: "translate(-50%, -12px)", opacity: 1, offset: .7 }, { transform: "translate(-50%, -26px)", opacity: 0 }], { duration: 1300, delay: 260, easing: MO_OUT, fill: "both" }));
+      return;
+    }
+    const sx = r.left + r.width / 2, sy = r.top + r.height / 2, m = mark.getBoundingClientRect(), ex = m.left + m.width / 2, ey = m.top + m.height / 2;
+    const mx = (sx + ex) / 2 + (ex >= sx ? -40 : 40), my = Math.min(sy, ey) - 110, frames = [];
+    for (let i = 0; i <= 12; i++) {
+      const t = i / 12, u = 1 - t, x = u * u * sx + 2 * u * t * mx + t * t * ex, y = u * u * sy + 2 * u * t * my + t * t * ey;
+      frames.push({ offset: t, opacity: t > .94 ? 0 : 1, transform: `translate(${(x - sx).toFixed(1)}px, ${(y - sy).toFixed(1)}px) rotate(${Math.round(t * 400)}deg) scale(${(1 + Math.sin(t * Math.PI) * .4 - t * .4).toFixed(3)})` });
+    }
+    const blk = rfxPut({ host: document.body, pos: "fixed" }, "rfx-fly", { left: sx - 7 + "px", top: sy - 7 + "px", background: ink });
+    const a = moAnim(blk, frames, { duration: 780, delay: 180, easing: "cubic-bezier(.45, .05, .55, .95)", fill: "both" });
+    const land = () => { blk.remove(); rfxLand(tab, mark, ink, plus); };
+    if (a) a.finished.then(land, () => blk.remove()); else land();
+  }
+  function rfxLand(tab, mark, ink, plus) {
+    if (!mark.isConnected) return;
+    moAnim(mark, [{ transform: "none" }, { transform: "translateY(-4px) scale(1.32)", offset: .32 }, { transform: "none" }], { duration: 620, easing: MO_BOUNCE });
+    const t = tab.getBoundingClientRect(), tag = rfxPut({ host: document.body, pos: "fixed" }, "rfx-plus", { left: t.left + t.width / 2 + "px", top: t.top + "px", color: ink }, `＋${plus}`);
+    rfxEnd(tag, moAnim(tag, [{ transform: "translate(-50%, 0) scale(.6)", opacity: 0 }, { transform: "translate(-50%, -16px) scale(1.12)", opacity: 1, offset: .3 }, { transform: "translate(-50%, -34px)", opacity: 0 }], { duration: 950, easing: MO_OUT, fill: "both" }));
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch {}
+  }
+  // not put in: the button shakes its head
+  function rfxNo(b) {
+    if (!b.isConnected || !b.getClientRects().length) return;
+    moAnim(b, [{ transform: "none" }, { transform: "translateX(-8px)" }, { transform: "translateX(7px)" }, { transform: "translateX(-5px)" }, { transform: "translateX(3px)" }, { transform: "none" }], { duration: 440, easing: "ease-out" });
+    try { if (navigator.vibrate) navigator.vibrate([26, 50, 26]); } catch {}
+  }
 
   // ---------- boot ----------
   function renderAll() {
