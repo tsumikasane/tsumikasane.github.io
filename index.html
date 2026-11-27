@@ -4104,12 +4104,6 @@ ul.list.td20-time > li { display: grid; grid-template-columns: minmax(0, 7em) mi
 .td12-late-acts .chip-btn.td12-done { background: var(--accent-fill); color: #ffffff; }
 .td12-late-skip { text-align: center; }
 .td12-late-skip .link-btn { min-height: 44px; }
-.td12-rule { display: grid !important; gap: 8px; padding-block: 10px !important; }
-.td12-rule-to { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.td12-rule-to select, .td12-rule-w { width: 100%; min-width: 0; }
-.td12-rule .td12-rule-w, .td12-rule select { box-sizing: border-box; min-height: 44px; padding: 0 12px; border: 1px solid var(--separator); border-radius: 10px; background-color: var(--surface); color: var(--fg); font: inherit; font-size: var(--t-sub); }
-.td12-rule-end { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.td12-rule-del { min-height: 40px; }
 #td12Print { display: none; }
 @media print {
   body:has(#td12Print) > :not(#td12Print) { display: none !important; }
@@ -24944,7 +24938,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 19:51"; // 96c886ab (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 20:09"; // 5cbd8777 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -48901,8 +48895,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // (⑨), and 期限切れ carried to today by itself (⑩). Function declarations and var, as the page may draw before this
   // runs ----------
   var todoTwelve = false;
-  var td12Adding = false, td12Said = "", td12RulesSig = "", td12LateIds = [], td12LateAt = 0, td12LateDid = 0, td12CarryT = null;
-  // kept with the account (td12): ② the rules, ⑩ the carry on or off
+  var td12LateIds = [], td12LateAt = 0, td12LateDid = 0, td12CarryT = null;
+  // kept with the account (td12): ② the rules (kept since ② went, 2026-11-27, read by nothing), ⑩ the carry on or off
   function td12Set() {
     const v = settings.get("td12") || {};
     const rules = (Array.isArray(v.rules) ? v.rules : []).filter((r) => r && typeof r.w === "string").map((r) => ({ w: r.w, list: typeof r.list === "string" ? r.list : "", label: typeof r.label === "string" ? r.label : "", flag: !!r.flag }));
@@ -48933,35 +48927,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return { ...out, ...(t.pin ? { pin: true } : {}), ...(td12Goal(t) ? { goalN: td12Goal(t) } : {}), ...(td12Rel(t).length ? { rel: td12Rel(t) } : {}) };
   };
 
-  // ② 自動で振り分け: rules in ToDo's 編集, each some words and the list and label a new ToDo whose name holds them
-  // gets (the first rule that fits; a list or label picked in the form stays). Only from the new ToDo's form; the message
-  // says where it went
-  function td12Rule(text) {
-    const f = foldText(text);
-    return td12Set().rules.find((r) => r.w.trim() && f.includes(foldText(r.w.trim()))) || null;
-  }
-  function td12OnAdd(x) {
-    const out = { ...x }; // (④ 数える came from the new form too, till 2026-11-19)
-    const r = typeof x.text === "string" ? td12Rule(x.text) : null;
-    if (!r) return out;
-    const said = [];
-    if (!out.listId && r.list && todoLists.get(r.list)) { out.listId = r.list; said.push(`「${clip(todoLists.get(r.list).name, 12)}」`); }
-    if (!out.labelId && r.label && todoLabels.get(r.label)) { out.labelId = r.label; said.push(`ラベル「${clip(todoLabels.get(r.label).name, 12)}」`); }
-    if (said.length && !td12Said) td12Said = `振り分け：${said.join("・")}`;
-    return out;
-  }
-  const td12AddManyBase = todos.addMany;
-  todos.addMany = function (list) { return td12AddManyBase.call(this, todoTwelve && td12Adding && Array.isArray(list) ? list.map(td12OnAdd) : list); };
-  document.addEventListener("submit", (ev) => {
-    if (ev.target?.id !== "todoForm") return;
-    td12Adding = true; td12Said = "";
-    setTimeout(() => { td12Adding = false; }, 0);
-  }, true);
-  const td12FlashBase = flash;
-  flash = function (msg, undo, ms, label) {
-    if (td12Said && typeof msg === "string" && msg.includes("追加しました")) { msg += `（${td12Said}）`; td12Said = ""; }
-    return td12FlashBase(msg, undo, ms, label);
-  };
+  // ② 自動で振り分け (rules in ToDo's 編集: some words, and the list and label a new ToDo whose name held them got, said in
+  // the message 振り分け：…): taken out at the user's call (2026-11-27, tools/REMOVED.md). The rules made stay in the
+  // setting td12, read by nothing: a new ToDo goes where its form puts it
 
   // ③ the day's ToDos read out (その他): taken out at the user's call (2026-11-24, tools/REMOVED.md)
 
@@ -49205,8 +49173,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const g = td12GuideBase();
     if (!todoTwelve) return g;
     const add = (head, rows) => { const x = g.find(([h]) => h === head); if (x) x[1].push(...rows); else g.push([head, rows]); };
-    add("整理する", [["いちばん上に固定", "長押し。一覧のいちばん上の「固定」に出ます"], ["自動で振り分け", "「編集」。名前のことばで、リスト・ラベルを自動で付けます"],
-      ["期限切れを片づける", "「その他」。1件ずつ、きょう・あした・期限なしなどに。「編集」で、毎朝きょうに持ち越すことも"], ["関連するToDo", "ToDoの画面、または長押し"]]);
+    add("整理する", [["いちばん上に固定", "長押し。一覧のいちばん上の「固定」に出ます"], ["期限切れを片づける", "「その他」。1件ずつ、きょう・あした・期限なしなどに。「編集」で、毎朝きょうに持ち越すことも"], ["関連するToDo", "ToDoの画面、または長押し"]]);
     add("取り組む", [["数えるToDo", "ToDoの画面の「数える」。一覧の＋1で進めて、その回数で完了します"]]);
     add("ふりかえる", [["ToDoの記録", "「その他」。自己ベストの日や週、続けて終えた日"], ["最近開いたToDo", "「その他」"]]);
     add("ほかとつなぐ", [["印刷", "「その他」。一覧を紙やPDFにできます"]]);
@@ -49234,40 +49201,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ToDo's 編集: ② the rules, ⑩ the carry
-  function td12RuleRow(r, i) {
-    const rules = () => td12Set().rules, put = (patch) => { const rs = rules(); if (!rs[i]) return; rs[i] = { ...rs[i], ...patch }; td12Put({ rules: rs }); td12RulesSig = JSON.stringify(td12Set().rules); };
-    const word = el("input", { type: "text", class: "td12-rule-w", value: r.w, maxlength: 40, placeholder: "ことば", "aria-label": "ことば", onchange: (ev) => put({ w: ev.target.value.trim() }) });
-    const list = el("select", { class: "td12-rule-list", "aria-label": "リスト", onchange: (ev) => put({ list: ev.target.value }) }, el("option", { value: "" }, "リストはそのまま"),
-      (todoEight ? td8Lists() : sortedTodoLists()).map((l) => el("option", { value: l.id, selected: l.id === r.list }, l.name)));
-    const label = el("select", { class: "td12-rule-label", "aria-label": "ラベル", onchange: (ev) => put({ label: ev.target.value }) }, el("option", { value: "" }, "ラベルはそのまま"),
-      sortedTodoLabels().map((l) => el("option", { value: l.id, selected: l.id === r.label }, l.name)));
-    const del = el("button", { type: "button", class: "link-btn danger td12-rule-del", "aria-label": `ルール「${r.w}」を削除`, onclick: () => {
-      const was = rules(); td12Put({ rules: was.filter((_, k) => k !== i) }); renderTd12Settings(true);
-      flash(`ルール「${r.w || "（ことばなし）"}」を削除しました`, () => { td12Put({ rules: was }); renderTd12Settings(true); });
-    } }, "削除");
-    return el("li", { class: "td12-rule" }, word, el("div", { class: "td12-rule-to" }, list, label), el("div", { class: "td12-rule-end" }, del));
-  }
   function td12InitSettings() {
     const foot = $("td11SwipeOn")?.closest("ul")?.nextElementSibling;
     if (!foot) return;
-    foot.after(el("h3", { class: "group-head" }, "自動で振り分け"),
-      el("ul", { class: "list card td12-rules", id: "td12Rules" }),
-      el("p", { class: "group-foot" }, el("button", { type: "button", class: "link-btn", id: "td12RuleAdd", onclick: () => { td12Put({ rules: [...td12Set().rules, { w: "", list: "", label: "", flag: false }] }); renderTd12Settings(true); requestAnimationFrame(() => [...document.querySelectorAll(".td12-rule-w")].pop()?.focus()); } }, "ルールを追加")),
-      el("p", { class: "group-foot" }, el("span", { class: "phrase" }, "新しいToDoの名前にことばが入っていると、リスト・ラベルを自動で付けます。"), el("span", { class: "phrase" }, "追加の画面でリストやラベルを選んだときは、そちらが優先です。")),
+    // (② 自動で振り分け, its rules and ルールを追加 and the words under them, before 期限切れ: taken out at the user's call,
+    // 2026-11-27, tools/REMOVED.md)
+    foot.after(
       el("h3", { class: "group-head" }, "期限切れ"),
       el("ul", { class: "list card td11-switches" }, td11Switch("td12CarryOn", "期限切れをきょうに持ち越す", td12Set().carry, (on) => td12Put({ carry: on }))),
       el("p", { class: "group-foot" }, "ToDoのページを開いたとき、期限切れのToDoを自動できょうに移します（元に戻せます）。"));
-    renderTd12Settings(true);
+    renderTd12Settings();
   }
-  function renderTd12Settings(force = false) {
-    const ul = $("td12Rules");
-    if (!ul) return;
-    const s = td12Set();
-    if ($("td12CarryOn") && document.activeElement !== $("td12CarryOn")) $("td12CarryOn").checked = s.carry;
-    // (one being written stays as it is; drawn again only for rules changed elsewhere, so a press there isn't lost)
-    if (!force && (ul.contains(document.activeElement) || JSON.stringify(s.rules) === td12RulesSig)) return;
-    td12RulesSig = JSON.stringify(s.rules);
-    setChildren(ul, s.rules.length ? s.rules.map(td12RuleRow) : el("li", { class: "sub td12-rule-none" }, "まだありません。"));
+  function renderTd12Settings() {
+    if ($("td12CarryOn") && document.activeElement !== $("td12CarryOn")) $("td12CarryOn").checked = td12Set().carry;
   }
   const td12SettingsBase = renderTd11Settings;
   renderTd11Settings = function () { td12SettingsBase(); if (todoTwelve) renderTd12Settings(); };

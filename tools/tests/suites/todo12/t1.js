@@ -49,17 +49,17 @@ async function open(b, when, o = {}) {
   const r1n = (await byText(p, "ゴミ出し")).find((t) => !t.done);
   ok(r1n && r1n.pin === true && r1n.id !== "r1", "① a repeat's next turn pinned too", r1n);
 
-  // ---- ② 自動で振り分け: a rule in 編集, a new ToDo put by it (a rule's 重要, kept from before, put on nothing now: taken
-  // off with 重要, 2026-11-23)
+  // ---- ② 自動で振り分け: taken out at the user's call (2026-11-27, tools/REMOVED.md). A rule kept from before puts a new
+  // ToDo nowhere (nothing said of 振り分け); 編集 has no rules, ルールを追加 nor their words; the rules stay in the setting
   await W(p, "setting", "td12", { rules: [{ w: "買う", list: "l-job", label: "", flag: true }], carry: false, updatedAt: Date.now() }); await p.waitForTimeout(300);
   await p.click("#todoAdd"); await p.waitForTimeout(700);
   await p.fill("#todoText", "電池を買う"); await p.dispatchEvent("#todoText", "input");
   await p.click("#todoSave"); await p.waitForTimeout(700);
-  ok((await status(p)).includes("振り分け：「バイト」）") , "② said where it went (no 重要)", await status(p));
+  ok(!(await status(p)).includes("振り分け"), "② nothing said of 振り分け", await status(p));
   await p.click("#sheetCancel"); await p.waitForTimeout(600);
   const nb = (await byText(p, "電池を買う"))[0];
-  ok(nb && nb.listId === "l-job" && !nb.flag, "② put in the list (not 重要)", nb);
-  // a list picked in the form stays
+  ok(nb && !nb.listId && !nb.flag, "② put by no rule (no list)", nb);
+  // a list picked in the form: as ever
   await W(p, "tab", "l-uni"); await p.waitForTimeout(300);
   await p.click("#todoAdd"); await p.waitForTimeout(700);
   await p.fill("#todoText", "本を買う"); await p.dispatchEvent("#todoText", "input");
@@ -68,16 +68,11 @@ async function open(b, when, o = {}) {
   const nb2 = (await byText(p, "本を買う"))[0];
   ok(nb2 && nb2.listId === "l-uni" && !nb2.flag, "② the list picked stays", nb2);
   await W(p, "tab", ""); await p.waitForTimeout(300);
-  // the rules in 編集
+  // 編集: no rules, nor their words
   await p.click("#todoSettings"); await p.waitForTimeout(800);
-  const rw = await p.evaluate(() => [...document.querySelectorAll(".td12-rule-w")].map((x) => x.value));
-  ok(rw.length === 1 && rw[0] === "買う", "② the rule in 編集", rw);
-  await p.click("#td12RuleAdd"); await p.waitForTimeout(400);
-  await p.locator(".td12-rule-w").nth(1).fill("洗う"); await p.locator(".td12-rule-w").nth(1).dispatchEvent("change"); await p.waitForTimeout(200);
-  await p.locator(".td12-rule-label").nth(1).selectOption({ index: 0 }); await p.waitForTimeout(200);
-  ok((await W(p, "set")).rules.map((r) => r.w).join(",") === "買う,洗う", "② a rule added", (await W(p, "set")).rules);
-  await p.locator(".td12-rule-del").nth(1).click(); await p.waitForTimeout(300);
-  ok((await W(p, "set")).rules.length === 1, "② a rule deleted", (await W(p, "set")).rules);
+  const ed = await p.evaluate(() => document.querySelector("dialog[open]")?.innerText || "");
+  ok(!(await p.$("#td12Rules")) && !(await p.$("#td12RuleAdd")) && !(await p.$(".td12-rule-w")) && !/自動で振り分け|ルールを追加|新しいToDoの名前にことばが入っていると/.test(ed) && ed.includes("期限切れをきょうに持ち越す"), "② 編集: no rules, ルールを追加 nor their words (期限切れ there)");
+  ok((await W(p, "set")).rules.map((r) => r.w).join(",") === "買う", "② the rules kept in the setting", (await W(p, "set")).rules);
   await p.locator("#td12CarryOn").click({ force: true }); await p.waitForTimeout(200);
   ok((await W(p, "set")).carry === true, "⑩ the switch in 編集");
   await p.locator("#td12CarryOn").click({ force: true }); await p.waitForTimeout(200);
