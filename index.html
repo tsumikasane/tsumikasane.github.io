@@ -1372,6 +1372,8 @@ button.card.stat { width: 100%; border: 0; font: inherit; color: inherit; text-a
 
 /* weight chart */
 .chart-head { padding: 12px 12px 0; }
+#wtRanges button { padding: 0 6px; white-space: nowrap; } /* (five periods since 1週間 came, 2026-11-27: each on one line) */
+.chart .axis-wd { font-size: 12px; } /* (a week's: each day's weekday under its date) */
 /* the names over the plots, once 体脂肪率 has one under 体重's; level with where the plots start */
 .chart-name { margin: 0; padding: 10px 20px 0; font-size: var(--t-foot); line-height: 1.35; font-weight: 600; color: var(--muted); }
 .chart-wrap { position: relative; padding: 8px 8px 4px; }
@@ -8360,6 +8362,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="card">
             <div class="chart-head">
               <div class="seg" role="group" aria-label="グラフの期間" id="wtRanges">
+                <!-- 1週間 (the user's call, 2026-11-27: a week's graph besides 1か月・3か月・1年・全部) -->
+                <button type="button" data-range="7" aria-pressed="false">1週間</button>
                 <button type="button" data-range="30" aria-pressed="true">1か月</button>
                 <button type="button" data-range="90" aria-pressed="false">3か月</button>
                 <button type="button" data-range="365" aria-pressed="false">1年</button>
@@ -15652,7 +15656,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       renderWeight();
     });
   });
-  const rangeLabel = () => ({ 0: "これまで", 30: "1か月", 90: "3か月", 365: "1年" })[wtRange] || `${wtRange}日`;
+  const rangeLabel = () => ({ 0: "これまで", 7: "1週間", 30: "1か月", 90: "3か月", 365: "1年" })[wtRange] || `${wtRange}日`;
   // the period's first day (全部: the first record's) and how many days it spans
   const rangeStart = () => (wtRange ? addDays(todayKey, -(wtRange - 1)) : sortedWeights()[0]?.id || todayKey);
   const rangeDays = () => daysBetween(rangeStart(), todayKey) + 1;
@@ -15790,14 +15794,16 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const nm = () => (typeof name === "function" ? name() : name);
     c.render = () => {
       const W = Math.max(300, Math.round(wrap.clientWidth - 16) || 600);
+      // a week's (1週間, the user's call 2026-11-27; or 全部 when as short): every day under its point, its date and its
+      // weekday under that, the points in from the edges so each date sits under its own
+      const start = rangeStart(), spanDays = Math.max(2, rangeDays()), week = spanDays <= 7;
       // HIG charts: the value labels sit on the trailing side, as in Health, so the plot starts where the card's text starts
-      const padL = 12, padR = 44, padT = 22, padB = 28;
+      const padL = 12, padR = 44, padT = 22, padB = week ? 44 : 28;
       const pw = W - padL - padR, ph = H - padT - padB;
       svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
       svg.setAttribute("width", W); svg.setAttribute("height", H);
       svg.replaceChildren();
       tip.hidden = true; c.hover = -1; c.overlay = null; c.avg = null; c.drew = { avg: false, band: false };
-      const start = rangeStart(), spanDays = Math.max(2, rangeDays());
       const recs = sortedWeights().filter((r) => r.id >= start && r.id <= todayKey && val(r) > 0);
       const goal = target();
       c.pts = [];
@@ -15824,7 +15830,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const yLo = Math.floor((lo - span * 0.1) / step) * step;
       const yHi = Math.ceil((hi + span * 0.1) / step) * step;
       const y = (v) => padT + ((yHi - v) / (yHi - yLo)) * ph;
-      const x = (d) => padL + (daysBetween(start, d) / (spanDays - 1)) * pw;
+      const inset = week ? 22 : 0, x = (d) => padL + inset + (daysBetween(start, d) / (spanDays - 1)) * (pw - 2 * inset);
       const dec = step < 1 ? 1 : 0;
       // ③ 普通体重's band, where it falls inside the plot with an edge of it there (all of the plot inside it says nothing)
       const bd = band();
@@ -15838,17 +15844,28 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       for (let i = 0; i <= nTicks; i++) {
         const v = yLo + i * step, yy = y(v);
         svg.append(svgEl("line", { class: "gridline", x1: padL, x2: W - padR, y1: yy, y2: yy }));
-        svg.append(svgEl("text", { class: "axis-text", x: W - padR + 8, y: yy + 4, "text-anchor": "start" }, v.toFixed(dec)));
+        // (its value only where the places shown say it as it is: a line at 62.25 was said 62.3, often so in a week's
+        // small span, 2026-11-27)
+        if (Math.abs(Number(v.toFixed(dec)) - v) < 1e-9) svg.append(svgEl("text", { class: "axis-text", x: W - padR + 8, y: yy + 4, "text-anchor": "start" }, v.toFixed(dec)));
       }
       // x ticks
       let labelDates = [];
-      if (spanDays <= 31) { for (let i = spanDays - 1; i >= 0; i -= 7) labelDates.unshift(addDays(start, i)); }
+      if (week) { for (let i = 0; i < spanDays; i++) labelDates.push(addDays(start, i)); }
+      else if (spanDays <= 31) { for (let i = spanDays - 1; i >= 0; i -= 7) labelDates.unshift(addDays(start, i)); }
       else if (spanDays <= 92) { for (let i = spanDays - 1; i >= 0; i -= 15) labelDates.unshift(addDays(start, i)); }
       else { for (let i = 0; i < spanDays; i++) { const d = addDays(start, i); if (spanDays <= 400 ? d.endsWith("-01") : /-(01|07)-01$/.test(d)) labelDates.push(d); } }
-      const maxLabels = Math.max(2, Math.floor(pw / 44));
+      const maxLabels = week ? spanDays : Math.max(2, Math.floor(pw / 44));
       if (labelDates.length > maxLabels) { const k = Math.ceil(labelDates.length / maxLabels); labelDates = labelDates.filter((_, i) => (labelDates.length - 1 - i) % k === 0); }
       for (const d of labelDates) {
         const xx = x(d);
+        if (week) {
+          // the first day (and a month's 1st) as 11/21, the others the day alone (seven 11/21 don't fit side by side on
+          // a phone)
+          const dd = parseYmd(d), whole = d === labelDates[0] || dd.getDate() === 1;
+          svg.append(svgEl("text", { class: "axis-text", x: xx, y: H - 24, "text-anchor": "middle" }, whole ? fmtMD(d) : String(dd.getDate())),
+            svgEl("text", { class: "axis-text axis-wd", x: xx, y: H - 7, "text-anchor": "middle" }, WD[dd.getDay()]));
+          continue;
+        }
         svg.append(svgEl("text", { class: "axis-text", x: xx, y: H - 8, "text-anchor": xx < padL + 20 ? "start" : "middle" }, spanDays > 92 ? (d.endsWith("-01-01") && spanDays > 400 ? `${d.slice(0, 4)}年` : `${parseYmd(d).getMonth() + 1}月`) : fmtMD(d)));
       }
       // marks
@@ -24919,7 +24936,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 13:03"; // 47e2d7a4 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 13:17"; // 4ab9b647 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
