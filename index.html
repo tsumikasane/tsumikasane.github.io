@@ -8658,7 +8658,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <input type="text" id="rtName" class="full" placeholder="新しい項目" aria-label="新しい項目" maxlength="40" required>
           <div class="actions"><button class="btn" type="submit"><svg class="icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>追加</button></div>
         </form>
-        <p class="group-foot"><span class="phrase">名前はタップすると書きかえられます。</span><span class="phrase">⋯ で、絵文字・メモ・回数・かかる時間・時刻の目安・きっかけ・チャレンジ・ミニマム・参考リンク・期間・ほかのページとの連携・一時停止を決められます。</span><span class="phrase">× を2回押すと、その項目を消します。</span></p>
+        <!-- (the words under the form, 「名前はタップすると書きかえられます。⋯ で、絵文字・メモ・…・一時停止を決められます。× を2回押す
+             と、その項目を消します。項目を長押しすると、パス・ひとこと・複製などをすぐ選べます。」: taken out at the user's call,
+             2026-11-27, tools/REMOVED.md. Renaming by a tap, ⋯, × and the 長押し menu stay) -->
         <!-- ① the week up to the day shown, a square an item a day, to check in at once (the user's call, 2026-11-10) -->
         <div class="card" id="rtWeekCard" hidden>
           <div class="card-head">この1週間</div>
@@ -15349,7 +15351,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (!rows.length) ul.append(el("li", { class: "empty" }, !list.length ? "まだ項目がありません。下の欄から、毎日やることを追加してください。"
       : list.some(rtPausedNow) ? "この日の項目はありません。休止中の項目は、下の「休止中の項目」から再開できます。" : "この日は、まだ項目がありませんでした。"));
     for (const r of rt2Order(rows, viewDate)) ul.append(rtRow(r)); // (その2 ⑧ できた項目を下へ, when it is on)
-    renderRtFoot(st, rest);
+    renderRtFoot(st);
     renderRtPaused(list);
     rt2Wake(); // (その2 ③ the time to do one by, passed while the page is open)
     rt3Render(); // (その3 ③ きのうのチェック忘れ, ② お休みの予定 in the gear)
@@ -15383,14 +15385,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       el("button", { type: "button", class: "icon-btn rt-opts", "aria-label": `「${r.name}」の設定`, "aria-haspopup": "dialog", onclick: (ev) => openRecEdit("rtItem", r.id, ev.detail === 0) }, icon("more", 22)),
       delButton(() => removeWithUndo(routines, r.id), "削除", r.name));
   }
-  // under the list: ⑨ all done (and the days in a row so), or the run of such days still going today, and the tools for the
-  // day's still to do (⑧ きょうをお休みにする with them: taken out at the user's call, 2026-11-26, tools/REMOVED.md)
-  function renderRtFoot(st, rest) {
+  // under the list: ⑨ all done (and the days in a row so), or what is left today, and the tools for the day's still to do
+  // (⑧ きょうをお休みにする with them: taken out at the user's call, 2026-11-26, tools/REMOVED.md; the run of such days still
+  // going today, 「ぜんぶできた日が ○日続いています。あと ○ 項目です」: taken out at the user's call, 2026-11-27, tools/REMOVED.md)
+  function renderRtFoot(st) {
     const today = viewDate === todayKey, run = st.items.length ? rtAllRun(viewDate) : 0, left = st.items.length - st.done.length;
     // (その2 ① the time they were all done, ④ the minutes left)
     const allAt = rt2AllAt(st, viewDate), mins = today && !st.all ? rt2LeftWords(st, viewDate) : "";
     const words = st.all ? (allAt ? `${rt2Hm(allAt)}に` : "") + "ぜんぶできました" + (run >= 2 ? `（${run}日連続）` : "")
-      : today && run >= 1 && !rest ? `ぜんぶできた日が ${run}日続いています。あと ${left} 項目です${mins ? `（${mins}）` : ""}` : mins ? `のこり ${left} 項目・${mins}` : "";
+      : mins ? `のこり ${left} 項目・${mins}` : "";
     const tools = st.items.length ? rt2FootButtons(st, today).filter(Boolean) : []; // (その2 ⑤ 1つずつ進める, ⑦ のこりをぜんぶチェック, その3 ① 項目をパスする)
     setChildren($("rtFoot"), words ? el("p", { class: "rt-all" + (st.all ? " on" : "") }, words) : null,
       tools.length ? el("div", { class: "label-tools" }, tools) : null);
@@ -24940,7 +24943,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月27日 20:16"; // 5e25fa96 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月27日 20:33"; // 06aba353 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -68523,8 +68526,9 @@ ${parts.join("\n")}
     if (tab !== "routine") return;
     draw(() => renderRt6Months(list)); draw(() => renderRt6Hours(list));
   }
-  // made once: ① under the day's list, ③ and ① under the form (the 長押し said in its words), ⑤ after 週ごとの達成率, ⑦
-  // after 1年のカレンダー, ⑨ beside 文字で送る, ⑧ under 並べ替え and ⑩ at the gear's end; ② on the list
+  // made once: ① under the day's list, ③ and ① under the form, ⑤ after 週ごとの達成率, ⑦ after 1年のカレンダー, ⑨ beside
+  // 文字で送る, ⑧ under 並べ替え and ⑩ at the gear's end; ② on the list (the 長押し once said in the words under the form, with
+  // them: taken out at the user's call, 2026-11-27, tools/REMOVED.md)
   function rt6Build() {
     if ($("rt6QuitCard")) return;
     $("rtList").closest(".card").after(el("div", { class: "card", id: "rt6QuitCard", hidden: true },
@@ -68533,7 +68537,6 @@ ${parts.join("\n")}
     $("rtForm").after(el("div", { class: "rt6-add-tools" },
       el("button", { type: "button", class: "link-btn", "aria-haspopup": "dialog", onclick: () => openRt6Bulk() }, "まとめて追加"),
       el("button", { type: "button", class: "link-btn", "aria-haspopup": "dialog", onclick: () => openRt6Quit() }, "やめる習慣を追加")));
-    $("sec-routine").querySelector("#rtForm ~ p.group-foot")?.append(el("span", { class: "phrase" }, "項目を長押しすると、パス・ひとこと・複製などをすぐ選べます。"));
     $("rt2WeeksCard").after(el("div", { class: "card", id: "rt6MonthsCard", hidden: true },
       el("div", { class: "card-head row-between" }, el("span", {}, "月ごとの達成率"), el("span", { class: "muted small", id: "rt6MonthsSum" })),
       el("div", { class: "st-week st2-weeks rt2-weeks rt6-months", id: "rt6Months", role: "group", "aria-label": "月ごとの達成率" }),
