@@ -1449,6 +1449,11 @@ button.cat-row:active { background: var(--fill-press); }
 .cat-row .cat { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cat-track { height: 16px; display: flex; align-items: center; }
 .cat-bar { height: 12px; min-width: 4px; border-radius: 6px; background: var(--c-money); }
+/* 家計簿's 費目ごとの支出: each bar in its 費目's colour, the one its tile has in 入力 (the user's call, 2026-11-28: 「棒グラフの色を
+   カテゴリーの色とそれぞれ統一してカラフルに」; all in 家計簿's yellow before). Light and dark as the tile's picture */
+#catList .cat-bar { background: var(--ex-cl, var(--c-money)); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #catList .cat-bar { background: var(--ex-cd, var(--c-money)); } }
+:root[data-theme="dark"] #catList .cat-bar { background: var(--ex-cd, var(--c-money)); }
 /* まとめ's: 支出's bars in its red, as its chart has (the user's call, 2026-11-25); a month over its budget striped, its
    red being 支出's now. 支出's words beside 収入's in the same red (ch-out-t) */
 #moneyStats .cat-bar { background: var(--ch-out); }
@@ -16936,13 +16941,13 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     $("catCard").hidden = !cats.length;
     const maxCat = Math.max(1, ...cats.map(([, a]) => a));
     setChildren($("catList"), cats.map(([name, amt]) => {
-      const b = num(catBud[name]), d = amt - (prevBy.get(name) || 0), left = b - amt;
+      const b = num(catBud[name]), d = amt - (prevBy.get(name) || 0), left = b - amt, ic = ex2Icon(name); // (its bar in its 費目's colour, as its tile: 2026-11-28)
       const note = [prev.outs.length ? (d === 0 ? "前月と同じ" : `前月より ${d > 0 ? "+" : "−"}${fmtYen(Math.abs(d))}`) : null,
         b > 0 ? (left >= 0 ? `予算 ${fmtYen(b)}・残り ${fmtYen(left)}` : `予算 ${fmtYen(b)} を ${fmtYen(-left)} 超過`) : null].filter(Boolean);
       return el("button", { type: "button", class: "cat-row" + (moneyCat === name ? " on" : ""), "aria-pressed": String(moneyCat === name), title: `${name}：${fmtYen(amt)}`,
         onclick: () => { moneyCat = moneyCat === name ? null : name; renderMoney(); if (moneyCat) $("exFilter").scrollIntoView({ block: "nearest", behavior: reduceMotion.matches ? "auto" : "smooth" }); } },
         el("span", { class: "cat" }, name),
-        el("span", { class: "cat-track" }, el("span", { class: "cat-bar", style: amt ? `width:${Math.max(1, (amt / maxCat) * 100)}%` : "width:0;min-width:0" })),
+        el("span", { class: "cat-track" }, el("span", { class: "cat-bar", style: `--ex-cl:${ic.l};--ex-cd:${ic.d};` + (amt ? `width:${Math.max(1, (amt / maxCat) * 100)}%` : "width:0;min-width:0") })),
         el("span", { class: "amount" }, fmtYen(amt), el("small", {}, m.out ? `${Math.round((amt / m.out) * 100)}%` : "")),
         note.length ? el("span", { class: "cat-note" + (b > 0 && left < 0 ? " warn" : "") },
           b > 0 ? el("span", { class: "cat-bud" }, el("i", { class: left < 0 ? "over" : "", style: `width:${Math.min(100, Math.round((amt / b) * 100))}%` })) : null,
@@ -24866,7 +24871,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 15:55"; // fc2e6f63 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 16:05"; // 7c83ea17 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }

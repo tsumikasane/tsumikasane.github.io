@@ -1,5 +1,5 @@
 // 家計簿's まとめ: 支出 in red, its bars and its words (the user's call, 2026-11-25; amber before), in light and dark, at
-// the page itself (8765); 収入 blue as before, and the input page's 費目ごと bars as they were
+// the page itself (8765); 収入 blue as before, and the input page's 費目ごと bars not red (each its 費目's colour since 2026-11-28)
 const { chromium } = require("playwright");
 const { phone, seed } = require("./lib");
 const M = require("../money3/data");
@@ -15,9 +15,9 @@ const BLUE = { light: "rgb(22, 98, 222)", dark: "rgb(76, 141, 255)" };
     const data = JSON.parse(JSON.stringify(M.DATA));
     data.settings.push({ id: "payMethods", items: [{ id: "pm1", name: "現金" }], updatedAt: 1 });
     await seed(p, data, "money"); await p.waitForTimeout(900);
-    // the input page first: its 費目ごと bars as they were (家計簿's own colour)
+    // the input page first: its 費目ごと bars not red (家計簿's own colour before; each its 費目's colour since 2026-11-28, moneycatcolor)
     const book = await p.evaluate(() => { const x = document.querySelector("#catList .cat-bar"); return x ? getComputedStyle(x).backgroundColor : null; });
-    ok(!!book && book !== RED[scheme].bar, `${scheme}: the input page's 費目ごと bars as they were`, book);
+    ok(!!book && book !== RED[scheme].bar, `${scheme}: the input page's 費目ごと bars not red`, book);
     await p.click('#moneyParts [data-part="stats"]'); await p.waitForTimeout(700);
     const c = await p.evaluate(() => {
       const bg = (x) => (x ? getComputedStyle(x).backgroundColor : null), fill = (x) => (x ? getComputedStyle(x).fill : null), fg = (x) => (x ? getComputedStyle(x).color : null);
