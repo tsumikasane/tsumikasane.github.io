@@ -35,7 +35,9 @@ const OLD = [
   await p.click("#tsumiSettings"); await p.waitForTimeout(800);
   const gear = await txt(p, "#tsumiGroup");
   ok(gear.includes("毎日の記録のお知らせ") && gear.includes("毎日記録するもの") && !gear.includes("積み忘れのお知らせ"), "the gear: 毎日の記録のお知らせ, no 積み忘れのお知らせ");
-  ok(await p.evaluate(() => [...document.querySelectorAll("#tsumiToc button")].find((x) => x.textContent === "お知らせ")?.dataset.to) === "recRemindHead", "its お知らせ in the gear's contents leads to it");
+  // (the gear's contents at its top, お知らせ among them leading here: taken out at the user's call, 2026-11-28,
+  // tools/REMOVED.md; the group's heading stays)
+  ok(!(await p.$("#tsumiToc")) && !!(await p.$("#recRemindHead")), "no contents at the gear's top; 毎日の記録のお知らせ's heading kept");
   // the gear's これから届くお知らせ (the next 7 days' listed): taken out at the user's call (2026-11-25, tools/REMOVED.md); the
   // notifications themselves made as before (below)
   ok(!(await p.$("#tsumiBell, #tsumiBellHead, .ts-bell")) && !(await p.$$eval("#tsumiGroup h3.group-head", (l) => l.some((x) => x.textContent.includes("これから届く")))) && !gear.includes("この先7日に届くお知らせ"),

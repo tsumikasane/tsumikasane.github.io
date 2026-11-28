@@ -55,10 +55,10 @@ async function addMeal(p, text = "おにぎり") {
   const gear = await txt(p, "#tsumiGroup");
   const left = ["未来の自分への手紙", "高さくらべ", "このペースなら", "今月の目標", "ことしの目標", "きょうの目標", "つみねこの名前", "なかよし度", "つみねこの日記", "着せかえ", "おすすめ："].filter((w) => gear.includes(w));
   ok(!left.length, "the gear: none of the ten", left);
-  const toc = await p.evaluate(() => [...document.querySelectorAll("#tsumiToc button")].map((x) => `${x.textContent}:${x.dataset.to}`));
-  ok(JSON.stringify(toc) === JSON.stringify(["探す:tsumiFindHead", "記録:tsumiKindsHead", "ふりかえり:tsumiYearsHead tsumiMemoryHead", "記念:tsumiMemoHead", "写真:tsumiAlbumHead", "送る:ts6SendHead", "クイズ:ts7QuizHead", "目標:ts8AimHead", "見え方:tsumiLookHead", "お知らせ:recRemindHead"]), "the gear's contents: no 手紙, no つみねこ; 目標 at きょう・あしたのめあて", toc);
-  await p.locator("#tsumiToc button", { hasText: "目標" }).click(); // (a smooth scroll, a long way: about a second and a half)
-  ok(await p.waitForFunction(() => { const r = document.getElementById("ts8AimHead").getBoundingClientRect(); return r.top >= 0 && r.top < 400; }, null, { timeout: 5000 }).then(() => true, () => false), "目標 pressed: at きょう・あしたのめあて");
+  // (its contents at the top, 探す・記録・ふりかえり・記念・写真・送る・クイズ・目標・見え方・お知らせ, each a press away: taken
+  // out at the user's call, 2026-11-28, tools/REMOVED.md): none; the groups themselves and their headings kept
+  const heads = await p.evaluate(() => ["tsumiFindHead", "tsumiKindsHead", "tsumiMemoHead", "tsumiAlbumHead", "ts6SendHead", "ts7QuizHead", "ts8AimHead", "tsumiLookHead", "recRemindHead"].filter((id) => !document.getElementById(id)));
+  ok(!(await p.$("#tsumiToc")) && !(await p.$("#tsumiGroup nav")) && !heads.length, "the gear: no contents at its top (its groups kept)", heads);
   // ⑤ 記念
   const memo = await txt(p, "#tsumiMemos");
   ok(memo.includes("目標を達成：TOEIC 800点") && memo.includes("2,000 こ目の節目") && memo.includes("ごほうび：新しいイヤホン（1,000 こ）") && /ほか \d+ 件を見る/.test(memo), "⑤ 記念のブロック, newest first, six then ほか", memo.slice(0, 300));
