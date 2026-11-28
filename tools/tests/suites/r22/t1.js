@@ -28,6 +28,7 @@ async function addMeal(p, text = "おにぎり") {
   const D = make(); D.settings.push(REWARDS, { id: "tsumiNeko", head: "santa", scarf: false, updatedAt: 1 }); // (着せかえ's, picked before it was taken out)
   D.settings.push({ id: "tsumiDaySum", on: true, at: "23:59", updatedAt: 1 }); // (1日のまとめのお知らせ's, on before it was taken out)
   D.settings.push({ id: "tsumiWeek", on: true, wd: 3, at: "21:00", updatedAt: 1 }); // (⑩ 週のまとめのお知らせ's, on before it was taken out)
+  D.settings.push({ id: "tsumiMonthSum", on: true, at: "09:00", updatedAt: 1 }); // (月のまとめのお知らせ's, on before it was taken out)
   let p = await phone(b, at("23:50", "2026-11-10"), { deviceScaleFactor: 1 });
   await seed(p, D, "tsumi"); await p.waitForTimeout(1800);
   const n0 = await p.evaluate(() => window.__ts.shown().length);
@@ -83,12 +84,18 @@ async function addMeal(p, text = "おにぎり") {
   ok(!/週のまとめのお知らせ|その日までの1週間に積んだブロックの数/.test(gw) && !(await p.$("#tsumiWeekOn")) && !(await p.$("#tsumiWeekWd")) && !(await p.$("#tsumiWeekAt")) && !(await p.$("#tsumiWeekFoot")),
     "⑩ 週のまとめのお知らせ: not in the gear", gw.match(/週のまとめのお知らせ|その日までの1週間に積んだブロックの数/)?.[0]);
   ok(!wk.length && JSON.stringify(await setting(p, "tsumiWeek")) === JSON.stringify({ id: "tsumiWeek", on: true, wd: 3, at: "21:00", updatedAt: 1 }), "⑩ none sent though on before, its setting kept", [wk.slice(0, 1), await setting(p, "tsumiWeek")]);
+  // 月のまとめのお知らせ: taken out at the user's call (2026-11-28, tools/REMOVED.md): not in the gear (its お知らせ, 時刻 and
+  // words), none sent though it was on before (12/1 9:00, within the 40 days sent ahead), its setting kept as it was
+  const ms = await p.evaluate(() => window.__ts.alarms(Date.now()).filter((a) => a.tag.startsWith("tsumi-month:")));
+  ok(!/月のまとめのお知らせ|その前の月に積んだ数/.test(gw) && !(await p.$("#tsumiMonthSumOn")) && !(await p.$("#tsumiMonthSumAt")) && !(await p.$("#tsumiMonthSumFoot")),
+    "月のまとめのお知らせ: not in the gear", gw.match(/月のまとめのお知らせ|その前の月に積んだ数/)?.[0]);
+  ok(!ms.length && JSON.stringify(await setting(p, "tsumiMonthSum")) === JSON.stringify({ id: "tsumiMonthSum", on: true, at: "09:00", updatedAt: 1 }), "月のまとめのお知らせ: none sent though on before, its setting kept", [ms.slice(0, 1), await setting(p, "tsumiMonthSum")]);
   // 1日のまとめのお知らせ: taken out at the user's call (2026-11-27, tools/REMOVED.md): not in the gear (its お知らせ, 時刻 and
-  // words), none sent though it was on before (at 23:59, today with blocks), its setting kept as it was; 月のまとめ and 毎日の
-  // 記録のお知らせ kept (週のまとめ: taken out too, 2026-11-28, above)
+  // words), none sent though it was on before (at 23:59, today with blocks), its setting kept as it was; 毎日の記録のお知らせ
+  // kept (週のまとめ and 月のまとめ: taken out too, 2026-11-28, above)
   const gearWords = await p.evaluate(() => document.getElementById("daySheet").innerText);
   ok(!/1日のまとめのお知らせ|その日に積んだ数と種類を通知で/.test(gearWords) && !(await p.$("#tsumiDayOn")) && !(await p.$("#tsumiDayAt"))
-    && gearWords.includes("月のまとめのお知らせ") && gearWords.includes("毎日記録するもの") && !!(await p.$("#tsumiMonthSumOn")), "1日のまとめのお知らせ: not in the gear (月のまとめ, 毎日の記録 kept)", gearWords.length);
+    && gearWords.includes("毎日記録するもの") && !!(await p.$("#recRemindOn")), "1日のまとめのお知らせ: not in the gear (毎日の記録 kept)", gearWords.length);
   const daySum = await p.evaluate(() => window.__ts.alarms(Date.now()).filter((a) => a.tag.startsWith("tsumi-day:")));
   ok(!daySum.length && (await setting(p, "tsumiDaySum"))?.on === true && (await setting(p, "tsumiDaySum"))?.at === "23:59", "1日のまとめのお知らせ: none sent though on before, its setting kept", daySum);
   await closeSheet(p);

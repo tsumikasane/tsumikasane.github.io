@@ -73,11 +73,11 @@ const OLD = [
   await p.click("#recRemindTimes .rec-remind-time:nth-child(1) .icon-btn"); await p.waitForTimeout(300);
   st = await state(p);
   ok(JSON.stringify(st.times) === '["12:00","21:00"]' && st.add && await p.evaluate(() => document.activeElement?.classList.contains("rec-remind-add")), "× : that one gone, 時刻を追加 back, the focus on it", st.times);
-  await p.locator("#recRemindOn").click({ force: true }); await p.waitForTimeout(300);
+  await p.evaluate(() => document.getElementById("recRemindOn").scrollIntoView({ block: "center" })); await p.locator("#recRemindOn").click({ force: true }); // (in the middle first: not under the sheet's head) await p.waitForTimeout(300);
   st = await state(p);
   ok(!st.on && st.off && (await setting(p, "recRemind")).on === false && st.foot.startsWith("決めた時刻に、毎日記録するもののうち"), "off: saved, the times greyed, what it does said", st);
   ok((await alarms(p)).length === 0, "off: none");
-  await p.locator("#recRemindOn").click({ force: true }); await p.waitForTimeout(300);
+  await p.evaluate(() => document.getElementById("recRemindOn").scrollIntoView({ block: "center" })); await p.locator("#recRemindOn").click({ force: true }); // (in the middle first: not under the sheet's head) await p.waitForTimeout(300);
   // none picked: said
   for (const k of ["journal", "meal", "money"]) { await p.click(`label[for=recKind_${k}]`); await p.waitForTimeout(150); }
   ok((await state(p)).foot === "毎日記録するものを選んでください。" && (await alarms(p)).length === 0, "none picked: asked for, none sent", (await state(p)).foot);
