@@ -39,8 +39,8 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   ok(d1.includes("6,000 円"), "④ " + d1);
   await p.click("#monthNav .navbtn"); await p.waitForTimeout(400);
   // ⑩ the job's notes: in バイト's settings, under バイト先を追加 (a card on the page till 2026-11-28, moved at the user's call)
-  const order = await p.evaluate(() => [...document.querySelectorAll("#moneyJob [id]")].map((x) => x.id).filter((id) => ["bt4Leave", "bt10AlarmsCard", "bt16CardsLink"].includes(id)).join());
-  ok(!(await p.$("#moneyJob #bt6Notes")) && !(await txt(p, "#moneyJob")).includes("バイト先のメモ") && order === "bt4Leave,bt10AlarmsCard,bt16CardsLink", "⑩ no card on the page (the cards around it in their order)", order);
+  const order = await p.evaluate(() => [...document.querySelectorAll("#moneyJob [id]")].map((x) => x.id).filter((id) => ["bt9Cmp", "bt10AlarmsCard", "bt16CardsLink"].includes(id)).join());
+  ok(!(await p.$("#moneyJob #bt6Notes")) && !(await txt(p, "#moneyJob")).includes("バイト先のメモ") && order === "bt9Cmp,bt10AlarmsCard,bt16CardsLink", "⑩ no card on the page (the cards around it in their order)", order);
   await p.click("#moneySettings"); await p.waitForTimeout(600);
   const set = await p.evaluate(() => {
     const h = document.getElementById("bt6NotesHead"), heads = [...document.querySelectorAll("#jobGroup h3.group-head")].map((x) => x.textContent), add = document.querySelector("#jobGroup .job-add");

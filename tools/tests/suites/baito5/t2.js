@@ -41,13 +41,8 @@ const setting = async (p, id) => (await ls(p, "settings")).find((s) => s.id === 
   ok((await txt(p, "#jobSum")).includes("11/16 休んだ"), "⑥ said in the month");
   await p.click("#jobSum .bt5-off-back"); await p.waitForTimeout(600);
   ok((await ls(p, "shifts")).some((x) => x.id === "n3" && x.memo === "研修") && !(await setting(p, "bt5Off")).items.length && (await est()) === before, "⑥ もどす");
-  // ② 有給を使った日: 4 時間 on 11/20, in November's pay
-  await p.click("#bt4Leave .bt5-leave-open"); await p.waitForTimeout(300);
-  await p.fill('#bt4Leave [data-leave="j1"] [data-a="date"]', "2026-11-20"); await p.fill('#bt4Leave [data-leave="j1"] [data-a="hours"]', "4");
-  await p.click('#bt4Leave [data-leave="j1"] .btn'); await p.waitForTimeout(500);
-  const lv = (await setting(p, "bt5Leave")).items;
-  ok(lv.length === 1 && lv[0].date === "2026-11-20" && lv[0].hours === 4 && (await est()) === before + 4000, "② kept and paid: " + JSON.stringify(lv));
-  ok((await txt(p, "#bt4Leave")).includes("11/20（金） 有給（4 時間分）"), "② listed: " + (await txt(p, "#bt4Leave")));
+  // ② 有給を使った日を記録: taken out with its card at the user's call (2026-11-28, tools/REMOVED.md): nowhere to put one in
+  ok(!(await p.$("#bt4Leave")) && !(await p.$(".bt5-leave-open")) && !(await txt(p, "#moneyJob")).includes("有給を使った日を記録") && !(await setting(p, "bt5Leave")) && (await est()) === before, "② 有給を使った日を記録: gone");
   // ③ October's slip, its 給料日 (11/25) gone by
   await p.click("#monthNav .navbtn"); await p.waitForTimeout(400);
   await p.click("#jobSum .bt5-slip-open"); await p.waitForTimeout(300);

@@ -29,9 +29,10 @@ const ls = (p, k) => p.evaluate(({ P, k }) => JSON.parse(localStorage.getItem(P 
   const sum = await txt(p, "#jobSum");
   ok(/8時間をこえた分：1\s時間・\+250\s円/.test(sum) && /6:00〜9:00の時給アップ：3\s時間・\+300\s円/.test(sum) && /引かれる額：−900\s円（3\s回）/.test(sum), "①②③ the month: " + sum);
   ok(sum.includes("12/25 に、自動で収入に入ります"), "⑥ said: " + sum);
-  // ⑧ 有給休暇のめやす: taken out at the user's call (2026-11-19, tools/REMOVED.md); the card is その5 ② 有給を使った日 now
-  const lv = await txt(p, "#bt4Leave");
-  ok(lv.startsWith("有給を使った日") && lv.includes("有給を使った日を記録") && !lv.includes("めやす") && !lv.includes("もらえます"), "⑧ gone, 有給を使った日 there: " + lv);
+  // ⑧ 有給休暇のめやす: taken out at the user's call (2026-11-19, tools/REMOVED.md); its card, kept for その5 ② 有給を使った日,
+  // taken out with it (2026-11-28, the user's call)
+  const page = await txt(p, "#moneyJob");
+  ok(!(await p.$("#bt4Leave")) && !page.includes("有給を使った日") && !page.includes("めやす") && !page.includes("もらえます"), "⑧ gone, and the card of 有給を使った日 with it");
   // ⑩ 表（CSV）で書き出す: taken out with the month's list at the user's call (2026-11-26, tools/REMOVED.md)
   ok(!(await p.$("#bt4Csv")) && !(await p.$("#bt2Share")) && !(await p.$("#shiftList")), "⑩ CSV: gone with the month's list");
   await p.screenshot({ path: (process.argv[2] || __dirname) + "/baito4-job.png", fullPage: true });

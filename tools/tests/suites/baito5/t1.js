@@ -17,6 +17,9 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   const sum = await txt(p, "#jobSum");
   ok(/見込み 27,500\s?円/.test(sum) && /有給 1\s日（5\s時間・\+5,000\s円）/.test(sum), "② 有給 in the month: " + sum);
   ok(/1時間あたり 1,125\s円/.test(sum), "② その3 ⑦ the 有給 aside");
+  // ② its card (the days, 有給を使った日を記録): taken out at the user's call (2026-11-28, tools/REMOVED.md); the day put in
+  // before (11/5) paid as before, above
+  ok(!(await p.$("#bt4Leave")) && !(await txt(p, "#moneyJob")).includes("有給を使った日"), "② the card gone (the day put in before still paid)");
   // ⑤ with the way there: 22,500 / (20 時間 + 往復 1 時間 × 4)
   ok(/移動もふくめると 1時間あたり 938\s円（通勤 往復 1\s時間 × 4\s回）/.test(sum), "⑤ " + sum);
   // ⑥ 行かなかった勤務

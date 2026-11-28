@@ -2279,8 +2279,7 @@ details.bt3-ask > summary { min-height: 48px; display: flex; align-items: center
 .bt4-adv-form input { min-height: 40px; min-width: 0; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background-color: var(--surface); color: var(--fg); font: inherit; }
 .bt4-adv-form input[type="number"] { flex: 0 1 7em; text-align: right; font-variant-numeric: tabular-nums; }
 .bt4-adv-form input[type="date"] { flex: 0 1 10em; }
-.bt4-leave { display: grid; gap: 4px; }
-.bt4-leave p { margin: 0; line-height: 1.5; }
+/* (その5 ② 有給を使った日's card, .bt4-leave: taken out at the user's call, 2026-11-28, tools/REMOVED.md) */
 /* バイト その5 */
 .ffield input#shiftWage[type="number"], .ffield input#reShiftWage[type="number"] { flex: 0 1 8.5em; }
 .bt5-wage-note { margin: -4px 0 0; }
@@ -2300,9 +2299,7 @@ details.bt3-ask > summary { min-height: 48px; display: flex; align-items: center
 .bt5-slip-row { display: grid; grid-template-columns: minmax(0, 1fr) 8em auto; align-items: center; gap: 8px; }
 .bt5-slip-row input { min-height: 40px; min-width: 0; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background-color: var(--surface); color: var(--fg); font: inherit; text-align: right; font-variant-numeric: tabular-nums; }
 .bt5-slip-acts { display: flex; align-items: center; gap: 12px; }
-.bt5-leave-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; font-size: var(--t-sub); color: var(--muted); }
-.bt5-leave-list li { display: flex; align-items: center; gap: 4px; }
-.bt5-leave-open, .bt5-slip-open, .bt7-extra-open { justify-self: start; min-height: 36px; }
+.bt5-slip-open, .bt7-extra-open { justify-self: start; min-height: 36px; }
 /* バイト その6 */
 .bt6-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; margin-top: 8px; }
 .bt6-wd { font-size: var(--t-foot); color: var(--muted); text-align: center; }
@@ -24966,7 +24963,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 18:06"; // 11b32adc (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 18:14"; // 99f6f0d1 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -63370,13 +63367,8 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return out.length ? el("div", { class: "bt3-notes bt4-notes" }, out) : null;
   }
 
-  // ⑧ 有給休暇のめやす: taken out at the user's call (2026-11-19, tools/REMOVED.md). The card stays for その5 ② 有給を使った日
-  function renderBt4Leave() {
-    const box = $("bt4Leave"), rows = jobList().flatMap((j) => bt5LeaveRows(j));
-    box.hidden = !rows.length;
-    if (!rows.length) { box.replaceChildren(); return; }
-    setChildren(box, el("strong", { class: "bt2-head" }, "有給を使った日"), rows);
-  }
+  // ⑧ 有給休暇のめやす: taken out at the user's call (2026-11-19, tools/REMOVED.md). Its card, kept for その5 ② 有給を使った日
+  // (the days and 有給を使った日を記録): taken out with it at the user's call, 2026-11-28, tools/REMOVED.md
   function bt4Ymd(d) { return d.slice(0, 4) === todayKey.slice(0, 4) ? fmtMD(d) : `${Number(d.slice(0, 4))}/${fmtMD(d)}`; }
 
   // ⑨ 予定とのかぶり: the calendar's plans with a time, in the hours of a shift from today on (中止 ones aside)
@@ -63397,15 +63389,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ⑩ 表（CSV）で書き出す (the shifts as a table): taken out with the month's list at the user's call (2026-11-26,
   // tools/REMOVED.md)
 
-  // made once into バイト's part: その5 ② 有給を使った日 at the end (⑩, beside シフトを文字で送る, taken out with it, 2026-11-26)
-  function bt4Build() {
-    if ($("bt4Leave")) return;
-    $("bt2Year").after(el("div", { class: "card pad bt4-leave", id: "bt4Leave", hidden: true })); // (after 何時間分？ until it was taken off, 2026-11-19)
-  }
+  // (made into バイト's part once: その5 ② 有給を使った日's card, after バイト先をくらべる; taken out 2026-11-28, the user's call)
   function renderBt4() {
-    bt4Build();
-    if (!jobList().length) { $("bt4Leave").hidden = true; return; }
-    draw(renderBt4Leave);
+    if (!jobList().length) return;
     $("bt4AutoRest").checked = bt4Set().autoRest;
     bt4FormRest();
     if (!bt4AutoSoon) bt4AutoSoon = setTimeout(() => { bt4AutoSoon = 0; draw(bt4AutoPay); }, 0);
@@ -63425,50 +63411,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
 
   // ② 有給を使った日: [{ id, jobId, date, hours }] with the account; each paid its hours at the job's 時給 of the day, in
-  // the month whose days it is in (in その4 ⑧'s card, 有給休暇のめやす until it was taken off, 2026-11-19)
-  var bt5LeaveOpen = "";
+  // the month whose days it is in. Its card on the page (the days, each with its ×, and 有給を使った日を記録 with the day and
+  // its hours) taken out at the user's call (2026-11-28, tools/REMOVED.md); the days put in before stay, paid as before
   function bt5Leaves() { const s = settings.get("bt5Leave"); return s && Array.isArray(s.items) ? s.items.filter((x) => x && typeof x.id === "string" && isDay(x.date || "") && num(x.hours) > 0) : []; }
   function bt5LeaveIn(job, from, to) {
     const list = job ? bt5Leaves().filter((x) => x.jobId === job.id && x.date >= from && x.date <= to) : [];
     return { n: list.length, list, hours: sum(list, (x) => x.hours), pay: sum(list, (x) => num(x.hours) * bt2WageOn(job, x.date)) };
-  }
-  function bt5SaveLeaves(items) { act(() => settings.set("bt5Leave", { items, updatedAt: Date.now() })); }
-  // a day's hours to start from: the job's last ten shifts, on the half hour
-  function bt5UsualHours(job) {
-    const last = jobShifts(job).filter((x) => isDay(x.date || "") && x.date <= todayKey).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
-    return last.length ? Math.max(0.5, Math.round((sum(last, (x) => shiftMinutes(x).all) / last.length / 60) * 2) / 2) : 4;
-  }
-  function bt5LeaveRows(j) {
-    const mine = bt5Leaves().filter((x) => x.jobId === j.id).sort((a, b) => b.date.localeCompare(a.date)), rest = [];
-    if (mine.length) rest.push(el("ul", { class: "bt5-leave-list" }, mine.slice(0, 12).map((x) => el("li", {}, el("span", {}, keepUnits(`${fmtShort(x.date)} 有給（${bt4Hours(num(x.hours) * 60)}分）`)),
-      el("button", { type: "button", class: "icon-btn bt4-adv-x", "aria-label": `${fmtShort(x.date)}の有給を消す`, onclick: () => bt5LeaveDrop(x.id) }, icon("close", 16))))));
-    const open = bt5LeaveOpen === j.id;
-    rest.push(el("button", { type: "button", class: "link-btn bt5-leave-open", "aria-expanded": String(open),
-      onclick: () => { bt5LeaveOpen = open ? "" : j.id; renderBt4Leave(); if (!open) $("bt4Leave").querySelector(`[data-leave="${CSS.escape(j.id)}"] input`)?.focus(); } },
-      jobList().length > 1 ? `${j.name || "バイト先"}の有給を使った日を記録` : "有給を使った日を記録"));
-    if (open) {
-      const box = el("div", { class: "bt4-adv-form", "data-leave": j.id },
-        el("input", { type: "date", "data-a": "date", value: todayKey, "aria-label": "有給を使った日" }),
-        el("input", { type: "number", "data-a": "hours", min: 0.5, max: 24, step: 0.5, inputmode: "decimal", value: bt5UsualHours(j), "aria-label": "何時間分（時間）" }), el("span", { class: "unit" }, "時間分"),
-        el("button", { type: "button", class: "btn sm", onclick: () => bt5LeaveAdd(j, box) }, "記録"));
-      rest.push(box);
-    }
-    return rest;
-  }
-  function bt5LeaveAdd(j, box) {
-    const date = box.querySelector("[data-a='date']").value, hours = Math.round(num(box.querySelector("[data-a='hours']").value) * 2) / 2;
-    if (!isDay(date)) { box.querySelector("[data-a='date']").focus(); return; }
-    if (!(hours > 0 && hours <= 24)) { box.querySelector("[data-a='hours']").focus(); return; }
-    const was = JSON.parse(JSON.stringify(bt5Leaves()));
-    if (was.some((x) => x.jobId === j.id && x.date === date)) { flash(`${fmtShort(date)}は、もう有給にしています`); return; }
-    bt5LeaveOpen = "";
-    bt5SaveLeaves([...was, { id: uid(), jobId: j.id, date, hours }]);
-    flash(keepUnits(`${fmtShort(date)}を有給（${bt4Hours(hours * 60)}分）にしました。給料の見込みに入ります`), () => { act(() => settings.set("bt5Leave", { items: was, updatedAt: Date.now() })); flash("元に戻しました"); });
-  }
-  function bt5LeaveDrop(id) {
-    const was = JSON.parse(JSON.stringify(bt5Leaves()));
-    bt5SaveLeaves(was.filter((x) => x.id !== id));
-    flash("有給の記録を消しました", () => { act(() => settings.set("bt5Leave", { items: was, updatedAt: Date.now() })); flash("元に戻しました"); });
   }
 
   // ③ 給料明細: a month's 総支給 and what was taken from it (所得税, 社会保険・雇用保険, その他), with the account; 手取り
@@ -65683,7 +65631,8 @@ ${parts.join("\n")}
   function bt10Build() {
     if ($("bt10With")) return;
     $("bt2Year").after(el("div", { class: "card pad bt10-with-card", id: "bt10With", hidden: true }));
-    $("bt4Leave").after(el("details", { class: "card bt3-ask", id: "bt10AlarmsCard", hidden: true, ontoggle: () => { if ($("bt10AlarmsCard").open) renderBt10Alarms(); } }, // (after バイト先のメモ till it went into the settings, 2026-11-28)
+    bt9Build(); // (after 有給を使った日 till it was taken out, and バイト先のメモ till it went into the settings, 2026-11-28)
+    $("bt9Cmp").after(el("details", { class: "card bt3-ask", id: "bt10AlarmsCard", hidden: true, ontoggle: () => { if ($("bt10AlarmsCard").open) renderBt10Alarms(); } },
       el("summary", { id: "bt10AlarmsHead" }, "これから届くお知らせ"), el("div", { class: "bt3-ask-body", id: "bt10AlarmsBody" })));
   }
   function renderBt10() {
@@ -67515,7 +67464,7 @@ ${parts.join("\n")}
     ["勤務を見る", [["bt6Cal", "勤務カレンダー"], ["bt15Multi", "掛け持ちの日"], ["bt15Study", "バイトと勉強の時間"]]],
     ["1年・これまで", [["jobYear", "年に入る給料の見込み"], ["bt2Year", "月ごとの給料"],
       ["bt17Roles", "担当ごとの時間"], ["bt10With", "いっしょに入った人"], ["bt13Swap", "代わりの貸し借り"], ["bt9Cmp", "バイト先をくらべる"]]],
-    ["道具", [["bt4Leave", "有給を使った日"], ["bt10AlarmsCard", "これから届くお知らせ"]]], // (バイト先のメモ・バイト先の連絡先: in the settings since 2026-11-28)
+    ["道具", [["bt10AlarmsCard", "これから届くお知らせ"]]], // (バイト先のメモ・バイト先の連絡先: in the settings since 2026-11-28; 有給を使った日 taken out then)
   ];
   function bt16HideRule() {
     const known = new Set(BT16_CARDS.flatMap(([, l]) => l.map(([id]) => id))), hide = bt16Set().hide.filter((id) => known.has(id));
