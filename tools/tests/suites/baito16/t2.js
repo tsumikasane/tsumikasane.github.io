@@ -28,17 +28,18 @@ const shown = (p, id) => p.evaluate((id) => getComputedStyle(document.getElement
   ok((await setting(p, "bt16")).asked["2026-12"] === "2026-11-20" && !(await tags(p)).includes("bt2-ask:2026-11-25") && (await txt(p, "#bt16Asked")) === "12月のシフト希望：出しました（11/20） 取り消す", "④ given: " + (await txt(p, "#bt16Asked")));
   await p.click("#bt16AskBtn"); await p.waitForTimeout(400);
   ok(!("2026-12" in (await setting(p, "bt16")).asked) && (await tags(p)).includes("bt2-ask:2026-11-25"), "④ taken back");
-  // ① from the page's foot: 勤務カレンダー put away, バイト先の連絡先 back (バイトの日の支出, 1週間の勤務, 何時間分？ taken out 2026-11-19)
+  // ① from the page's foot: 勤務カレンダー put away, これから届くお知らせ back (バイト先の連絡先 till it went into the settings, 2026-11-28;
+  // バイトの日の支出, 1週間の勤務, 何時間分？ taken out 2026-11-19)
   await p.click("#bt16CardsLink"); await p.waitForTimeout(600);
   ok(await p.evaluate(() => document.getElementById("bt16CardsBox").open), "① the cards opened");
-  await p.click('#bt16Cards [data-card="bt6Cal"]'); await p.click('#bt16Cards [data-card="bt14People"]'); await p.waitForTimeout(400);
+  await p.click('#bt16Cards [data-card="bt6Cal"]'); await p.click('#bt16Cards [data-card="bt10AlarmsCard"]'); await p.waitForTimeout(400);
   ok(JSON.stringify((await setting(p, "bt16")).hide) === JSON.stringify(["bt6Cal"]) && (await txt(p, "#bt16CardsHead")) === "カードを選ぶ（1 こ しまっています）", "① kept: " + JSON.stringify((await setting(p, "bt16")).hide));
   // ⑤ 早めに着く 0, ③ 定期券 12/31 (⑨ 最低賃金 taken out at the user's call, 2026-11-25: its 1,100 円 stays saved)
   await p.fill('#jobForms [data-job="j1"] [data-f="early"]', ""); await p.fill('#jobForms [data-job="j1"] [data-f="pass"]', "2026-12-31"); await p.waitForTimeout(900);
   const j1 = await job(p, "j1");
   ok(!("early" in j1) && j1.pass === "2026-12-31" && (await setting(p, "bt16")).minWage === 1100, "③⑤ kept (⑨'s 1,100 円 too): " + JSON.stringify(j1));
   await p.keyboard.press("Escape"); await p.waitForTimeout(500);
-  ok(!(await shown(p, "bt6Cal")) && (await shown(p, "bt14People")), "① on the page");
+  ok(!(await shown(p, "bt6Cal")) && (await shown(p, "bt10AlarmsCard")), "① on the page");
   ok((await txt(p, "#bt3Next")).includes("16:30 に出ると間に合います（通勤 30 分）"), "⑤ no minutes early: " + (await txt(p, "#bt3Next")));
   ok((await p.isHidden("#bt16Pass")) && JSON.stringify((await tags(p)).filter((t) => t.startsWith("bt16-pass"))) === JSON.stringify(["bt16-pass:j1:2026-12-31:3"]), "③ 12/31: " + JSON.stringify(await tags(p)));
   ok(!(await p.$("#bt16Min")), "⑨ 最低賃金: gone");

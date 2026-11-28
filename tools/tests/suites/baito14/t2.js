@@ -32,7 +32,7 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   // ⑥ ヘルプに入れる日を文字で: taken out at the user's call (2026-11-19, tools/REMOVED.md)
   ok(!(await p.$("#bt14Help")), "⑥ gone");
   // ⑤ 社員 佐藤 in; 店長 田中 off and back
-  await p.click("#bt14People summary"); await p.waitForTimeout(300);
+  await p.click("#moneySettings"); await p.waitForTimeout(600); // (in バイト's settings since 2026-11-28)
   await p.fill('#bt14PeopleBody [data-job="j1"] [data-p="name"]', "社員 佐藤"); await p.fill('#bt14PeopleBody [data-job="j1"] [data-p="tel"]', "080-3333-4444");
   await p.click('#bt14PeopleBody [data-job="j1"] .bt4-adv-form button'); await p.waitForTimeout(400);
   const pe = (await job(p, "j1")).people;
@@ -41,6 +41,7 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR
   ok(JSON.stringify((await job(p, "j1")).people.map((x) => x.name)) === '["社員 佐藤"]', "⑤ off");
   await p.click(".toast.show .toast-undo"); await p.waitForTimeout(400);
   ok((await job(p, "j1")).people.length === 2, "⑤ back");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   // ⑦ 時給が変わったら: taken out at the user's call (2026-11-19)
   ok(!(await p.$("#bt14What")), "⑦ 時給が変わったら: gone");
   // ⑩ 給料明細の写真: before 勤務カレンダー, where シフト表の写真 was (taken off 2026-11-18); shown large

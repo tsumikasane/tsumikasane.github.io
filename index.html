@@ -2407,6 +2407,7 @@ details.bt9-parts > summary { cursor: pointer; color: var(--accent); min-height:
 #bt14PeopleBody p, #bt14HelpBody p, #bt14WhatBody p { margin: 0; }
 .bt14-people-job .bt10-items a.btn { text-decoration: none; }
 .bt14-acts { display: inline-flex; align-items: center; gap: 6px; }
+.bt14-people-set { padding-top: 12px; } /* (in バイト's settings since 2026-11-28) */
 .bt14-people-job .bt4-adv-form input { flex: 1 1 8em; width: auto; }
 #bt14WhatWage { width: 7em; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background-color: var(--surface); color: var(--fg); font: inherit; text-align: right; }
 .bt14-left-card { display: grid; gap: 6px; }
@@ -9911,6 +9912,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
              使った日) till 2026-11-28; moved here at the user's call -->
         <h3 class="group-head" id="bt6NotesHead">バイト先のメモ</h3>
         <div class="card bt6-notes-set" id="bt6NotesBody"></div>
+        <!-- (バイト その14 ⑤) バイト先の連絡先: each job's people and their numbers, 電話 to call them. A card on バイト's page
+             (under これから届くお知らせ) till 2026-11-28; moved here at the user's call -->
+        <h3 class="group-head" id="bt14PeopleHead">バイト先の連絡先</h3>
+        <div class="card bt3-ask-body bt14-people-set" id="bt14PeopleBody"></div>
         <h3 class="group-head">1年の目安</h3>
         <form class="add" id="jobWallForm" autocomplete="off">
           <label class="flabel" for="jobWall">目安<span class="sr-only">（円）</span></label>
@@ -14376,6 +14381,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     const wall = $("jobWall");
     if (document.activeElement !== wall) wall.value = num(jobSet().wall) > 0 ? jobSet().wall : "";
     renderBt6Notes(); // (バイト その6 ⑩ バイト先のメモ, under these since 2026-11-28)
+    renderBt14People(); // (バイト その14 ⑤ バイト先の連絡先, under the メモ since 2026-11-28)
   }
   function saveJobs() {
     clearTimeout(jobSaveTimer); jobSaveTimer = 0;
@@ -24960,7 +24966,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 17:38"; // a8069657 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 18:06"; // 11b32adc (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -67090,11 +67096,13 @@ ${parts.join("\n")}
   function bt14SaveAlarm(patch) { bt14Save(patch); renderBt14Settings(); if (patch.wallChk && pushState() === "off") pushEnable().then(renderBt14Settings); }
   $("bt14WallChk").addEventListener("change", (ev) => bt14SaveAlarm({ wallChk: ev.target.checked }));
 
-  // ⑤ バイト先の連絡先: each job's { id, name, tel } (店長・社員…), kept with the account; pressed, the phone calls
+  // ⑤ バイト先の連絡先: each job's { id, name, tel } (店長・社員…), kept with the account; pressed, the phone calls. In バイト's
+  // settings, under バイト先のメモ (a card on バイト's page, under これから届くお知らせ, till 2026-11-28: moved at the user's call)
   function bt14People(j) { return (Array.isArray(j.people) ? j.people : []).filter((x) => x && x.name); }
   function bt14Tel(t) { return String(t || "").normalize("NFKC").replace(/[^\d+]/g, ""); }
   function renderBt14People() {
     const box = $("bt14PeopleBody"), jobs = bt9Active(jobList()), many = jobs.length > 1;
+    $("bt14PeopleHead").hidden = box.hidden = !jobs.length;
     if (bt10Typing(box)) return;
     setChildren(box, jobs.map((j) => {
       const list = bt14People(j), name = el("input", { type: "text", "data-p": "name", maxlength: 20, placeholder: "名前", "aria-label": "名前" }), tel = el("input", { type: "tel", "data-p": "tel", maxlength: 20, placeholder: "電話番号", "aria-label": "電話番号", inputmode: "tel" });
@@ -67182,8 +67190,7 @@ ${parts.join("\n")}
   function bt14Build() {
     if ($("bt14Left")) return;
     $("bt3Next").after(el("div", { class: "card pad bt14-left-card", id: "bt14Left", hidden: true }));
-    const card = (id, head, body, fn) => el("details", { class: "card bt3-ask", id, hidden: true, ontoggle: () => { if ($(id).open) fn(); } }, el("summary", {}, head), el("div", { class: "bt3-ask-body", id: body }));
-    $("bt10AlarmsCard").after(card("bt14People", "バイト先の連絡先", "bt14PeopleBody", renderBt14People));
+    // (⑤ バイト先の連絡先, a card after これから届くお知らせ here: in バイト's settings since 2026-11-28, the user's call)
     const file = el("input", { type: "file", accept: "image/*", id: "bt14SlipFile", hidden: true, onchange: (ev) => { const f = ev.target.files?.[0]; ev.target.value = ""; bt14SlipAdd(f); } });
     $("bt6Cal").before(el("details", { class: "card bt3-ask bt7-photos", id: "bt14Slips", hidden: true, ontoggle: () => { if ($("bt14Slips").open) renderBt14Slips(); } },
       el("summary", { id: "bt14SlipHead" }, "給料明細の写真"),
@@ -67195,10 +67202,10 @@ ${parts.join("\n")}
     bt14Build();
     renderBt14Settings();
     const has = jobList().length > 0;
-    for (const id of ["bt14People", "bt14Slips"]) $(id).hidden = !has;
+    $("bt14Slips").hidden = !has;
+    draw(renderBt14People); // (⑤ in the settings: kept up with the jobs, not while one is typed in)
     if (!has) { $("bt14Left").hidden = true; return; }
     draw(renderBt14Left);
-    if ($("bt14People").open) draw(renderBt14People);
     if ($("bt14Slips").open) renderBt14Slips(); else bt7Load().then((l) => { const n = l.filter((x) => x.kind === "pay" && x.ym === viewMonth).length; $("bt14SlipHead").textContent = `${Number(viewMonth.slice(5))}月分の給料明細の写真${n ? `（${n}）` : ""}`; });
   }
 
@@ -67508,8 +67515,7 @@ ${parts.join("\n")}
     ["勤務を見る", [["bt6Cal", "勤務カレンダー"], ["bt15Multi", "掛け持ちの日"], ["bt15Study", "バイトと勉強の時間"]]],
     ["1年・これまで", [["jobYear", "年に入る給料の見込み"], ["bt2Year", "月ごとの給料"],
       ["bt17Roles", "担当ごとの時間"], ["bt10With", "いっしょに入った人"], ["bt13Swap", "代わりの貸し借り"], ["bt9Cmp", "バイト先をくらべる"]]],
-    ["道具", [["bt4Leave", "有給を使った日"], ["bt10AlarmsCard", "これから届くお知らせ"], // (バイト先のメモ: in the settings since 2026-11-28)
-      ["bt14People", "バイト先の連絡先"]]],
+    ["道具", [["bt4Leave", "有給を使った日"], ["bt10AlarmsCard", "これから届くお知らせ"]]], // (バイト先のメモ・バイト先の連絡先: in the settings since 2026-11-28)
   ];
   function bt16HideRule() {
     const known = new Set(BT16_CARDS.flatMap(([, l]) => l.map(([id]) => id))), hide = bt16Set().hide.filter((id) => known.has(id));
@@ -67692,7 +67698,8 @@ ${parts.join("\n")}
     if ($("bt16Tent")) return;
     const card = (id, cls) => el("div", { class: `card pad ${cls}`, id, hidden: true });
     $("bt15Purse").after(card("bt16Tent", "bt16-tent-card"), card("bt16Pass", "bt16-pass-card"), card("bt16Asked", "bt16-asked-card"));
-    $("bt14People").after(el("div", { class: "bt16-cards-link" }, el("button", { type: "button", class: "link-btn", id: "bt16CardsLink", onclick: (ev) => bt16OpenCards(ev) }, "ページに出すカードを選ぶ")));
+    // (after バイト先の連絡先 till it went into the settings, 2026-11-28)
+    $("bt10AlarmsCard").after(el("div", { class: "bt16-cards-link" }, el("button", { type: "button", class: "link-btn", id: "bt16CardsLink", onclick: (ev) => bt16OpenCards(ev) }, "ページに出すカードを選ぶ")));
   }
   function renderBt16() {
     bt16Build();

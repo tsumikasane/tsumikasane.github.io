@@ -30,10 +30,13 @@ const block = (p, name) => p.evaluate((name) => [...document.querySelectorAll("#
   ok(lf === "やめたあとにすること 塾（10/31にやめた） ・ 最後の給料日 11月25日（水）（10月分 約 4,500 円） あと 5 日", "⑧ (返していないもの と 源泉徴収票 は消した: 2026-11-18) " + lf);
   // ⑨ これからとすんだ (the month's list in two parts): taken out with the list at the user's call (2026-11-26, tools/REMOVED.md)
   ok(!(await p.$("#shiftList")) && !(await p.$(".bt14-sep")), "⑨ gone, with the month's list");
-  // ⑤ 連絡先
-  await p.click("#bt14People summary"); await p.waitForTimeout(300);
+  // ⑤ 連絡先: in バイト's settings, under バイト先のメモ (a card on the page till 2026-11-28, moved at the user's call)
+  ok(!(await p.$("#moneyJob #bt14People")) && !(await txt(p, "#moneyJob")).includes("バイト先の連絡先"), "⑤ no card on the page");
+  await p.click("#moneySettings"); await p.waitForTimeout(600);
   const pe = await p.evaluate(() => [...document.querySelectorAll('#bt14PeopleBody [data-job="j1"] li')].map((li) => [li.querySelector("span").textContent, li.querySelector("a")?.getAttribute("href") || ""]));
-  ok(JSON.stringify(pe) === JSON.stringify([["お店", "tel:0312345678"], ["店長 田中", "tel:09011112222"]]) && !(await p.$('#bt14PeopleBody [data-job="j2"]')), "⑤ " + JSON.stringify(pe));
+  const where = await p.evaluate(() => { const hs = [...document.querySelectorAll("#jobGroup > h3.group-head")].filter((h) => !h.hidden).map((h) => h.textContent), i = hs.indexOf("バイト先の連絡先"); return [hs[i - 1], hs[i + 1]]; });
+  ok(JSON.stringify(pe) === JSON.stringify([["お店", "tel:0312345678"], ["店長 田中", "tel:09011112222"]]) && !(await p.$('#bt14PeopleBody [data-job="j2"]')) && JSON.stringify(where) === '["バイト先のメモ","1年の目安"]', "⑤ in the settings, under バイト先のメモ: " + JSON.stringify([pe, where]));
+  await p.keyboard.press("Escape"); await p.waitForTimeout(500);
   // ⑥ ヘルプに入れる日を文字で: taken out at the user's call (2026-11-19, tools/REMOVED.md)
   ok(!(await p.$("#bt14Help")), "⑥ gone");
   // ⑦ 時給が変わったら（もしもの計算）: taken out at the user's call (2026-11-19, tools/REMOVED.md)
