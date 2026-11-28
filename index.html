@@ -2323,6 +2323,7 @@ details.bt3-ask > summary { min-height: 48px; display: flex; align-items: center
 .bt6-tent .link-btn { min-height: 32px; margin-inline-start: 6px; }
 .bt6-note { display: grid; gap: 4px; }
 .bt6-note-name { font-weight: 600; }
+.bt6-notes-set { display: grid; gap: 12px; padding: 12px var(--space-2) 14px; } /* (in バイト's settings since 2026-11-28) */
 .bt6-wall2 { margin-top: 8px; }
 /* バイト その7 */
 .bt7-form-pay { margin: -4px 0 0; font-weight: 600; color: var(--fg); }
@@ -9906,6 +9907,10 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       <div class="sheet-view" id="jobGroup" hidden>
         <div id="jobForms"></div>
         <div class="label-tools job-add"><button type="button" class="link-btn" id="jobAdd"><svg class="icon" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>バイト先を追加</button></div>
+        <!-- (バイト その6 ⑩) バイト先のメモ: each job's notes, kept a moment after typing. A card on バイト's page (under 有給を
+             使った日) till 2026-11-28; moved here at the user's call -->
+        <h3 class="group-head" id="bt6NotesHead">バイト先のメモ</h3>
+        <div class="card bt6-notes-set" id="bt6NotesBody"></div>
         <h3 class="group-head">1年の目安</h3>
         <form class="add" id="jobWallForm" autocomplete="off">
           <label class="flabel" for="jobWall">目安<span class="sr-only">（円）</span></label>
@@ -14370,6 +14375,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     }));
     const wall = $("jobWall");
     if (document.activeElement !== wall) wall.value = num(jobSet().wall) > 0 ? jobSet().wall : "";
+    renderBt6Notes(); // (バイト その6 ⑩ バイト先のメモ, under these since 2026-11-28)
   }
   function saveJobs() {
     clearTimeout(jobSaveTimer); jobSaveTimer = 0;
@@ -24954,7 +24960,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 16:51"; // 5e1c96ab (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 17:38"; // a8069657 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -63976,15 +63982,16 @@ ${parts.join("\n")}
     flash(`仮のシフト ${ids.length} 回を確定にしました`, () => act(async () => { await shifts.updateMany(was); flash("元に戻しました"); }));
   }
 
-  // ⑩ バイト先のメモ帳: each job's notes (覚えておくこと), kept with the account a moment after typing
+  // ⑩ バイト先のメモ帳: each job's notes (覚えておくこと), kept with the account a moment after typing. In バイト's settings,
+  // under バイト先を追加 (a card on バイト's page, under 有給を使った日, till 2026-11-28: moved at the user's call)
   var bt6NoteTimer = 0;
   function renderBt6Notes() {
     const box = $("bt6NotesBody"), jobs = jobList(), many = jobs.length > 1;
+    $("bt6NotesHead").hidden = box.hidden = !jobs.length;
     if (box.contains(document.activeElement)) return;
     setChildren(box, jobs.map((j) => el("label", { class: "bt6-note" }, many ? el("span", { class: "bt6-note-name" }, j.name || "バイト先") : null,
       el("textarea", { rows: 5, maxlength: 2000, "data-job": j.id, "aria-label": `${j.name || "バイト先"}のメモ`, placeholder: "メモ", oninput: () => { clearTimeout(bt6NoteTimer); bt6NoteTimer = setTimeout(bt6SaveNotes, 700); }, onblur: () => bt6SaveNotes() }, j.notes || ""))));
-    const filled = jobs.filter((j) => j.notes).length;
-    $("bt6NotesHead").textContent = filled ? `バイト先のメモ（${filled}）` : "バイト先のメモ";
+    // (its head said how many had notes, 「バイト先のメモ（1）」, while it was a closed card on the page; open here, it doesn't)
   }
   function bt6SaveNotes() {
     clearTimeout(bt6NoteTimer); bt6NoteTimer = 0;
@@ -63999,17 +64006,16 @@ ${parts.join("\n")}
   function bt6Build() {
     if ($("bt6Cal")) return;
     $("jobYear").before(el("div", { class: "card pad bt6-cal-card", id: "bt6Cal", hidden: true }));
-    $("bt4Leave").after(el("details", { class: "card bt3-ask bt6-notes-card", id: "bt6Notes", hidden: true, ontoggle: () => { if ($("bt6Notes").open) renderBt6Notes(); else bt6SaveNotes(); } },
-      el("summary", { id: "bt6NotesHead" }, "バイト先のメモ"), el("div", { class: "bt3-ask-body", id: "bt6NotesBody" })));
+    // (⑩ バイト先のメモ, a card after 有給を使った日 here: in バイト's settings since 2026-11-28, the user's call)
   }
   function renderBt6() {
     bt6Build();
     const has = jobList().length > 0;
-    for (const id of ["bt6Cal", "bt6Notes"]) $(id).hidden = !has;
+    $("bt6Cal").hidden = !has;
     renderBt6Settings();
+    draw(renderBt6Notes); // (⑩ in the settings: kept up with the jobs, not while one is typed in)
     if (!has) return;
     draw(renderBt6Cal);
-    if ($("bt6Notes").open) draw(renderBt6Notes); else $("bt6NotesHead").textContent = jobList().some((j) => j.notes) ? `バイト先のメモ（${jobList().filter((j) => j.notes).length}）` : "バイト先のメモ";
   }
 
   // ---------- 日記 その4 ①〜⑩ (the user's calls, 2026-11-14): the weather picked by hand (①), the 見出し of the writing
@@ -65671,7 +65677,7 @@ ${parts.join("\n")}
   function bt10Build() {
     if ($("bt10With")) return;
     $("bt2Year").after(el("div", { class: "card pad bt10-with-card", id: "bt10With", hidden: true }));
-    $("bt6Notes").after(el("details", { class: "card bt3-ask", id: "bt10AlarmsCard", hidden: true, ontoggle: () => { if ($("bt10AlarmsCard").open) renderBt10Alarms(); } },
+    $("bt4Leave").after(el("details", { class: "card bt3-ask", id: "bt10AlarmsCard", hidden: true, ontoggle: () => { if ($("bt10AlarmsCard").open) renderBt10Alarms(); } }, // (after バイト先のメモ till it went into the settings, 2026-11-28)
       el("summary", { id: "bt10AlarmsHead" }, "これから届くお知らせ"), el("div", { class: "bt3-ask-body", id: "bt10AlarmsBody" })));
   }
   function renderBt10() {
@@ -67502,7 +67508,7 @@ ${parts.join("\n")}
     ["勤務を見る", [["bt6Cal", "勤務カレンダー"], ["bt15Multi", "掛け持ちの日"], ["bt15Study", "バイトと勉強の時間"]]],
     ["1年・これまで", [["jobYear", "年に入る給料の見込み"], ["bt2Year", "月ごとの給料"],
       ["bt17Roles", "担当ごとの時間"], ["bt10With", "いっしょに入った人"], ["bt13Swap", "代わりの貸し借り"], ["bt9Cmp", "バイト先をくらべる"]]],
-    ["道具", [["bt4Leave", "有給を使った日"], ["bt6Notes", "バイト先のメモ"], ["bt10AlarmsCard", "これから届くお知らせ"],
+    ["道具", [["bt4Leave", "有給を使った日"], ["bt10AlarmsCard", "これから届くお知らせ"], // (バイト先のメモ: in the settings since 2026-11-28)
       ["bt14People", "バイト先の連絡先"]]],
   ];
   function bt16HideRule() {
