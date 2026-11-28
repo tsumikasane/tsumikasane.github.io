@@ -68,24 +68,12 @@ const png = (file) => { const b = fs.readFileSync(file); return b.slice(0, 8).eq
   ok(hrs.join("|") === "朝5〜11時51%ストレッチ・歯みがき|昼11〜15時25%水を飲む|夜19〜24時24%日記を書く" && await p.evaluate(() => document.querySelector("#rt6HourList li").classList.contains("top")), "⑦ the parts of the day", hrs);
   ok((await txt(p, "#rt6HourFoot")) === "いちばん多いのは朝です（チェックした117回から）。", "⑦ the most", await txt(p, "#rt6HourFoot"));
 
-  // ⑨ 画像で送る: the day (and its やめる習慣) and the month, drawn and saved
-  ok((await txt(p, "#rt6PicDay")) === "きょうを画像で送る" && (await txt(p, "#rt6PicMonth")) === "この月を画像で送る", "⑨ beside 文字で送る");
+  // ⑨ 画像で送る (きょうを画像で送る・この月を画像で送る): taken out at the user's call (2026-11-28, tools/REMOVED.md): neither
+  // button, nor any picture drawn on the page
+  ok(!(await p.$("#rt6PicDay")) && !(await p.$("#rt6PicMonth")) && !/画像で送る/.test(await p.evaluate(() => document.getElementById("sec-routine")?.innerText || "")), "⑨ 画像で送る: gone");
   await p.evaluate(() => { window.__drawn = []; });
-  let [dl] = await Promise.all([p.waitForEvent("download", { timeout: 8000 }), p.click("#rt6PicDay")]);
-  let drawn = await p.evaluate(() => window.__drawn.slice());
-  ok(dl.suggestedFilename() === "tsumikasane-routine-2026-11-16.png" && JSON.stringify(png(await dl.path())) === "[1080,1014]", "⑨ the day saved as a picture", [dl.suggestedFilename(), png(await dl.path())]);
-  ok(["11月16日（月）のルーティーン", "2 / 4 項目", "日記を書く", "ストレッチ", "7:02・169日連続", "7:31・139日連続", "3 / 8杯・138日連続", "やめる習慣", "夜ふかし", "やめて 6日目", "つみかさね"].every((w) => drawn.includes(w)), "⑨ the day drawn", drawn);
-  // (the month 達成カレンダー shows: June, as ⑤ left it)
-  await p.evaluate(() => { window.__drawn = []; });
-  [dl] = await Promise.all([p.waitForEvent("download", { timeout: 8000 }), p.click("#rt6PicMonth")]);
-  drawn = await p.evaluate(() => window.__drawn.slice());
-  ok(dl.suggestedFilename() === "tsumikasane-routine-2026-06.png" && drawn.includes("2026年6月のルーティーン") && drawn.includes("ぜんぶできた日 0日・達成率 25%") && drawn.filter((w) => w === "1/4").length === 30, "⑨ the month the calendar shows", [dl.suggestedFilename(), drawn.slice(0, 3)]);
   await p.locator("#rt6Months .st-day").nth(11).click(); await p.waitForTimeout(400);
-  await p.evaluate(() => { window.__drawn = []; });
-  [dl] = await Promise.all([p.waitForEvent("download", { timeout: 8000 }), p.click("#rt6PicMonth")]);
-  drawn = await p.evaluate(() => window.__drawn.slice());
-  ok(dl.suggestedFilename() === "tsumikasane-routine-2026-11.png" && JSON.stringify(png(await dl.path())) === "[1080,1200]", "⑨ the month saved", [dl.suggestedFilename(), png(await dl.path())]);
-  ok(["2026年11月のルーティーン", "ぜんぶできた日 14日・達成率 98%", "ぜんぶ", "3/4", "2/4", "日", "土"].every((w) => drawn.includes(w)), "⑨ the month drawn", drawn);
+  ok(!(await p.evaluate(() => window.__drawn.length)), "⑨ nothing drawn as a picture", await p.evaluate(() => window.__drawn.slice(0, 5)));
 
   // ① やめる習慣: 夜ふかし from 11/1, done 11/10: 6日目, 最長 9日; no check, out of the day's list
   const q = () => p.evaluate(() => [...document.querySelectorAll("#rt6QuitList li")].map((li) => ({ n: li.querySelector(".rt6-q-n").textContent, name: li.querySelector("input").value, sub: li.querySelector(".rt-sub").innerText.replace(/\s+/g, ""),

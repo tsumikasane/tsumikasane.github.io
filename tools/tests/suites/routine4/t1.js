@@ -65,13 +65,10 @@ async function open(b, hm = "08:00") {
   ok((await day(p)).notes?.r3 === "レポート", "③ on one another page's record checked", (await day(p)).notes);
   await undo(p);
   ok(!(await day(p)).notes?.r3 && (await day(p)).notes?.r2 === "p.140まで", "③ 元に戻す", (await day(p)).notes);
-  // ① the day in words
-  await p.locator("#rt4SendDay").click(); await p.waitForTimeout(300);
-  let sh = await p.evaluate(() => window.__shared.pop());
-  ok(sh && sh.split("\n")[0] === "11月15日（日）のルーティーン 3 / 4" && sh.includes("✓ 📖 読書（8:00）：p.140まで") && sh.includes("・ 水を飲む（0 / 8杯）") && sh.includes("✓ ToDoを片づける"), "① きょう in words", sh);
-  await p.locator("#rt4SendWeek").click(); await p.waitForTimeout(300);
-  sh = await p.evaluate(() => window.__shared.pop());
-  ok(sh && sh.startsWith("11/9〜11/15のルーティーン\n達成率") && sh.includes("・📖 読書 6 / 7日（6日連続）") && sh.includes("・水を飲む 0 / 6日"), "① the week in words", sh);
+  // ① 文字で送る (きょうのルーティーンを文字で送る・この1週間を文字で送る), with その6 ⑨ 画像で送る and その7 ④ 日記に書き足す
+  // beside them: taken out at the user's call (2026-11-28, tools/REMOVED.md): none of the row nor its words on the page
+  const page1 = await p.evaluate(() => document.getElementById("sec-routine")?.innerText || "");
+  ok(!(await p.$("#rt4Share")) && !(await p.$("#rt4SendDay")) && !(await p.$("#rt4SendWeek")) && !/きょうのルーティーンを文字で送る|この日のルーティーンを文字で送る|この1週間を文字で送る|きょうを画像で送る|この日を画像で送る|この月を画像で送る|きょうを日記に書き足す|この日を日記に書き足す/.test(page1) && page1.includes("項目ごとの記録"), "① 文字で送る and the row beside it: gone", page1.match(/きょうのルーティーンを文字で送る|この日のルーティーンを文字で送る|この1週間を文字で送る|きょうを画像で送る|この日を画像で送る|この月を画像で送る|きょうを日記に書き足す|この日を日記に書き足す/)?.[0]);
   // ② 絵文字 in ⋯
   await row(p, "r4").locator(".rt-opts").click(); await p.waitForTimeout(400);
   await p.locator(".rt4-emoji-pick", { hasText: "💧" }).click(); await p.click("#recSave"); await p.waitForTimeout(500);

@@ -119,20 +119,12 @@ async function open(b, data, hm = "09:00") {
   ok((await menu(p)) === "やった,きょうはパス,できなかった理由,期間でまとめてチェック,複製,休止する,設定,削除", "① in the 長押し menu", await menu(p));
   await p.click("#rt6MenuNo"); await p.waitForTimeout(300);
 
-  // ④ 日記に書き足す: today's, then over itself
-  ok((await txt(p, "#rt7JnBtn")) === "きょうを日記に書き足す", "④ beside 文字で送る");
-  await p.click("#rt7JnBtn"); await p.waitForTimeout(500);
-  let jn = (await ls(p, "journal")).find((x) => x.id === D.DAY);
-  ok(jn?.text === "【ルーティーン】 1 / 4\n✓ ストレッチ（7:00）\n・ 日記を書く\n・ 英語\n・ 歩く（5,200 / 8,000歩）\n◇ 夜ふかし：やめて 19日目" && (await toast(p)).includes("きょうのルーティーンを日記に書き足しました"), "④ written into today's 日記", jn?.text);
-  await p.click("#rt7JnBtn"); await p.waitForTimeout(400);
-  ok((await toast(p)).includes("きょうのルーティーンは、もう日記に入っています"), "④ not twice");
+  // ④ 日記に書き足す (きょうを日記に書き足す, beside 文字で送る): taken out at the user's call (2026-11-28, tools/REMOVED.md):
+  // no button, nothing written in the 日記 by the page; the check as before
+  ok(!(await p.$("#rt7JnBtn")) && !/日記に書き足す/.test(await p.evaluate(() => document.getElementById("sec-routine")?.innerText || "")), "④ 日記に書き足す: gone");
   await row(p, "r2").locator(".check").click(); await p.waitForTimeout(300);
-  await p.click("#rt7JnBtn"); await p.waitForTimeout(500);
-  jn = (await ls(p, "journal")).find((x) => x.id === D.DAY);
-  ok(jn.text.startsWith("【ルーティーン】 2 / 4\n✓ ストレッチ（7:00）\n✓ 日記を書く（9:00）") && jn.text.split("【ルーティーン】").length === 2, "④ over the block put there before", jn.text);
+  ok((await day(p)).done.includes("r2") && !(await ls(p, "journal")).some((x) => x.id === D.DAY && /【ルーティーン】/.test(x.text || "")), "④ checked: nothing put in the 日記", await ls(p, "journal"));
   await undo(p);
-  jn = (await ls(p, "journal")).find((x) => x.id === D.DAY);
-  ok(jn.text.startsWith("【ルーティーン】 1 / 4"), "④ 元に戻す");
 
   // ③ 勉強の科目で連携: 英語 not checked by today's 数学; all subjects, it is
   ok((await rowText(p, "r3")).includes("「英語」を30分以上記録したら自動でチェック") && !(await day(p)).done.includes("r3"), "③ 英語's 勉強 alone", await rowText(p, "r3"));
