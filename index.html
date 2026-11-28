@@ -8138,7 +8138,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           <div class="title-row"><h2><span class="page-mark" role="img" aria-label="日記" style="--mark-c: var(--c-journal)"><svg class="icon" width="40" height="40" aria-hidden="true" focusable="false"><use href="#i-journal"/></svg></span></h2><button type="button" class="icon-btn" id="jnSettings" aria-label="日記の設定" aria-haspopup="dialog"><svg class="icon" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-gear"/></svg></button></div>
           <div class="datenav"></div>
         </div>
-        <!-- (日記 その4 ⑩ 前に書いた日・次に書いた日) -->
+        <!-- (日記 その4 ⑩ 次に書いた日; 前に書いた日 taken out at the user's call, 2026-11-28) -->
         <div class="jn4-hop" id="jn4Hop" hidden></div>
         <div class="card pad" id="jnCard">
           <!-- (日記 その4 ⑦ 祝日・二十四節気・雑節) -->
@@ -24866,7 +24866,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 15:46"; // 70e4353e (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 15:55"; // fc2e6f63 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -64256,14 +64256,15 @@ ${parts.join("\n")}
   }
   for (const id of ["jnBack", "jn2Read"]) new MutationObserver(() => jn4MarkAdds()).observe($(id), { childList: true });
 
-  // ⑩ 前に書いた日・次に書いた日: under the date, the days written before and after the one shown (skipping those without)
+  // ⑩ 次に書いた日: under the date, the day written after the one shown (skipping those without), at the row's right.
+  // (前に書いた日, 「‹ 前に書いた日 ○/○」 the day written before at its left: taken out at the user's call, 2026-11-28,
+  // tools/REMOVED.md; its place kept empty, so 次に書いた日 stays at the right)
   function renderJn4Hop(days) {
-    const ks = [...days.keys()].sort(), prev = ks.filter((d) => d < viewDate).pop(), next = ks.find((d) => d > viewDate && d <= todayKey);
+    const ks = [...days.keys()].sort(), next = ks.find((d) => d > viewDate && d <= todayKey);
     const box = $("jn4Hop");
-    box.hidden = !prev && !next;
-    if (jn4Same("hop", [viewDate, prev, next])) return;
-    setChildren(box,
-      prev ? el("button", { type: "button", class: "chip-btn jn4-hop-btn", "aria-label": `前に書いた日 ${fmtMDW(prev)}へ`, onclick: () => setViewDate(prev) }, icon("prev", 16), `前に書いた日 ${fmtMD(prev)}`) : el("span"),
+    box.hidden = !next;
+    if (jn4Same("hop", [viewDate, next])) return;
+    setChildren(box, el("span"),
       next ? el("button", { type: "button", class: "chip-btn jn4-hop-btn", "aria-label": `次に書いた日 ${fmtMDW(next)}へ`, onclick: () => setViewDate(next) }, `次に書いた日 ${fmtMD(next)}`, icon("next", 16)) : el("span"));
   }
 

@@ -44,14 +44,17 @@ const putMedia = (p, list) => p.evaluate(({ list, b64 }) => new Promise((res, re
 
   // ⑦ 季節の言葉: none today; 立冬 on 11/7, 文化の日 on 11/3
   ok(!(await shown(p, "#jn4Season")), "⑦ nothing today");
-  // ⑩ 前に書いた日
-  ok((await txt(p, "#jn4Hop")) === "前に書いた日11/13", "⑩ the day written before", await txt(p, "#jn4Hop"));
-  await p.locator("#jn4Hop button", { hasText: "前に書いた日" }).click(); await p.waitForTimeout(500);
-  ok((await val(p)).startsWith("よかったこと：映画"), "⑩ to 11/13", await val(p));
-  ok((await txt(p, "#jn4Hop")) === "前に書いた日11/12", "⑩ (none written after it, today not yet)", await txt(p, "#jn4Hop"));
+  // ⑩ 前に書いた日 (「‹ 前に書いた日 11/13」 at the row's left): taken out at the user's call (2026-11-28, tools/REMOVED.md);
+  // 次に書いた日 kept, at the right. Today and 11/13 (nothing written after them, today not yet): no row
+  ok(!(await shown(p, "#jn4Hop")) && !(await p.$("#jn4Hop button")), "⑩ today: no 前に書いた日 (the row hidden)", await txt(p, "#jn4Hop"));
+  await go(p, "2026-11-13");
+  ok((await val(p)).startsWith("よかったこと：映画") && !(await shown(p, "#jn4Hop")), "⑩ 11/13: no row", await txt(p, "#jn4Hop"));
   await go(p, "2026-11-07");
   ok((await txt(p, "#jn4Season")) === flat("11/7は 立冬（りっとう）・冬のはじまり"), "⑦ 立冬", await txt(p, "#jn4Season"));
-  ok((await txt(p, "#jn4Hop")) === "前に書いた日11/3次に書いた日11/10", "⑩ both ways", await txt(p, "#jn4Hop"));
+  const hop = await p.evaluate(() => { const r = document.getElementById("jn4Hop").getBoundingClientRect(), bs = [...document.querySelectorAll("#jn4Hop button")]; return { n: bs.length, right: bs[0] ? Math.round(r.right - bs[0].getBoundingClientRect().right) : null }; });
+  ok((await txt(p, "#jn4Hop")) === "次に書いた日11/10" && hop.n === 1 && hop.right <= 2, "⑩ 次に書いた日 alone, at the right (no 前に書いた日 11/3)", [await txt(p, "#jn4Hop"), hop]);
+  await p.locator("#jn4Hop button", { hasText: "次に書いた日" }).click(); await p.waitForTimeout(500);
+  ok(await p.inputValue("#sec-journal .datenav input[type=date]") === "2026-11-10", "⑩ 次に書いた日 pressed: 11/10", await p.inputValue("#sec-journal .datenav input[type=date]"));
   await go(p, "2026-11-03");
   ok((await txt(p, "#jn4Season")) === flat("11/3は 文化の日"), "⑦ 文化の日", await txt(p, "#jn4Season"));
 
