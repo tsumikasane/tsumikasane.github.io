@@ -19214,7 +19214,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (goalFifteen) fifteenPaint(g); // (目標 その15 ② 1マスずつ)
     if (goalSixteen) sixteenPaint(g); // (目標 その16 ⑨ 数えるマスの30日; ⑥ まだのマスを印刷 taken out, 2026-11-26)
     if (goalSeventeen) seventeenPaint(g); // (目標 その17 ⑧ となりの要素へ, ⑩ まとめて空き時間に入れる)
-    if (goalEighteen) eighteenPaint(g); // (目標 その18 ⑩ 要素が終わったら, ⑥ 待ちが終わったら, ⑦ チェックリスト)
+    if (goalEighteen) eighteenPaint(g); // (目標 その18 ⑥ 待ちが終わったら, ⑦ チェックリスト; ⑩ 要素が終わったら: taken out, 2026-11-28)
     if (goalTwenty) twentyPaint(g); // (目標 その20 ① やる日をまとめて, ⑨ マスをまとめて選ぶ)
     $("mRoot").hidden = !!mPath.length;
     if (!mPath.length) {
@@ -24895,7 +24895,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 10:17"; // 2e42e6fc (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 10:25"; // 4cd90140 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -43184,8 +43184,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       ["ロック", "チャートを見るだけにして、うっかり変えないようにします。"],
       ["1マスずつ片づける", "まだのマスを1つずつ出して、「できた」「とばす」で進めます。"],
       ["まとめて空き時間に入れる", "まだのマスを選んで、この1週間の空き時間に順に予定として入れます。"],
-      ["となりの要素へ", "要素の中で ‹ › を押すか、チャートを左右にスワイプすると、となりの要素へ移ります。"],
-      ["要素が終わったら", "要素のマスがぜんぶ終わると、その要素のふりかえりを書くようにすすめます。"]]],
+      ["となりの要素へ", "要素の中で ‹ › を押すか、チャートを左右にスワイプすると、となりの要素へ移ります。"]]], // (要素が終わったら: taken out, 2026-11-28)
     ["マスの長押し", [
       ["入れ替える・複製", "ほかのマスと入れ替える、中のマスごと複製する、ほかの目標へ複製する。"],
       ["メモ・経過メモ", "マスのメモと、日付つきの経過メモを書けます。"],
@@ -44562,18 +44561,15 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     else setChildren(line, el("span", {}, `🎯 集中モード：重点目標（${fs.map((g) => clip(oneLine(g.title), 10)).join("・")}）だけを出しています`), el("button", { type: "button", class: "link-btn", onclick: () => setFocusOnly(false) }, "やめる"));
   }
 
-  // ⑩ 要素が終わったら: an element of the open goal done there (all its cells), a word under the chart to write its ふりかえり
-  // (【its name】 put in, the field at hand); a cell its 先にやるマス let go (⑥), said there too
-  const elDoneSeen = new Map(), preSeen = new Map();
-  let g18Say = null; // { gid, el: { i, name } | null, pre: [[the one done, the one let go]] }
-  function elsDone(g) { const d = goalDepth(g); return new Set((g.mandala || []).map((c, i) => (c?.t?.trim() && !c.x && kidsOf(c, d - 1).length >= 2 && cellDone(c, d - 1) ? i : -1)).filter((i) => i >= 0)); }
+  // ⑥ 待ちが終わったら: a cell its 先にやるマス let go, said under the chart (閉じる). (⑩ 要素が終わったら, an element of the
+  // open goal done there (all its cells) and 「🎉「○」のマスが、ぜんぶ終わりました。ふりかえりを書いておきませんか？」 with
+  // ふりかえりを書く (【its name】 put in, the field at hand) and あとで: taken out at the user's call, 2026-11-28,
+  // tools/REMOVED.md. The ふりかえり written stay, and the field itself)
+  const preSeen = new Map();
+  let g18Say = null; // { gid, pre: [[the one done, the one let go]] }
   function preWaits(g) { const m = new Map(); for (const l of goalLeaves2(g)) if (!l.cell.d && l.cell.pre) { const w = preOf(g, l.cell); if (w) m.set(l.path.join("."), w.name); } return m; }
   function sayCheck(g) {
     if (g18Say && g18Say.gid !== g.id) g18Say = null;
-    const now = elsDone(g), was = elDoneSeen.get(g.id);
-    elDoneSeen.set(g.id, now);
-    if (was && !g.done) for (const i of now) if (!was.has(i)) g18Say = { gid: g.id, el: { i, name: oneLine(g.mandala[i].t) }, pre: g18Say?.pre || null };
-    if (g18Say?.el && !now.has(g18Say.el.i)) g18Say = g18Say.pre ? { ...g18Say, el: null } : null; // (taken back)
     const waits = preWaits(g), wasW = preSeen.get(g.id), freed = [];
     preSeen.set(g.id, waits);
     if (wasW) for (const [key, name] of wasW) {
@@ -44581,35 +44577,19 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
       const c = nodeAt(g, key.split(".").map(Number));
       if (c?.t?.trim() && !c.d && c.pre && oneLine(c.pre.t) === name) freed.push([name, oneLine(c.t)]);
     }
-    if (freed.length) g18Say = { gid: g.id, el: g18Say?.el || null, pre: freed };
+    if (freed.length) g18Say = { gid: g.id, pre: freed };
     if (g18Say?.pre) { // (one let go and since done: no longer said)
       const left = new Set(goalLeaves2(g).filter((l) => !l.cell.d).map((l) => l.name)), pre = g18Say.pre.filter(([, name]) => left.has(name));
-      g18Say = pre.length ? { ...g18Say, pre } : g18Say.el ? { ...g18Say, pre: null } : null;
+      g18Say = pre.length ? { ...g18Say, pre } : null;
     }
   }
   function renderSay(g) {
     const box = $("mG18Say"), s = g18Say && g18Say.gid === g.id ? g18Say : null;
     box.hidden = !s;
     if (!s) { box.replaceChildren(); return; }
-    const close = el("button", { type: "button", class: "link-btn", onclick: () => { g18Say = null; renderSay(g); } }, s.el ? "あとで" : "閉じる");
-    setChildren(box, s.pre ? el("p", { class: "g18-say-pre" }, `「${clip(s.pre[0][0], 14)}」が済んだので、「${clip(s.pre[0][1], 14)}」に進めます` + (s.pre.length > 1 ? `（ほかに ${s.pre.length - 1} マス）` : "") + "。") : null,
-      s.el ? el("p", { class: "g18-say-el" }, `🎉「${clip(s.el.name, 14)}」のマスが、ぜんぶ終わりました。ふりかえりを書いておきませんか？`) : null,
-      el("div", { class: "six-tags" }, s.el ? el("button", { type: "button", class: "chip-btn", id: "mG18Write", onclick: () => writeReflect(s.el.name) }, "ふりかえりを書く") : null, close));
-  }
-  function writeReflect(name) {
-    g18Say = null;
-    if (mPath.length || mOverview || mList) { commitChartText(); mPath = []; mOverview = false; mList = false; showChartLevel(); }
-    else renderSay(goals.get(mandalaGoal));
-    setTimeout(() => {
-      const f = $("mReflect");
-      if (!f) return;
-      const head = `【${name}】`;
-      if (!f.value.includes(head)) f.value = (f.value.trim() ? f.value.trimEnd() + "\n" : "") + head;
-      f.dispatchEvent(new Event("input", { bubbles: true }));
-      f.scrollIntoView({ block: "center" }); // (far down the goal's page: at once)
-      f.focus({ preventScroll: true });
-      f.setSelectionRange(f.value.length, f.value.length);
-    }, 80);
+    const close = el("button", { type: "button", class: "link-btn", onclick: () => { g18Say = null; renderSay(g); } }, "閉じる");
+    setChildren(box, el("p", { class: "g18-say-pre" }, `「${clip(s.pre[0][0], 14)}」が済んだので、「${clip(s.pre[0][1], 14)}」に進めます` + (s.pre.length > 1 ? `（ほかに ${s.pre.length - 1} マス）` : "") + "。"),
+      el("div", { class: "six-tags" }, close));
   }
 
   // the chart's own: ⑥ 待ち and ⑦ 2/3 over a cell's words

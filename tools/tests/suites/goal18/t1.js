@@ -95,12 +95,12 @@ const guard = async (p) => (await W(p, "alarms", await p.evaluate(() => Date.now
   ok(JSON.stringify(await W(p, "path")) === "[3]" && (await tops(p))[1].includes("待ち"), "⑥ 待ち over シャドーイング", await tops(p));
   await p.click('.m-cell[data-k="0"] [data-role="check"]'); await p.waitForTimeout(700);
   ok((await txt(p, "#mG18Say")) === "「毎日15分」が済んだので、「シャドーイング」に進めます。 閉じる" && !(await tops(p))[1].includes("待ち"), "⑥ done: シャドーイング let go, said", await txt(p, "#mG18Say"));
+  // ⑩ 要素が終わったら (「🎉「リスニング」のマスが、ぜんぶ終わりました。ふりかえりを書いておきませんか？」 with ふりかえりを書く
+  // and あとで): taken out at the user's call (2026-11-28, tools/REMOVED.md): the element done, nothing said of it (⑥'s word,
+  // シャドーイング now done, gone as before); not in 目標でできること either (below)
   await p.click('.m-cell[data-k="1"] [data-role="check"]'); await p.waitForTimeout(700);
-  ok((await txt(p, "#mG18Say")) === "🎉「リスニング」のマスが、ぜんぶ終わりました。ふりかえりを書いておきませんか？ ふりかえりを書く あとで", "⑩ the element done: its ふりかえり asked for", await txt(p, "#mG18Say"));
-  await p.click("#mG18Write"); await p.waitForTimeout(700);
-  ok(JSON.stringify(await W(p, "path")) === "[]" && (await p.inputValue("#mReflect")) === "【リスニング】" && (await p.evaluate(() => document.activeElement?.id)) === "mReflect" && !(await p.isDisabled("#mReflectAdd")), "⑩ the field at hand, its name in it");
-  await p.fill("#mReflect", "【リスニング】毎日続けられた"); await p.click("#mReflectAdd"); await p.waitForTimeout(500);
-  ok((await goal(p, "g1")).notes.some((n) => n.text === "【リスニング】毎日続けられた"), "⑩ written");
+  ok((await goal(p, "g1")).mandala[3].c.filter((c) => c?.t?.trim()).every((c) => c.d) && await p.isHidden("#mG18Say") && !(await p.$("#mG18Write"))
+    && !/ぜんぶ終わりました|ふりかえりを書いておきませんか/.test(await p.evaluate(() => document.getElementById("mandalaView")?.innerText || "")), "⑩ the element done: nothing asked", await txt(p, "#mG18Say"));
   await done(p);
   ok((await guard(p)).length === 0, "④ (taken out) none, 部屋を片づける still not moved today");
   // ⑤ in 進み具合: 部屋を片づける (④ once it is moved on today: taken out)
@@ -132,6 +132,7 @@ const guard = async (p) => (await W(p, "alarms", await p.evaluate(() => Date.now
   await p.click("#goalSettings"); await p.waitForTimeout(600);
   await p.click("#goalHelpOpen"); await p.waitForTimeout(400);
   const help = await p.evaluate(() => document.getElementById("goalHelpList")?.innerText || "");
+  ok(!help.includes("要素が終わったら") && !help.includes("その要素のふりかえりを書くようにすすめます") && help.includes("となりの要素へ"), "⑩ not in できること (となりの要素へ kept)", help.slice(0, 80));
   ok(!help.includes("目標の棚卸し") && help.includes("集中モード") && help.includes("まとめて選ぶ") && help.includes("期限を延ばす・期限の変更") && help.includes("しばらく進めていない目標"), "⑨ not in できること (集中モード, まとめて選ぶ, 期限を延ばす, しばらく進めていない目標 kept)", help.length);
   await done(p);
 
