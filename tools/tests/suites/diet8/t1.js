@@ -81,14 +81,11 @@ async function unrec(p) { if (await p.evaluate(() => document.getElementById("me
   const toc9 = await p.evaluate(() => document.getElementById("dt16Toc-weight")?.textContent || "");
   ok(!(await p.$("#dt8Hc")) && !(await p.$("#dt8HcDate")) && !/健康診断/.test(toc9) && toc9.length > 0 && ((await setting(p, "healthChecks"))?.list || []).length === 1, "⑨ 健康診断 gone, what was put in kept", toc9);
   ok((await W(p, "flag", "hdl", 38)) === "低め" && (await W(p, "flag", "ldl", 150)) === "高い", "⑨ 判定値 (kept for からだのレポート)");
-  // ⑩ 画像: 90 days as a PNG, saved
-  await p.selectOption("#dt8ImgDays", "90");
-  await p.click('#dt8Img button:has-text("グラフを画像にする")'); await p.waitForTimeout(800);
-  const img = await p.evaluate(() => { const i = document.getElementById("dt8ImgPic"); return { open: document.getElementById("dt8ImgView")?.open === true, src: (i?.src || "").slice(0, 5), w: i?.naturalWidth, h: i?.naturalHeight }; });
-  ok(img.open && img.src === "blob:" && img.w === 1200 && img.h === 800, "⑩ the picture", img);
-  const [dl] = await Promise.all([p.waitForEvent("download", { timeout: 5000 }), p.click("#dt8ImgSave")]);
-  ok(dl.suggestedFilename() === "体重_2026-11-14.png", "⑩ saved", dl.suggestedFilename());
-  await p.click("#dt8ImgClose"); await p.waitForTimeout(200);
+  // ⑩ グラフを画像にする (30日・90日・1年・はじめから, a PNG of the weights): taken out at the user's call (2026-11-28,
+  // tools/REMOVED.md): no row under the weight's chart, no words of it on からだ; the chart and its 期間 as before
+  const body10 = await p.evaluate(() => document.getElementById("part-weight")?.innerText || "");
+  ok(!(await p.$("#dt8Img")) && !(await p.$("#dt8ImgDays")) && !/グラフを画像にする|画像にする期間/.test(body10) && (await p.isVisible("#wtRanges")) && !(await p.$("#dt8ImgView")),
+    "⑩ グラフを画像にする: gone (the chart's 期間 kept)", body10.match(/グラフを画像にする|画像にする期間/)?.[0]);
 
   const wide = await p.evaluate(() => document.documentElement.scrollWidth);
   ok(wide <= 393, "no sideways scroll", wide);

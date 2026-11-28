@@ -5885,7 +5885,7 @@ ul.list > li.btn-row { padding: 0; }
 .dt7-wd:disabled { opacity: .45; cursor: default; }
 .dt7-split .num { font-weight: 700; font-variant-numeric: tabular-nums; }
 .dt7-split > .sub { margin-top: 8px; }
-/* ダイエット その8 (2026-11-14): ① 文で入れる, ② PFCバランス, ③ 食事の記録, ④ ストップウォッチ（2026-11-24 に消した）, ⑤⑥⑦ 運動, ⑧ 週のまとめ, ⑨ 健康診断（2026-11-24 に消した）, ⑩ 画像 */
+/* ダイエット その8 (2026-11-14): ① 文で入れる, ② PFCバランス, ③ 食事の記録, ④ ストップウォッチ（2026-11-24 に消した）, ⑤⑥⑦ 運動, ⑧ 週のまとめ, ⑨ 健康診断（2026-11-24 に消した）, ⑩ 画像（2026-11-28 に消した） */
 .dt8-bulk > summary { padding: 12px var(--space-2); font-weight: 600; cursor: pointer; }
 .dt8-bulk-in { display: grid; gap: 8px; padding: 0 var(--space-2) 12px; }
 .dt8-bulk textarea { width: 100%; min-height: 76px; padding: 8px 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); font: inherit; font-size: 16px; resize: vertical; }
@@ -5927,9 +5927,7 @@ ul.list > li.btn-row { padding: 0; }
 .dt8-week-text p { margin: 0; overflow-wrap: anywhere; }
 .dt8-week-text p:first-child { font-weight: 600; margin-bottom: 2px; }
 .dt8-week-bar { display: flex; justify-content: flex-end; }
-.dt8-img { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin: -4px 0 0; }
-.dt8-img[hidden] { display: none; }
-.dt8-img select { min-height: 36px; padding: 0 10px; background-color: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); font: inherit; font-size: 16px; }
+/* (⑩ グラフを画像にする's row: taken out, 2026-11-28; the picture's view below stays, every picShow's) */
 .dt8-img-view img { background: #ffffff; }
 /* ダイエット その9 (2026-11-14): ① 食べた理由, ② 画像, ③ 先月, ④ 強さ, ⑤ 旅, ⑦ 消費, ⑧ 印刷, ⑨ 血圧（2026-11-24 に消した）, ⑩ バッジ */
 .dt9-why-field { display: grid; gap: 4px; }
@@ -24881,7 +24879,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 10:51"; // 16ef57a6 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 11:00"; // acbbff05 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -58696,7 +58694,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- ダイエット その8 ①〜⑩ (the user's calls, 2026-11-14): 食事 put in from words (①), the day's PFC as shares
   // of its kcal (②) and the days 食事 was recorded (③, taken off 2026-11-24); a stopwatch (④), 自己ベスト as they were beaten (⑤), the moves
   // done most (⑥) and the month against the one before (⑦); the week as words to copy (⑧), 健康診断 (⑨) and the weights
-  // as a picture (⑩). ⑥ よくやった種目 taken off 2026-11-19 (the user's call, tools/REMOVED.md). ④ ストップウォッチ taken off 2026-11-24 (the user's call, tools/REMOVED.md). ⑨ 健康診断's card taken off 2026-11-24 (the user's call, tools/REMOVED.md). Function declarations and var, as the page may draw before this runs (dietEight, set at its end) ----------
+  // as a picture (⑩). ⑥ よくやった種目 taken off 2026-11-19 (the user's call, tools/REMOVED.md). ④ ストップウォッチ taken off 2026-11-24 (the user's call, tools/REMOVED.md). ⑨ 健康診断's card taken off 2026-11-24 (the user's call, tools/REMOVED.md). ⑩ 体重のグラフを画像に taken off 2026-11-28 (the user's call, tools/REMOVED.md). Function declarations and var, as the page may draw before this runs (dietEight, set at its end) ----------
   var dietEight = false;
 
   // ① 文でまとめて入れる: 区分 (朝・昼・夜・間食, and the like) at the start of a part, then what was eaten with its kcal
@@ -58918,67 +58916,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   }
   function dt8Hcs() { const l = settings.get("healthChecks")?.list; return (Array.isArray(l) ? l.filter((x) => x && typeof x.id === "string" && isDay(x.date || "")) : []).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30); }
   function dt8HcFmt(k, v) { const d = DT8_HC.find((x) => x[0] === k); return d && d[3] < 1 ? num(v).toFixed(1) : fmtN(Math.round(num(v))); }
-  // ⑩ 体重のグラフを画像に: the 30 days, 90 days, year or all, as a PNG (1200 × 800): each day's weight, the 7日平均 and
-  // 目標体重, with the first and last 7日平均's change; shared (a phone's share sheet) or saved
-  var dt8ImgDays = 90;
-  function dt8Png(days, from0, to0) {
-    const all = sortedWeights().filter((r) => r.id <= (to0 || todayKey));
-    if (!all.length) return null;
-    const from = from0 || (days ? addDays(todayKey, -(days - 1)) : all[0].id), xs = all.filter((r) => r.id >= from);
-    if (xs.length < 2) return null;
-    const a7 = avg7(), W = 1200, H = 800, L = 120, R = 60, T = 170, B = 100, c = document.createElement("canvas");
-    c.width = W; c.height = H;
-    const g = c.getContext("2d"), font = (px, w = 400) => `${w} ${px}px -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif`;
-    const tgt = wtTarget(), kgs = xs.map((r) => num(r.kg)), avgs = xs.map((r) => a7.get(r.id) || num(r.kg));
-    let lo = Math.min(...kgs, ...avgs), hi = Math.max(...kgs, ...avgs);
-    if (tgt > 0 && tgt > lo - 4) lo = Math.min(lo, tgt);
-    if (tgt > 0 && tgt < hi + 4) hi = Math.max(hi, tgt);
-    const span = Math.max(1, hi - lo), stepKg = span > 12 ? 5 : span > 6 ? 2 : span > 2.5 ? 1 : 0.5;
-    lo = Math.floor((lo - span * 0.05) / stepKg) * stepKg; hi = Math.ceil((hi + span * 0.05) / stepKg) * stepKg;
-    const d0 = parseYmd(xs[0].id).getTime(), d1 = parseYmd(xs[xs.length - 1].id).getTime(), X = (id) => L + ((parseYmd(id).getTime() - d0) / Math.max(1, d1 - d0)) * (W - L - R), Y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
-    g.fillStyle = "#ffffff"; g.fillRect(0, 0, W, H);
-    const first = avgs[0], lastAvg = avgs[avgs.length - 1], ch = Math.round((lastAvg - first) * 10) / 10;
-    g.fillStyle = "#1c1c1e"; g.font = font(46, 700); g.textBaseline = "alphabetic"; g.fillText("体重の記録", L, 78);
-    g.font = font(28); g.fillStyle = "#6e6e73"; g.fillText(`${fmtDayLong(xs[0].id)} 〜 ${fmtDayLong(xs[xs.length - 1].id)}`, L, 124);
-    g.textAlign = "right"; g.font = font(48, 700); g.fillStyle = ch < 0 ? "#1a7f37" : ch > 0 ? "#c4320a" : "#1c1c1e"; g.fillText(`${signed(ch)} kg`, W - R, 78);
-    g.font = font(26); g.fillStyle = "#6e6e73"; g.fillText(`7日平均 ${fmtKg(first)} → ${fmtKg(lastAvg)} kg`, W - R, 124);
-    g.textAlign = "right"; g.strokeStyle = "#e5e5ea"; g.lineWidth = 2; g.font = font(24); g.fillStyle = "#8e8e93";
-    for (let v = lo; v <= hi + 1e-9; v += stepKg) { const y = Y(v); g.beginPath(); g.moveTo(L, y); g.lineTo(W - R, y); g.stroke(); g.fillText(stepKg < 1 ? v.toFixed(1) : String(Math.round(v)), L - 16, y + 8); }
-    g.textAlign = "center";
-    for (const id of [xs[0].id, xs[Math.floor(xs.length / 2)].id, xs[xs.length - 1].id]) g.fillText(fmtMD(id), X(id), H - B + 44);
-    const showT = tgt > 0 && tgt >= lo && tgt <= hi; // (the goal's line, and its key, only when it is on the chart)
-    if (showT) { g.setLineDash([14, 10]); g.strokeStyle = "#e8710a"; g.lineWidth = 3; g.beginPath(); g.moveTo(L, Y(tgt)); g.lineTo(W - R, Y(tgt)); g.stroke(); g.setLineDash([]); g.textAlign = "left"; g.fillStyle = "#e8710a"; g.font = font(24, 600); g.fillText(`目標 ${fmtKg(tgt)} kg`, L + 10, Y(tgt) - 10); }
-    g.strokeStyle = "#b7dcc2"; g.lineWidth = 3; g.beginPath(); xs.forEach((r, i) => (i ? g.lineTo(X(r.id), Y(kgs[i])) : g.moveTo(X(r.id), Y(kgs[i])))); g.stroke();
-    g.fillStyle = "#8fc9a1"; for (let i = 0; i < xs.length; i++) { g.beginPath(); g.arc(X(xs[i].id), Y(kgs[i]), xs.length > 120 ? 3 : 5, 0, Math.PI * 2); g.fill(); }
-    g.strokeStyle = "#1a7f37"; g.lineWidth = 6; g.lineJoin = "round"; g.beginPath(); xs.forEach((r, i) => (i ? g.lineTo(X(r.id), Y(avgs[i])) : g.moveTo(X(r.id), Y(avgs[i])))); g.stroke();
-    g.textAlign = "left"; g.font = font(22); g.fillStyle = "#8e8e93"; g.fillText("● 毎日の体重　━ 7日平均" + (showT ? "　┅ 目標" : ""), L, H - 22);
-    g.textAlign = "right"; g.fillText("つみかさね", W - R, H - 22);
-    return c;
-  }
-  function dt8MakeImg() {
-    const c = dt8Png(dt8ImgDays);
-    if (!c) { flash("この期間の体重が2回以上ないと、グラフにできません"); return; }
-    c.toBlob((blob) => {
-      if (!blob) { flash("画像を作れませんでした"); return; }
-      picShow("dt8", blob, `体重_${todayKey}.png`, "体重の記録", "体重のグラフの画像", "体重のグラフ");
-    }, "image/png");
-  }
-  function renderDt8Img() {
-    let box = $("dt8Img");
-    if (!box) {
-      const sel = el("select", { id: "dt8ImgDays", "aria-label": "画像にする期間" }, [[30, "30日"], [90, "90日"], [365, "1年"], [0, "はじめから"]].map(([v, w]) => el("option", { value: v }, w)));
-      sel.value = String(dt8ImgDays);
-      sel.addEventListener("change", () => { dt8ImgDays = Number(sel.value); });
-      box = el("div", { class: "dt8-img", id: "dt8Img", hidden: true }, sel, el("button", { type: "button", class: "btn ghost sm", onclick: dt8MakeImg }, "グラフを画像にする"));
-      $("wtRanges").closest(".card").after(box);
-    }
-    box.hidden = sortedWeights().length < 2;
-  }
+  // (⑩ 体重のグラフを画像に, 「グラフを画像にする」 with its 30日・90日・1年・はじめから under the weight's chart, a PNG of each
+  // day's weight, the 7日平均 and 目標体重, shared or saved: taken out at the user's call, 2026-11-28, tools/REMOVED.md.
+  // picShow and its view stay: others' pictures use them)
 
   // as each part is drawn
   function renderDt8Meal() { draw(renderDt8Bulk); draw(renderDt8Pfc); }
   function renderDt8Wo() { draw(renderDt8Prs); draw(renderDt8Month); }
-  function renderDt8Body() { draw(dt8WeekFollow); draw(renderDt8Week); draw(renderDt8Img); }
+  function renderDt8Body() { draw(dt8WeekFollow); draw(renderDt8Week); } // (⑩ グラフを画像にする: taken out, 2026-11-28)
   dietEight = true;
 
   // ---------- ダイエット その9 ①〜⑩ (the user's calls, 2026-11-14): why a 食事 was eaten (①), the day's 食事 as a picture
