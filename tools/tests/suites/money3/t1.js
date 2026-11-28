@@ -53,7 +53,8 @@ const txt = (p, sel) => p.evaluate((sel) => document.querySelector(sel)?.innerTe
   ex = await ls(p, "expenses");
   ok(!ex.some((e) => e.id === "n4" || e.id === "n6") && ex.some((e) => e.id === "n2"), "④ two deleted");
   await p.click("#mo3Pick"); await p.waitForTimeout(300);
-  ok(await p.isHidden("#mo3Sel") && !!(await p.$('#exList li[data-ex="n2"] .del, #exList li[data-ex="n2"] button[aria-label*="削除"]')), "④ done picking: the × back");
+  const back = await p.evaluate(() => { const li = document.querySelector('#exList li[data-ex="n2"]'); return li && { box: !!li.querySelector("input.mo3-box-in"), pick: li.classList.contains("mo3-pick"), del: !!li.querySelector('.del, button[aria-label*="削除"]') }; });
+  ok(await p.isHidden("#mo3Sel") && !!back && !back.box && !back.pick && !back.del, "④ done picking: the rows as before (no box; the × at a row's end taken out, 2026-11-28)", back);
   await p.screenshot({ path: (process.argv[2] || __dirname) + "/money3-book.png" });
   ok(!p.errs.length, "no page errors", p.errs);
   await b.close();

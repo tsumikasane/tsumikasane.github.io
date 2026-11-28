@@ -69,9 +69,9 @@ const opts = (p, sel) => p.evaluate((sel) => [...document.querySelector(sel).opt
   ok(!menu.includes("美容") && menu.includes("サブスク") && menu.indexOf("交通費") < menu.indexOf("水道光熱費"), "④ the form's menu: " + menu.join(","));
   // ① the 11/5 one deleted: not put in again as the app opens
   const id115 = ex.find((e) => e.date === "2026-11-05").id;
-  await p.evaluate(() => [...document.querySelectorAll("#exList li")].find((li) => li.textContent.includes("家賃"))?.querySelector(".del")?.click());
-  await p.evaluate(() => [...document.querySelectorAll("#exList li")].find((li) => li.textContent.includes("家賃"))?.querySelector(".del")?.click());
-  await p.waitForTimeout(600);
+  // (明細's × at a row's end taken out, 2026-11-28: deleted from its own sheet, この記録を削除 pressed twice)
+  await p.locator("#exList li", { hasText: "家賃" }).first().locator(".row-link").click(); await p.waitForTimeout(500);
+  await p.click("#recDelete"); await p.click("#recDelete"); await p.waitForTimeout(600);
   ok(!(await ls(p, "expenses")).some((e) => e.id === id115), "① 11/5's deleted");
   await p.reload(); await p.waitForTimeout(800);
   ok(!(await ls(p, "expenses")).some((e) => e.id === id115), "① and not put in again on opening");
