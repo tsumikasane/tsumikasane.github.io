@@ -1055,10 +1055,9 @@ span.rtc-d { background: transparent; color: var(--muted); cursor: default; }
    buttons under it; 時間に入れる the one in the accent */
 .ffield.st-timer { flex-wrap: wrap; gap: 8px 10px; }
 form.add > .flabel#stTimerLabel { align-self: start; padding-top: 6px; } /* (beside its first line: スタート, or the time) */
-.st-timer[data-mode="idle"] .st-tm-hint { flex-basis: 100%; }
 .st-tm-time { font-size: 30px; line-height: 1.15; font-weight: 700; font-variant-numeric: tabular-nums; }
 .st-timer[data-mode="pause"] .st-tm-time { color: var(--muted); }
-.st-tm-state, .st-tm-hint { font-size: var(--t-sub); color: var(--muted); }
+.st-tm-state { font-size: var(--t-sub); color: var(--muted); } /* (.st-tm-hint, 測った時間を「時間」に入れます: taken out, 2026-11-28) */
 .st-tm-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); animation: stTmBlink 1s steps(2) infinite; }
 @keyframes stTmBlink { 50% { opacity: .2; } }
 @media (prefers-reduced-motion: reduce) { .st-tm-dot { animation: none; } }
@@ -24896,7 +24895,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 9:59"; // b242039e (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 10:07"; // 4ebb0c65 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -62782,7 +62781,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     if (box.dataset.mode !== mode) {
       box.dataset.mode = mode;
       const btn = (cls, words, f, ic) => el("button", { type: "button", class: "btn sm " + cls, onclick: f }, ic ? icon(ic, 18) : null, words);
-      setChildren(box, mode === "idle" ? [btn("ghost", "スタート", () => stTmPut({ start: Date.now(), acc: 0 }), "timer"), el("span", { class: "st-tm-hint" }, "測った時間を「時間」に入れます")]
+      // (idle: スタート alone. Its words beside it, 「測った時間を「時間」に入れます」: taken out at the user's call, 2026-11-28,
+      // tools/REMOVED.md)
+      setChildren(box, mode === "idle" ? [btn("ghost", "スタート", () => stTmPut({ start: Date.now(), acc: 0 }), "timer")]
         : [el("span", { class: "st-tm-time", id: "stTmTime", role: "timer", "aria-live": "off" }, stTmClock(ms)),
           mode === "run" ? el("span", { class: "st-tm-dot", "aria-hidden": "true" }) : el("span", { class: "st-tm-state" }, "一時停止中"),
           el("span", { class: "st-tm-bar" },

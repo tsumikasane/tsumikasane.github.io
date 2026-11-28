@@ -26,8 +26,9 @@ const M = 60e3;
     "① 集中タイマーを始める: gone, 追加 alone", await txt(p, "#studyForm"));
   ok(!(await p.isVisible("#focusBar")), "① no 集中タイマー's bar");
 
-  // ② under 時間: スタート at first
-  ok((await mode(p)) === "idle" && (await txt(p, "#stTimer")) === flat("スタート 測った時間を「時間」に入れます") && (await txt(p, "#stTimerLabel")) === "タイマー", "② at first: スタート", await txt(p, "#stTimer"));
+  // ② under 時間: スタート at first (its words beside it, 「測った時間を「時間」に入れます」: taken out at the user's call,
+  // 2026-11-28, tools/REMOVED.md)
+  ok((await mode(p)) === "idle" && (await txt(p, "#stTimer")) === flat("スタート") && !(await p.$("#stTimer .st-tm-hint")) && !(await txt(p, "#studyForm")).includes(flat("測った時間を")) && (await txt(p, "#stTimerLabel")) === "タイマー", "② at first: スタート alone (no words)", await txt(p, "#stTimer"));
   await p.screenshot({ path: out + "/st-timer-idle.png" });
   await press(p, "スタート");
   ok((await mode(p)) === "run" && (await txt(p, "#stTmTime")) === "0:00" && JSON.stringify(await ls(p, "stTimer")) === JSON.stringify({ start: T0, acc: 0 }), "② started: 0:00, kept on this device", await ls(p, "stTimer"));
