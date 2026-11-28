@@ -9639,17 +9639,9 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <!-- (1日のまとめのお知らせ, each night at the time today's count and kinds: its お知らせ, 時刻 and words, and the
              notification itself, taken out at the user's call, 2026-11-27, tools/REMOVED.md. Its setting, tsumiDaySum,
              is kept as it was, read by nothing) -->
-        <!-- ⑩ 週のまとめのお知らせ (the user's call, 2026-11-10) -->
-        <h3 class="group-head">週のまとめのお知らせ</h3>
-        <form class="add" id="tsumiWeekForm" autocomplete="off" onsubmit="return false">
-          <label class="flabel" for="tsumiWeekOn">お知らせ</label>
-          <div class="ffield"><input type="checkbox" id="tsumiWeekOn" class="switch" role="switch"></div>
-          <label class="flabel" for="tsumiWeekWd">曜日</label>
-          <div class="ffield"><select id="tsumiWeekWd"></select></div>
-          <label class="flabel" for="tsumiWeekAt">時刻</label>
-          <div class="ffield"><input type="time" id="tsumiWeekAt" value="20:00"></div>
-        </form>
-        <p class="group-foot" id="tsumiWeekFoot"></p>
+        <!-- (⑩ 週のまとめのお知らせ, once a week on the day and at the time chosen the 7 days' blocks against the 7 before:
+             its お知らせ, 曜日, 時刻 and words, and the notification itself, taken out at the user's call, 2026-11-28,
+             tools/REMOVED.md. Its setting, tsumiWeek, is kept as it was, read by nothing) -->
         <!-- 月のまとめのお知らせ (the user's call): on the 1st, the month before -->
         <h3 class="group-head">月のまとめのお知らせ</h3>
         <form class="add" id="tsumiMonthSumForm" autocomplete="off" onsubmit="return false">
@@ -17871,7 +17863,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     out.push(...bt14Alarms(now)); // (バイト その14 ④ 年の目安; ③ 給料の入金 taken out 2026-11-25)
     out.push(...bt16Alarms(now)); // (バイト その16 ② 仮のシフト, ③ 定期券)
     out.push(...goalReviewAlarms(now)); // 目標 ⑤ 見直しのお知らせ
-    out.push(...tsWeekAlarms(now)); // つみかさね ⑩ 週のまとめのお知らせ
+    // (つみかさね ⑩ 週のまとめのお知らせ: taken out at the user's call, 2026-11-28, tools/REMOVED.md)
     // (つみかさね 1日のまとめのお知らせ: taken out at the user's call, 2026-11-27, tools/REMOVED.md)
     out.push(...tsMonthSumAlarms(now)); // つみかさね 月のまとめのお知らせ
     out.push(...calTwoAlarms(now)); // (カレンダー その2 ② 出発, ③ 前の晩)
@@ -17941,7 +17933,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     parts.push(...bt14Push()); // (バイト その14 ④)
     parts.push(...bt16Push()); // (バイト その16 ②③, ④ シフト希望, ⑤ 早めに着く)
     parts.push(...goalReviewParts()); // (目標 ⑤)
-    parts.push(...tsWeekParts()); // (つみかさね ⑩)
+    // (つみかさね ⑩ 週のまとめ: taken out, 2026-11-28)
     // (つみかさね 1日のまとめ: taken out, 2026-11-27)
     parts.push(...tsMonthSumParts()); // (つみかさね 月のまとめ)
     parts.push(...calTwoPush()); // (カレンダー その2 ②③④)
@@ -24895,7 +24887,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 10:25"; // 4cd90140 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 10:36"; // ccee003a (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
@@ -30127,48 +30119,14 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
     return look;
   }
 
-  // ⑩ 週のまとめのお知らせ (the user's call): once a week, on the day and at the time chosen (off at first; 日曜 20:00), how
-  // many blocks went on in the 7 days up to it and against the 7 before, as one notification to the devices that get
-  // 通知; pressed, つみかさね. Sent again as blocks go on (pushSig), so it says the count as it is
-  const TS_WEEK_ID = "tsumiWeek";
-  function tsWeek() {
-    const v = settings.get(TS_WEEK_ID) || {};
-    return { on: !!v.on, wd: Number.isInteger(v.wd) && v.wd >= 0 && v.wd <= 6 ? v.wd : 0, at: /^\d\d:\d\d$/.test(v.at || "") ? v.at : "20:00" };
-  }
-  function tsWeekAlarms(now) {
-    const r = tsWeek();
-    if (!r.on) return [];
-    const per = new Map(), out = [], [h, mi] = r.at.split(":").map(Number);
-    for (const b of tsumiList()) per.set(b.day, (per.get(b.day) || 0) + 1);
-    const span = (d, k) => { let c = 0; for (let j = 0; j < 7; j++) c += per.get(addDays(d, -(j + k))) || 0; return c; };
-    for (let i = 0; i <= PUSH_AHEAD; i++) {
-      const d = addDays(todayKey, i), p = parseYmd(d);
-      if (p.getDay() !== r.wd) continue;
-      const at = new Date(p.getFullYear(), p.getMonth(), p.getDate(), h, mi).getTime();
-      if (at <= now + 5000 || at > now + PUSH_AHEAD * 864e5) continue;
-      const c = span(d, 0), before = span(d, 7);
-      out.push({ at, title: "つみかさね・1週間のまとめ", body: c ? `この1週間で ${fmtN(c)} こ積みました（前の週${tsDiff(c - before)}）` : "この1週間は、まだ積んでいません。1こから始めよう", tag: `tsumi-week:${d}`, url: "./#tsumi" });
-    }
-    return out;
-  }
-  function tsWeekParts() { const r = tsWeek(); return r.on ? [["tsumiWeek", r.wd, r.at, tsumiBlocks(false, "tally").n]] : []; }
-  function renderTsumiWeek() {
-    const r = tsWeek(), st = pushState();
-    if (!$("tsumiWeekWd").options.length) setChildren($("tsumiWeekWd"), WD.map((w, i) => el("option", { value: i }, `${w}曜日`)));
-    $("tsumiWeekOn").checked = r.on;
-    for (const [id, v] of [["tsumiWeekWd", String(r.wd)], ["tsumiWeekAt", r.at]]) { const f = $(id); if (document.activeElement !== f) f.value = v; f.disabled = !r.on; }
-    $("tsumiWeekFoot").textContent = !r.on ? "週に1回、その日までの1週間に積んだブロックの数を、前の週とくらべて通知でお知らせします。"
-      : st === "on" ? `毎週${WD[r.wd]}曜日の ${r.at} に、この端末に届きます。` : pushWords(st).replace("通知アラーム", "お知らせ");
-  }
-  function saveTsWeek(patch) { act(() => settings.set(TS_WEEK_ID, { ...tsWeek(), ...patch, updatedAt: Date.now() })); renderTsumiWeek(); }
-  $("tsumiWeekOn").addEventListener("change", (ev) => { saveTsWeek({ on: ev.target.checked }); if (ev.target.checked && pushState() === "off") pushEnable().then(renderTsumiWeek); });
-  $("tsumiWeekWd").addEventListener("change", (ev) => saveTsWeek({ wd: Number(ev.target.value) }));
-  $("tsumiWeekAt").addEventListener("change", (ev) => { if (/^\d\d:\d\d$/.test(ev.target.value)) saveTsWeek({ at: ev.target.value }); });
+  // (⑩ 週のまとめのお知らせ, once a week on the day and at the time chosen (日曜 20:00 at first) 「この1週間で N こ積みました
+  // （前の週と…）」 to the devices that get 通知: taken out at the user's call, 2026-11-28, tools/REMOVED.md. Its setting,
+  // tsumiWeek (on, wd, at), is kept as it was, read by nothing; the notification goes at the next sync with the server)
 
   // the gear's new parts, drawn while it is open (and as it opens)
   function renderTsumiGear(force = false) {
     if (!force && !(sheetEl.open && settingsFrom && settingsScope === "tsumi")) return;
-    renderTsumiYears(); renderTsumiMemos(); renderTsumiRewards(); renderTsumiWeek();
+    renderTsumiYears(); renderTsumiMemos(); renderTsumiRewards(); // (週のまとめのお知らせ after them: taken out, 2026-11-28)
     renderTsumiLook(); // (the user's call, 2026-11-10; お休みの日 beside it taken out, 2026-11-26)
     renderTsumiSpan(); // (and the ten after them; 1日のまとめのお知らせ among them taken out, 2026-11-27)
     renderTsumiChal(); renderTsumiBadges(); renderTsumiAlbum(); renderTsumiAnniv(); renderTsumiMonthSum(); renderTsumiRemindTip(); // (and the ten after those)

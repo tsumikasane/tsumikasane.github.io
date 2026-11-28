@@ -27,6 +27,7 @@ async function addMeal(p, text = "おにぎり") {
   // ---------- a year and more of records (2,231 blocks), 2026-11-10 23:50 (after the day's last, the ルーティーン at 23:30) ----------
   const D = make(); D.settings.push(REWARDS, { id: "tsumiNeko", head: "santa", scarf: false, updatedAt: 1 }); // (着せかえ's, picked before it was taken out)
   D.settings.push({ id: "tsumiDaySum", on: true, at: "23:59", updatedAt: 1 }); // (1日のまとめのお知らせ's, on before it was taken out)
+  D.settings.push({ id: "tsumiWeek", on: true, wd: 3, at: "21:00", updatedAt: 1 }); // (⑩ 週のまとめのお知らせ's, on before it was taken out)
   let p = await phone(b, at("23:50", "2026-11-10"), { deviceScaleFactor: 1 });
   await seed(p, D, "tsumi"); await p.waitForTimeout(1800);
   const n0 = await p.evaluate(() => window.__ts.shown().length);
@@ -75,23 +76,21 @@ async function addMeal(p, text = "おにぎり") {
   // ⑨ 着せかえ: taken out at the user's call (2026-11-21, tools/REMOVED.md): what it wears by the season and its count stays,
   // the one picked before (kept with the account: Santa's hat, the scarf off) read by nothing
   ok(!(await p.$("#nekoCloset")) && await p.evaluate(() => window.__ts.look(2231)) === "1crown" && (await setting(p, "tsumiNeko"))?.head === "santa", "⑨ no 着せかえ: in November the crown (1,000 and more) and the scarf, as おまかせ had it", await p.evaluate(() => window.__ts.look(2231)));
-  // ⑩ the week's notification
-  await p.click("#tsumiWeekOn"); await p.waitForTimeout(200);
-  await p.selectOption("#tsumiWeekWd", "3"); await p.waitForTimeout(150);
-  await p.fill("#tsumiWeekAt", "21:00"); await p.dispatchEvent("#tsumiWeekAt", "change"); await p.waitForTimeout(200);
-  ok(JSON.stringify(await setting(p, "tsumiWeek")).includes('"on":true') && (await setting(p, "tsumiWeek")).wd === 3 && (await setting(p, "tsumiWeek")).at === "21:00", "⑩ kept", await setting(p, "tsumiWeek"));
+  // ⑩ 週のまとめのお知らせ: taken out at the user's call (2026-11-28, tools/REMOVED.md): not in the gear (its お知らせ, 曜日,
+  // 時刻 and words), none sent though it was on before (水曜 21:00), its setting kept as it was
+  const gw = await p.evaluate(() => document.getElementById("daySheet").innerText);
   const wk = await p.evaluate(() => window.__ts.alarms(Date.now()).filter((a) => a.tag.startsWith("tsumi-week:")));
-  const cnt = await p.evaluate(() => { const s = window.__ts.shown(); const c = (a, b) => s.filter((x) => x.day >= a && x.day <= b).length; return [c("2026-11-05", "2026-11-11"), c("2026-10-29", "2026-11-04")]; });
-  ok(wk.length >= 5 && wk[0].tag === "tsumi-week:2026-11-11" && new Date(wk[0].at + 9 * 3600e3).getUTCHours() === 21 && wk[0].body === `この1週間で ${cnt[0]} こ積みました（前の週${cnt[0] === cnt[1] ? "と同じ" : `より ${cnt[0] > cnt[1] ? "+" : "−"}${Math.abs(cnt[0] - cnt[1])}`}）` && wk[1].tag === "tsumi-week:2026-11-18" && wk[1].body === "この1週間は、まだ積んでいません。1こから始めよう" && wk[0].url === "./#tsumi", "⑩ each Wednesday 21:00, the 7 days' count against the 7 before (a week to come: none yet, till some go on)", [wk[0], wk[1]?.body, cnt]);
+  ok(!/週のまとめのお知らせ|その日までの1週間に積んだブロックの数/.test(gw) && !(await p.$("#tsumiWeekOn")) && !(await p.$("#tsumiWeekWd")) && !(await p.$("#tsumiWeekAt")) && !(await p.$("#tsumiWeekFoot")),
+    "⑩ 週のまとめのお知らせ: not in the gear", gw.match(/週のまとめのお知らせ|その日までの1週間に積んだブロックの数/)?.[0]);
+  ok(!wk.length && JSON.stringify(await setting(p, "tsumiWeek")) === JSON.stringify({ id: "tsumiWeek", on: true, wd: 3, at: "21:00", updatedAt: 1 }), "⑩ none sent though on before, its setting kept", [wk.slice(0, 1), await setting(p, "tsumiWeek")]);
   // 1日のまとめのお知らせ: taken out at the user's call (2026-11-27, tools/REMOVED.md): not in the gear (its お知らせ, 時刻 and
-  // words), none sent though it was on before (at 23:59, today with blocks), its setting kept as it was; 週のまとめ (above),
-  // 月のまとめ and 毎日の記録のお知らせ kept
+  // words), none sent though it was on before (at 23:59, today with blocks), its setting kept as it was; 月のまとめ and 毎日の
+  // 記録のお知らせ kept (週のまとめ: taken out too, 2026-11-28, above)
   const gearWords = await p.evaluate(() => document.getElementById("daySheet").innerText);
   ok(!/1日のまとめのお知らせ|その日に積んだ数と種類を通知で/.test(gearWords) && !(await p.$("#tsumiDayOn")) && !(await p.$("#tsumiDayAt"))
-    && gearWords.includes("週のまとめのお知らせ") && gearWords.includes("月のまとめのお知らせ") && gearWords.includes("毎日記録するもの") && !!(await p.$("#tsumiMonthSumOn")), "1日のまとめのお知らせ: not in the gear (週のまとめ, 月のまとめ, 毎日の記録 kept)", gearWords.length);
+    && gearWords.includes("月のまとめのお知らせ") && gearWords.includes("毎日記録するもの") && !!(await p.$("#tsumiMonthSumOn")), "1日のまとめのお知らせ: not in the gear (月のまとめ, 毎日の記録 kept)", gearWords.length);
   const daySum = await p.evaluate(() => window.__ts.alarms(Date.now()).filter((a) => a.tag.startsWith("tsumi-day:")));
   ok(!daySum.length && (await setting(p, "tsumiDaySum"))?.on === true && (await setting(p, "tsumiDaySum"))?.at === "23:59", "1日のまとめのお知らせ: none sent though on before, its setting kept", daySum);
-  const sig1 = await p.evaluate(() => window.__ts.sig());
   await closeSheet(p);
   // ③ ＋ → 食事: it drops in, ⑥ the ごほうび reached, said with 紙ふぶき
   await p.click("#tsumiPrev"); await p.waitForTimeout(150); // (a block picked: the new one is shown anyway)
@@ -107,7 +106,7 @@ async function addMeal(p, text = "おにぎり") {
   await p.waitForTimeout(300);
   rw = (await setting(p, "tsumiRewards")).items;
   ok(rw.find((r) => r.text === "映画を見る")?.got === "2026-11-10", "⑥ kept with its day", rw);
-  ok(await p.evaluate(() => window.__ts.sig()) !== sig1, "⑩ the notification sent again as a block goes on (pushSig)");
+  ok(!(await p.evaluate(() => window.__ts.alarms(Date.now()).filter((a) => a.tag.startsWith("tsumi-week:")).length)), "⑩ (taken out) none sent as a block goes on either");
   // ④ a block with no photo: no 写真; ② その日をまとめて見る, and back
   ok(!(await p.isVisible("#tsumiPhoto")) && await p.isVisible("#tsumiDayAll"), "② ④ under the stairs: その日をまとめて見る, no 写真");
   // (この記録を開く under a block, and a ToDo's 同じToDoをきょうも入れる: taken out at the user's call (2026-11-25, tools/REMOVED.md); 食事's きょうも同じ… stays)
