@@ -1454,6 +1454,18 @@ button.cat-row:active { background: var(--fill-press); }
 #catList .cat-bar { background: var(--ex-cl, var(--c-money)); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #catList .cat-bar { background: var(--ex-cd, var(--c-money)); } }
 :root[data-theme="dark"] #catList .cat-bar { background: var(--ex-cd, var(--c-money)); }
+/* its 円グラフ, under the list (the user's call, 2026-11-28): each 費目 a slice in its colour (as its bar), from the top
+   clockwise in the list's order, 2px of the card between them; its % beside it (5% and more) in the text's colour. One
+   pointed at or tapped: the others faded, its name, amount and % over it */
+.cat-pie { display: flex; justify-content: center; padding: 0 8px 12px; }
+#catPie { width: 260px; max-width: 100%; height: auto; cursor: pointer; }
+#catPie:focus:not(:focus-visible) { outline: none; } /* (tapped: no ring round it; reached with the keys: the app's own) */
+#catPie .cat-slice { fill: var(--ex-cl, var(--c-money)); stroke: var(--surface); stroke-width: 2; stroke-linejoin: round; transition: opacity .15s; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #catPie .cat-slice { fill: var(--ex-cd, var(--c-money)); } }
+:root[data-theme="dark"] #catPie .cat-slice { fill: var(--ex-cd, var(--c-money)); }
+#catPie.hl .cat-slice:not(.on) { opacity: .4; }
+#catPie .cat-pct { fill: var(--fg); font-size: 13px; font-weight: 600; font-family: var(--font-body); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { #catPie .cat-slice { transition: none; } }
 /* まとめ's: 支出's bars in its red, as its chart has (the user's call, 2026-11-25); a month over its budget striped, its
    red being 支出's now. 支出's words beside 収入's in the same red (ch-out-t) */
 #moneyStats .cat-bar { background: var(--ch-out); }
@@ -8722,6 +8734,12 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         <div class="card" id="catCard">
           <div class="card-head">費目ごとの支出</div>
           <div id="catList"></div>
+          <!-- 円グラフ (the user's call, 2026-11-28): each 費目's share of the month's 支出, in its colour, its % beside it; one
+               pointed at or tapped says its name, amount and % -->
+          <div class="chart-wrap cat-pie" id="catPieWrap" hidden>
+            <svg class="chart" id="catPie" role="img" tabindex="0" viewBox="-130 -110 260 220" width="260" height="220"></svg>
+            <div class="tip" id="catPieTip" hidden></div>
+          </div>
         </div>
         <div class="card">
           <div class="card-head">明細</div>
@@ -16953,6 +16971,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
           b > 0 ? el("span", { class: "cat-bud" }, el("i", { class: left < 0 ? "over" : "", style: `width:${Math.min(100, Math.round((amt / b) * 100))}%` })) : null,
           el("span", {}, note.join("・"))) : null);
     }));
+    renderCatPie(cats.filter(([, a]) => a > 0), m.out); // (its 円グラフ under it, 2026-11-28)
     // entries grouped by date: the month's, one 費目's of it, or every month's the words match (newest first, 200 at most)
     const list = $("exList"), q = moneyQuery.trim().toLowerCase();
     list.replaceChildren();
@@ -16987,6 +17006,69 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
         mo3Picking ? null : delButton(() => removeWithUndo(expenses, e.id), "削除", `${expenseCat(e) || (isIn ? "収入" : "支出")} ${fmtYen(e.amount)}`)
       ));
     }
+  }
+  // 費目ごとの支出's 円グラフ (the user's call, 2026-11-28: 「費目ごとの%基準で円グラフを表示」): each 費目 with something spent
+  // a slice of the month's 支出, from the top clockwise in the list's order, in its colour (its tile's, as its bar); its %
+  // (the list's own number) beside it where it is 5% or more. Pointed at, tapped or reached with the arrow keys, one says
+  // its name, amount and %, the others faded. (var with no value: the page may draw before this runs)
+  var catPieSl, catPieOn;
+  function renderCatPie(rows, total) {
+    const wrap = $("catPieWrap"), svg = $("catPie"), all = sum(rows, ([, a]) => a), R = 84;
+    catPieTip(-1);
+    wrap.hidden = !(all > 0);
+    if (wrap.hidden) { svg.replaceChildren(); catPieSl = []; return; }
+    const pt = (a, r) => [r * Math.sin(a), -r * Math.cos(a)].map((v) => Math.round(v * 100) / 100);
+    let a0 = 0;
+    catPieSl = rows.map(([name, amt]) => { const a1 = a0 + (amt / all) * 2 * Math.PI, s = { name, amt, pct: total > 0 ? Math.round((amt / total) * 100) : 0, a0, a1 }; a0 = a1; return s; });
+    svg.replaceChildren(...catPieSl.map((s) => {
+      const ic = ex2Icon(s.name), style = `--ex-cl:${ic.l};--ex-cd:${ic.d}`;
+      if (s.a1 - s.a0 > 2 * Math.PI - 1e-6) return svgEl("circle", { class: "cat-slice", r: R, style, "data-cat": s.name }); // (one 費目: the whole)
+      const [x0, y0] = pt(s.a0, R), [x1, y1] = pt(s.a1, R);
+      return svgEl("path", { class: "cat-slice", d: `M0,0L${x0},${y0}A${R},${R} 0 ${s.a1 - s.a0 > Math.PI ? 1 : 0} 1 ${x1},${y1}Z`, style, "data-cat": s.name });
+    }), ...catPieSl.filter((s) => s.pct >= 5).map((s) => {
+      const mid = (s.a0 + s.a1) / 2, [x, y] = pt(mid, R + 14), sx = Math.sin(mid);
+      return svgEl("text", { class: "cat-pct", x, y, dy: "0.35em", "text-anchor": sx > 0.3 ? "start" : sx < -0.3 ? "end" : "middle" }, `${s.pct}%`);
+    }));
+    svg.setAttribute("aria-label", `費目ごとの支出の割合の円グラフ。${catPieSl.map((s) => `${s.name} ${s.pct}%`).join("、")}。矢印キーで費目を移ると、その金額を表示します。`);
+  }
+  function catPieTip(i) {
+    const tip = $("catPieTip"), svg = $("catPie"), s = catPieSl && catPieSl[i];
+    catPieOn = s ? i : -1;
+    svg.classList.toggle("hl", !!s);
+    svg.querySelectorAll(".cat-slice").forEach((x, k) => x.classList.toggle("on", k === catPieOn));
+    if (!s) { tip.hidden = true; return; }
+    tip.replaceChildren(el("strong", {}, s.name), el("br"), `${fmtYen(s.amt)}（${s.pct}%）`);
+    tip.hidden = false;
+    // over the slice, a little way in from its edge, kept within the card
+    const r = svg.getBoundingClientRect(), wr = $("catPieWrap").getBoundingClientRect(), k = r.width / 260, mid = (s.a0 + s.a1) / 2;
+    const x = r.left - wr.left + (130 + 46 * Math.sin(mid)) * k, y = r.top - wr.top + (110 - 46 * Math.cos(mid)) * k, half = tip.offsetWidth / 2 + 4;
+    tip.style.left = Math.min(Math.max(x, half), wr.width - half) + "px";
+    tip.style.top = Math.max(y - 6, tip.offsetHeight + 4) + "px";
+  }
+  {
+    const svg = $("catPie"), at = (ev) => {
+      const r = svg.getBoundingClientRect(), k = 260 / (r.width || 260), x = (ev.clientX - r.left) * k - 130, y = (ev.clientY - r.top) * k - 110;
+      if (!catPieSl || Math.hypot(x, y) > 86) return -1;
+      const a = (Math.atan2(x, -y) + 2 * Math.PI) % (2 * Math.PI);
+      return catPieSl.findIndex((s) => a >= s.a0 && a < s.a1);
+    };
+    // a mouse: as it moves over them; a finger: tapped (again, or anywhere else, to put it away)
+    svg.addEventListener("pointermove", (ev) => { if (ev.pointerType === "mouse") { const i = at(ev); if (i !== catPieOn) catPieTip(i); } });
+    svg.addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse") catPieTip(-1); });
+    svg.addEventListener("pointerup", (ev) => { if (ev.pointerType !== "mouse") { const i = at(ev); catPieTip(i === catPieOn ? -1 : i); } });
+    document.addEventListener("pointerdown", (ev) => { if (catPieOn >= 0 && !svg.contains(ev.target)) catPieTip(-1); }, true);
+    svg.addEventListener("blur", () => catPieTip(-1));
+    svg.addEventListener("keydown", (ev) => {
+      const n = catPieSl ? catPieSl.length : 0, on = catPieOn >= 0 ? catPieOn : -1;
+      if (!n) return;
+      if (ev.key === "ArrowRight" || ev.key === "ArrowDown") catPieTip(on < 0 ? 0 : (on + 1) % n);
+      else if (ev.key === "ArrowLeft" || ev.key === "ArrowUp") catPieTip(on < 0 ? n - 1 : (on - 1 + n) % n);
+      else if (ev.key === "Home") catPieTip(0);
+      else if (ev.key === "End") catPieTip(n - 1);
+      else if (ev.key === "Escape") catPieTip(-1);
+      else return;
+      ev.preventDefault();
+    });
   }
 
   // ---------- 目標 ----------
@@ -24871,7 +24953,7 @@ html[data-nav="pop"]::view-transition-old(root) { animation-name: nav-out-to-rig
   // ---------- この画面の版 ----------
   // when the app's content last changed, so 本番 and テスト版 say the same of the same app (the user's call: each said the
   // time it was put out); tools/make-test.py sets it, and the content it was set for, whenever the content changes
-  const APP_VERSION = "2026年11月28日 16:05"; // 7c83ea17 (tools/make-test.py: the content it was set for)
+  const APP_VERSION = "2026年11月28日 16:26"; // 360e3fc6 (tools/make-test.py: the content it was set for)
   // (with none, when the page was put out; without the header, lastModified is the moment the page loaded)
   (() => {
     if (APP_VERSION) { $("appVersion").textContent = `アプリの版：${APP_VERSION}`; $("appVersion").hidden = false; return; }
